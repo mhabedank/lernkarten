@@ -1,0 +1,17 @@
+#!/bin/sh
+# Hält Nutzerinhalte aus dem Repo — dasselbe, was die CI später prüft.
+#
+# Installieren: scripts/install-hooks.sh
+
+verboten=$(git diff --cached --name-only --diff-filter=A \
+    | grep -E '^(wissen/|katalog/|karten/|output/|sources\.yaml)' \
+    | grep -v -E '^(wissen/\.gitkeep|katalog/\.gitkeep|karten/\.gitkeep|karten/beispiel\.yaml)$')
+
+if [ -n "$verboten" ]; then
+    echo "✗ Diese Dateien gehören nicht ins Repo (eigene Inhalte bleiben lokal):" >&2
+    echo "$verboten" | sed 's/^/    /' >&2
+    echo "  Siehe .gitignore und CONTRIBUTING.md. Notfalls: git commit --no-verify" >&2
+    exit 1
+fi
+
+exit 0

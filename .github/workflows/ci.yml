@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: ruff installieren
+        run: pipx install ruff==0.15.0
+      - name: Lint
+        run: ruff check --output-format=github .
+      - name: Formatierung
+        run: ruff format --check .
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Abhängigkeiten
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
+      - name: pytest
+        run: python -m pytest
+
+  karten:
+    name: Kartenvalidierung & LaTeX-Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Abhängigkeiten
+        run: |
+          python -m pip install --disable-pip-version-check PyYAML
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-recommended texlive-pictures texlive-lang-german \
+            texlive-fonts-recommended poppler-utils
+      - name: Schema prüfen und probeweise kompilieren
+        run: python3 scripts/build_pdf.py --check karten/*.yaml
+      - name: PDF wirklich bauen
+        run: python3 scripts/build_pdf.py karten/*.yaml -o output/lernkarten.pdf
+      - name: Randloses Layout bauen
+        run: python3 scripts/build_pdf.py karten/*.yaml --rand 0 -o output/randlos.pdf
+      - uses: actions/upload-artifact@v4
+        with:
+          name: beispiel-pdf
+          path: output/*.pdf
+          if-no-files-found: error
+
+  skills:
+    name: Skills & Doku
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Abhängigkeiten
+        run: python -m pip install --disable-pip-version-check PyYAML
+      - name: Skill-Frontmatter und Doku-Links prüfen
+        run: python3 scripts/check_docs.py

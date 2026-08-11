@@ -1,0 +1,33 @@
+# --- Eigene Inhalte bleiben lokal ---------------------------------------
+# Das Repo ist themen-agnostisch: es enthält nur die Werkzeuge, nicht das
+# Wissen. Quellen, erfasste Texte, Katalog und Karten gehören dir und
+# werden nicht versioniert.
+sources.yaml
+wissen/*
+!wissen/.gitkeep
+katalog/*
+!katalog/.gitkeep
+karten/*
+!karten/.gitkeep
+!karten/beispiel.yaml
+output/
+
+# --- Build-Reste --------------------------------------------------------
+*.aux
+*.log
+*.out
+*.pdf
+
+# --- Python -------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# --- System -------------------------------------------------------------
+.DS_Store
+
+# --- Claude Code --------------------------------------------------------
+.claude/settings.local.json

@@ -1,0 +1,21 @@
+#!/bin/sh
+# Blockt direkte Pushes auf main, bevor sie überhaupt beim Server ankommen.
+# Serverseitig ist main zusätzlich geschützt — das hier spart nur den Umweg.
+#
+# Installieren: scripts/install-hooks.sh
+
+GESCHUETZT="main"
+
+while read -r _lokale_ref _lokale_sha remote_ref _remote_sha; do
+    case "$remote_ref" in
+        "refs/heads/$GESCHUETZT")
+            echo "✗ Push auf '$GESCHUETZT' ist gesperrt." >&2
+            echo "  Branch anlegen und einen Pull Request öffnen:" >&2
+            echo "    git switch -c meine-aenderung" >&2
+            echo "    git push -u origin meine-aenderung && gh pr create" >&2
+            exit 1
+            ;;
+    esac
+done
+
+exit 0
