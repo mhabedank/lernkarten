@@ -60,7 +60,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             texlive-latex-recommended texlive-pictures texlive-lang-german \
-            texlive-fonts-recommended poppler-utils
+            texlive-fonts-recommended lmodern poppler-utils
       - name: Schema prüfen und probeweise kompilieren
         run: python3 scripts/build_pdf.py --check karten/*.yaml
       - name: PDF wirklich bauen
