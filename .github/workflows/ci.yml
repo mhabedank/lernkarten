@@ -67,7 +67,7 @@ jobs:
         run: python3 scripts/build_pdf.py karten/*.yaml -o output/lernkarten.pdf
       - name: Randloses Layout bauen
         run: python3 scripts/build_pdf.py karten/*.yaml --rand 0 -o output/randlos.pdf
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: beispiel-pdf
           path: output/*.pdf
