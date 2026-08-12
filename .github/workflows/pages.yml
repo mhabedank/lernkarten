@@ -1,0 +1,44 @@
+name: Landing page
+
+# Publishes docs/index.html to GitHub Pages. The page is one self-contained
+# file, so the site is that file and nothing else. Set Pages -> Source to
+# "GitHub Actions" once in the repository settings; after that this runs on
+# every push to main that touches the page.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/index.html
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp docs/index.html _site/index.html
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

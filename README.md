@@ -1,21 +1,14 @@
-<div align="center">
-
-<img src="assets/logo.svg" alt="" width="96" height="68">
-
-# Lernkarten
-
-**Turn what you have to learn into flashcards you can hold.**
+![Lernkarten — turn what you have to learn into flashcards you can hold. Five commands: /sources, /ingest, /catalog, /cards, /print.](assets/banner.png)
 
 [![CI](https://github.com/mhabedank/lernkarten/actions/workflows/ci.yml/badge.svg)](https://github.com/mhabedank/lernkarten/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-</div>
+[![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-c2251b.svg)](https://docs.claude.com/en/docs/claude-code/overview)
 
 Point it at a folder of lecture PDFs, a textbook, your Zotero library or a web
 page. Five commands later you have an A4 PDF: print it double-sided, cut along
-the grey lines, and you are holding a stack of paper flashcards.
+the lines, and you are holding a stack of paper flashcards.
 
-![A finished card, front and back](assets/example-cards.png)
+![A finished card, front and back: the front asks how Bayes' theorem is stated, the back answers it with the formula and names the source](assets/example-cards.png)
 
 ## Install
 
@@ -52,6 +45,8 @@ catalog, write cards for the topics you pick, and build the PDF.
 
 ## The five commands
 
+![The pipeline: /sources writes sources.yaml, /ingest writes knowledge/, /catalog writes catalog/topics.md, /cards writes cards/*.yaml, /print writes output/cards.pdf](assets/pipeline.png)
+
 | Command | What it does | What you get |
 |---|---|---|
 | `/sources` | register your material: folders, PDFs, Zotero, web pages | `sources.yaml` |
@@ -59,16 +54,6 @@ catalog, write cards for the topics you pick, and build the PDF.
 | `/catalog` | derive topics and subtopics from the material | `catalog/topics.md` |
 | `/cards` | write cards — everything, or filtered by topic | `cards/<topic>.yaml` |
 | `/print` | compile the cards into a print-ready PDF | `output/cards.pdf` |
-
-```mermaid
-flowchart LR
-    S["/sources"] --> I["/ingest"] --> C["/catalog"] --> G["/cards"] --> P["/print"]
-    S -.- s1["sources.yaml"]
-    I -.- i1["knowledge/"]
-    C -.- c1["catalog/topics.md"]
-    G -.- g1["cards/*.yaml"]
-    P -.- p1["output/cards.pdf"]
-```
 
 Every step is repeatable and works incrementally: `/ingest` skips material that
 has not changed, `/catalog` extends the topics you already have, `/cards`
@@ -89,6 +74,12 @@ Your material never leaves your machine. Sources, extracted texts and cards are
 plain files in your own folder, and the pipeline never uploads them anywhere.
 
 ## What a card looks like
+
+One card is one idea: a prompt on the front, one fact on the back. The header
+band names the topic and the subtopic, the footer carries the card id and
+whether you are holding side 1 or side 2 — a dropped stack can always be
+rebuilt. The two dotted rules on the back are for the note you write the third
+time you get a card wrong.
 
 Cards are YAML, one file per topic. Write the text in single quotes: then a
 backslash is a line break, quotation marks work as they are, and formulas go
@@ -121,14 +112,15 @@ lernkarten check cards/*.yaml
 The PDF puts 8 cards on an A4 page. Fronts and backs are on consecutive pages,
 with the backs column-mirrored so they line up after duplex printing.
 
-1. Choose **duplex, flip on long edge**
-2. **100 % scale** — not "fit to page"
-3. Cut along the grey lines
+1. Choose **duplex, flip on long edge** — short edge puts every back upside down
+2. **100 % scale** — not "fit to page", which shifts fronts off their backs
+3. Cut the long line down the middle first, then the three across
 
 By default a 5 mm page margin is left free (cards: 100 × 71.75 mm) so printers
-with a non-printable edge do not clip anything. Borderless printers get the
-full 105 × 74.25 mm (≈ A7) with `--margin 0`; any other value works too, via
-`--margin <mm>`. `--no-logo` prints the cards without the logo mark.
+with a non-printable edge do not clip anything, and crop marks in that margin
+show you where to cut. Borderless printers get the full 105 × 74.25 mm (≈ A7)
+with `--margin 0`; any other value works too, via `--margin <mm>`. `--no-logo`
+prints the cards without the mark and the wordmark.
 
 ## Where your files live
 
@@ -155,6 +147,14 @@ Options: `--topic` / `--subtopic` to filter, `--margin`, `--language`,
 `--no-logo`. `lernkarten engine --check` reports the typesetting engine, and
 `LERNKARTEN_ENGINE` points the build at one you installed yourself.
 
+## The design
+
+The card, the mark and the pages that describe them are one system: three
+inks, three faces, one grid. It is written down in
+[docs/design.md](docs/design.md) — read that before changing how anything
+looks. The landing page is [docs/index.html](docs/index.html), served at
+[mhabedank.github.io/lernkarten](https://mhabedank.github.io/lernkarten/).
+
 ## Contributing
 
 Bug reports and pull requests are welcome — see
@@ -166,4 +166,6 @@ card validation, PDF build).
 ## License
 
 [MIT](LICENSE) — for the tools. The material you ingest and turn into cards
-stays under its own copyright; it never leaves your machine anyway.
+stays under its own copyright; it never leaves your machine anyway. The three
+shipped typefaces are under the SIL Open Font License; see
+[assets/fonts/README.md](assets/fonts/README.md).

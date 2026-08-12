@@ -41,6 +41,10 @@ code, comments, docs and commit messages are written in English.
 - **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
   goes to `output/`. The typesetting engine downloads itself on first use.
   Never hand-edit anything in `output/` — always go through the YAML files.
+- **Design**: the card layout is `templates/card.typ`, the press sheet
+  `templates/cards.typ`, the brand graphics `assets/brand/*.typ` (re-render
+  with `python3 scripts/render_brand.py`). What the parts mean and which rules
+  hold is in `docs/design.md` — read it before changing anything visible.
 
 ## Card style
 

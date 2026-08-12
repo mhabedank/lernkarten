@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 17 110 80" width="110" height="80" role="img" aria-label="Lernkarten">
+  <title>Lernkarten</title>
+  <!-- One ink: for laser prints, stamps and anywhere colour is not a given.
+       The shapes carry the meaning, so nothing is lost. -->
+  <path d="M8 94 L8 20 L60 20 Z" fill="#141414"/>
+  <circle cx="60" cy="57" r="21" fill="none" stroke="#141414" stroke-width="5"/>
+  <path d="M60 36 A21 21 0 0 1 60 78 Z" fill="#141414"/>
+  <rect x="8" y="20" width="104" height="74" fill="none" stroke="#141414" stroke-width="5"/>
+</svg>

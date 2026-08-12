@@ -30,13 +30,13 @@ Creates flashcards from the topic catalog and the references under
 ## Card schema
 
 ```yaml
-topic: "Display name"
-language: german              # language of these cards, plain name or ISO code
+topic: 'Display name'
+language: german               # language of these cards, plain name or ISO code
 cards:
-  - subtopic: "Subtopic"
-    front: "Question/term"
-    back: "Answer"
-    source: "Short reference"   # optional, printed small on the back
+  - subtopic: 'Subtopic'
+    front: 'Question/term'
+    back: 'Answer'
+    source: 'Short reference'   # optional, printed small on the back
 ```
 
 Always write `language:` — it is the language of the source material, and
@@ -44,11 +44,12 @@ Always write `language:` — it is the language of the source material, and
 
 ## Style rules (in addition to CLAUDE.md)
 
-- `front`/`back` are LaTeX: escape `%`, `&`, `_`, `#`; maths in `$...$`;
-  `\\` for line breaks; lists as `\begin{itemize}...` only on the back and
-  with at most 4 items.
-- No ASCII `"` inside the YAML strings (it terminates the string). Write
-  quotation marks as `` `...' `` or, in German, `\glqq ...\grqq{}`.
+- `front`/`back` are Typst markup, not LaTeX: maths in `$...$` with Typst
+  syntax (`(a) / (b)`, `Omega`, `"Var"(X)`), a single `\` for a line break,
+  `#list([a], [b])` for a bulleted back with at most 4 items. Escape `#`, `*`,
+  `_`, `@`, `<`, `>` and backticks in running text; `%` and `&` need nothing.
+- Write the strings in single quotes: then `"` needs no escaping and a
+  backslash stays a line break. A literal apostrophe is doubled (`''`).
 - Atomic: one card tests exactly one fact/concept. Mix definitions, formulas,
   distinctions ("difference between X and Y") and application questions.
 - No card whose answer is exhaustively covered by the catalog bullet point but

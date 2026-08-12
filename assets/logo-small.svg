@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="4 16 112 82" width="112" height="82" role="img" aria-label="Lernkarten">
+  <title>Lernkarten</title>
+  <!-- For 32 px and below: the yellow half drops out and the frame thickens,
+       so the three shapes still read as three shapes at favicon size. -->
+  <path d="M8 94 L8 20 L60 20 Z" fill="#c2251b"/>
+  <circle cx="60" cy="57" r="21" fill="#0a3f8f"/>
+  <rect x="8" y="20" width="104" height="74" fill="none" stroke="#141414" stroke-width="9"/>
+</svg>

@@ -1,15 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -4 102 72" width="102" height="72" role="img" aria-label="Lernkarten logo: two stacked flashcards">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="5 17 110 80" width="110" height="80" role="img" aria-label="Lernkarten">
   <title>Lernkarten</title>
-  <!-- Back card, tilted -->
-  <rect x="3" y="7" width="62" height="44" rx="9"
-        fill="none" stroke="#94A3B8" stroke-width="5" stroke-linejoin="round"
-        transform="rotate(14 34 29)"/>
-  <!-- Front card, opaque so it overlaps the back one -->
-  <rect x="29" y="14" width="62" height="46" rx="9"
-        fill="#FFFFFF" stroke="#6366F1" stroke-width="5" stroke-linejoin="round"/>
-  <!-- Question mark, drawn as a path so no font is required -->
-  <path d="M 52 30 A 8 8 0 1 1 60 38 L 60 42"
-        fill="none" stroke="#6366F1" stroke-width="5"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="60" cy="48" r="3" fill="#6366F1"/>
+  <!-- A card holding the three solids: the triangle is the corner you turn,
+       the circle is the question, the yellow half the answer inside it. -->
+  <path d="M8 94 L8 20 L60 20 Z" fill="#c2251b"/>
+  <circle cx="60" cy="57" r="21" fill="#0a3f8f"/>
+  <path d="M60 36 A21 21 0 0 1 60 78 Z" fill="#f0c000"/>
+  <rect x="8" y="20" width="104" height="74" fill="none" stroke="#141414" stroke-width="5"/>
 </svg>
