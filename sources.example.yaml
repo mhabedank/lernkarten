@@ -1,36 +1,36 @@
-# Vorlage für das Quellenregister.
+# Template for the source register.
 #
-# Kopieren nach `sources.yaml` (wird nicht versioniert) — oder einfach
-# `/quellen <pfad-oder-url>` aufrufen, das legt die Datei bei Bedarf an.
+# Copy to `sources.yaml` (not versioned) — or just run
+# `/sources <path-or-url>`, which creates the file if needed.
 #
-# Typen: ordner | pdf | zotero | webseite
+# Types: folder | pdf | zotero | web
 #
-# Felder je Typ:
-#   ordner    pfad (Pflicht), muster (glob, optional), notiz
-#   pdf       pfad (Pflicht), seiten (z. B. "1-150", optional), notiz
-#   zotero    sammlung (Name; ohne Angabe = ganze Bibliothek), notiz
-#   webseite  url (Pflicht), tiefe (0 = nur diese Seite, 1 = plus verlinkte
-#             Unterseiten derselben Domain), login (true, wenn die Seite eine
-#             angemeldete Sitzung braucht), notiz
+# Fields per type:
+#   folder    path (required), pattern (glob, optional), note
+#   pdf       path (required), pages (e.g. "1-150", optional), note
+#   zotero    collection (name; omit for the whole library), note
+#   web       url (required), depth (0 = this page only, 1 = plus linked
+#             subpages on the same domain), login (true if the page needs a
+#             signed-in session), note
 
-quellen:
-  - id: skript-vorlesung
-    typ: ordner
-    pfad: ~/Documents/Uni/Statistik
-    muster: "*.pdf"
-    notiz: "Vorlesungsskripte — Beispieleintrag, anpassen oder löschen"
+sources:
+  - id: lecture-notes
+    type: folder
+    path: ~/Documents/University/Statistics
+    pattern: "*.pdf"
+    note: "Lecture notes — example entry, adapt or delete"
 
-  - id: lehrbuch
-    typ: pdf
-    pfad: ~/Books/Lehrbuch.pdf
-    seiten: "1-150"
+  - id: textbook
+    type: pdf
+    path: ~/Books/Textbook.pdf
+    pages: "1-150"
 
-  - id: zotero-sammlung
-    typ: zotero
-    sammlung: "Machine Learning"
-    notiz: "Zotero 7 muss beim /erfassen laufen (lokale API auf Port 23119)"
+  - id: zotero-collection
+    type: zotero
+    collection: "Machine Learning"
+    note: "Zotero 7 has to be running during /ingest (local API on port 23119)"
 
   - id: wiki-bayes
-    typ: webseite
-    url: https://de.wikipedia.org/wiki/Satz_von_Bayes
-    tiefe: 0
+    type: web
+    url: https://en.wikipedia.org/wiki/Bayes%27_theorem
+    depth: 0

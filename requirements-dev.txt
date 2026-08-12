@@ -1,4 +1,4 @@
-# Entwicklungsabhängigkeiten — zur Laufzeit reicht PyYAML.
+# Development dependencies — PyYAML is all you need at runtime.
 PyYAML>=6.0
-pytest>=7.4
-ruff==0.15.0
+pytest>=9.1.1
+ruff==0.16.2

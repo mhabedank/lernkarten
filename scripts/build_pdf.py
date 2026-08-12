@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Lernkarten-Build: YAML-Kartendateien -> LaTeX -> druckfertiges PDF.
+"""Flashcard build: YAML card files -> LaTeX -> print-ready PDF.
 
-A4 mit 8 Karten (105 x 74.25 mm) pro Seite. Vorderseiten und Rückseiten
-liegen auf aufeinanderfolgenden Seiten, Rückseiten spaltengespiegelt —
-Duplexdruck "über lange Kante spiegeln".
+A4 with 8 cards (105 x 74.25 mm) per page. Fronts and backs sit on
+consecutive pages, backs column-mirrored — duplex print with
+"flip on long edge".
 
-Beispiele:
-    python3 scripts/build_pdf.py karten/*.yaml -o output/lernkarten.pdf
-    python3 scripts/build_pdf.py karten/*.yaml --thema "Statistik" --unterthema "Bayes"
-    python3 scripts/build_pdf.py --check karten/*.yaml
+Examples:
+    python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+    python3 scripts/build_pdf.py cards/*.yaml --topic "Statistics" --subtopic "Bayes"
+    python3 scripts/build_pdf.py --check cards/*.yaml
 """
 
 import argparse
@@ -23,231 +23,238 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-TEMPLATE = ROOT / "templates" / "lernkarten.tex.in"
-KARTEN_PRO_SEITE = 8  # 2 Spalten x 4 Reihen
-SPALTEN, REIHEN = 2, 4
-A4_BREITE, A4_HOEHE = 210.0, 297.0  # mm
+TEMPLATE = ROOT / "templates" / "cards.tex.in"
+CARDS_PER_PAGE = 8  # 2 columns x 4 rows
+COLUMNS, ROWS = 2, 4
+A4_WIDTH, A4_HEIGHT = 210.0, 297.0  # mm
 
 
-def raster(rand):
-    """Kartenmaße und Schnittlinien für den gegebenen Seitenrand (mm)."""
-    kb = (A4_BREITE - 2 * rand) / SPALTEN
-    kh = (A4_HOEHE - 2 * rand) / REIHEN
-    linien = []
-    x_werte = [rand + i * kb for i in range(SPALTEN + 1)]
-    y_werte = [rand + j * kh for j in range(REIHEN + 1)]
-    if rand == 0:  # Außenkanten sind Papierkanten — keine Linien nötig
-        x_werte, y_werte = x_werte[1:-1], y_werte[1:-1]
-    for x in x_werte:
-        linien.append(
-            f"  \\draw[gray!45, line width=0.1pt] ({x:.3f}mm,0mm) -- ({x:.3f}mm,-{A4_HOEHE}mm);"
+def grid(margin):
+    """Card dimensions and cut lines for the given page margin (mm)."""
+    cw = (A4_WIDTH - 2 * margin) / COLUMNS
+    ch = (A4_HEIGHT - 2 * margin) / ROWS
+    lines = []
+    xs = [margin + i * cw for i in range(COLUMNS + 1)]
+    ys = [margin + j * ch for j in range(ROWS + 1)]
+    if margin == 0:  # outer edges are paper edges — no lines needed
+        xs, ys = xs[1:-1], ys[1:-1]
+    for x in xs:
+        lines.append(
+            f"  \\draw[gray!45, line width=0.1pt] ({x:.3f}mm,0mm) -- ({x:.3f}mm,-{A4_HEIGHT}mm);"
         )
-    for y in y_werte:
-        linien.append(
-            f"  \\draw[gray!45, line width=0.1pt] (0mm,-{y:.3f}mm) -- ({A4_BREITE}mm,-{y:.3f}mm);"
+    for y in ys:
+        lines.append(
+            f"  \\draw[gray!45, line width=0.1pt] (0mm,-{y:.3f}mm) -- ({A4_WIDTH}mm,-{y:.3f}mm);"
         )
-    return kb, kh, "\n".join(linien)
+    return cw, ch, "\n".join(lines)
 
 
-def lade_karten(dateien, themen_filter, unterthemen_filter):
-    """Liest die YAML-Dateien und gibt eine flache, gefilterte Kartenliste zurück."""
-    karten = []
-    fehler = []
-    for datei in dateien:
-        pfad = Path(datei)
+def load_cards(files, topic_filters, subtopic_filters):
+    """Reads the YAML files and returns a flat, filtered list of cards."""
+    cards = []
+    errors = []
+    for name in files:
+        path = Path(name)
         try:
-            daten = yaml.safe_load(pfad.read_text(encoding="utf-8"))
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
         except yaml.YAMLError as e:
-            fehler.append(f"{pfad}: YAML-Fehler: {e}")
+            errors.append(f"{path}: YAML error: {e}")
             continue
-        if not isinstance(daten, dict) or "karten" not in daten:
-            fehler.append(f"{pfad}: erwartet Mapping mit Schlüsseln 'thema' und 'karten'")
+        if not isinstance(data, dict) or "cards" not in data:
+            errors.append(f"{path}: expected a mapping with keys 'topic' and 'cards'")
             continue
-        thema = str(daten.get("thema") or pfad.stem)
-        if themen_filter and not any(f.lower() in thema.lower() for f in themen_filter):
+        topic = str(data.get("topic") or path.stem)
+        if topic_filters and not any(f.lower() in topic.lower() for f in topic_filters):
             continue
-        for i, k in enumerate(daten["karten"] or [], start=1):
-            if not isinstance(k, dict) or "vorne" not in k or "hinten" not in k:
-                fehler.append(f"{pfad}: Karte {i}: 'vorne' und 'hinten' sind Pflicht")
+        for i, c in enumerate(data["cards"] or [], start=1):
+            if not isinstance(c, dict) or "front" not in c or "back" not in c:
+                errors.append(f"{path}: card {i}: 'front' and 'back' are required")
                 continue
-            unterthema = str(k.get("unterthema") or "")
-            if unterthemen_filter and not any(
-                f.lower() in unterthema.lower() for f in unterthemen_filter
+            subtopic = str(c.get("subtopic") or "")
+            if subtopic_filters and not any(
+                f.lower() in subtopic.lower() for f in subtopic_filters
             ):
                 continue
-            karten.append(
+            cards.append(
                 {
-                    "id": f"{pfad.stem}-{i}",
-                    "thema": thema,
-                    "unterthema": unterthema,
-                    "vorne": str(k["vorne"]),
-                    "hinten": str(k["hinten"]),
-                    "quelle": str(k.get("quelle") or ""),
+                    "id": f"{path.stem}-{i}",
+                    "topic": topic,
+                    "subtopic": subtopic,
+                    "front": str(c["front"]),
+                    "back": str(c["back"]),
+                    "source": str(c.get("source") or ""),
                 }
             )
-    return karten, fehler
+    return cards, errors
 
 
-def _seite(zellen, rand, kb, kh):
-    """Formt eine Liste von (spalte, reihe, id, latex)-Zellen zu einer TikZ-Seite."""
-    koerper = "\n".join(
-        f"% karte: {kid}\n\\zelle{{{rand + spalte * kb:.3f}}}{{{rand + reihe * kh:.3f}}}{{{latex}}}"
-        for spalte, reihe, kid, latex in zellen
+def _page(cells, margin, cw, ch):
+    """Turns a list of (column, row, id, latex) cells into one TikZ page."""
+    body = "\n".join(
+        f"% card: {cid}\n\\cell{{{margin + column * cw:.3f}}}{{{margin + row * ch:.3f}}}{{{latex}}}"
+        for column, row, cid, latex in cells
     )
     return (
         "\\begin{tikzpicture}[remember picture, overlay, "
         "shift={(current page.north west)}]\n"
-        "\\schnittlinien\n" + koerper + "\n\\end{tikzpicture}\\null"
+        "\\cutlines\n" + body + "\n\\end{tikzpicture}\\null"
     )
 
 
-def erzeuge_inhalt(karten, rand, kb, kh):
-    """Erzeugt den LaTeX-Body: pro 8er-Block eine Vorder- und eine Rückseite."""
-    seiten = []
-    for start in range(0, len(karten), KARTEN_PRO_SEITE):
-        block = karten[start : start + KARTEN_PRO_SEITE]
+def build_body(cards, margin, cw, ch):
+    """Builds the LaTeX body: one front and one back page per block of 8."""
+    pages = []
+    for start in range(0, len(cards), CARDS_PER_PAGE):
+        block = cards[start : start + CARDS_PER_PAGE]
 
-        vorne, hinten = [], []
-        for pos, k in enumerate(block):
-            spalte, reihe = pos % SPALTEN, pos // SPALTEN
-            kopf = k["thema"] + (
-                " \\,\\textperiodcentered\\, " + k["unterthema"] if k["unterthema"] else ""
+        fronts, backs = [], []
+        for pos, c in enumerate(block):
+            column, row = pos % COLUMNS, pos // COLUMNS
+            header = c["topic"] + (
+                " \\,\\textperiodcentered\\, " + c["subtopic"] if c["subtopic"] else ""
             )
-            vorne.append(
-                (spalte, reihe, k["id"], f"\\karteV{{{kopf}}}{{{k['vorne']}}}{{{k['id']}}}")
+            fronts.append(
+                (column, row, c["id"], f"\\cardfront{{{header}}}{{{c['front']}}}{{{c['id']}}}")
             )
-            # Rückseite spaltengespiegelt für Duplex über die lange Kante
-            hinten.append(
+            # Back is column-mirrored for duplex printing along the long edge
+            backs.append(
                 (
-                    1 - spalte,
-                    reihe,
-                    k["id"] + " (rueckseite)",
-                    f"\\karteR{{{k['hinten']}}}{{{k['quelle']}}}{{{k['id']}}}",
+                    1 - column,
+                    row,
+                    c["id"] + " (back)",
+                    f"\\cardback{{{c['back']}}}{{{c['source']}}}{{{c['id']}}}",
                 )
             )
 
-        seiten.append(_seite(vorne, rand, kb, kh))
-        seiten.append(_seite(hinten, rand, kb, kh))
-    return "\n\\newpage\n".join(seiten)
+        pages.append(_page(fronts, margin, cw, ch))
+        pages.append(_page(backs, margin, cw, ch))
+    return "\n\\newpage\n".join(pages)
 
 
-def kompiliere(tex_quelle, ziel_pdf, arbeitsdir):
-    tex_datei = arbeitsdir / "lernkarten.tex"
-    tex_datei.write_text(tex_quelle, encoding="utf-8")
-    # Zwei Läufe: TikZ' "remember picture" kennt die Seitenkoordinaten erst im zweiten
+def compile_pdf(tex_source, target_pdf, workdir):
+    tex_file = workdir / "cards.tex"
+    tex_file.write_text(tex_source, encoding="utf-8")
+    # Two runs: TikZ' "remember picture" only knows the page coordinates in the second
     for _ in range(2):
-        ergebnis = subprocess.run(
-            ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex_datei.name],
-            cwd=arbeitsdir,
+        result = subprocess.run(
+            ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex_file.name],
+            cwd=workdir,
             capture_output=True,
             text=True,
         )
-        if ergebnis.returncode != 0:
+        if result.returncode != 0:
             break
     log = (
-        (arbeitsdir / "lernkarten.log").read_text(encoding="utf-8", errors="replace")
-        if (arbeitsdir / "lernkarten.log").exists()
-        else ergebnis.stdout
+        (workdir / "cards.log").read_text(encoding="utf-8", errors="replace")
+        if (workdir / "cards.log").exists()
+        else result.stdout
     )
 
-    if ergebnis.returncode != 0:
-        melde_fehler(log, tex_datei)
+    if result.returncode != 0:
+        report_error(log, tex_file)
         return False
 
-    for zeile in log.splitlines():
-        if zeile.startswith("Overfull"):
-            print(f"WARNUNG: {zeile.strip()} — Karte kürzen oder aufteilen.", file=sys.stderr)
+    for line in log.splitlines():
+        if line.startswith("Overfull"):
+            print(f"WARNING: {line.strip()} — shorten or split that card.", file=sys.stderr)
 
-    if ziel_pdf is not None:
-        ziel_pdf.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(arbeitsdir / "lernkarten.pdf", ziel_pdf)
+    if target_pdf is not None:
+        target_pdf.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(workdir / "cards.pdf", target_pdf)
     return True
 
 
-def melde_fehler(log, tex_datei):
-    """Ordnet den LaTeX-Fehler der betroffenen Karte zu (via %-Kommentar)."""
-    print("LaTeX-Fehler:", file=sys.stderr)
-    treffer = re.search(r"^! (.+)$", log, re.MULTILINE)
-    if treffer:
-        print(f"  {treffer.group(1)}", file=sys.stderr)
-    zeilen_nr = re.search(r"^l\.(\d+)", log, re.MULTILINE)
-    if zeilen_nr:
-        nr = int(zeilen_nr.group(1))
-        quell_zeilen = tex_datei.read_text(encoding="utf-8").splitlines()
-        for z in reversed(quell_zeilen[: min(nr, len(quell_zeilen))]):
-            m = re.match(r"% karte: (\S+)", z.strip())
+def report_error(log, tex_file):
+    """Maps the LaTeX error back to the offending card (via the % comment)."""
+    print("LaTeX error:", file=sys.stderr)
+    match = re.search(r"^! (.+)$", log, re.MULTILINE)
+    if match:
+        print(f"  {match.group(1)}", file=sys.stderr)
+    line_no = re.search(r"^l\.(\d+)", log, re.MULTILINE)
+    if line_no:
+        no = int(line_no.group(1))
+        source_lines = tex_file.read_text(encoding="utf-8").splitlines()
+        for line in reversed(source_lines[: min(no, len(source_lines))]):
+            m = re.match(r"% card: (\S+)", line.strip())
             if m:
-                print(f"  Betroffene Karte: {m.group(1)}", file=sys.stderr)
+                print(f"  Offending card: {m.group(1)}", file=sys.stderr)
                 break
-    print(f"  Volles Log: {tex_datei.with_suffix('.log')}", file=sys.stderr)
+    print(f"  Full log: {tex_file.with_suffix('.log')}", file=sys.stderr)
 
 
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    p.add_argument("dateien", nargs="+", help="YAML-Kartendateien (karten/*.yaml)")
-    p.add_argument("-o", "--output", default="output/lernkarten.pdf", help="Ziel-PDF")
+    p.add_argument("files", nargs="+", help="YAML card files (cards/*.yaml)")
+    p.add_argument("-o", "--output", default="output/cards.pdf", help="target PDF")
     p.add_argument(
-        "--thema",
+        "--topic",
         action="append",
         default=[],
-        help="Nur Themen, die diesen Text enthalten (mehrfach möglich)",
+        help="only topics containing this text (repeatable)",
     )
     p.add_argument(
-        "--unterthema",
+        "--subtopic",
         action="append",
         default=[],
-        help="Nur Unterthemen, die diesen Text enthalten",
+        help="only subtopics containing this text",
     )
     p.add_argument(
-        "--check", action="store_true", help="Nur validieren und Probekompilat, kein PDF schreiben"
+        "--check", action="store_true", help="only validate and test-compile, write no PDF"
     )
     p.add_argument(
-        "--rand",
+        "--margin",
         type=float,
         default=5.0,
         metavar="MM",
-        help="Seitenrand in mm für Drucker mit nicht bedruckbarem Rand (Default: 5, 0 = randlos)",
+        help="page margin in mm for printers with a non-printable edge (default: 5, 0 = none)",
     )
+    p.add_argument(
+        "--language",
+        default="english",
+        help="babel language for hyphenation, e.g. english, ngerman, french (default: english)",
+    )
+    p.add_argument("--no-logo", action="store_true", help="print the cards without the logo mark")
     args = p.parse_args()
 
-    if not 0 <= args.rand <= 20:
-        p.error("--rand muss zwischen 0 und 20 mm liegen")
+    if not 0 <= args.margin <= 20:
+        p.error("--margin must be between 0 and 20 mm")
+    if not re.fullmatch(r"[a-zA-Z]+", args.language):
+        p.error("--language must be a plain babel language name, e.g. english or ngerman")
 
-    karten, fehler = lade_karten(args.dateien, args.thema, args.unterthema)
-    for f in fehler:
-        print(f"FEHLER: {f}", file=sys.stderr)
-    if fehler and args.check:
+    cards, errors = load_cards(args.files, args.topic, args.subtopic)
+    for e in errors:
+        print(f"ERROR: {e}", file=sys.stderr)
+    if errors and args.check:
         sys.exit(1)
-    if not karten:
-        print("Keine Karten nach Filterung übrig — nichts zu tun.", file=sys.stderr)
+    if not cards:
+        print("No cards left after filtering — nothing to do.", file=sys.stderr)
         sys.exit(1)
 
-    kb, kh, schnittlinien = raster(args.rand)
-    vorlage = string.Template(TEMPLATE.read_text(encoding="utf-8"))
-    tex = vorlage.substitute(
-        kb=f"{kb:.3f}",
-        kh=f"{kh:.3f}",
-        rand=f"{args.rand:g}",
-        schnittlinien=schnittlinien,
-        inhalt=erzeuge_inhalt(karten, args.rand, kb, kh),
+    cw, ch, cutlines = grid(args.margin)
+    template = string.Template(TEMPLATE.read_text(encoding="utf-8"))
+    tex = template.substitute(
+        cw=f"{cw:.3f}",
+        ch=f"{ch:.3f}",
+        margin=f"{args.margin:g}",
+        language=args.language,
+        logo="" if args.no_logo else "\\logomark",
+        cutlines=cutlines,
+        body=build_body(cards, args.margin, cw, ch),
     )
 
-    ziel = None if args.check else Path(args.output)
+    target = None if args.check else Path(args.output)
     with tempfile.TemporaryDirectory() as td:
-        ok = kompiliere(tex, ziel, Path(td))
+        ok = compile_pdf(tex, target, Path(td))
     if not ok:
         sys.exit(1)
 
-    seiten = 2 * ((len(karten) + KARTEN_PRO_SEITE - 1) // KARTEN_PRO_SEITE)
+    pages = 2 * ((len(cards) + CARDS_PER_PAGE - 1) // CARDS_PER_PAGE)
     if args.check:
-        print(f"OK: {len(karten)} Karten valide, Probekompilat erfolgreich ({seiten} Seiten).")
+        print(f"OK: {len(cards)} cards valid, test compile succeeded ({pages} pages).")
     else:
-        print(
-            f"OK: {len(karten)} Karten -> {ziel} "
-            f"({seiten} Seiten, Duplex über lange Kante spiegeln)."
-        )
+        print(f"OK: {len(cards)} cards -> {target} ({pages} pages, duplex, flip on long edge).")
 
 
 if __name__ == "__main__":

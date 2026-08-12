@@ -15,18 +15,18 @@ concurrency:
 
 jobs:
   lint:
-    name: Lint & Format
+    name: Lint & format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: ruff installieren
-        run: pipx install ruff==0.15.0
+      - name: Install ruff
+        run: pipx install ruff==0.16.2
       - name: Lint
         run: ruff check --output-format=github .
-      - name: Formatierung
+      - name: Format
         run: ruff format --check .
 
   test:
@@ -35,53 +35,55 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.10", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Abhängigkeiten
+      - name: Dependencies
         run: python -m pip install --disable-pip-version-check -r requirements-dev.txt
       - name: pytest
         run: python -m pytest
 
-  karten:
-    name: Kartenvalidierung & LaTeX-Build
+  cards:
+    name: Card validation & LaTeX build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Abhängigkeiten
+      - name: Dependencies
         run: |
           python -m pip install --disable-pip-version-check PyYAML
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             texlive-latex-recommended texlive-pictures texlive-lang-german \
             texlive-fonts-recommended lmodern poppler-utils
-      - name: Schema prüfen und probeweise kompilieren
-        run: python3 scripts/build_pdf.py --check karten/*.yaml
-      - name: PDF wirklich bauen
-        run: python3 scripts/build_pdf.py karten/*.yaml -o output/lernkarten.pdf
-      - name: Randloses Layout bauen
-        run: python3 scripts/build_pdf.py karten/*.yaml --rand 0 -o output/randlos.pdf
-      - uses: actions/upload-artifact@v4
+      - name: Check the schema and test-compile
+        run: python3 scripts/build_pdf.py --check cards/*.yaml
+      - name: Build the PDF for real
+        run: python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+      - name: Build the borderless, logo-free layout
+        run: python3 scripts/build_pdf.py cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf
+      - name: Build with a non-default typesetting language
+        run: python3 scripts/build_pdf.py cards/*.yaml --language ngerman -o output/ngerman.pdf
+      - uses: actions/upload-artifact@v7
         with:
-          name: beispiel-pdf
+          name: example-pdf
           path: output/*.pdf
           if-no-files-found: error
 
-  skills:
-    name: Skills & Doku
+  docs:
+    name: Skills & docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Abhängigkeiten
+      - name: Dependencies
         run: python -m pip install --disable-pip-version-check PyYAML
-      - name: Skill-Frontmatter und Doku-Links prüfen
+      - name: Check skill frontmatter and doc links
         run: python3 scripts/check_docs.py

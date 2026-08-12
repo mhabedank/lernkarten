@@ -1,7 +1,7 @@
-"""Tests für scripts/build_pdf.py — Raster, YAML-Einlesen, Seitenaufbau.
+"""Tests for scripts/build_pdf.py — grid, YAML loading, page assembly.
 
-Kompiliert bewusst kein LaTeX: der Probelauf mit pdflatex ist ein eigener
-CI-Schritt (`build_pdf.py --check`), diese Tests laufen ohne TeX-Installation.
+Deliberately compiles no LaTeX: the pdflatex trial run is its own CI step
+(`build_pdf.py --check`), these tests run without a TeX installation.
 """
 
 import sys
@@ -15,154 +15,174 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import build_pdf  # noqa: E402
 
 
-def schreibe(tmp_path, name, inhalt):
-    pfad = tmp_path / name
-    pfad.write_text(inhalt, encoding="utf-8")
-    return str(pfad)
+def write(tmp_path, name, content):
+    path = tmp_path / name
+    path.write_text(content, encoding="utf-8")
+    return str(path)
 
 
-# --- raster ---------------------------------------------------------------
+# --- grid -----------------------------------------------------------------
 
 
-def test_raster_teilt_a4_in_acht_karten():
-    kb, kh, _ = build_pdf.raster(rand=0)
-    assert (kb, kh) == pytest.approx((105.0, 74.25))
-    assert kb * build_pdf.SPALTEN == pytest.approx(build_pdf.A4_BREITE)
-    assert kh * build_pdf.REIHEN == pytest.approx(build_pdf.A4_HOEHE)
-    assert build_pdf.SPALTEN * build_pdf.REIHEN == build_pdf.KARTEN_PRO_SEITE
+def test_grid_splits_a4_into_eight_cards():
+    cw, ch, _ = build_pdf.grid(margin=0)
+    assert (cw, ch) == pytest.approx((105.0, 74.25))
+    assert cw * build_pdf.COLUMNS == pytest.approx(build_pdf.A4_WIDTH)
+    assert ch * build_pdf.ROWS == pytest.approx(build_pdf.A4_HEIGHT)
+    assert build_pdf.COLUMNS * build_pdf.ROWS == build_pdf.CARDS_PER_PAGE
 
 
-def test_raster_zieht_rand_ab():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    assert (kb, kh) == pytest.approx((100.0, 71.75))
+def test_grid_subtracts_the_margin():
+    cw, ch, _ = build_pdf.grid(margin=5)
+    assert (cw, ch) == pytest.approx((100.0, 71.75))
 
 
-def test_raster_ohne_rand_zeichnet_keine_aussenkanten():
-    _, _, randlos = build_pdf.raster(rand=0)
-    _, _, mit_rand = build_pdf.raster(rand=5)
-    # 3 Spalten- und 5 Reihenlinien mit Rand, ohne Rand fallen je 2 Außenkanten weg
-    assert len(mit_rand.splitlines()) == 8
-    assert len(randlos.splitlines()) == 4
+def test_grid_without_margin_draws_no_outer_edges():
+    _, _, borderless = build_pdf.grid(margin=0)
+    _, _, with_margin = build_pdf.grid(margin=5)
+    # 3 column and 5 row lines with a margin; without one, 2 outer edges drop each
+    assert len(with_margin.splitlines()) == 8
+    assert len(borderless.splitlines()) == 4
 
 
-# --- lade_karten ----------------------------------------------------------
+# --- load_cards -----------------------------------------------------------
 
 MINIMAL = """
-thema: "Statistik"
-karten:
-  - unterthema: "Bayes"
-    vorne: "Frage"
-    hinten: "Antwort"
-    quelle: "VL 3"
+topic: "Statistics"
+cards:
+  - subtopic: "Bayes"
+    front: "Question"
+    back: "Answer"
+    source: "Lecture 3"
 """
 
 
-def test_lade_karten_liest_felder(tmp_path):
-    karten, fehler = build_pdf.lade_karten([schreibe(tmp_path, "a.yaml", MINIMAL)], [], [])
-    assert fehler == []
-    assert karten == [
+def test_load_cards_reads_the_fields(tmp_path):
+    cards, errors = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert errors == []
+    assert cards == [
         {
             "id": "a-1",
-            "thema": "Statistik",
-            "unterthema": "Bayes",
-            "vorne": "Frage",
-            "hinten": "Antwort",
-            "quelle": "VL 3",
+            "topic": "Statistics",
+            "subtopic": "Bayes",
+            "front": "Question",
+            "back": "Answer",
+            "source": "Lecture 3",
         }
     ]
 
 
-def test_lade_karten_meldet_kaputtes_yaml(tmp_path):
-    datei = schreibe(tmp_path, "kaputt.yaml", "thema: 'offen\nkarten: [")
-    karten, fehler = build_pdf.lade_karten([datei], [], [])
-    assert karten == []
-    assert len(fehler) == 1 and "YAML-Fehler" in fehler[0]
+def test_load_cards_reports_broken_yaml(tmp_path):
+    path = write(tmp_path, "broken.yaml", "topic: 'unclosed\ncards: [")
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert cards == []
+    assert len(errors) == 1 and "YAML error" in errors[0]
 
 
-def test_lade_karten_meldet_fehlende_pflichtfelder(tmp_path):
-    datei = schreibe(tmp_path, "b.yaml", 'thema: "T"\nkarten:\n  - vorne: "nur vorne"\n')
-    karten, fehler = build_pdf.lade_karten([datei], [], [])
-    assert karten == []
-    assert "'vorne' und 'hinten' sind Pflicht" in fehler[0]
+def test_load_cards_reports_missing_required_fields(tmp_path):
+    path = write(tmp_path, "b.yaml", 'topic: "T"\ncards:\n  - front: "front only"\n')
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert cards == []
+    assert "'front' and 'back' are required" in errors[0]
 
 
-def test_lade_karten_meldet_falsche_struktur(tmp_path):
-    datei = schreibe(tmp_path, "c.yaml", "- eine\n- liste\n")
-    _, fehler = build_pdf.lade_karten([datei], [], [])
-    assert "erwartet Mapping" in fehler[0]
+def test_load_cards_reports_the_wrong_structure(tmp_path):
+    path = write(tmp_path, "c.yaml", "- a\n- list\n")
+    _, errors = build_pdf.load_cards([path], [], [])
+    assert "expected a mapping" in errors[0]
 
 
-def test_lade_karten_faellt_auf_dateinamen_als_thema_zurueck(tmp_path):
-    datei = schreibe(tmp_path, "ohne-thema.yaml", 'karten:\n  - vorne: "v"\n    hinten: "h"\n')
-    karten, fehler = build_pdf.lade_karten([datei], [], [])
-    assert fehler == []
-    assert karten[0]["thema"] == "ohne-thema"
-    assert karten[0]["quelle"] == ""
+def test_load_cards_falls_back_to_the_filename_as_topic(tmp_path):
+    path = write(tmp_path, "no-topic.yaml", 'cards:\n  - front: "f"\n    back: "b"\n')
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert errors == []
+    assert cards[0]["topic"] == "no-topic"
+    assert cards[0]["source"] == ""
 
 
-def test_filter_matcht_teilstring_ohne_gross_kleinschreibung(tmp_path):
-    datei = schreibe(tmp_path, "a.yaml", MINIMAL)
-    assert build_pdf.lade_karten([datei], ["statis"], [])[0]
-    assert build_pdf.lade_karten([datei], ["Analysis"], [])[0] == []
-    assert build_pdf.lade_karten([datei], [], ["BAYES"])[0]
-    assert build_pdf.lade_karten([datei], [], ["Markov"])[0] == []
+def test_filter_matches_substrings_case_insensitively(tmp_path):
+    path = write(tmp_path, "a.yaml", MINIMAL)
+    assert build_pdf.load_cards([path], ["statis"], [])[0]
+    assert build_pdf.load_cards([path], ["Analysis"], [])[0] == []
+    assert build_pdf.load_cards([path], [], ["BAYES"])[0]
+    assert build_pdf.load_cards([path], [], ["Markov"])[0] == []
 
 
-# --- erzeuge_inhalt -------------------------------------------------------
+# --- build_body -----------------------------------------------------------
 
 
-def karte(i):
+def card(i):
     return {
-        "id": f"k-{i}",
-        "thema": "T",
-        "unterthema": "U",
-        "vorne": f"V{i}",
-        "hinten": f"H{i}",
-        "quelle": "",
+        "id": f"c-{i}",
+        "topic": "T",
+        "subtopic": "S",
+        "front": f"F{i}",
+        "back": f"B{i}",
+        "source": "",
     }
 
 
-def test_erzeuge_inhalt_paart_vorder_und_rueckseiten():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    for anzahl, erwartet in [(1, 2), (8, 2), (9, 4), (17, 6)]:
-        inhalt = build_pdf.erzeuge_inhalt([karte(i) for i in range(anzahl)], 5, kb, kh)
-        seiten = inhalt.split("\\newpage")
-        assert len(seiten) == erwartet, f"{anzahl} Karten"
+def test_build_body_pairs_front_and_back_pages():
+    cw, ch, _ = build_pdf.grid(margin=5)
+    for count, expected in [(1, 2), (8, 2), (9, 4), (17, 6)]:
+        body = build_pdf.build_body([card(i) for i in range(count)], 5, cw, ch)
+        pages = body.split("\\newpage")
+        assert len(pages) == expected, f"{count} cards"
 
 
-def test_rueckseite_ist_spaltengespiegelt():
-    kb, kh, _ = build_pdf.raster(rand=0)
-    vorne, hinten = build_pdf.erzeuge_inhalt([karte(0)], 0, kb, kh).split("\\newpage")
-    # Karte 0 sitzt vorne in Spalte 0 (x=0), hinten in Spalte 1 (x=kb)
-    assert "\\zelle{0.000}" in vorne
-    assert f"\\zelle{{{kb:.3f}}}" in hinten
-    assert "V0" in vorne and "H0" in hinten
+def test_back_is_column_mirrored():
+    cw, ch, _ = build_pdf.grid(margin=0)
+    front, back = build_pdf.build_body([card(0)], 0, cw, ch).split("\\newpage")
+    # Card 0 sits in column 0 on the front (x=0) and in column 1 on the back (x=cw)
+    assert "\\cell{0.000}" in front
+    assert f"\\cell{{{cw:.3f}}}" in back
+    assert "F0" in front and "B0" in back
 
 
-def test_kopfzeile_verbindet_thema_und_unterthema():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    inhalt = build_pdf.erzeuge_inhalt([karte(0)], 5, kb, kh)
-    assert "T \\,\\textperiodcentered\\, U" in inhalt
+def test_header_joins_topic_and_subtopic():
+    cw, ch, _ = build_pdf.grid(margin=5)
+    body = build_pdf.build_body([card(0)], 5, cw, ch)
+    assert "T \\,\\textperiodcentered\\, S" in body
 
-    ohne = dict(karte(0), unterthema="")
-    assert "\\textperiodcentered" not in build_pdf.erzeuge_inhalt([ohne], 5, kb, kh)
-
-
-def test_jede_karte_traegt_einen_id_kommentar_fuer_die_fehlersuche():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    inhalt = build_pdf.erzeuge_inhalt([karte(0)], 5, kb, kh)
-    assert "% karte: k-0\n" in inhalt
-    assert "% karte: k-0 (rueckseite)\n" in inhalt
+    without = dict(card(0), subtopic="")
+    assert "\\textperiodcentered" not in build_pdf.build_body([without], 5, cw, ch)
 
 
-# --- mitgelieferte Beispieldatei -----------------------------------------
+def test_every_card_carries_an_id_comment_for_troubleshooting():
+    cw, ch, _ = build_pdf.grid(margin=5)
+    body = build_pdf.build_body([card(0)], 5, cw, ch)
+    assert "% card: c-0\n" in body
+    assert "% card: c-0 (back)\n" in body
 
 
-def test_beispielkarten_erfuellen_das_schema():
-    karten, fehler = build_pdf.lade_karten([str(ROOT / "karten" / "beispiel.yaml")], [], [])
-    assert fehler == []
-    assert karten, "karten/beispiel.yaml soll als Schema-Referenz Karten enthalten"
-    for k in karten:
-        assert '"' not in k["vorne"] + k["hinten"], (
-            f"{k['id']}: ASCII-Anführungszeichen beenden den YAML-String"
+# --- template -------------------------------------------------------------
+
+
+def test_template_placeholders_match_what_the_build_supplies():
+    import string
+
+    template = string.Template(build_pdf.TEMPLATE.read_text(encoding="utf-8"))
+    supplied = {"cw", "ch", "margin", "language", "logo", "cutlines", "body"}
+    used = {
+        m.group("named") or m.group("braced") for m in template.pattern.finditer(template.template)
+    }
+    assert used - {None} == supplied
+
+
+def test_template_draws_the_logo_mark_and_the_build_can_switch_it_off():
+    template = build_pdf.TEMPLATE.read_text(encoding="utf-8")
+    assert "\\newcommand{\\logomark}" in template
+    assert "${logo}" in template
+
+
+# --- bundled example file -------------------------------------------------
+
+
+def test_example_cards_satisfy_the_schema():
+    cards, errors = build_pdf.load_cards([str(ROOT / "cards" / "example.yaml")], [], [])
+    assert errors == []
+    assert cards, "cards/example.yaml is the schema reference and must contain cards"
+    for c in cards:
+        assert '"' not in c["front"] + c["back"], (
+            f"{c['id']}: ASCII double quotes terminate the YAML string"
         )

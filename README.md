@@ -1,178 +1,184 @@
+<div align="center">
+
+<img src="assets/logo.svg" alt="" width="96" height="68">
+
 # Lernkarten
 
+**Turn what you have to learn into flashcards you can hold.**
+
 [![CI](https://github.com/mhabedank/lernkarten/actions/workflows/ci.yml/badge.svg)](https://github.com/mhabedank/lernkarten/actions/workflows/ci.yml)
-[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Ein Skill-Set für [Claude Code](https://claude.com/claude-code), das aus
-beliebigen Wissensquellen — Ordnern, PDFs, einer Zotero-Bibliothek, Webseiten —
-druckfertige Lernkarten macht. Fünf Slash-Befehle führen von der Quelle bis
-zum PDF, das man doppelseitig ausdruckt und in Karteikarten schneidet.
+</div>
 
-Das Repo ist **themen-agnostisch**: es enthält die Werkzeuge, nicht das Wissen.
-Ob Statistik, Anatomie, Vokabeln oder Produktmanagement — deine Quellen,
-Texte und Karten bleiben lokal und werden nicht versioniert.
+Point it at a folder of lecture PDFs, a textbook, your Zotero library or a web
+page. Five commands later you have an A4 PDF: print it double-sided, cut along
+the grey lines, and you are holding a stack of paper flashcards.
 
-## Nutzungsflow
+![A finished card, front and back](assets/example-cards.png)
 
-```mermaid
-flowchart LR
-    Q["/quellen"] --> E["/erfassen"] --> K["/katalog"] --> G["/karten"] --> D["/drucken"]
-    Q -.- q1["sources.yaml"]
-    E -.- e1["wissen/"]
-    K -.- k1["katalog/<br>themenkatalog.md"]
-    G -.- g1["karten/*.yaml"]
-    D -.- d1["output/*.pdf"]
-```
+## Why paper cards
 
-| Befehl | Zweck | Ergebnis |
-|---|---|---|
-| `/quellen` | Wissensquellen registrieren: Ordner, PDFs, Zotero, Webseiten | `sources.yaml` |
-| `/erfassen` | Quellen einlesen und als Text ablegen | `wissen/<quelle>/*.md` |
-| `/katalog` | Themen und Unterthemen aus dem Material ableiten | `katalog/themenkatalog.md` |
-| `/karten` | Karten schreiben — alles oder nach Thema gefiltert | `karten/<thema>.yaml` |
-| `/drucken` | Karten zu einem druckfertigen PDF kompilieren | `output/lernkarten.pdf` |
+Writing cards by hand is the slow part; reading and shuffling them is the part
+that actually makes things stick. This project automates the first and leaves
+you the second. Every step writes a plain text file you can read and edit, so
+nothing is a black box — if a card is wrong, you fix a line of YAML.
 
-Jeder Schritt ist wiederholbar und arbeitet inkrementell: `/erfassen`
-überspringt unverändertes Material, `/katalog` ergänzt bestehende Themen,
-`/karten` hängt an, statt zu überschreiben.
+Your material never leaves your machine: sources, extracted texts and cards
+are all git-ignored, so a fork of this repo never carries anyone's notes.
 
-Ein durchgespieltes Beispiel von der leeren Kopie bis zum PDF steht in
-[docs/nutzungsflow.md](docs/nutzungsflow.md).
+## Quick start
 
-## Voraussetzungen
-
-| Was | Wofür | Prüfen mit |
-|---|---|---|
-| [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) | führt die Skills aus | `claude --version` |
-| Python ≥ 3.9 mit PyYAML | Build-Script | `python3 -c "import yaml"` |
-| TeX-Distribution mit `pdflatex` | Kartensatz | `pdflatex --version` |
-| `pdftotext` (poppler) | PDF-Extraktion | `pdftotext -v` |
-| Zotero 7 *(optional)* | Zugriff auf die eigene Bibliothek | Zotero läuft |
-| `tesseract` *(optional)* | OCR für gescannte PDFs | `tesseract --version` |
-
-Das LaTeX-Template braucht `tikz`, `geometry` und `babel` (deutsch) —
-in TeX Live und MacTeX ist das alles enthalten.
-
-## Installation
+You need [Claude Code](https://docs.claude.com/en/docs/claude-code/overview),
+Python and a TeX distribution ([details below](#requirements)).
 
 ```bash
 git clone https://github.com/mhabedank/lernkarten.git
 cd lernkarten
+claude
 ```
 
-Systemabhängigkeiten, falls noch nicht vorhanden:
+Then, in the Claude Code session:
+
+```
+> /sources ~/Documents/University/Statistics
+> /ingest
+> /catalog
+> /cards Bayes
+> /print
+```
+
+That is: register where your material lives, read it, let it propose a topic
+catalog, write cards for the topics you pick, and build the PDF.
+
+## The five commands
+
+| Command | What it does | What you get |
+|---|---|---|
+| `/sources` | register your material: folders, PDFs, Zotero, web pages | `sources.yaml` |
+| `/ingest` | read the sources and store them as text | `knowledge/<source>/*.md` |
+| `/catalog` | derive topics and subtopics from the material | `catalog/topics.md` |
+| `/cards` | write cards — everything, or filtered by topic | `cards/<topic>.yaml` |
+| `/print` | compile the cards into a print-ready PDF | `output/cards.pdf` |
+
+```mermaid
+flowchart LR
+    S["/sources"] --> I["/ingest"] --> C["/catalog"] --> G["/cards"] --> P["/print"]
+    S -.- s1["sources.yaml"]
+    I -.- i1["knowledge/"]
+    C -.- c1["catalog/topics.md"]
+    G -.- g1["cards/*.yaml"]
+    P -.- p1["output/cards.pdf"]
+```
+
+Every step is repeatable and works incrementally: `/ingest` skips material that
+has not changed, `/catalog` extends the topics you already have, `/cards`
+appends instead of overwriting. Add a source next month and run the pipeline
+again — you only pay for what is new.
+
+A full walkthrough, from an empty clone to the printed PDF, is in
+[docs/workflow.md](docs/workflow.md).
+
+## Requirements
+
+| What | Why | Check with |
+|---|---|---|
+| [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) | runs the skills | `claude --version` |
+| Python ≥ 3.10 with PyYAML | build script | `python3 -c "import yaml"` |
+| A TeX distribution with `pdflatex` | typesetting the cards | `pdflatex --version` |
+| `pdftotext` (poppler) | PDF extraction | `pdftotext -v` |
+| Zotero 7 *(optional)* | access to your own library | Zotero is running |
+| `tesseract` *(optional)* | OCR for scanned PDFs | `tesseract --version` |
+
+Install the system dependencies:
 
 ```bash
 # macOS
 brew install --cask mactex-no-gui && brew install poppler python
-
-# Debian/Ubuntu
-sudo apt-get install texlive-latex-recommended texlive-pictures texlive-lang-german poppler-utils python3-yaml
 ```
 
-PyYAML für Python (falls nicht über das Systempaket installiert):
+```bash
+# Debian/Ubuntu
+sudo apt-get install texlive-latex-recommended texlive-pictures poppler-utils python3-yaml
+```
+
+For cards in another language, add the matching hyphenation package — e.g.
+`texlive-lang-german` for `--language ngerman`. MacTeX already ships them all.
+
+PyYAML for Python, if the system package did not cover it:
 
 ```bash
 python3 -m pip install --user pyyaml
 ```
 
-Danach die Installation prüfen — der Befehl baut die mitgelieferten
-Beispielkarten und schreibt nichts:
+Then verify the install — this builds the bundled example cards and writes
+nothing:
 
 ```bash
-python3 scripts/build_pdf.py --check karten/beispiel.yaml
+python3 scripts/build_pdf.py --check cards/example.yaml
 ```
 
-Erwartete Ausgabe: `OK: 9 Karten valide, Probekompilat erfolgreich (4 Seiten).`
+Expected output: `OK: 9 cards valid, test compile succeeded (4 pages).`
 
-## Loslegen
+## What a card looks like
 
-Claude Code im Projektordner starten und dem Flow folgen:
-
-```bash
-claude
-```
-
-```
-> /quellen ~/Documents/Uni/Statistik
-> /erfassen
-> /katalog
-> /karten Bayes
-> /drucken
-```
-
-Die Skills liegen unter `.claude/skills/` und werden von Claude Code
-automatisch gefunden. Die Projektkonventionen — Kartenschema, Stilregeln,
-LaTeX-Escaping — stehen in [CLAUDE.md](CLAUDE.md) und gelten für jede
-Sitzung in diesem Ordner.
-
-## Verzeichnisse
-
-```
-.claude/skills/       Die fünf Slash-Befehle
-scripts/build_pdf.py  YAML → LaTeX → PDF
-templates/            LaTeX-Template (lernkarten.tex.in)
-sources.example.yaml  Vorlage für das Quellenregister
-karten/beispiel.yaml  Beispielkarten als Schema-Referenz
-
-sources.yaml          ← deine Quellen        (lokal, nicht versioniert)
-wissen/               ← erfasste Texte       (lokal, nicht versioniert)
-katalog/              ← Themenkatalog        (lokal, nicht versioniert)
-karten/               ← deine Karten         (lokal, nicht versioniert)
-output/               ← fertige PDFs         (lokal, nicht versioniert)
-```
-
-## Kartenformat
-
-Karten sind YAML, eine Datei pro Thema. `vorne` und `hinten` sind
-LaTeX-Quelltext — Mathematik in `$...$`, `\\` erzeugt einen Zeilenumbruch,
-Sonderzeichen (`%`, `&`, `_`, `#`) müssen escaped sein:
+Cards are YAML, one file per topic. `front` and `back` are LaTeX, so formulas
+are just `$...$`; `\\` starts a new line, and `%`, `&`, `_`, `#` have to be
+escaped.
 
 ```yaml
-thema: "Wahrscheinlichkeit"
-karten:
-  - unterthema: "Satz von Bayes"
-    vorne: "Wie lautet der Satz von Bayes?"
-    hinten: "$P(A \\mid B) = \\dfrac{P(B \\mid A)\\, P(A)}{P(B)}$"
-    quelle: "Vorlesung 3, Folie 12"
+topic: "Probability"
+cards:
+  - subtopic: "Bayes' theorem"
+    front: "How is Bayes' theorem stated?"
+    back: "$P(A \\mid B) = \\dfrac{P(B \\mid A)\\, P(A)}{P(B)}$"
+    source: "Lecture 3, slide 12"
 ```
 
-Vollständiges Beispiel: [karten/beispiel.yaml](karten/beispiel.yaml).
-Prüfen lassen sich Kartendateien jederzeit mit
-`python3 scripts/build_pdf.py --check karten/*.yaml`.
+Cards are written in the language of your sources — German, French, whatever
+you feed it. Pass the matching hyphenation language when you build, e.g.
+`--language ngerman`.
 
-## Drucken und Zuschneiden
+Full example: [cards/example.yaml](cards/example.yaml). You can check card
+files at any time with `python3 scripts/build_pdf.py --check cards/*.yaml`.
 
-Das PDF legt 8 Karten pro A4-Seite an; Vorder- und Rückseiten liegen auf
-aufeinanderfolgenden Seiten, die Rückseiten spaltengespiegelt.
+## Printing and cutting
 
-1. **Duplexdruck „über lange Kante spiegeln"** wählen
-2. **100 % Skalierung** — nicht „an Seite anpassen"
-3. entlang der grauen Linien schneiden
+The PDF puts 8 cards on an A4 page. Fronts and backs are on consecutive pages,
+with the backs column-mirrored so they line up after duplex printing.
 
-Standardmäßig bleiben 5 mm Seitenrand frei (Karten: 100 × 71,75 mm), damit
-Drucker mit nicht bedruckbarem Rand nichts abschneiden. Randlos druckende
-Geräte bekommen mit `--rand 0` die vollen 105 × 74,25 mm (≈ A7); jeder andere
-Wert geht mit `--rand <mm>`.
+1. Choose **duplex, flip on long edge**
+2. **100 % scale** — not "fit to page"
+3. Cut along the grey lines
 
-## Mitmachen
+By default a 5 mm page margin is left free (cards: 100 × 71.75 mm) so printers
+with a non-printable edge do not clip anything. Borderless printers get the
+full 105 × 74.25 mm (≈ A7) with `--margin 0`; any other value works too, via
+`--margin <mm>`. `--no-logo` prints the cards without the logo mark.
 
-Fehlerberichte und Pull Requests sind willkommen — siehe
-[CONTRIBUTING.md](CONTRIBUTING.md). Direkte Pushes auf `main` sind gesperrt;
-Änderungen laufen über Pull Requests, die die CI-Quality-Gates
-(Lint, Tests, Kartenvalidierung, LaTeX-Build) bestehen müssen.
+## Where your data lives
 
-## Lizenz
+```
+sources.yaml          your sources          (local, never committed)
+knowledge/            ingested texts        (local, never committed)
+catalog/              the topic catalog     (local, never committed)
+cards/                your cards            (local, never committed)
+output/               finished PDFs         (local, never committed)
+```
 
-[MIT](LICENSE) — die Werkzeuge. Für die Inhalte, die du damit erfasst und in
-Karten verwandelst, gilt weiterhin das Urheberrecht der jeweiligen Quelle;
-sie bleiben ohnehin lokal.
+Everything else in the repo is tooling: the five skills in `.claude/skills/`,
+the build script in `scripts/`, the LaTeX template in `templates/`. `git
+status` stays clean no matter how much you ingest.
 
----
+## Contributing
 
-**English summary:** A [Claude Code](https://claude.com/claude-code) skill set
-that turns arbitrary knowledge sources (folders, PDFs, a Zotero library, web
-pages) into printable flashcards: `/quellen` → `/erfassen` → `/katalog` →
-`/karten` → `/drucken` produces a duplex-ready A4 PDF with 8 cards per page.
-The tooling is subject-agnostic and in German; your sources, texts and cards
-stay local and are never committed.
+Bug reports and pull requests are welcome — see
+[CONTRIBUTING.md](CONTRIBUTING.md) and our
+[Code of Conduct](CODE_OF_CONDUCT.md). Direct pushes to `main` are blocked;
+changes go through pull requests that have to pass the CI gates (lint, tests,
+card validation, LaTeX build).
+
+## License
+
+[MIT](LICENSE) — for the tools. The material you ingest and turn into cards
+stays under its own copyright; it never leaves your machine anyway.

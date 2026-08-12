@@ -1,16 +1,16 @@
 #!/bin/sh
-# Hält Nutzerinhalte aus dem Repo — dasselbe, was die CI später prüft.
+# Keeps user content out of the repo — the same thing CI checks later.
 #
-# Installieren: scripts/install-hooks.sh
+# Install with: scripts/install-hooks.sh
 
-verboten=$(git diff --cached --name-only --diff-filter=A \
-    | grep -E '^(wissen/|katalog/|karten/|output/|sources\.yaml)' \
-    | grep -v -E '^(wissen/\.gitkeep|katalog/\.gitkeep|karten/\.gitkeep|karten/beispiel\.yaml)$')
+forbidden=$(git diff --cached --name-only --diff-filter=A \
+    | grep -E '^(knowledge/|catalog/|cards/|output/|sources\.yaml)' \
+    | grep -v -E '^(knowledge/\.gitkeep|catalog/\.gitkeep|cards/\.gitkeep|cards/example\.yaml)$')
 
-if [ -n "$verboten" ]; then
-    echo "✗ Diese Dateien gehören nicht ins Repo (eigene Inhalte bleiben lokal):" >&2
-    echo "$verboten" | sed 's/^/    /' >&2
-    echo "  Siehe .gitignore und CONTRIBUTING.md. Notfalls: git commit --no-verify" >&2
+if [ -n "$forbidden" ]; then
+    echo "✗ These files do not belong in the repo (your own content stays local):" >&2
+    echo "$forbidden" | sed 's/^/    /' >&2
+    echo "  See .gitignore and CONTRIBUTING.md. If you must: git commit --no-verify" >&2
     exit 1
 fi
 

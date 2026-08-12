@@ -1,18 +1,18 @@
 #!/bin/sh
-# Blockt direkte Pushes auf main, bevor sie überhaupt beim Server ankommen.
-# Serverseitig ist main zusätzlich geschützt — das hier spart nur den Umweg.
+# Blocks direct pushes to main before they even reach the server.
+# main is protected server-side as well — this just saves the round trip.
 #
-# Installieren: scripts/install-hooks.sh
+# Install with: scripts/install-hooks.sh
 
-GESCHUETZT="main"
+PROTECTED="main"
 
-while read -r _lokale_ref _lokale_sha remote_ref _remote_sha; do
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
     case "$remote_ref" in
-        "refs/heads/$GESCHUETZT")
-            echo "✗ Push auf '$GESCHUETZT' ist gesperrt." >&2
-            echo "  Branch anlegen und einen Pull Request öffnen:" >&2
-            echo "    git switch -c meine-aenderung" >&2
-            echo "    git push -u origin meine-aenderung && gh pr create" >&2
+        "refs/heads/$PROTECTED")
+            echo "✗ Pushing to '$PROTECTED' is blocked." >&2
+            echo "  Create a branch and open a pull request:" >&2
+            echo "    git switch -c my-change" >&2
+            echo "    git push -u origin my-change && gh pr create" >&2
             exit 1
             ;;
     esac

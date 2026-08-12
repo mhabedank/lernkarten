@@ -1,18 +1,18 @@
-# --- Eigene Inhalte bleiben lokal ---------------------------------------
-# Das Repo ist themen-agnostisch: es enthält nur die Werkzeuge, nicht das
-# Wissen. Quellen, erfasste Texte, Katalog und Karten gehören dir und
-# werden nicht versioniert.
+# --- Your own content stays local ---------------------------------------
+# This repo is subject-agnostic: it holds the tools, not the knowledge.
+# Sources, ingested texts, the catalog and your cards belong to you and are
+# never versioned.
 sources.yaml
-wissen/*
-!wissen/.gitkeep
-katalog/*
-!katalog/.gitkeep
-karten/*
-!karten/.gitkeep
-!karten/beispiel.yaml
+knowledge/*
+!knowledge/.gitkeep
+catalog/*
+!catalog/.gitkeep
+cards/*
+!cards/.gitkeep
+!cards/example.yaml
 output/
 
-# --- Build-Reste --------------------------------------------------------
+# --- Build leftovers ----------------------------------------------------
 *.aux
 *.log
 *.out

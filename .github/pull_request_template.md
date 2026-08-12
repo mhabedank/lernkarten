@@ -1,15 +1,16 @@
-## Was ändert sich?
+## What changes?
 
-<!-- Kurz: Problem und Lösung. Bei UI-/Layoutänderungen gern ein PDF-Ausschnitt. -->
+<!-- Briefly: the problem and the fix. For UI/layout changes, a snippet of the PDF helps. -->
 
-## Warum?
+## Why?
 
-<!-- Verweis auf Issue oder eine Zeile Begründung. -->
+<!-- Link an issue, or give one line of reasoning. -->
 
-## Geprüft
+## Checked
 
-- [ ] `ruff check .` und `ruff format --check .` sind grün
-- [ ] `pytest` ist grün
-- [ ] `python3 scripts/build_pdf.py --check karten/beispiel.yaml` läuft durch
-- [ ] Kein eigener Inhalt eingecheckt (`sources.yaml`, `wissen/`, `katalog/`, `karten/*` außer `beispiel.yaml`)
-- [ ] Doku angepasst, falls sich Bedienung oder Ablauf ändern
+- [ ] `ruff check .` and `ruff format --check .` are green
+- [ ] `pytest` is green
+- [ ] `python3 scripts/build_pdf.py --check cards/example.yaml` passes
+- [ ] `python3 scripts/check_docs.py` passes
+- [ ] No content of my own committed (`sources.yaml`, `knowledge/`, `catalog/`, `cards/*` except `example.yaml`)
+- [ ] Docs updated if the usage or the workflow changed

@@ -1,16 +1,16 @@
 #!/bin/sh
-# Aktiviert die mitgelieferten Git-Hooks (.githooks/) für dieses Klon.
+# Activates the bundled git hooks (.githooks/) for this clone.
 #
 #   scripts/install-hooks.sh
 #
-# pre-commit: verhindert, dass eigene Quellen/Texte/Karten eingecheckt werden.
-# pre-push:   blockt direkte Pushes auf main (dort gilt: nur via Pull Request).
+# pre-commit: keeps your own sources/texts/cards out of the repo.
+# pre-push:   blocks direct pushes to main (changes go through pull requests).
 
 set -e
 
-wurzel=$(git rev-parse --show-toplevel)
-chmod +x "$wurzel"/.githooks/* 2>/dev/null || true
-git -C "$wurzel" config core.hooksPath .githooks
+root=$(git rev-parse --show-toplevel)
+chmod +x "$root"/.githooks/* 2>/dev/null || true
+git -C "$root" config core.hooksPath .githooks
 
-echo "Hooks aktiv: $(git -C "$wurzel" config core.hooksPath)"
-echo "Deaktivieren mit: git config --unset core.hooksPath"
+echo "Hooks active: $(git -C "$root" config core.hooksPath)"
+echo "Disable with: git config --unset core.hooksPath"
