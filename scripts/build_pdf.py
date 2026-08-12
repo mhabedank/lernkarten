@@ -27,8 +27,14 @@ import engine
 import minyaml
 
 ROOT = Path(__file__).resolve().parent.parent
-TEMPLATE = ROOT / "templates" / "cards.typ"
+TEMPLATES = ROOT / "templates"
+TEMPLATE = TEMPLATES / "cards.typ"  # imports card.typ, so both are copied along
+FONTS = ROOT / "assets" / "fonts"
 CARDS_PER_PAGE = 8
+
+# The engine's own fonts plus ours, and nothing the machine happens to have
+# installed — so a card looks the same wherever it is printed.
+FONT_ARGS = ["--ignore-system-fonts", "--font-path", str(FONTS)]
 
 # Card languages, as the user writes them. The right-hand side is what the
 # typesetter wants for hyphenation and quotation marks, and never leaves here.
@@ -138,14 +144,15 @@ def payload(cards):
 
 def typeset(cards, target, margin, logo, binary, workdir):
     """Runs the engine over `cards`. Returns (ok, message)."""
-    shutil.copy(TEMPLATE, workdir / TEMPLATE.name)
+    for template in TEMPLATES.glob("*.typ"):
+        shutil.copy(template, workdir / template.name)
     (workdir / "cards.json").write_text(json.dumps(payload(cards)), encoding="utf-8")
     output = workdir / "cards.pdf"
     result = subprocess.run(
         [
             str(binary),
             "compile",
-            "--ignore-system-fonts",  # the engine's own fonts, same output everywhere
+            *FONT_ARGS,
             "--input",
             f"margin={margin:g}",
             "--input",
@@ -206,7 +213,7 @@ def overflowing(binary, workdir, margin, logo):
         [
             str(binary),
             "query",
-            "--ignore-system-fonts",
+            *FONT_ARGS,
             "--input",
             f"margin={margin:g}",
             "--input",

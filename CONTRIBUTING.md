@@ -1,7 +1,9 @@
 # Contributing
 
 Thanks for your interest. Bug reports, improvements to the skills, the card
-layout or the docs are all welcome.
+layout or the docs are all welcome. If your change touches anything visible —
+the card, the mark, the readme graphics, the landing page — start with
+[docs/design.md](docs/design.md).
 
 ## Ground rule: no content in the repo
 
@@ -80,8 +82,11 @@ build: make the page margin configurable
 - **Python**: the standard library only. A runtime dependency the user has to
   install is a bug, not a trade-off — that is why `scripts/minyaml.py` exists
   instead of PyYAML.
-- **Layout**: changes go into `templates/cards.typ` only, never into the
-  generated file.
+- **Layout**: the card is `templates/card.typ`, the press sheet
+  `templates/cards.typ` — never the generated file. Read
+  [docs/design.md](docs/design.md) first: it says what the bands mean, why
+  colour never carries meaning alone, and how to re-render the brand graphics
+  afterwards.
 - **The engine** is pinned by version and SHA-256 in `scripts/engine.py`. When
   you bump it, bump every platform's checksum with it.
 - **Card conventions** (schema, escaping, style) live in [CLAUDE.md](CLAUDE.md)

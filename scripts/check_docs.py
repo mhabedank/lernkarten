@@ -30,9 +30,14 @@ REQUIRED_FILES = [
     ".claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json",
     "templates/cards.typ",
+    "templates/card.typ",
     "bin/lernkarten",
     "assets/logo.svg",
+    "assets/logo-mono.svg",
+    "assets/fonts/README.md",
     "docs/workflow.md",
+    "docs/design.md",
+    "docs/index.html",
     ".github/workflows/ci.yml",
 ]
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")

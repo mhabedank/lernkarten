@@ -6,27 +6,12 @@ is statistics, but anatomy, vocabulary or recipes work just as well.
 
 ## Overview
 
-```mermaid
-flowchart TD
-    A([empty folder]) --> S["/sources ~/University/Statistics"]
-    S --> SF[/"sources.yaml<br>1 source registered"/]
-    SF --> I["/ingest"]
-    I --> IF[/"knowledge/statistics/*.md<br>full text per document"/]
-    IF --> C["/catalog"]
-    C --> CF[/"catalog/topics.md<br>topics · subtopics · references"/]
-    CF --> G["/cards"]
-    G --> GF[/"cards/*.yaml<br>front · back · reference"/]
-    GF --> P["/print"]
-    P --> PF[/"output/cards.pdf<br>A4, 8 cards/page, duplex"/]
-    PF --> D([print · cut · learn])
-
-    GF -.->|new topic| G
-    IF -.->|new source| S
-```
+![The pipeline: /sources writes sources.yaml, /ingest writes knowledge/, /catalog writes catalog/topics.md, /cards writes cards/*.yaml, /print writes output/cards.pdf](../assets/pipeline.png)
 
 Every step writes a file you can read and correct by hand. Nothing is a black
 box: if a step goes wrong, you fix its output file and carry on with the next
-one.
+one. And every step can be run again: a new source goes back to `/sources`, a
+new topic back to `/cards`.
 
 ---
 
@@ -174,8 +159,14 @@ Calls the build script and sends you the PDF:
 lernkarten build cards/*.yaml -o output/cards.pdf
 ```
 
-Then print: **duplex, "flip on long edge", 100 % scale**, and cut along the
-grey lines. Front and back end up exactly on top of each other.
+Then print: **duplex, "flip on long edge", 100 % scale**. Cut the long line
+down the middle first, then the three across — the card frames and the crop
+marks in the margin show you where. Front and back end up exactly on top of
+each other.
+
+What comes out is described band by band in [design.md](design.md): topic and
+subtopic in the header, one prompt in the field, the card id and `1/2` or `2/2`
+in the footer, and two dotted rules on the back for your own notes.
 
 ---
 
@@ -199,7 +190,7 @@ lernkarten build cards/*.yaml --margin 0
 # Override the language of files that do not declare one
 lernkarten build cards/*.yaml --language german
 
-# Without the logo mark
+# Without the mark and the wordmark in the footer
 lernkarten build cards/*.yaml --no-logo
 
 # Where is the typesetting engine?
