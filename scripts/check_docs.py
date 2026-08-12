@@ -1,116 +1,121 @@
 #!/usr/bin/env python3
-"""Doku-Gate: prüft Skill-Frontmatter und die internen Links der Dokumentation.
+"""Docs gate: checks skill frontmatter and the internal links of the documentation.
 
-Läuft ohne Argumente über das ganze Repo und ist als CI-Schritt gedacht:
+Runs without arguments over the whole repo and is meant as a CI step:
 
     python3 scripts/check_docs.py
 
-Geprüft wird:
-  * jeder Skill unter .claude/skills/<name>/SKILL.md hat ein YAML-Frontmatter
-    mit 'name' (= Ordnername) und 'description' (mit Trigger-Hinweis),
-  * jeder relative Markdown-Link in den Doku-Dateien zeigt auf eine
-    existierende Datei,
-  * die Pflichtdateien eines Open-Source-Repos sind vorhanden.
+It verifies that:
+  * every skill under skills/<name>/SKILL.md has YAML frontmatter with
+    'name' (= folder name) and 'description' (mentioning its triggers),
+  * every relative markdown link in the docs points at an existing file,
+  * the files an open-source repo is expected to ship are present.
 """
 
 import re
 import sys
 from pathlib import Path
 
-import yaml
+import minyaml
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS = ROOT / ".claude" / "skills"
-PFLICHTDATEIEN = [
+SKILLS = ROOT / "skills"
+REQUIRED_FILES = [
     "README.md",
     "LICENSE",
     "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
     "CLAUDE.md",
     "sources.example.yaml",
-    "docs/nutzungsflow.md",
+    ".claude-plugin/plugin.json",
+    ".claude-plugin/marketplace.json",
+    "templates/cards.typ",
+    "bin/lernkarten",
+    "assets/logo.svg",
+    "docs/workflow.md",
     ".github/workflows/ci.yml",
 ]
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 CODEBLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
 
 
-def pruefe_pflichtdateien(fehler):
-    for name in PFLICHTDATEIEN:
+def check_required_files(errors):
+    for name in REQUIRED_FILES:
         if not (ROOT / name).exists():
-            fehler.append(f"Pflichtdatei fehlt: {name}")
+            errors.append(f"required file missing: {name}")
 
 
-def pruefe_skills(fehler):
-    ordner = sorted(p for p in SKILLS.iterdir() if p.is_dir()) if SKILLS.is_dir() else []
-    if not ordner:
-        fehler.append(f"keine Skills unter {SKILLS.relative_to(ROOT)} gefunden")
+def check_skills(errors):
+    folders = sorted(p for p in SKILLS.iterdir() if p.is_dir()) if SKILLS.is_dir() else []
+    if not folders:
+        errors.append(f"no skills found under {SKILLS.relative_to(ROOT)}")
         return
 
-    for verzeichnis in ordner:
-        datei = verzeichnis / "SKILL.md"
-        if not datei.exists():
-            fehler.append(f"{verzeichnis.relative_to(ROOT)}: SKILL.md fehlt")
+    for folder in folders:
+        path = folder / "SKILL.md"
+        if not path.exists():
+            errors.append(f"{folder.relative_to(ROOT)}: SKILL.md missing")
             continue
 
-        text = datei.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8")
         if not text.startswith("---\n"):
-            fehler.append(f"{datei.relative_to(ROOT)}: kein YAML-Frontmatter")
+            errors.append(f"{path.relative_to(ROOT)}: no YAML frontmatter")
             continue
 
-        rohdaten = text.split("---\n", 2)[1]
+        raw = text.split("---\n", 2)[1]
         try:
-            kopf = yaml.safe_load(rohdaten) or {}
-        except yaml.YAMLError as e:
-            fehler.append(f"{datei.relative_to(ROOT)}: Frontmatter ist kein gültiges YAML: {e}")
+            head = minyaml.load(raw) or {}
+        except minyaml.YamlError as e:
+            errors.append(f"{path.relative_to(ROOT)}: frontmatter is not valid YAML: {e}")
             continue
 
-        if kopf.get("name") != verzeichnis.name:
-            fehler.append(
-                f"{datei.relative_to(ROOT)}: 'name: {kopf.get('name')}' "
-                f"passt nicht zum Ordner '{verzeichnis.name}'"
+        if head.get("name") != folder.name:
+            errors.append(
+                f"{path.relative_to(ROOT)}: 'name: {head.get('name')}' "
+                f"does not match the folder '{folder.name}'"
             )
-        beschreibung = str(kopf.get("description") or "")
-        if len(beschreibung) < 20:
-            fehler.append(f"{datei.relative_to(ROOT)}: 'description' fehlt oder ist zu knapp")
-        elif "Trigger" not in beschreibung:
-            fehler.append(
-                f"{datei.relative_to(ROOT)}: 'description' nennt keine Trigger — "
-                "ohne sie findet Claude Code den Skill schlechter"
+        description = str(head.get("description") or "")
+        if len(description) < 20:
+            errors.append(f"{path.relative_to(ROOT)}: 'description' missing or too short")
+        elif "Triggers" not in description:
+            errors.append(
+                f"{path.relative_to(ROOT)}: 'description' names no triggers — "
+                "without them Claude Code finds the skill less reliably"
             )
 
 
-def markdown_dateien():
-    dateien = sorted(ROOT.glob("*.md"))
-    dateien += sorted((ROOT / "docs").glob("*.md"))
-    dateien += sorted(SKILLS.glob("*/SKILL.md"))
-    return dateien
+def markdown_files():
+    files = sorted(ROOT.glob("*.md"))
+    files += sorted((ROOT / "docs").glob("*.md"))
+    files += sorted(SKILLS.glob("*/SKILL.md"))
+    return files
 
 
-def pruefe_links(fehler):
-    for datei in markdown_dateien():
-        # Codeblöcke zeigen Formatbeispiele mit Platzhalter-Pfaden — nicht prüfen
-        text = CODEBLOCK.sub("", datei.read_text(encoding="utf-8"))
-        for ziel in LINK.findall(text):
-            if ziel.startswith(("http://", "https://", "mailto:", "#")):
+def check_links(errors):
+    for path in markdown_files():
+        # Code blocks show format examples with placeholder paths — skip them
+        text = CODEBLOCK.sub("", path.read_text(encoding="utf-8"))
+        for target in LINK.findall(text):
+            if target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
-            pfad = (datei.parent / ziel.split("#", 1)[0]).resolve()
-            if not pfad.exists():
-                fehler.append(f"{datei.relative_to(ROOT)}: toter Link -> {ziel}")
+            resolved = (path.parent / target.split("#", 1)[0]).resolve()
+            if not resolved.exists():
+                errors.append(f"{path.relative_to(ROOT)}: dead link -> {target}")
 
 
 def main():
-    fehler = []
-    pruefe_pflichtdateien(fehler)
-    pruefe_skills(fehler)
-    pruefe_links(fehler)
+    errors = []
+    check_required_files(errors)
+    check_skills(errors)
+    check_links(errors)
 
-    for f in fehler:
-        print(f"FEHLER: {f}", file=sys.stderr)
-    if fehler:
+    for e in errors:
+        print(f"ERROR: {e}", file=sys.stderr)
+    if errors:
         sys.exit(1)
 
-    anzahl = len(list(SKILLS.glob("*/SKILL.md")))
-    print(f"OK: {anzahl} Skills, Doku-Links und Pflichtdateien in Ordnung.")
+    count = len(list(SKILLS.glob("*/SKILL.md")))
+    print(f"OK: {count} skills, docs links and required files are fine.")
 
 
 if __name__ == "__main__":

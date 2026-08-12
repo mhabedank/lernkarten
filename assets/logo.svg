@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -4 102 72" width="102" height="72" role="img" aria-label="Lernkarten logo: two stacked flashcards">
+  <title>Lernkarten</title>
+  <!-- Back card, tilted -->
+  <rect x="3" y="7" width="62" height="44" rx="9"
+        fill="none" stroke="#94A3B8" stroke-width="5" stroke-linejoin="round"
+        transform="rotate(14 34 29)"/>
+  <!-- Front card, opaque so it overlaps the back one -->
+  <rect x="29" y="14" width="62" height="46" rx="9"
+        fill="#FFFFFF" stroke="#6366F1" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Question mark, drawn as a path so no font is required -->
+  <path d="M 52 30 A 8 8 0 1 1 60 38 L 60 42"
+        fill="none" stroke="#6366F1" stroke-width="5"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="60" cy="48" r="3" fill="#6366F1"/>
+</svg>

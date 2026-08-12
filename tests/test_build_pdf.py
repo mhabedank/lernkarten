@@ -1,9 +1,11 @@
-"""Tests für scripts/build_pdf.py — Raster, YAML-Einlesen, Seitenaufbau.
+"""Tests for scripts/build_pdf.py — reading card files, languages, engine payload.
 
-Kompiliert bewusst kein LaTeX: der Probelauf mit pdflatex ist ein eigener
-CI-Schritt (`build_pdf.py --check`), diese Tests laufen ohne TeX-Installation.
+The end-to-end typeset is its own CI step (`lernkarten check`); the test here
+only runs when an engine is already on the machine, so the suite never
+downloads anything.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -13,156 +15,195 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import build_pdf  # noqa: E402
+import engine  # noqa: E402
 
 
-def schreibe(tmp_path, name, inhalt):
-    pfad = tmp_path / name
-    pfad.write_text(inhalt, encoding="utf-8")
-    return str(pfad)
+def write(tmp_path, name, content):
+    path = tmp_path / name
+    path.write_text(content, encoding="utf-8")
+    return str(path)
 
-
-# --- raster ---------------------------------------------------------------
-
-
-def test_raster_teilt_a4_in_acht_karten():
-    kb, kh, _ = build_pdf.raster(rand=0)
-    assert (kb, kh) == pytest.approx((105.0, 74.25))
-    assert kb * build_pdf.SPALTEN == pytest.approx(build_pdf.A4_BREITE)
-    assert kh * build_pdf.REIHEN == pytest.approx(build_pdf.A4_HOEHE)
-    assert build_pdf.SPALTEN * build_pdf.REIHEN == build_pdf.KARTEN_PRO_SEITE
-
-
-def test_raster_zieht_rand_ab():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    assert (kb, kh) == pytest.approx((100.0, 71.75))
-
-
-def test_raster_ohne_rand_zeichnet_keine_aussenkanten():
-    _, _, randlos = build_pdf.raster(rand=0)
-    _, _, mit_rand = build_pdf.raster(rand=5)
-    # 3 Spalten- und 5 Reihenlinien mit Rand, ohne Rand fallen je 2 Außenkanten weg
-    assert len(mit_rand.splitlines()) == 8
-    assert len(randlos.splitlines()) == 4
-
-
-# --- lade_karten ----------------------------------------------------------
 
 MINIMAL = """
-thema: "Statistik"
-karten:
-  - unterthema: "Bayes"
-    vorne: "Frage"
-    hinten: "Antwort"
-    quelle: "VL 3"
+topic: 'Statistics'
+cards:
+  - subtopic: 'Bayes'
+    front: 'Question'
+    back: 'Answer'
+    source: 'Lecture 3'
 """
 
 
-def test_lade_karten_liest_felder(tmp_path):
-    karten, fehler = build_pdf.lade_karten([schreibe(tmp_path, "a.yaml", MINIMAL)], [], [])
-    assert fehler == []
-    assert karten == [
+# --- load_cards -----------------------------------------------------------
+
+
+def test_load_cards_reads_the_fields(tmp_path):
+    cards, errors = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert errors == []
+    assert cards == [
         {
             "id": "a-1",
-            "thema": "Statistik",
-            "unterthema": "Bayes",
-            "vorne": "Frage",
-            "hinten": "Antwort",
-            "quelle": "VL 3",
+            "topic": "Statistics",
+            "subtopic": "Bayes",
+            "front": "Question",
+            "back": "Answer",
+            "source": "Lecture 3",
+            "language": "english",
         }
     ]
 
 
-def test_lade_karten_meldet_kaputtes_yaml(tmp_path):
-    datei = schreibe(tmp_path, "kaputt.yaml", "thema: 'offen\nkarten: [")
-    karten, fehler = build_pdf.lade_karten([datei], [], [])
-    assert karten == []
-    assert len(fehler) == 1 and "YAML-Fehler" in fehler[0]
+def test_load_cards_reports_broken_files(tmp_path):
+    path = write(tmp_path, "broken.yaml", "topic: 'unclosed\ncards:\n")
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert cards == []
+    assert len(errors) == 1 and "line 1" in errors[0]
 
 
-def test_lade_karten_meldet_fehlende_pflichtfelder(tmp_path):
-    datei = schreibe(tmp_path, "b.yaml", 'thema: "T"\nkarten:\n  - vorne: "nur vorne"\n')
-    karten, fehler = build_pdf.lade_karten([datei], [], [])
-    assert karten == []
-    assert "'vorne' und 'hinten' sind Pflicht" in fehler[0]
+def test_load_cards_reports_missing_required_fields(tmp_path):
+    path = write(tmp_path, "b.yaml", "topic: 'T'\ncards:\n  - front: 'front only'\n")
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert cards == []
+    assert "'front' and 'back' are required" in errors[0]
 
 
-def test_lade_karten_meldet_falsche_struktur(tmp_path):
-    datei = schreibe(tmp_path, "c.yaml", "- eine\n- liste\n")
-    _, fehler = build_pdf.lade_karten([datei], [], [])
-    assert "erwartet Mapping" in fehler[0]
+def test_load_cards_reports_the_wrong_structure(tmp_path):
+    path = write(tmp_path, "c.yaml", "- a\n- list\n")
+    _, errors = build_pdf.load_cards([path], [], [])
+    assert "expected a mapping" in errors[0]
 
 
-def test_lade_karten_faellt_auf_dateinamen_als_thema_zurueck(tmp_path):
-    datei = schreibe(tmp_path, "ohne-thema.yaml", 'karten:\n  - vorne: "v"\n    hinten: "h"\n')
-    karten, fehler = build_pdf.lade_karten([datei], [], [])
-    assert fehler == []
-    assert karten[0]["thema"] == "ohne-thema"
-    assert karten[0]["quelle"] == ""
+def test_load_cards_falls_back_to_the_filename_as_topic(tmp_path):
+    path = write(tmp_path, "no-topic.yaml", "cards:\n  - front: 'f'\n    back: 'b'\n")
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert errors == []
+    assert cards[0]["topic"] == "no-topic"
+    assert cards[0]["source"] == ""
 
 
-def test_filter_matcht_teilstring_ohne_gross_kleinschreibung(tmp_path):
-    datei = schreibe(tmp_path, "a.yaml", MINIMAL)
-    assert build_pdf.lade_karten([datei], ["statis"], [])[0]
-    assert build_pdf.lade_karten([datei], ["Analysis"], [])[0] == []
-    assert build_pdf.lade_karten([datei], [], ["BAYES"])[0]
-    assert build_pdf.lade_karten([datei], [], ["Markov"])[0] == []
+def test_filter_matches_substrings_case_insensitively(tmp_path):
+    path = write(tmp_path, "a.yaml", MINIMAL)
+    assert build_pdf.load_cards([path], ["statis"], [])[0]
+    assert build_pdf.load_cards([path], ["Analysis"], [])[0] == []
+    assert build_pdf.load_cards([path], [], ["BAYES"])[0]
+    assert build_pdf.load_cards([path], [], ["Markov"])[0] == []
 
 
-# --- erzeuge_inhalt -------------------------------------------------------
+# --- languages ------------------------------------------------------------
 
 
-def karte(i):
+def test_languages_are_named_the_way_a_user_would_name_them():
+    assert build_pdf.resolve_language("german") == "german"
+    assert build_pdf.resolve_language("German") == "german"
+    assert build_pdf.resolve_language(" english ") == "english"
+    assert build_pdf.resolve_language("de") == "german"
+    assert build_pdf.resolve_language("de-AT") == "german"
+    assert build_pdf.resolve_language("pt") == "portuguese"
+
+
+def test_an_unknown_language_names_the_ones_that_work():
+    with pytest.raises(ValueError) as e:
+        build_pdf.resolve_language("klingon")
+    assert "klingon" in str(e.value) and "german" in str(e.value)
+
+
+def test_a_card_file_declares_its_own_language(tmp_path):
+    path = write(
+        tmp_path, "de.yaml", "topic: 'T'\nlanguage: german\ncards:\n  - front: 'f'\n    back: 'b'\n"
+    )
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert errors == []
+    assert cards[0]["language"] == "german"
+
+
+def test_a_card_file_without_a_language_falls_back(tmp_path):
+    path = write(tmp_path, "a.yaml", MINIMAL)
+    assert build_pdf.load_cards([path], [], [])[0][0]["language"] == "english"
+    assert build_pdf.load_cards([path], [], [], "french")[0][0]["language"] == "french"
+
+
+def test_an_unknown_language_in_a_file_is_reported_not_crashed(tmp_path):
+    path = write(
+        tmp_path, "x.yaml", "topic: 'T'\nlanguage: elvish\ncards:\n  - front: 'f'\n    back: 'b'\n"
+    )
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert cards == []
+    assert "unknown language" in errors[0] and "elvish" in errors[0]
+
+
+def test_the_document_language_follows_the_cards_unless_overridden():
+    cards = [card(0, "german"), card(1, "german"), card(2, "english")]
+    assert build_pdf.main_language(cards) == "german"
+    assert build_pdf.main_language(cards, "english") == "english"
+    assert build_pdf.main_language([]) == build_pdf.DEFAULT_LANGUAGE
+
+
+# --- what the template receives -------------------------------------------
+
+
+def card(i, language="english"):
     return {
-        "id": f"k-{i}",
-        "thema": "T",
-        "unterthema": "U",
-        "vorne": f"V{i}",
-        "hinten": f"H{i}",
-        "quelle": "",
+        "id": f"c-{i}",
+        "topic": "T",
+        "subtopic": "S",
+        "front": f"F{i}",
+        "back": f"B{i}",
+        "source": "",
+        "language": language,
     }
 
 
-def test_erzeuge_inhalt_paart_vorder_und_rueckseiten():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    for anzahl, erwartet in [(1, 2), (8, 2), (9, 4), (17, 6)]:
-        inhalt = build_pdf.erzeuge_inhalt([karte(i) for i in range(anzahl)], 5, kb, kh)
-        seiten = inhalt.split("\\newpage")
-        assert len(seiten) == erwartet, f"{anzahl} Karten"
+def test_the_payload_translates_languages_for_the_engine():
+    # The user says "german"; the engine wants "de" — that never leaks out.
+    data = build_pdf.payload([card(0, "german"), card(1, "english")])
+    assert [c["lang"] for c in data] == ["de", "en"]
+    assert data[0]["language"] == "german", "the user-facing name is kept too"
+    json.dumps(data)  # must survive the trip through the data file
 
 
-def test_rueckseite_ist_spaltengespiegelt():
-    kb, kh, _ = build_pdf.raster(rand=0)
-    vorne, hinten = build_pdf.erzeuge_inhalt([karte(0)], 0, kb, kh).split("\\newpage")
-    # Karte 0 sitzt vorne in Spalte 0 (x=0), hinten in Spalte 1 (x=kb)
-    assert "\\zelle{0.000}" in vorne
-    assert f"\\zelle{{{kb:.3f}}}" in hinten
-    assert "V0" in vorne and "H0" in hinten
+def test_every_card_keeps_an_id_so_failures_can_be_traced():
+    assert [c["id"] for c in build_pdf.payload([card(0), card(1)])] == ["c-0", "c-1"]
 
 
-def test_kopfzeile_verbindet_thema_und_unterthema():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    inhalt = build_pdf.erzeuge_inhalt([karte(0)], 5, kb, kh)
-    assert "T \\,\\textperiodcentered\\, U" in inhalt
-
-    ohne = dict(karte(0), unterthema="")
-    assert "\\textperiodcentered" not in build_pdf.erzeuge_inhalt([ohne], 5, kb, kh)
-
-
-def test_jede_karte_traegt_einen_id_kommentar_fuer_die_fehlersuche():
-    kb, kh, _ = build_pdf.raster(rand=5)
-    inhalt = build_pdf.erzeuge_inhalt([karte(0)], 5, kb, kh)
-    assert "% karte: k-0\n" in inhalt
-    assert "% karte: k-0 (rueckseite)\n" in inhalt
-
-
-# --- mitgelieferte Beispieldatei -----------------------------------------
+def test_engine_complaints_are_stripped_of_paths_and_excerpts():
+    raw = (
+        "error: unknown variable: Var\n"
+        "  ┌─ /tmp/whatever/cards.typ:68:7\n"
+        "  │\n"
+        '68│   eval(card.front, mode: "markup")\n'
+        "  = hint: try placing it in quotes\n"
+    )
+    assert build_pdf.readable(raw) == [
+        "unknown variable: Var",
+        "hint: try placing it in quotes",
+    ]
+    assert build_pdf.readable("") == ["no output"]
 
 
-def test_beispielkarten_erfuellen_das_schema():
-    karten, fehler = build_pdf.lade_karten([str(ROOT / "karten" / "beispiel.yaml")], [], [])
-    assert fehler == []
-    assert karten, "karten/beispiel.yaml soll als Schema-Referenz Karten enthalten"
-    for k in karten:
-        assert '"' not in k["vorne"] + k["hinten"], (
-            f"{k['id']}: ASCII-Anführungszeichen beenden den YAML-String"
-        )
+# --- the bundled example --------------------------------------------------
+
+
+def test_example_cards_satisfy_the_schema():
+    cards, errors = build_pdf.load_cards([str(ROOT / "cards" / "example.yaml")], [], [])
+    assert errors == []
+    assert cards, "cards/example.yaml is the schema reference and must contain cards"
+    assert {c["language"] for c in cards} == {"english"}
+
+
+def has_engine():
+    try:
+        engine.find(fetch_if_missing=False)
+    except engine.EngineError:
+        return False
+    return True
+
+
+@pytest.mark.skipif(not has_engine(), reason="no engine on this machine; CI covers the real build")
+def test_the_example_actually_typesets(tmp_path):
+    binary, _ = engine.find(fetch_if_missing=False)
+    cards, _ = build_pdf.load_cards([str(ROOT / "cards" / "example.yaml")], [], [])
+    target = tmp_path / "out.pdf"
+    ok, message = build_pdf.typeset(cards, target, 5.0, True, binary, tmp_path)
+    assert ok, message
+    assert target.exists() and target.stat().st_size > 1000
+    assert build_pdf.overflowing(binary, tmp_path, 5.0, True) == [], "example cards must fit"

@@ -1,64 +1,75 @@
-# Lernkarten-Werkstatt — Projektanweisungen
+# Lernkarten — project instructions
 
-Pipeline: `/quellen` → `/erfassen` → `/katalog` → `/karten` → `/drucken`.
-Die Skills liegen unter `.claude/skills/`. Antworte auf Deutsch.
+Pipeline: `/sources` → `/ingest` → `/catalog` → `/cards` → `/print`.
+The skills live under `skills/`. The project language is English:
+code, comments, docs and commit messages are written in English.
 
-## Konventionen
+## Conventions
 
-- **Quellenregister**: `sources.yaml` ist die einzige Wahrheit über registrierte
-  Quellen. Jede Quelle hat eine eindeutige `id` (kebab-case).
-- **Wissensablage**: `wissen/<quellen-id>/<dokument>.md` — reiner Text/Markdown
-  mit einem Frontmatter-Block (`quelle`, `datei`/`url`, `erfasst`).
-- **Themenkatalog**: `katalog/themenkatalog.md` — Hierarchie aus Themen (`##`)
-  und Unterthemen (`###`), je mit Kurzbeschreibung und Fundstellen
-  (Verweise auf Dateien unter `wissen/`).
-- **Karten**: `karten/<thema-slug>.yaml` mit dem Schema:
+- **Source register**: `sources.yaml` is the single source of truth about
+  registered sources. Every source has a unique `id` (kebab-case).
+- **Knowledge store**: `knowledge/<source-id>/<document>.md` — plain
+  text/markdown with one frontmatter block (`source`, `path`/`url`,
+  `ingested`).
+- **Topic catalog**: `catalog/topics.md` — a hierarchy of topics (`##`) and
+  subtopics (`###`), each with a short description and references (links to
+  files under `knowledge/`).
+- **Cards**: `cards/<topic-slug>.yaml` with this schema:
 
   ```yaml
-  thema: "Anzeigename des Themas"
-  karten:
-    - unterthema: "Unterthema"
-      vorne: "Frage oder Begriff"
-      hinten: "Antwort oder Definition"
-      quelle: "Kurzbeleg (optional)"
+  topic: 'Display name of the topic'
+  language: german          # language of the cards in this file
+  cards:
+    - subtopic: 'Subtopic'
+      front: 'Question or term'
+      back: 'Answer or definition'
+      source: 'Short reference (optional)'
     - ...
   ```
 
-  `vorne`/`hinten` sind **LaTeX-Quelltext**: Sonderzeichen (`%`, `&`, `_`, `#`)
-  müssen escaped sein; Mathematik in `$...$` ist erlaubt; `\\` erzeugt einen
-  Zeilenumbruch. Das Build-Script escaped NICHT selbst.
-  Kein ASCII-`"` innerhalb der YAML-Strings (beendet den String!) —
-  Anführungszeichen als ``\glqq ...\grqq{}`` bzw. `„...``` setzen.
-- **PDF-Build**: `python3 scripts/build_pdf.py` (siehe `--help`). Ausgabe nach
-  `output/`. Niemals LaTeX von Hand in `output/` editieren — immer über die
-  YAML-Dateien gehen.
+  `language` is a plain language name or ISO code (`german`, `de`, `french`,
+  …); `lernkarten build --help` lists the ones that work. It
+  defaults to English and decides hyphenation and quotation marks. Files in
+  different languages can go into one PDF.
 
-## Kartenstil
+  `front`/`back` are **Typst markup**. Write them in single quotes, so a
+  backslash is a line break and `"` needs no escaping; double the apostrophe
+  (`''`) for a literal one. Maths goes in `$...$` — Typst syntax, not LaTeX:
+  `(a) / (b)` for fractions, `Omega`, `sigma`, `>=`, `"Var"(X)` for upright
+  text, `#list([a], [b])` for a bulleted back. `#`, `*`, `_`, `@`, `<`, `>`
+  and backtick need a backslash in running text; `%` and `&` do not.
+- **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
+  goes to `output/`. The typesetting engine downloads itself on first use.
+  Never hand-edit anything in `output/` — always go through the YAML files.
 
-- Eine Karte = ein Fakt/Konzept. Keine Doppelfragen.
-- Vorderseite kurz (max. ~2 Zeilen), Rückseite max. ~6 Zeilen — die Karte ist
-  nur ca. 100 × 72 mm groß. Lieber zwei Karten als eine überfüllte.
-- Aktive Abfrage formulieren („Was …?", „Warum …?", „Nenne …"), keine
-  Ja/Nein-Fragen.
-- Sprache der Karten = Sprache der Quelle, sofern der Nutzer nichts anderes sagt.
+## Card style
 
-## Repo-Regeln
+- One card = one fact/concept. No double questions.
+- Front short (max. ~2 lines), back max. ~6 lines — the card is only about
+  100 × 72 mm. Two cards beat one overloaded card.
+- Phrase an active recall prompt ("What …?", "Why …?", "Name …"), no yes/no
+  questions.
+- Card language = language of the source, unless the user says otherwise.
+  Always write it into the file's `language:` key — the build reads it from
+  there, so nobody has to remember a flag at print time.
 
-Dies ist ein öffentliches Open-Source-Repo — es enthält die Werkzeuge, nicht
-das Wissen.
+## Repo rules
 
-- **Nichts Eigenes einchecken**: `sources.yaml`, `wissen/`, `katalog/`,
-  `karten/` (außer `beispiel.yaml`) und `output/` stehen in `.gitignore`.
-  Niemals mit `git add -f` erzwingen — auch nicht „nur kurz".
-- **Themen-agnostisch bleiben**: Beispiele und Doku zeigen das Format, nicht
-  ein Fachgebiet. Keine fachspezifischen Inhalte in README, Skills oder Code.
-- **`main` ist gesperrt**: Änderungen laufen über einen Branch und einen Pull
-  Request. Direkte Pushes lehnt der Server ab, der `pre-push`-Hook ebenso.
-- **Vor jedem PR** müssen diese vier Gates grün sein (dasselbe prüft die CI):
+This is a public open-source repo — it holds the tools, not the knowledge.
+
+- **Never commit your own content**: `sources.yaml`, `knowledge/`, `catalog/`,
+  `cards/` (except `example.yaml`) and `output/` are in `.gitignore`. Never
+  force them in with `git add -f` — not even "just briefly".
+- **Stay subject-agnostic**: examples and docs demonstrate the format, not a
+  field of study. No subject-specific content in the README, the skills or the
+  code.
+- **`main` is locked**: changes go through a branch and a pull request. The
+  server rejects direct pushes, and so does the `pre-push` hook.
+- **Before every PR** these four gates have to be green (CI checks the same):
 
   ```bash
   ruff check . && ruff format --check .
   pytest
-  python3 scripts/build_pdf.py --check karten/beispiel.yaml
+  lernkarten check cards/example.yaml
   python3 scripts/check_docs.py
   ```

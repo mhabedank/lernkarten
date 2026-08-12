@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""The lernkarten command — everything the skills call.
+
+    lernkarten build cards/*.yaml -o output/cards.pdf
+    lernkarten check cards/*.yaml
+    lernkarten engine --check
+
+`build` and `check` take the same options; see `lernkarten build --help`.
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+COMMANDS = {"build", "check", "engine"}
+
+
+def main():
+    argv = sys.argv[1:]
+    command = argv[0] if argv else ""
+    if command not in COMMANDS:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(0 if command in ("-h", "--help", "help") else 2)
+
+    if command == "engine":
+        import engine
+
+        sys.argv = ["lernkarten engine", *argv[1:]]
+        engine.main()
+        return
+
+    import build_pdf
+
+    rest = argv[1:]
+    if command == "check" and "--check" not in rest:
+        rest.append("--check")
+    sys.argv = ["lernkarten build", *rest]
+    build_pdf.main()
+
+
+if __name__ == "__main__":
+    main()

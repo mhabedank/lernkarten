@@ -1,252 +1,320 @@
 #!/usr/bin/env python3
-"""Lernkarten-Build: YAML-Kartendateien -> LaTeX -> druckfertiges PDF.
+"""Flashcard build: YAML card files -> print-ready PDF.
 
-A4 mit 8 Karten (105 x 74.25 mm) pro Seite. Vorderseiten und Rückseiten
-liegen auf aufeinanderfolgenden Seiten, Rückseiten spaltengespiegelt —
-Duplexdruck "über lange Kante spiegeln".
+A4 with 8 cards (105 x 74.25 mm) per page. Fronts and backs sit on
+consecutive pages, backs column-mirrored — duplex print with
+"flip on long edge".
 
-Beispiele:
-    python3 scripts/build_pdf.py karten/*.yaml -o output/lernkarten.pdf
-    python3 scripts/build_pdf.py karten/*.yaml --thema "Statistik" --unterthema "Bayes"
-    python3 scripts/build_pdf.py --check karten/*.yaml
+The typesetting engine is fetched once on the first build; nothing else has to
+be installed. See scripts/engine.py.
+
+Examples:
+    python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+    python3 scripts/build_pdf.py cards/*.yaml --topic "Statistics" --subtopic "Bayes"
+    python3 scripts/build_pdf.py --check cards/*.yaml
 """
 
 import argparse
-import re
+import json
 import shutil
-import string
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
-import yaml
+import engine
+import minyaml
 
 ROOT = Path(__file__).resolve().parent.parent
-TEMPLATE = ROOT / "templates" / "lernkarten.tex.in"
-KARTEN_PRO_SEITE = 8  # 2 Spalten x 4 Reihen
-SPALTEN, REIHEN = 2, 4
-A4_BREITE, A4_HOEHE = 210.0, 297.0  # mm
+TEMPLATE = ROOT / "templates" / "cards.typ"
+CARDS_PER_PAGE = 8
+
+# Card languages, as the user writes them. The right-hand side is what the
+# typesetter wants for hyphenation and quotation marks, and never leaves here.
+LANGUAGES = {
+    "basque": "eu",
+    "catalan": "ca",
+    "croatian": "hr",
+    "czech": "cs",
+    "danish": "da",
+    "dutch": "nl",
+    "english": "en",
+    "estonian": "et",
+    "finnish": "fi",
+    "french": "fr",
+    "galician": "gl",
+    "german": "de",
+    "greek": "el",
+    "hungarian": "hu",
+    "icelandic": "is",
+    "irish": "ga",
+    "italian": "it",
+    "latin": "la",
+    "latvian": "lv",
+    "lithuanian": "lt",
+    "norwegian": "nb",
+    "polish": "pl",
+    "portuguese": "pt",
+    "romanian": "ro",
+    "russian": "ru",
+    "slovak": "sk",
+    "slovenian": "sl",
+    "spanish": "es",
+    "swedish": "sv",
+    "turkish": "tr",
+    "ukrainian": "uk",
+}
+CODES = {code: name for name, code in LANGUAGES.items()} | {"no": "norwegian", "en-gb": "english"}
+DEFAULT_LANGUAGE = "english"
 
 
-def raster(rand):
-    """Kartenmaße und Schnittlinien für den gegebenen Seitenrand (mm)."""
-    kb = (A4_BREITE - 2 * rand) / SPALTEN
-    kh = (A4_HOEHE - 2 * rand) / REIHEN
-    linien = []
-    x_werte = [rand + i * kb for i in range(SPALTEN + 1)]
-    y_werte = [rand + j * kh for j in range(REIHEN + 1)]
-    if rand == 0:  # Außenkanten sind Papierkanten — keine Linien nötig
-        x_werte, y_werte = x_werte[1:-1], y_werte[1:-1]
-    for x in x_werte:
-        linien.append(
-            f"  \\draw[gray!45, line width=0.1pt] ({x:.3f}mm,0mm) -- ({x:.3f}mm,-{A4_HOEHE}mm);"
-        )
-    for y in y_werte:
-        linien.append(
-            f"  \\draw[gray!45, line width=0.1pt] (0mm,-{y:.3f}mm) -- ({A4_BREITE}mm,-{y:.3f}mm);"
-        )
-    return kb, kh, "\n".join(linien)
+def resolve_language(name):
+    """Normalises a user-facing language name; raises ValueError if unknown."""
+    key = str(name).strip().lower().replace("_", "-")
+    key = CODES.get(key, CODES.get(key.split("-")[0], key))
+    if key not in LANGUAGES:
+        raise ValueError(f"unknown language {name!r} — supported: {', '.join(sorted(LANGUAGES))}")
+    return key
 
 
-def lade_karten(dateien, themen_filter, unterthemen_filter):
-    """Liest die YAML-Dateien und gibt eine flache, gefilterte Kartenliste zurück."""
-    karten = []
-    fehler = []
-    for datei in dateien:
-        pfad = Path(datei)
+def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_LANGUAGE):
+    """Reads the card files and returns a flat, filtered list of cards."""
+    cards = []
+    errors = []
+    for name in files:
+        path = Path(name)
         try:
-            daten = yaml.safe_load(pfad.read_text(encoding="utf-8"))
-        except yaml.YAMLError as e:
-            fehler.append(f"{pfad}: YAML-Fehler: {e}")
+            data = minyaml.load(path.read_text(encoding="utf-8"))
+        except (minyaml.YamlError, OSError) as e:
+            errors.append(f"{path}: {e}")
             continue
-        if not isinstance(daten, dict) or "karten" not in daten:
-            fehler.append(f"{pfad}: erwartet Mapping mit Schlüsseln 'thema' und 'karten'")
+        if not isinstance(data, dict) or "cards" not in data:
+            errors.append(f"{path}: expected a mapping with keys 'topic' and 'cards'")
             continue
-        thema = str(daten.get("thema") or pfad.stem)
-        if themen_filter and not any(f.lower() in thema.lower() for f in themen_filter):
+        topic = str(data.get("topic") or path.stem)
+        if topic_filters and not any(f.lower() in topic.lower() for f in topic_filters):
             continue
-        for i, k in enumerate(daten["karten"] or [], start=1):
-            if not isinstance(k, dict) or "vorne" not in k or "hinten" not in k:
-                fehler.append(f"{pfad}: Karte {i}: 'vorne' und 'hinten' sind Pflicht")
+        try:
+            language = resolve_language(data.get("language") or default_language)
+        except ValueError as e:
+            errors.append(f"{path}: {e}")
+            continue
+        for i, c in enumerate(data["cards"] or [], start=1):
+            if not isinstance(c, dict) or "front" not in c or "back" not in c:
+                errors.append(f"{path}: card {i}: 'front' and 'back' are required")
                 continue
-            unterthema = str(k.get("unterthema") or "")
-            if unterthemen_filter and not any(
-                f.lower() in unterthema.lower() for f in unterthemen_filter
+            subtopic = str(c.get("subtopic") or "")
+            if subtopic_filters and not any(
+                f.lower() in subtopic.lower() for f in subtopic_filters
             ):
                 continue
-            karten.append(
+            cards.append(
                 {
-                    "id": f"{pfad.stem}-{i}",
-                    "thema": thema,
-                    "unterthema": unterthema,
-                    "vorne": str(k["vorne"]),
-                    "hinten": str(k["hinten"]),
-                    "quelle": str(k.get("quelle") or ""),
+                    "id": f"{path.stem}-{i}",
+                    "topic": topic,
+                    "subtopic": subtopic,
+                    "front": str(c["front"]),
+                    "back": str(c["back"]),
+                    "source": str(c.get("source") or ""),
+                    "language": language,
                 }
             )
-    return karten, fehler
+    return cards, errors
 
 
-def _seite(zellen, rand, kb, kh):
-    """Formt eine Liste von (spalte, reihe, id, latex)-Zellen zu einer TikZ-Seite."""
-    koerper = "\n".join(
-        f"% karte: {kid}\n\\zelle{{{rand + spalte * kb:.3f}}}{{{rand + reihe * kh:.3f}}}{{{latex}}}"
-        for spalte, reihe, kid, latex in zellen
+def main_language(cards, override=None):
+    """The document language: what the user asked for, else what the cards are in."""
+    if override:
+        return override
+    counts = Counter(c["language"] for c in cards)
+    return counts.most_common(1)[0][0] if counts else DEFAULT_LANGUAGE
+
+
+def payload(cards):
+    """The card data the template renders, with languages as the engine wants them."""
+    return [dict(c, lang=LANGUAGES[c["language"]]) for c in cards]
+
+
+def typeset(cards, target, margin, logo, binary, workdir):
+    """Runs the engine over `cards`. Returns (ok, message)."""
+    shutil.copy(TEMPLATE, workdir / TEMPLATE.name)
+    (workdir / "cards.json").write_text(json.dumps(payload(cards)), encoding="utf-8")
+    output = workdir / "cards.pdf"
+    result = subprocess.run(
+        [
+            str(binary),
+            "compile",
+            "--ignore-system-fonts",  # the engine's own fonts, same output everywhere
+            "--input",
+            f"margin={margin:g}",
+            "--input",
+            f"logo={'true' if logo else 'false'}",
+            str(workdir / TEMPLATE.name),
+            str(output),
+        ],
+        capture_output=True,
+        text=True,
     )
-    return (
-        "\\begin{tikzpicture}[remember picture, overlay, "
-        "shift={(current page.north west)}]\n"
-        "\\schnittlinien\n" + koerper + "\n\\end{tikzpicture}\\null"
-    )
+    if result.returncode != 0:
+        return False, result.stderr.strip()
+    if target is not None:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(output, target)
+    return True, result.stderr.strip()
 
 
-def erzeuge_inhalt(karten, rand, kb, kh):
-    """Erzeugt den LaTeX-Body: pro 8er-Block eine Vorder- und eine Rückseite."""
-    seiten = []
-    for start in range(0, len(karten), KARTEN_PRO_SEITE):
-        block = karten[start : start + KARTEN_PRO_SEITE]
-
-        vorne, hinten = [], []
-        for pos, k in enumerate(block):
-            spalte, reihe = pos % SPALTEN, pos // SPALTEN
-            kopf = k["thema"] + (
-                " \\,\\textperiodcentered\\, " + k["unterthema"] if k["unterthema"] else ""
-            )
-            vorne.append(
-                (spalte, reihe, k["id"], f"\\karteV{{{kopf}}}{{{k['vorne']}}}{{{k['id']}}}")
-            )
-            # Rückseite spaltengespiegelt für Duplex über die lange Kante
-            hinten.append(
-                (
-                    1 - spalte,
-                    reihe,
-                    k["id"] + " (rueckseite)",
-                    f"\\karteR{{{k['hinten']}}}{{{k['quelle']}}}{{{k['id']}}}",
-                )
-            )
-
-        seiten.append(_seite(vorne, rand, kb, kh))
-        seiten.append(_seite(hinten, rand, kb, kh))
-    return "\n\\newpage\n".join(seiten)
+def offending_card(cards, margin, binary, workdir):
+    """Typesets card by card to name the one the engine choked on."""
+    for card in cards:
+        ok, _ = typeset([card], None, margin, False, binary, workdir)
+        if not ok:
+            return card
+    return None
 
 
-def kompiliere(tex_quelle, ziel_pdf, arbeitsdir):
-    tex_datei = arbeitsdir / "lernkarten.tex"
-    tex_datei.write_text(tex_quelle, encoding="utf-8")
-    # Zwei Läufe: TikZ' "remember picture" kennt die Seitenkoordinaten erst im zweiten
-    for _ in range(2):
-        ergebnis = subprocess.run(
-            ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex_datei.name],
-            cwd=arbeitsdir,
-            capture_output=True,
-            text=True,
+def readable(message):
+    """The engine's complaint without its source excerpts and temp paths."""
+    lines = []
+    for line in message.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("error:"):
+            lines.append(stripped[len("error:") :].strip())
+        elif stripped.startswith("= hint:"):
+            lines.append("hint: " + stripped[len("= hint:") :].strip())
+    return lines or [message.splitlines()[0] if message else "no output"]
+
+
+def report_failure(cards, message, margin, binary, workdir):
+    print("The typesetter rejected the cards:", file=sys.stderr)
+    for line in readable(message)[:6]:
+        print(f"  {line}", file=sys.stderr)
+    culprit = offending_card(cards, margin, binary, workdir)
+    if culprit:
+        print(
+            f"  Offending card: {culprit['id']} — {culprit['topic']}"
+            f"{' / ' + culprit['subtopic'] if culprit['subtopic'] else ''}",
+            file=sys.stderr,
         )
-        if ergebnis.returncode != 0:
-            break
-    log = (
-        (arbeitsdir / "lernkarten.log").read_text(encoding="utf-8", errors="replace")
-        if (arbeitsdir / "lernkarten.log").exists()
-        else ergebnis.stdout
+    else:
+        print("  Every card is fine on its own — the problem is in the layout.", file=sys.stderr)
+
+
+def overflowing(binary, workdir, margin, logo):
+    """Card ids whose text does not fit the card — the template flags them."""
+    result = subprocess.run(
+        [
+            str(binary),
+            "query",
+            "--ignore-system-fonts",
+            "--input",
+            f"margin={margin:g}",
+            "--input",
+            f"logo={'true' if logo else 'false'}",
+            "--field",
+            "value",
+            str(workdir / TEMPLATE.name),
+            "<overflow>",
+        ],
+        capture_output=True,
+        text=True,
     )
-
-    if ergebnis.returncode != 0:
-        melde_fehler(log, tex_datei)
-        return False
-
-    for zeile in log.splitlines():
-        if zeile.startswith("Overfull"):
-            print(f"WARNUNG: {zeile.strip()} — Karte kürzen oder aufteilen.", file=sys.stderr)
-
-    if ziel_pdf is not None:
-        ziel_pdf.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(arbeitsdir / "lernkarten.pdf", ziel_pdf)
-    return True
+    if result.returncode != 0:
+        return []
+    try:
+        return sorted(set(json.loads(result.stdout or "[]")))
+    except json.JSONDecodeError:
+        return []
 
 
-def melde_fehler(log, tex_datei):
-    """Ordnet den LaTeX-Fehler der betroffenen Karte zu (via %-Kommentar)."""
-    print("LaTeX-Fehler:", file=sys.stderr)
-    treffer = re.search(r"^! (.+)$", log, re.MULTILINE)
-    if treffer:
-        print(f"  {treffer.group(1)}", file=sys.stderr)
-    zeilen_nr = re.search(r"^l\.(\d+)", log, re.MULTILINE)
-    if zeilen_nr:
-        nr = int(zeilen_nr.group(1))
-        quell_zeilen = tex_datei.read_text(encoding="utf-8").splitlines()
-        for z in reversed(quell_zeilen[: min(nr, len(quell_zeilen))]):
-            m = re.match(r"% karte: (\S+)", z.strip())
-            if m:
-                print(f"  Betroffene Karte: {m.group(1)}", file=sys.stderr)
-                break
-    print(f"  Volles Log: {tex_datei.with_suffix('.log')}", file=sys.stderr)
+def warn_about_overflow(ids):
+    for card_id in ids:
+        print(
+            f"WARNING: card {card_id} does not fit — shorten it or split it in two.",
+            file=sys.stderr,
+        )
 
 
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    p.add_argument("dateien", nargs="+", help="YAML-Kartendateien (karten/*.yaml)")
-    p.add_argument("-o", "--output", default="output/lernkarten.pdf", help="Ziel-PDF")
+    p.add_argument("files", nargs="+", help="YAML card files (cards/*.yaml)")
+    p.add_argument("-o", "--output", default="output/cards.pdf", help="target PDF")
     p.add_argument(
-        "--thema",
+        "--topic",
         action="append",
         default=[],
-        help="Nur Themen, die diesen Text enthalten (mehrfach möglich)",
+        help="only topics containing this text (repeatable)",
     )
     p.add_argument(
-        "--unterthema",
+        "--subtopic",
         action="append",
         default=[],
-        help="Nur Unterthemen, die diesen Text enthalten",
+        help="only subtopics containing this text",
     )
     p.add_argument(
-        "--check", action="store_true", help="Nur validieren und Probekompilat, kein PDF schreiben"
+        "--check", action="store_true", help="only validate and test-typeset, write no PDF"
     )
     p.add_argument(
-        "--rand",
+        "--margin",
         type=float,
         default=5.0,
         metavar="MM",
-        help="Seitenrand in mm für Drucker mit nicht bedruckbarem Rand (Default: 5, 0 = randlos)",
+        help="page margin in mm for printers with a non-printable edge (default: 5, 0 = none)",
     )
+    p.add_argument(
+        "--language",
+        metavar="NAME",
+        help="language of the cards, e.g. german or de — overrides what the card files say "
+        f"(default: what they say, else {DEFAULT_LANGUAGE})",
+    )
+    p.add_argument("--no-logo", action="store_true", help="print the cards without the logo mark")
     args = p.parse_args()
 
-    if not 0 <= args.rand <= 20:
-        p.error("--rand muss zwischen 0 und 20 mm liegen")
+    if not 0 <= args.margin <= 20:
+        p.error("--margin must be between 0 and 20 mm")
+    override = None
+    if args.language:
+        try:
+            override = resolve_language(args.language)
+        except ValueError as e:
+            p.error(str(e))
 
-    karten, fehler = lade_karten(args.dateien, args.thema, args.unterthema)
-    for f in fehler:
-        print(f"FEHLER: {f}", file=sys.stderr)
-    if fehler and args.check:
+    cards, errors = load_cards(args.files, args.topic, args.subtopic, override or DEFAULT_LANGUAGE)
+    for e in errors:
+        print(f"ERROR: {e}", file=sys.stderr)
+    if errors and args.check:
         sys.exit(1)
-    if not karten:
-        print("Keine Karten nach Filterung übrig — nichts zu tun.", file=sys.stderr)
+    if not cards:
+        print("No cards left after filtering — nothing to do.", file=sys.stderr)
         sys.exit(1)
+    if override:
+        for c in cards:
+            c["language"] = override
 
-    kb, kh, schnittlinien = raster(args.rand)
-    vorlage = string.Template(TEMPLATE.read_text(encoding="utf-8"))
-    tex = vorlage.substitute(
-        kb=f"{kb:.3f}",
-        kh=f"{kh:.3f}",
-        rand=f"{args.rand:g}",
-        schnittlinien=schnittlinien,
-        inhalt=erzeuge_inhalt(karten, args.rand, kb, kh),
-    )
+    try:
+        binary, _ = engine.find()
+    except engine.EngineError as e:
+        sys.exit(f"ERROR: {e}")
 
-    ziel = None if args.check else Path(args.output)
+    target = None if args.check else Path(args.output)
     with tempfile.TemporaryDirectory() as td:
-        ok = kompiliere(tex, ziel, Path(td))
-    if not ok:
-        sys.exit(1)
+        workdir = Path(td)
+        ok, message = typeset(cards, target, args.margin, not args.no_logo, binary, workdir)
+        if not ok:
+            report_failure(cards, message, args.margin, binary, workdir)
+            sys.exit(1)
+        warn_about_overflow(overflowing(binary, workdir, args.margin, not args.no_logo))
 
-    seiten = 2 * ((len(karten) + KARTEN_PRO_SEITE - 1) // KARTEN_PRO_SEITE)
+    pages = 2 * ((len(cards) + CARDS_PER_PAGE - 1) // CARDS_PER_PAGE)
+    languages = ", ".join(sorted({c["language"] for c in cards}))
     if args.check:
-        print(f"OK: {len(karten)} Karten valide, Probekompilat erfolgreich ({seiten} Seiten).")
+        print(f"OK: {len(cards)} cards valid ({languages}), test build succeeded ({pages} pages).")
     else:
         print(
-            f"OK: {len(karten)} Karten -> {ziel} "
-            f"({seiten} Seiten, Duplex über lange Kante spiegeln)."
+            f"OK: {len(cards)} cards ({languages}) -> {target} "
+            f"({pages} pages, duplex, flip on long edge)."
         )
 
 

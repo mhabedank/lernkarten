@@ -1,20 +1,20 @@
-# Mitmachen
+# Contributing
 
-Danke für dein Interesse. Fehlerberichte, Verbesserungen an den Skills, am
-LaTeX-Layout oder an der Doku sind willkommen.
+Thanks for your interest. Bug reports, improvements to the skills, the card
+layout or the docs are all welcome.
 
-## Grundregel: kein Inhalt ins Repo
+## Ground rule: no content in the repo
 
-Das Repo ist themen-agnostisch — es enthält Werkzeuge, kein Wissen.
-`sources.yaml`, `wissen/`, `katalog/`, `karten/` (außer `beispiel.yaml`) und
-`output/` sind bewusst in `.gitignore`. Bitte heble das nicht mit `git add -f`
-aus: eigene Quellen sind für andere unbrauchbar, und erfasste Fremdtexte
-gehören urheberrechtlich nicht hierher.
+This repo is subject-agnostic — it holds tools, not knowledge. `sources.yaml`,
+`knowledge/`, `catalog/`, `cards/` (except `example.yaml`) and `output/` are in
+`.gitignore` on purpose. Please do not override that with `git add -f`: your
+own sources are useless to everyone else, and ingested third-party texts do not
+belong here for copyright reasons.
 
-Beispielkarten sollen ein Format zeigen, kein Fachgebiet. `karten/beispiel.yaml`
-ist die einzige eingecheckte Kartendatei.
+Example cards should demonstrate a format, not a field of study.
+`cards/example.yaml` is the only card file that is versioned.
 
-## Entwicklungssetup
+## Development setup
 
 ```bash
 git clone https://github.com/mhabedank/lernkarten.git
@@ -22,37 +22,39 @@ cd lernkarten
 python3 -m pip install --user -r requirements-dev.txt
 ```
 
-Systemseitig brauchst du dasselbe wie für die normale Nutzung: `pdflatex`,
-`pdftotext`, Python ≥ 3.9 (siehe [README](README.md#voraussetzungen)).
+That is only pytest and ruff — the tools themselves need nothing but Python.
+To try your changes as a plugin, add the clone as a marketplace from inside
+Claude Code: `/plugin marketplace add .` and then
+`/plugin install lernkarten@mhabedank`.
 
-## Vor dem Pull Request
+## Before the pull request
 
-Genau das, was auch die CI prüft:
+Exactly what CI checks:
 
 ```bash
-ruff check .                                                # Lint
-ruff format --check .                                       # Formatierung
-pytest                                                      # Tests
-python3 scripts/build_pdf.py --check karten/beispiel.yaml   # Kartenschema + LaTeX-Build
-python3 scripts/check_docs.py                               # Skill-Frontmatter + Doku-Links
+ruff check .                                                # lint
+ruff format --check .                                       # formatting
+pytest                                                      # tests
+lernkarten check cards/example.yaml                         # card schema + PDF build
+python3 scripts/check_docs.py                               # skill frontmatter + doc links
 ```
 
-Alle müssen grün sein — die CI blockt den Merge sonst.
+All of them have to be green — CI blocks the merge otherwise.
 
-## Branch-Modell
+## Branch model
 
-`main` ist geschützt: **direkte Pushes sind serverseitig gesperrt.** Jede
-Änderung läuft über einen Pull Request mit grüner CI.
+`main` is protected: **direct pushes are blocked server-side.** Every change
+goes through a pull request with green CI.
 
 ```bash
-git switch -c fix/kartenrand
-# … ändern, committen …
-git push -u origin fix/kartenrand
+git switch -c fix/card-margin
+# … change, commit …
+git push -u origin fix/card-margin
 gh pr create
 ```
 
-Installiere einmalig den lokalen Hook, dann fällt ein versehentlicher Push
-auf `main` schon vor dem Netzwerkzugriff auf:
+Install the local hook once, and an accidental push to `main` fails before it
+even reaches the network:
 
 ```bash
 scripts/install-hooks.sh
@@ -60,29 +62,33 @@ scripts/install-hooks.sh
 
 ## Commits
 
-Kurze, sprechende Betreffzeile im Imperativ, gern mit Präfix
-(`skill:`, `build:`, `docs:`, `ci:`), Fließtext auf Deutsch oder Englisch.
+A short, descriptive subject line in the imperative, ideally with a prefix
+(`skill:`, `build:`, `docs:`, `ci:`).
 
 ```
-build: Seitenrand konfigurierbar machen
+build: make the page margin configurable
 ```
 
-## Woran man sich orientiert
+## What to aim for
 
-- **Skills** (`.claude/skills/*/SKILL.md`): knapp und handlungsorientiert.
-  Ein Skill beschreibt einen Ablauf, keine Theorie. Neue Skills brauchen
-  Frontmatter mit `name` und `description` inklusive Trigger-Formulierungen.
-- **Python**: Standardbibliothek plus PyYAML, keine weiteren Laufzeit-Abhängig-
-  keiten. Deutsche Funktions- und Variablennamen wie im Bestand, Docstrings
-  auf Deutsch.
-- **LaTeX**: Layoutänderungen ausschließlich in `templates/lernkarten.tex.in`,
-  nie im generierten `.tex`.
-- **Karten-Konventionen** (Schema, Escaping, Stil) stehen in
-  [CLAUDE.md](CLAUDE.md) und gelten auch für Beiträge.
+- **Language**: English, everywhere — code, comments, docstrings, docs and
+  commit messages. The cards a user generates are of course in whatever
+  language their sources are.
+- **Skills** (`skills/*/SKILL.md`): terse and action-oriented. A skill
+  describes a procedure, not a theory. New skills need frontmatter with `name`
+  and a `description` that spells out its triggers.
+- **Python**: the standard library only. A runtime dependency the user has to
+  install is a bug, not a trade-off — that is why `scripts/minyaml.py` exists
+  instead of PyYAML.
+- **Layout**: changes go into `templates/cards.typ` only, never into the
+  generated file.
+- **The engine** is pinned by version and SHA-256 in `scripts/engine.py`. When
+  you bump it, bump every platform's checksum with it.
+- **Card conventions** (schema, escaping, style) live in [CLAUDE.md](CLAUDE.md)
+  and apply to contributions too.
 
-## Fehler melden
+## Reporting bugs
 
-Bitte mit: Betriebssystem, Python- und TeX-Version, ausgeführtem Befehl,
-vollständiger Fehlermeldung — und, wenn es um eine Karte geht, dem
-betroffenen YAML-Ausschnitt (ohne dein privates Material, wenn es sich
-vermeiden lässt).
+Please include: operating system, Python version, the command you ran,
+the full error message — and, if it is about a card, the YAML snippet in
+question (without your private material, if you can avoid it).
