@@ -67,8 +67,8 @@ jobs:
         run: python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
       - name: Build the borderless, logo-free layout
         run: python3 scripts/build_pdf.py cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf
-      - name: Build with a non-default typesetting language
-        run: python3 scripts/build_pdf.py cards/*.yaml --language ngerman -o output/ngerman.pdf
+      - name: Build with a non-default card language
+        run: python3 scripts/build_pdf.py cards/*.yaml --language german -o output/other-language.pdf
       - uses: actions/upload-artifact@v7
         with:
           name: example-pdf

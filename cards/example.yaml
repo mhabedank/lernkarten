@@ -1,6 +1,7 @@
 # Example cards — schema reference and template smoke test.
 # Delete once you have cards of your own.
 topic: "Example: Probability"
+language: english
 cards:
   - subtopic: "Basics"
     front: "What is a sample space $\\Omega$?"

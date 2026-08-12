@@ -31,12 +31,16 @@ Creates flashcards from the topic catalog and the references under
 
 ```yaml
 topic: "Display name"
+language: german              # language of these cards, plain name or ISO code
 cards:
   - subtopic: "Subtopic"
     front: "Question/term"
     back: "Answer"
     source: "Short reference"   # optional, printed small on the back
 ```
+
+Always write `language:` — it is the language of the source material, and
+`/print` reads it from there so the user never has to think about it.
 
 ## Style rules (in addition to CLAUDE.md)
 

@@ -68,6 +68,7 @@ def test_load_cards_reads_the_fields(tmp_path):
             "front": "Question",
             "back": "Answer",
             "source": "Lecture 3",
+            "language": "english",
         }
     ]
 
@@ -111,7 +112,7 @@ def test_filter_matches_substrings_case_insensitively(tmp_path):
 # --- build_body -----------------------------------------------------------
 
 
-def card(i):
+def card(i, language="english"):
     return {
         "id": f"c-{i}",
         "topic": "T",
@@ -119,6 +120,7 @@ def card(i):
         "front": f"F{i}",
         "back": f"B{i}",
         "source": "",
+        "language": language,
     }
 
 
@@ -153,6 +155,73 @@ def test_every_card_carries_an_id_comment_for_troubleshooting():
     body = build_pdf.build_body([card(0)], 5, cw, ch)
     assert "% card: c-0\n" in body
     assert "% card: c-0 (back)\n" in body
+
+
+# --- languages ------------------------------------------------------------
+
+
+def test_languages_are_named_the_way_a_user_would_name_them():
+    assert build_pdf.resolve_language("german") == "german"
+    assert build_pdf.resolve_language("German") == "german"
+    assert build_pdf.resolve_language(" english ") == "english"
+    # ISO codes and locale tags work too
+    assert build_pdf.resolve_language("de") == "german"
+    assert build_pdf.resolve_language("de-AT") == "german"
+    assert build_pdf.resolve_language("pt") == "portuguese"
+
+
+def test_an_unknown_language_names_the_ones_that_work():
+    with pytest.raises(ValueError) as e:
+        build_pdf.resolve_language("klingon")
+    assert "klingon" in str(e.value) and "german" in str(e.value)
+
+
+def test_the_typesetting_names_stay_inside_the_build():
+    # The user says "german"; the typesetter needs "ngerman" — that never leaks out.
+    assert build_pdf.typesetting_options("german", {"german"}) == "ngerman"
+    assert build_pdf.typesetting_options("english", {"english"}) == "english"
+    assert (
+        build_pdf.typesetting_options("english", {"english", "german", "french"})
+        == "french,ngerman,main=english"
+    )
+
+
+def test_a_card_file_declares_its_own_language(tmp_path):
+    path = write(
+        tmp_path, "de.yaml", 'topic: "T"\nlanguage: german\ncards:\n  - front: "f"\n    back: "b"\n'
+    )
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert errors == []
+    assert cards[0]["language"] == "german"
+
+
+def test_a_card_file_without_a_language_falls_back(tmp_path):
+    path = write(tmp_path, "a.yaml", MINIMAL)
+    assert build_pdf.load_cards([path], [], [])[0][0]["language"] == "english"
+    assert build_pdf.load_cards([path], [], [], "french")[0][0]["language"] == "french"
+
+
+def test_an_unknown_language_in_a_file_is_reported_not_crashed(tmp_path):
+    path = write(
+        tmp_path, "x.yaml", 'topic: "T"\nlanguage: elvish\ncards:\n  - front: "f"\n    back: "b"\n'
+    )
+    cards, errors = build_pdf.load_cards([path], [], [])
+    assert cards == []
+    assert "unknown language" in errors[0] and "elvish" in errors[0]
+
+
+def test_the_document_language_follows_the_cards_unless_overridden():
+    cards = [card(0, "german"), card(1, "german"), card(2, "english")]
+    assert build_pdf.main_language(cards) == "german"
+    assert build_pdf.main_language(cards, "english") == "english"
+    assert build_pdf.main_language([]) == build_pdf.DEFAULT_LANGUAGE
+
+
+def test_only_cards_in_a_foreign_language_are_marked_up():
+    cw, ch, _ = build_pdf.grid(margin=5)
+    body = build_pdf.build_body([card(0, "german"), card(1, "english")], 5, cw, ch, "german")
+    assert body.count("\\foreignlanguage{english}") == 3  # header, front, back
+    assert "\\foreignlanguage{ngerman}" not in body, "the main language needs no markup"
 
 
 # --- template -------------------------------------------------------------

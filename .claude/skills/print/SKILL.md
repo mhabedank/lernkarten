@@ -22,9 +22,10 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
    Filters: `--topic "Name"` (repeatable), `--subtopic "Name"`.
    Layout: `--margin <mm>` — page margin for printers with a non-printable
    edge (default 5 mm; `--margin 0` = borderless, full A7 cards).
-   Typesetting: `--language <babel language>` for hyphenation (default
-   `english`; use `ngerman`, `french`, … to match the card language).
    `--no-logo` prints the cards without the logo mark.
+   The language comes from each card file's `language:` key — do NOT pass
+   `--language` routinely. Use it only to override, e.g. when a file is
+   missing the key (`--language german`, `--language de`).
 4. On LaTeX errors: the script names the offending card (topic + index). Fix
    the problem in the YAML file (usually an unescaped special character) and
    rebuild.

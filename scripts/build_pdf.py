@@ -18,6 +18,7 @@ import string
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 from pathlib import Path
 
 import yaml
@@ -27,6 +28,89 @@ TEMPLATE = ROOT / "templates" / "cards.tex.in"
 CARDS_PER_PAGE = 8  # 2 columns x 4 rows
 COLUMNS, ROWS = 2, 4
 A4_WIDTH, A4_HEIGHT = 210.0, 297.0  # mm
+
+# Card languages, as the user writes them, mapped to what the typesetter needs
+# for hyphenation and quotation marks. Names and ISO 639-1 codes both work; the
+# right-hand side never leaves this file.
+LANGUAGES = {
+    "basque": "basque",
+    "catalan": "catalan",
+    "croatian": "croatian",
+    "czech": "czech",
+    "danish": "danish",
+    "dutch": "dutch",
+    "english": "english",
+    "estonian": "estonian",
+    "finnish": "finnish",
+    "french": "french",
+    "galician": "galician",
+    "german": "ngerman",
+    "hungarian": "magyar",
+    "icelandic": "icelandic",
+    "irish": "irish",
+    "italian": "italian",
+    "latin": "latin",
+    "latvian": "latvian",
+    "lithuanian": "lithuanian",
+    "norwegian": "norsk",
+    "polish": "polish",
+    "portuguese": "portuguese",
+    "romanian": "romanian",
+    "slovak": "slovak",
+    "slovenian": "slovene",
+    "spanish": "spanish",
+    "swedish": "swedish",
+    "turkish": "turkish",
+    "welsh": "welsh",
+}
+CODES = {
+    "ca": "catalan",
+    "cs": "czech",
+    "cy": "welsh",
+    "da": "danish",
+    "de": "german",
+    "en": "english",
+    "es": "spanish",
+    "et": "estonian",
+    "eu": "basque",
+    "fi": "finnish",
+    "fr": "french",
+    "ga": "irish",
+    "gl": "galician",
+    "hr": "croatian",
+    "hu": "hungarian",
+    "is": "icelandic",
+    "it": "italian",
+    "la": "latin",
+    "lt": "lithuanian",
+    "lv": "latvian",
+    "nb": "norwegian",
+    "nl": "dutch",
+    "no": "norwegian",
+    "pl": "polish",
+    "pt": "portuguese",
+    "ro": "romanian",
+    "sk": "slovak",
+    "sl": "slovenian",
+    "sv": "swedish",
+    "tr": "turkish",
+}
+DEFAULT_LANGUAGE = "english"
+
+
+def resolve_language(name):
+    """Normalises a user-facing language name; raises ValueError if unknown."""
+    key = str(name).strip().lower().replace("_", "-")
+    key = CODES.get(key.split("-")[0], key)
+    if key not in LANGUAGES:
+        raise ValueError(f"unknown language {name!r} — supported: {', '.join(sorted(LANGUAGES))}")
+    return key
+
+
+def typesetting_options(main, used):
+    """Language options for the template: every language used, `main` in charge."""
+    others = sorted(LANGUAGES[lang] for lang in used if lang != main)
+    return ",".join([*others, f"main={LANGUAGES[main]}"]) if others else LANGUAGES[main]
 
 
 def grid(margin):
@@ -49,7 +133,7 @@ def grid(margin):
     return cw, ch, "\n".join(lines)
 
 
-def load_cards(files, topic_filters, subtopic_filters):
+def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_LANGUAGE):
     """Reads the YAML files and returns a flat, filtered list of cards."""
     cards = []
     errors = []
@@ -65,6 +149,11 @@ def load_cards(files, topic_filters, subtopic_filters):
             continue
         topic = str(data.get("topic") or path.stem)
         if topic_filters and not any(f.lower() in topic.lower() for f in topic_filters):
+            continue
+        try:
+            language = resolve_language(data.get("language") or default_language)
+        except ValueError as e:
+            errors.append(f"{path}: {e}")
             continue
         for i, c in enumerate(data["cards"] or [], start=1):
             if not isinstance(c, dict) or "front" not in c or "back" not in c:
@@ -83,9 +172,18 @@ def load_cards(files, topic_filters, subtopic_filters):
                     "front": str(c["front"]),
                     "back": str(c["back"]),
                     "source": str(c.get("source") or ""),
+                    "language": language,
                 }
             )
     return cards, errors
+
+
+def main_language(cards, override=None):
+    """The document language: what the user asked for, else what the cards are in."""
+    if override:
+        return override
+    counts = Counter(c["language"] for c in cards)
+    return counts.most_common(1)[0][0] if counts else DEFAULT_LANGUAGE
 
 
 def _page(cells, margin, cw, ch):
@@ -101,7 +199,14 @@ def _page(cells, margin, cw, ch):
     )
 
 
-def build_body(cards, margin, cw, ch):
+def _in_language(text, language, main):
+    """Marks text that is not in the document language, so it hyphenates right."""
+    if language == main or not text:
+        return text
+    return f"\\foreignlanguage{{{LANGUAGES[language]}}}{{{text}}}"
+
+
+def build_body(cards, margin, cw, ch, main=DEFAULT_LANGUAGE):
     """Builds the LaTeX body: one front and one back page per block of 8."""
     pages = []
     for start in range(0, len(cards), CARDS_PER_PAGE):
@@ -110,11 +215,15 @@ def build_body(cards, margin, cw, ch):
         fronts, backs = [], []
         for pos, c in enumerate(block):
             column, row = pos % COLUMNS, pos // COLUMNS
+            language = c.get("language", main)
             header = c["topic"] + (
                 " \\,\\textperiodcentered\\, " + c["subtopic"] if c["subtopic"] else ""
             )
+            header = _in_language(header, language, main)
+            front = _in_language(c["front"], language, main)
+            back = _in_language(c["back"], language, main)
             fronts.append(
-                (column, row, c["id"], f"\\cardfront{{{header}}}{{{c['front']}}}{{{c['id']}}}")
+                (column, row, c["id"], f"\\cardfront{{{header}}}{{{front}}}{{{c['id']}}}")
             )
             # Back is column-mirrored for duplex printing along the long edge
             backs.append(
@@ -122,7 +231,7 @@ def build_body(cards, margin, cw, ch):
                     1 - column,
                     row,
                     c["id"] + " (back)",
-                    f"\\cardback{{{c['back']}}}{{{c['source']}}}{{{c['id']}}}",
+                    f"\\cardback{{{back}}}{{{c['source']}}}{{{c['id']}}}",
                 )
             )
 
@@ -166,10 +275,17 @@ def compile_pdf(tex_source, target_pdf, workdir):
 
 def report_error(log, tex_file):
     """Maps the LaTeX error back to the offending card (via the % comment)."""
-    print("LaTeX error:", file=sys.stderr)
+    print("Typesetting failed:", file=sys.stderr)
     match = re.search(r"^! (.+)$", log, re.MULTILINE)
     if match:
         print(f"  {match.group(1)}", file=sys.stderr)
+    if "babel" in log.lower() and re.search(r"Unknown option|not loaded|\.ldf", log):
+        print(
+            "  Your TeX installation is missing the data for that language.\n"
+            "    macOS:  the full MacTeX install covers every language\n"
+            "    Debian: sudo apt-get install texlive-lang-all",
+            file=sys.stderr,
+        )
     line_no = re.search(r"^l\.(\d+)", log, re.MULTILINE)
     if line_no:
         no = int(line_no.group(1))
@@ -212,18 +328,23 @@ def main():
     )
     p.add_argument(
         "--language",
-        default="english",
-        help="babel language for hyphenation, e.g. english, ngerman, french (default: english)",
+        metavar="NAME",
+        help="language of the cards, e.g. german or de — overrides what the card files say "
+        f"(default: what they say, else {DEFAULT_LANGUAGE})",
     )
     p.add_argument("--no-logo", action="store_true", help="print the cards without the logo mark")
     args = p.parse_args()
 
     if not 0 <= args.margin <= 20:
         p.error("--margin must be between 0 and 20 mm")
-    if not re.fullmatch(r"[a-zA-Z]+", args.language):
-        p.error("--language must be a plain babel language name, e.g. english or ngerman")
+    override = None
+    if args.language:
+        try:
+            override = resolve_language(args.language)
+        except ValueError as e:
+            p.error(str(e))
 
-    cards, errors = load_cards(args.files, args.topic, args.subtopic)
+    cards, errors = load_cards(args.files, args.topic, args.subtopic, override or DEFAULT_LANGUAGE)
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)
     if errors and args.check:
@@ -232,16 +353,21 @@ def main():
         print("No cards left after filtering — nothing to do.", file=sys.stderr)
         sys.exit(1)
 
+    main = main_language(cards, override)
+    if override:
+        for c in cards:
+            c["language"] = override
+
     cw, ch, cutlines = grid(args.margin)
     template = string.Template(TEMPLATE.read_text(encoding="utf-8"))
     tex = template.substitute(
         cw=f"{cw:.3f}",
         ch=f"{ch:.3f}",
         margin=f"{args.margin:g}",
-        language=args.language,
+        language=typesetting_options(main, {c["language"] for c in cards}),
         logo="" if args.no_logo else "\\logomark",
         cutlines=cutlines,
-        body=build_body(cards, args.margin, cw, ch),
+        body=build_body(cards, args.margin, cw, ch, main),
     )
 
     target = None if args.check else Path(args.output)
@@ -251,10 +377,17 @@ def main():
         sys.exit(1)
 
     pages = 2 * ((len(cards) + CARDS_PER_PAGE - 1) // CARDS_PER_PAGE)
+    used = sorted({c["language"] for c in cards})
+    languages = ", ".join(used)
     if args.check:
-        print(f"OK: {len(cards)} cards valid, test compile succeeded ({pages} pages).")
+        print(
+            f"OK: {len(cards)} cards valid ({languages}), test compile succeeded ({pages} pages)."
+        )
     else:
-        print(f"OK: {len(cards)} cards -> {target} ({pages} pages, duplex, flip on long edge).")
+        print(
+            f"OK: {len(cards)} cards ({languages}) -> {target} "
+            f"({pages} pages, duplex, flip on long edge)."
+        )
 
 
 if __name__ == "__main__":

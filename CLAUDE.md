@@ -18,6 +18,7 @@ code, comments, docs and commit messages are written in English.
 
   ```yaml
   topic: "Display name of the topic"
+  language: german          # language of the cards in this file
   cards:
     - subtopic: "Subtopic"
       front: "Question or term"
@@ -25,6 +26,11 @@ code, comments, docs and commit messages are written in English.
       source: "Short reference (optional)"
     - ...
   ```
+
+  `language` is a plain language name or ISO code (`german`, `de`, `french`,
+  …); `python3 scripts/build_pdf.py --help` lists the ones that work. It
+  defaults to English and decides hyphenation and quotation marks. Files in
+  different languages can go into one PDF.
 
   `front`/`back` are **LaTeX source**: special characters (`%`, `&`, `_`, `#`)
   have to be escaped; maths in `$...$` is allowed; `\\` produces a line break.
@@ -43,8 +49,8 @@ code, comments, docs and commit messages are written in English.
 - Phrase an active recall prompt ("What …?", "Why …?", "Name …"), no yes/no
   questions.
 - Card language = language of the source, unless the user says otherwise.
-  Pass the matching babel language to the build via `--language` (e.g.
-  `--language ngerman`) so hyphenation is right.
+  Always write it into the file's `language:` key — the build reads it from
+  there, so nobody has to remember a flag at print time.
 
 ## Repo rules
 

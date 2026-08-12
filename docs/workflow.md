@@ -140,12 +140,17 @@ at most two lines, back at most six — the card is only 100 × 72 mm.
 
 ```yaml
 topic: "Probability"
+language: english
 cards:
   - subtopic: "Bayes' theorem"
     front: "How is Bayes' theorem stated?"
     back: "$P(A \\mid B) = \\dfrac{P(B \\mid A)\\, P(A)}{P(B)}$"
     source: "Lecture 03, slide 12"
 ```
+
+`language` is the language of your sources, written the way you would say it
+(`german`, `de`, `french`, …). It is the only thing printing needs to hyphenate
+correctly, and card files in different languages can share one PDF.
 
 Finally the skill validates its own output with
 `python3 scripts/build_pdf.py --check cards/*.yaml`.
@@ -189,8 +194,11 @@ python3 scripts/build_pdf.py --check cards/*.yaml
 # Borderless printing: full A7 cards instead of 100 × 71.75 mm
 python3 scripts/build_pdf.py cards/*.yaml --margin 0
 
-# German cards: correct hyphenation, no logo mark
-python3 scripts/build_pdf.py cards/*.yaml --language ngerman --no-logo
+# Override the language of files that do not declare one
+python3 scripts/build_pdf.py cards/*.yaml --language german
+
+# Without the logo mark
+python3 scripts/build_pdf.py cards/*.yaml --no-logo
 ```
 
 ## When something goes wrong
@@ -201,7 +209,7 @@ python3 scripts/build_pdf.py cards/*.yaml --language ngerman --no-logo
 | `WARNING: Overfull …` | the card does not fit the card area | shorten the text or split it across two cards — do not shrink the font |
 | `No cards left after filtering` | `--topic`/`--subtopic` matches nothing | check the spelling against the YAML file; the filter matches substrings |
 | Front and back are offset | wrong duplex setting | "flip on long edge", 100 % scale, not "fit to page" |
-| Hyphenation looks wrong | card language ≠ typesetting language | build with `--language ngerman` (or whichever babel language fits) |
+| Hyphenation looks wrong | the card file has no `language:` key | add it (`language: german`), or build once with `--language german` |
 | Zotero ingest aborts | the local API does not answer | start Zotero 7 and enable the local API under Settings → Advanced |
 | `pdflatex: command not found` | no TeX distribution | see the installation section in the [README](../README.md#requirements) |
 

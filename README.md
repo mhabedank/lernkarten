@@ -102,8 +102,8 @@ brew install --cask mactex-no-gui && brew install poppler python
 sudo apt-get install texlive-latex-recommended texlive-pictures poppler-utils python3-yaml
 ```
 
-For cards in another language, add the matching hyphenation package — e.g.
-`texlive-lang-german` for `--language ngerman`. MacTeX already ships them all.
+For cards in a language other than English, swap `texlive-latex-recommended`
+for `texlive-lang-all`, which covers every language. MacTeX already does.
 
 PyYAML for Python, if the system package did not cover it:
 
@@ -128,6 +128,7 @@ escaped.
 
 ```yaml
 topic: "Probability"
+language: english
 cards:
   - subtopic: "Bayes' theorem"
     front: "How is Bayes' theorem stated?"
@@ -135,9 +136,10 @@ cards:
     source: "Lecture 3, slide 12"
 ```
 
-Cards are written in the language of your sources — German, French, whatever
-you feed it. Pass the matching hyphenation language when you build, e.g.
-`--language ngerman`.
+Cards come out in the language of your sources — German, French, whatever you
+feed it. The file says which one (`language: german`, or an ISO code like
+`de`), and printing takes care of the rest: hyphenation, quotation marks, the
+lot. Card files in different languages can go into the same PDF.
 
 Full example: [cards/example.yaml](cards/example.yaml). You can check card
 files at any time with `python3 scripts/build_pdf.py --check cards/*.yaml`.
