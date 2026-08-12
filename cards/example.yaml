@@ -1,41 +1,44 @@
 # Example cards — schema reference and template smoke test.
 # Delete once you have cards of your own.
-topic: "Example: Probability"
+#
+# Card text is written in single quotes, so a backslash is a line break and
+# double quotes can be used freely. Maths goes between dollar signs.
+topic: 'Example: Probability'
 language: english
 cards:
-  - subtopic: "Basics"
-    front: "What is a sample space $\\Omega$?"
-    back: "The set of all possible outcomes of a random experiment.\\\\ Die roll: $\\Omega = \\{1,2,3,4,5,6\\}$"
-    source: "Example source"
-  - subtopic: "Basics"
-    front: "State the three Kolmogorov axioms."
-    back: "\\begin{itemize}\\item $P(A) \\geq 0$ for every event $A$\\item $P(\\Omega) = 1$\\item $\\sigma$-additivity for disjoint events\\end{itemize}"
-    source: "Example source"
-  - subtopic: "Bayes' theorem"
-    front: "How is Bayes' theorem stated?"
-    back: "$P(A \\mid B) = \\dfrac{P(B \\mid A)\\, P(A)}{P(B)}$"
-    source: "Example source"
-  - subtopic: "Bayes' theorem"
-    front: "What do prior and posterior mean in Bayes' theorem?"
-    back: "Prior $P(A)$: belief before the observation.\\\\ Posterior $P(A \\mid B)$: belief updated after observing $B$."
-    source: "Example source"
-  - subtopic: "Distributions"
-    front: "Give the mean and variance of the binomial distribution $B(n, p)$."
-    back: "$E[X] = np$\\\\ $\\operatorname{Var}(X) = np(1-p)$"
-    source: "Example source"
-  - subtopic: "Distributions"
-    front: "When does the normal distribution approximate the binomial well?"
-    back: "Rule of thumb: when $np(1-p) \\geq 9$.\\\\ Then $B(n,p) \\approx \\mathcal{N}(np,\\, np(1-p))$."
-    source: "Example source"
-  - subtopic: "Distributions"
-    front: "What separates a density from a distribution function?"
-    back: "Density $f(x)$: derivative of the distribution function, not a probability.\\\\ Distribution function $F(x) = P(X \\leq x)$: cumulative probability."
-    source: "Example source"
-  - subtopic: "Limit theorems"
-    front: "What does the weak law of large numbers state?"
-    back: "The mean of independent, identically distributed variables converges in probability to the expected value: $\\bar{X}_n \\xrightarrow{P} \\mu$."
-    source: "Example source"
-  - subtopic: "Limit theorems"
-    front: "What does the central limit theorem state?"
-    back: "The standardised sum of i.i.d. variables with finite variance converges in distribution to $\\mathcal{N}(0,1)$."
-    source: "Example source"
+  - subtopic: 'Basics'
+    front: 'What is a sample space $Omega$?'
+    back: 'The set of all possible outcomes of a random experiment. \ Die roll: $Omega = {1,2,3,4,5,6}$'
+    source: 'Example source'
+  - subtopic: 'Basics'
+    front: 'State the three Kolmogorov axioms.'
+    back: '#list([$P(A) >= 0$ for every event $A$], [$P(Omega) = 1$], [$sigma$-additivity for disjoint events])'
+    source: 'Example source'
+  - subtopic: 'Bayes theorem'
+    front: 'How is Bayes theorem stated?'
+    back: '$P(A | B) = (P(B | A) P(A)) / P(B)$'
+    source: 'Example source'
+  - subtopic: 'Bayes theorem'
+    front: 'What do prior and posterior mean in Bayes theorem?'
+    back: 'Prior $P(A)$: belief before the observation. \ Posterior $P(A | B)$: belief updated after observing $B$.'
+    source: 'Example source'
+  - subtopic: 'Distributions'
+    front: 'Give the mean and variance of the binomial distribution $B(n, p)$.'
+    back: '$E[X] = n p$ \ $"Var"(X) = n p (1-p)$'
+    source: 'Example source'
+  - subtopic: 'Distributions'
+    front: 'When does the normal distribution approximate the binomial well?'
+    back: 'Rule of thumb: when $n p (1-p) >= 9$. \ Then $B(n,p) approx cal(N)(n p, n p (1-p))$.'
+    source: 'Example source'
+  - subtopic: 'Distributions'
+    front: 'What separates a density from a distribution function?'
+    back: 'Density $f(x)$: derivative of the distribution function, not a probability. \ Distribution function $F(x) = P(X <= x)$: cumulative probability.'
+    source: 'Example source'
+  - subtopic: 'Limit theorems'
+    front: 'What does the weak law of large numbers state?'
+    back: 'The mean of independent, identically distributed variables converges in probability to the expected value: $overline(X)_n scripts(->)^P mu$.'
+    source: 'Example source'
+  - subtopic: 'Limit theorems'
+    front: 'What does the central limit theorem state?'
+    back: 'The standardised sum of i.i.d. variables with finite variance converges in distribution to $cal(N)(0,1)$.'
+    source: 'Example source'

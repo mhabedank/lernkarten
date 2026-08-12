@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. Bug reports, improvements to the skills, the LaTeX
+Thanks for your interest. Bug reports, improvements to the skills, the card
 layout or the docs are all welcome.
 
 ## Ground rule: no content in the repo
@@ -22,8 +22,10 @@ cd lernkarten
 python3 -m pip install --user -r requirements-dev.txt
 ```
 
-On the system side you need the same things as for normal use: `pdflatex`,
-`pdftotext`, Python ≥ 3.10 (see the [README](README.md#requirements)).
+That is only pytest and ruff — the tools themselves need nothing but Python.
+To try your changes as a plugin, add the clone as a marketplace from inside
+Claude Code: `/plugin marketplace add .` and then
+`/plugin install lernkarten@mhabedank`.
 
 ## Before the pull request
 
@@ -33,7 +35,7 @@ Exactly what CI checks:
 ruff check .                                                # lint
 ruff format --check .                                       # formatting
 pytest                                                      # tests
-python3 scripts/build_pdf.py --check cards/example.yaml     # card schema + LaTeX build
+lernkarten check cards/example.yaml                         # card schema + PDF build
 python3 scripts/check_docs.py                               # skill frontmatter + doc links
 ```
 
@@ -72,17 +74,21 @@ build: make the page margin configurable
 - **Language**: English, everywhere — code, comments, docstrings, docs and
   commit messages. The cards a user generates are of course in whatever
   language their sources are.
-- **Skills** (`.claude/skills/*/SKILL.md`): terse and action-oriented. A skill
+- **Skills** (`skills/*/SKILL.md`): terse and action-oriented. A skill
   describes a procedure, not a theory. New skills need frontmatter with `name`
   and a `description` that spells out its triggers.
-- **Python**: standard library plus PyYAML, no further runtime dependencies.
-- **LaTeX**: layout changes go into `templates/cards.tex.in` only, never into
-  the generated `.tex`.
+- **Python**: the standard library only. A runtime dependency the user has to
+  install is a bug, not a trade-off — that is why `scripts/minyaml.py` exists
+  instead of PyYAML.
+- **Layout**: changes go into `templates/cards.typ` only, never into the
+  generated file.
+- **The engine** is pinned by version and SHA-256 in `scripts/engine.py`. When
+  you bump it, bump every platform's checksum with it.
 - **Card conventions** (schema, escaping, style) live in [CLAUDE.md](CLAUDE.md)
   and apply to contributions too.
 
 ## Reporting bugs
 
-Please include: operating system, Python and TeX version, the command you ran,
+Please include: operating system, Python version, the command you ran,
 the full error message — and, if it is about a card, the YAML snippet in
 question (without your private material, if you can avoid it).

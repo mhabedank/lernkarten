@@ -1,14 +1,14 @@
 # Workflow — from a source to a printed card
 
-This page walks the whole path once: a freshly cloned repo, a folder of lecture
-PDFs, and a PDF in the printer at the end. The subject is arbitrary — here it
+This page walks the whole path once: an empty folder, a stack of lecture PDFs,
+and a PDF in the printer at the end. The subject is arbitrary — here it
 is statistics, but anatomy, vocabulary or recipes work just as well.
 
 ## Overview
 
 ```mermaid
 flowchart TD
-    A([repo cloned]) --> S["/sources ~/University/Statistics"]
+    A([empty folder]) --> S["/sources ~/University/Statistics"]
     S --> SF[/"sources.yaml<br>1 source registered"/]
     SF --> I["/ingest"]
     I --> IF[/"knowledge/statistics/*.md<br>full text per document"/]
@@ -33,12 +33,13 @@ one.
 ## Step 0 — start a session
 
 ```bash
-cd lernkarten
+mkdir ~/flashcards && cd ~/flashcards
 claude
 ```
 
-Claude Code reads `CLAUDE.md` (the project conventions) and finds the five
-skills under `.claude/skills/`. Everything from here happens in the chat.
+Any folder will do — this is where your sources, texts and cards will live.
+The five commands come from the plugin (see [Install](../README.md#install)).
+Everything from here happens in the chat.
 
 ## Step 1 — `/sources`: register your material
 
@@ -92,9 +93,8 @@ Conditional probability …
 ```
 
 The text is not summarised — completeness is what counts here; condensing
-happens in the next step. Scanned PDFs without a text layer go through OCR
-(`tesseract`) automatically, and infographics and diagrams are read as images
-rather than chopped up by OCR.
+happens in the next step. Scanned PDFs without a text layer are read as images,
+and so are infographics and diagrams — no OCR to garble them.
 
 **Incremental:** a second call skips everything that has not changed since last
 time. Web pages are re-fetched after 7 days. `/ingest university-statistics`
@@ -139,21 +139,23 @@ Each subtopic yields 3–8 cards in `cards/<topic-slug>.yaml`. The rules are in
 at most two lines, back at most six — the card is only 100 × 72 mm.
 
 ```yaml
-topic: "Probability"
+topic: 'Probability'
 language: english
 cards:
-  - subtopic: "Bayes' theorem"
-    front: "How is Bayes' theorem stated?"
-    back: "$P(A \\mid B) = \\dfrac{P(B \\mid A)\\, P(A)}{P(B)}$"
-    source: "Lecture 03, slide 12"
+  - subtopic: 'Bayes theorem'
+    front: 'How is Bayes theorem stated?'
+    back: '$P(A | B) = (P(B | A) P(A)) / P(B)$'
+    source: 'Lecture 03, slide 12'
 ```
+
+Card text is Typst markup: `$...$` for maths, a backslash for a line break,
+`#list([a], [b])` for bullets. Single quotes in YAML keep it readable.
 
 `language` is the language of your sources, written the way you would say it
 (`german`, `de`, `french`, …). It is the only thing printing needs to hyphenate
 correctly, and card files in different languages can share one PDF.
 
-Finally the skill validates its own output with
-`python3 scripts/build_pdf.py --check cards/*.yaml`.
+Finally the skill validates its own output with `lernkarten check cards/*.yaml`.
 
 **Merge instead of overwrite:** a second run on the same topic appends new
 cards and does not duplicate existing fronts. Only an explicit "regenerate"
@@ -169,7 +171,7 @@ replaces them.
 Calls the build script and sends you the PDF:
 
 ```bash
-python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+lernkarten build cards/*.yaml -o output/cards.pdf
 ```
 
 Then print: **duplex, "flip on long edge", 100 % scale**, and cut along the
@@ -183,35 +185,38 @@ The last step does not need Claude — the script stands on its own:
 
 ```bash
 # Build everything
-python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+lernkarten build cards/*.yaml -o output/cards.pdf
 
 # One topic only, one subtopic only
-python3 scripts/build_pdf.py cards/*.yaml --topic "Statistics" --subtopic "Bayes"
+lernkarten build cards/*.yaml --topic 'Statistics' --subtopic 'Bayes'
 
 # Validate only, write no PDF (this is what CI uses)
-python3 scripts/build_pdf.py --check cards/*.yaml
+lernkarten check cards/*.yaml
 
 # Borderless printing: full A7 cards instead of 100 × 71.75 mm
-python3 scripts/build_pdf.py cards/*.yaml --margin 0
+lernkarten build cards/*.yaml --margin 0
 
 # Override the language of files that do not declare one
-python3 scripts/build_pdf.py cards/*.yaml --language german
+lernkarten build cards/*.yaml --language german
 
 # Without the logo mark
-python3 scripts/build_pdf.py cards/*.yaml --no-logo
+lernkarten build cards/*.yaml --no-logo
+
+# Where is the typesetting engine?
+lernkarten engine --check
 ```
 
 ## When something goes wrong
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `LaTeX error … Offending card: bayes-4` | an unescaped `%`, `&`, `_`, `#` or an ASCII `"` in the YAML string | escape the character in the named card; write quotes as `` `…' `` |
-| `WARNING: Overfull …` | the card does not fit the card area | shorten the text or split it across two cards — do not shrink the font |
+| `The typesetter rejected the cards … Offending card: bayes-4` | the markup in that card is not valid Typst | fix the named card — usually an unescaped `#`, `_` or `*`, or LaTeX-style maths that needs Typst syntax |
+| `WARNING: card … does not fit` | the text is too long for the card | shorten it or split it across two cards — do not shrink the font |
 | `No cards left after filtering` | `--topic`/`--subtopic` matches nothing | check the spelling against the YAML file; the filter matches substrings |
 | Front and back are offset | wrong duplex setting | "flip on long edge", 100 % scale, not "fit to page" |
 | Hyphenation looks wrong | the card file has no `language:` key | add it (`language: german`), or build once with `--language german` |
 | Zotero ingest aborts | the local API does not answer | start Zotero 7 and enable the local API under Settings → Advanced |
-| `pdflatex: command not found` | no TeX distribution | see the installation section in the [README](../README.md#requirements) |
+| `could not download the typesetting engine` | no network on the first build | retry when online, or install typst yourself and set `LERNKARTEN_ENGINE` |
 
 ## Where your data lives
 

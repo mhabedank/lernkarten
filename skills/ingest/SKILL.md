@@ -25,17 +25,20 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
 ## Extraction per type
 
 - **folder**: collect files recursively by `pattern` (default: `*.pdf`, `*.md`,
-  `*.txt`, `*.html`, `*.docx`). PDFs → `pdftotext -layout`; DOCX → the docx
-  skill or `textutil -convert txt` (macOS); MD/TXT taken as they are.
-- **pdf**: `pdftotext -layout` (with `-f`/`-l` when `pages` is given). If the
-  result is nearly empty (< 200 characters over > 3 pages) it is a scan → OCR:
-  `pdftoppm -r 300 -gray -png <pdf> <prefix>` and then, per page,
-  `tesseract <png> <out> -l eng` (or another language), concatenate the result
-  and record `ocr: tesseract` in the frontmatter. Only report a failure once
-  that fails too.
-- **zotero (bulk)**: `python3 scripts/zotero_ingest.py --source-id <id>
+  `*.txt`, `*.html`, `*.docx`). PDFs as below; DOCX → the docx skill or
+  `textutil -convert txt` (macOS); MD/TXT taken as they are.
+- **pdf**: read it with the Read tool, in chunks via `pages` (20 pages per
+  call). Nothing has to be installed for this. If `pdftotext` happens to be
+  available, prefer it for documents over ~40 pages — `pdftotext -layout`
+  (with `-f`/`-l` when `pages` is given) is far cheaper — and fall back to the
+  Read tool when it is missing or returns nearly nothing. A PDF whose text
+  layer is empty is a scan: the Read tool handles those, since it sees the
+  pages as images.
+- **zotero (bulk)**: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/zotero_ingest.py --source-id <id>
   [--collection "Name"]` — uses the local API, extracts PDF attachments
-  including metadata frontmatter, works incrementally.
+  including metadata frontmatter, works incrementally. Without `pdftotext` it
+  still writes one file per item with the metadata and `pending: <pdf path>`;
+  fill those in with the Read tool and drop the `pending:` line.
 - **zotero** (Zotero 7 must be running):
   1. Resolve the collection key: `curl -s "http://localhost:23119/api/users/0/collections"`
      → the entry whose `data.name` matches the collection.

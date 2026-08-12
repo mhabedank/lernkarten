@@ -5,12 +5,15 @@ generated cards belong to the user and stay local.
 """
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import minyaml  # noqa: E402
 
 # Everything below these paths is user content — except for the exceptions.
 BLOCKED = ("knowledge/", "catalog/", "cards/", "output/")
@@ -45,7 +48,7 @@ def test_no_personal_source_register_in_the_repo():
 
 
 def test_example_source_register_is_valid():
-    data = yaml.safe_load((ROOT / "sources.example.yaml").read_text(encoding="utf-8"))
+    data = minyaml.load((ROOT / "sources.example.yaml").read_text(encoding="utf-8"))
     assert isinstance(data, dict) and data.get("sources"), "key 'sources' missing"
 
     ids = set()

@@ -16,7 +16,7 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 3. Run the build:
 
    ```bash
-   python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+   lernkarten build cards/*.yaml -o output/cards.pdf
    ```
 
    Filters: `--topic "Name"` (repeatable), `--subtopic "Name"`.
@@ -39,6 +39,8 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 - Cards that are too long for the card area are reported by the build as a
   warning ("Overfull"); shorten or split such cards instead of shrinking the
   font.
-- The template lives in `templates/cards.tex.in` (Python template syntax,
-  `$placeholder`). Make layout changes there, not in the generated `.tex`
-  under `output/`.
+- The first build downloads the typesetting engine (about 15 MB) and caches it.
+  Nothing else has to be installed. `lernkarten engine --check` says where it
+  is; `LERNKARTEN_ENGINE` points the build at one of your own.
+- The layout lives in `templates/cards.typ`. Change it there, never in the
+  generated file.

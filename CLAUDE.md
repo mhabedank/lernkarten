@@ -1,7 +1,7 @@
 # Lernkarten — project instructions
 
 Pipeline: `/sources` → `/ingest` → `/catalog` → `/cards` → `/print`.
-The skills live under `.claude/skills/`. The project language is English:
+The skills live under `skills/`. The project language is English:
 code, comments, docs and commit messages are written in English.
 
 ## Conventions
@@ -17,29 +17,30 @@ code, comments, docs and commit messages are written in English.
 - **Cards**: `cards/<topic-slug>.yaml` with this schema:
 
   ```yaml
-  topic: "Display name of the topic"
+  topic: 'Display name of the topic'
   language: german          # language of the cards in this file
   cards:
-    - subtopic: "Subtopic"
-      front: "Question or term"
-      back: "Answer or definition"
-      source: "Short reference (optional)"
+    - subtopic: 'Subtopic'
+      front: 'Question or term'
+      back: 'Answer or definition'
+      source: 'Short reference (optional)'
     - ...
   ```
 
   `language` is a plain language name or ISO code (`german`, `de`, `french`,
-  …); `python3 scripts/build_pdf.py --help` lists the ones that work. It
+  …); `lernkarten build --help` lists the ones that work. It
   defaults to English and decides hyphenation and quotation marks. Files in
   different languages can go into one PDF.
 
-  `front`/`back` are **LaTeX source**: special characters (`%`, `&`, `_`, `#`)
-  have to be escaped; maths in `$...$` is allowed; `\\` produces a line break.
-  The build script does NOT escape anything itself.
-  No ASCII `"` inside the YAML strings (it terminates the string!) — write
-  quotation marks as `` `...' `` or, in German, ``\glqq ...\grqq{}``.
-- **PDF build**: `python3 scripts/build_pdf.py` (see `--help`). Output goes to
-  `output/`. Never edit LaTeX by hand in `output/` — always go through the
-  YAML files.
+  `front`/`back` are **Typst markup**. Write them in single quotes, so a
+  backslash is a line break and `"` needs no escaping; double the apostrophe
+  (`''`) for a literal one. Maths goes in `$...$` — Typst syntax, not LaTeX:
+  `(a) / (b)` for fractions, `Omega`, `sigma`, `>=`, `"Var"(X)` for upright
+  text, `#list([a], [b])` for a bulleted back. `#`, `*`, `_`, `@`, `<`, `>`
+  and backtick need a backslash in running text; `%` and `&` do not.
+- **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
+  goes to `output/`. The typesetting engine downloads itself on first use.
+  Never hand-edit anything in `output/` — always go through the YAML files.
 
 ## Card style
 
@@ -69,6 +70,6 @@ This is a public open-source repo — it holds the tools, not the knowledge.
   ```bash
   ruff check . && ruff format --check .
   pytest
-  python3 scripts/build_pdf.py --check cards/example.yaml
+  lernkarten check cards/example.yaml
   python3 scripts/check_docs.py
   ```

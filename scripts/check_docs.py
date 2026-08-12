@@ -6,7 +6,7 @@ Runs without arguments over the whole repo and is meant as a CI step:
     python3 scripts/check_docs.py
 
 It verifies that:
-  * every skill under .claude/skills/<name>/SKILL.md has YAML frontmatter with
+  * every skill under skills/<name>/SKILL.md has YAML frontmatter with
     'name' (= folder name) and 'description' (mentioning its triggers),
   * every relative markdown link in the docs points at an existing file,
   * the files an open-source repo is expected to ship are present.
@@ -16,10 +16,10 @@ import re
 import sys
 from pathlib import Path
 
-import yaml
+import minyaml
 
 ROOT = Path(__file__).resolve().parent.parent
-SKILLS = ROOT / ".claude" / "skills"
+SKILLS = ROOT / "skills"
 REQUIRED_FILES = [
     "README.md",
     "LICENSE",
@@ -27,6 +27,10 @@ REQUIRED_FILES = [
     "CODE_OF_CONDUCT.md",
     "CLAUDE.md",
     "sources.example.yaml",
+    ".claude-plugin/plugin.json",
+    ".claude-plugin/marketplace.json",
+    "templates/cards.typ",
+    "bin/lernkarten",
     "assets/logo.svg",
     "docs/workflow.md",
     ".github/workflows/ci.yml",
@@ -60,8 +64,8 @@ def check_skills(errors):
 
         raw = text.split("---\n", 2)[1]
         try:
-            head = yaml.safe_load(raw) or {}
-        except yaml.YAMLError as e:
+            head = minyaml.load(raw) or {}
+        except minyaml.YamlError as e:
             errors.append(f"{path.relative_to(ROOT)}: frontmatter is not valid YAML: {e}")
             continue
 

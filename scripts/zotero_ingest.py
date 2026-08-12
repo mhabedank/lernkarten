@@ -2,9 +2,10 @@
 """Zotero ingest: PDF attachments of the local Zotero library -> knowledge/<id>/.
 
 Uses the local Zotero API (Zotero 7, port 23119) for metadata and collection
-membership, and extracts the PDFs with pdftotext straight from
-~/Zotero/storage. Works incrementally: existing files are skipped unless the
-PDF source is newer.
+membership, and reads the PDFs straight from ~/Zotero/storage. Text is pulled
+out with pdftotext when that happens to be installed; otherwise the item is
+written with its metadata and a `pending:` line for the Read tool to fill in.
+Works incrementally: existing files are skipped unless the PDF source is newer.
 
 Examples:
     python3 scripts/zotero_ingest.py --source-id zotero-library
@@ -15,6 +16,7 @@ import argparse
 import datetime
 import json
 import re
+import shutil
 import subprocess
 import sys
 import unicodedata
@@ -82,6 +84,20 @@ def find_pdf(item_key):
     return None
 
 
+def extract(pdf):
+    """(text, pending) — text when it can be pulled out here, else a to-do."""
+    if shutil.which("pdftotext") is None:
+        # No extractor installed: leave the item for the Read tool to fill in.
+        return None, True
+    r = subprocess.run(["pdftotext", "-layout", str(pdf), "-"], capture_output=True, text=True)
+    text = r.stdout.strip()
+    if r.returncode != 0:
+        return None, True
+    if len(text) < 200:  # no text layer — a scan, which the Read tool can see
+        return None, True
+    return text, False
+
+
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -115,7 +131,7 @@ def main():
     target.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
 
-    stats = {"new": 0, "skipped": 0, "no_pdf": 0, "failed": 0, "empty": 0}
+    stats = {"new": 0, "skipped": 0, "no_pdf": 0, "pending": 0}
     for it in items:
         d = it["data"]
         if d.get("itemType") == "note":
@@ -134,16 +150,7 @@ def main():
             stats["skipped"] += 1
             continue
 
-        r = subprocess.run(["pdftotext", "-layout", str(pdf), "-"], capture_output=True, text=True)
-        text = r.stdout.strip()
-        if r.returncode != 0 or len(text) < 200:
-            stats["empty" if r.returncode == 0 else "failed"] += 1
-            print(
-                f"WARN {'empty' if r.returncode == 0 else 'failed'}: {title} ({pdf.name})",
-                file=sys.stderr,
-            )
-            # Empty (probably scanned) PDFs are not written either
-            continue
+        text, pending = extract(pdf)
 
         authors = ", ".join(
             " ".join(filter(None, [c.get("firstName"), c.get("lastName")])) or c.get("name", "")
@@ -162,18 +169,20 @@ def main():
                     f'year: "{d.get("date", "")[:4]}"' if d.get("date") else None,
                     f'collections: "{collections}"' if collections else None,
                     f"zotero_key: {it['key']}",
+                    f'pending: "{pdf}"' if pending else None,
                     f"ingested: {today}",
                     "---",
                 ],
             )
         )
-        md.write_text(f"{head}\n\n{text}\n", encoding="utf-8")
-        stats["new"] += 1
+        body = text if text else "<!-- read this PDF with the Read tool and replace this line -->"
+        md.write_text(f"{head}\n\n{body}\n", encoding="utf-8")
+        stats["pending" if pending else "new"] += 1
         print(f"OK: {title[:70]}")
 
     print(
-        f"\nDone: {stats['new']} new, {stats['skipped']} skipped, "
-        f"{stats['no_pdf']} without PDF, {stats['empty']} empty (scan?), {stats['failed']} failed"
+        f"\nDone: {stats['new']} new, {stats['pending']} awaiting the Read tool, "
+        f"{stats['skipped']} skipped, {stats['no_pdf']} without a PDF"
     )
 
 

@@ -47,33 +47,46 @@ jobs:
         run: python -m pytest
 
   cards:
-    name: Card validation & LaTeX build
-    runs-on: ubuntu-latest
+    name: Card validation & build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Dependencies
-        run: |
-          python -m pip install --disable-pip-version-check PyYAML
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-latex-recommended texlive-pictures texlive-lang-german \
-            texlive-fonts-recommended lmodern poppler-utils
-      - name: Check the schema and test-compile
-        run: python3 scripts/build_pdf.py --check cards/*.yaml
+      # Nothing is installed here on purpose: the first build fetches the
+      # typesetting engine itself, which is exactly what a new user gets.
+      - name: Check the schema and test-build
+        run: bin/lernkarten check cards/*.yaml
+      - name: Report the engine
+        run: bin/lernkarten engine --check
       - name: Build the PDF for real
-        run: python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
+        run: bin/lernkarten build cards/*.yaml -o output/cards.pdf
       - name: Build the borderless, logo-free layout
-        run: python3 scripts/build_pdf.py cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf
+        run: bin/lernkarten build cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf
       - name: Build with a non-default card language
-        run: python3 scripts/build_pdf.py cards/*.yaml --language german -o output/other-language.pdf
+        run: bin/lernkarten build cards/*.yaml --language german -o output/other-language.pdf
       - uses: actions/upload-artifact@v7
+        if: matrix.os == 'ubuntu-latest'
         with:
           name: example-pdf
           path: output/*.pdf
           if-no-files-found: error
+
+  oldest-python:
+    name: Runtime on the oldest supported Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.9"
+      - name: Build the example cards with nothing installed
+        run: python3 scripts/build_pdf.py --check cards/example.yaml
 
   docs:
     name: Skills & docs
@@ -83,7 +96,5 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - name: Dependencies
-        run: python -m pip install --disable-pip-version-check PyYAML
       - name: Check skill frontmatter and doc links
         run: python3 scripts/check_docs.py

@@ -23,7 +23,7 @@ Creates flashcards from the topic catalog and the references under
 4. **Merge into existing files**: if `cards/<topic-slug>.yaml` exists, append
    the new cards; do not duplicate cards whose `front` already exists in
    substance. Replace only on an explicit request ("regenerate").
-5. Validate after writing: `python3 scripts/build_pdf.py --check cards/*.yaml`
+5. Validate after writing: `lernkarten check cards/*.yaml`
    (checks the schema and test-compiles). Fix errors right away.
 6. Summary: number of cards per topic/subtopic, then point at `/print`.
 

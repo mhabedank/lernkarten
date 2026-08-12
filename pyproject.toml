@@ -1,15 +1,17 @@
 [project]
 name = "lernkarten"
-version = "0.1.0"
-description = "Claude Code skill set: turn any knowledge source into print-ready flashcards"
+version = "0.2.0"
+description = "Claude Code plugin: turn any knowledge source into print-ready flashcards"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10"
-dependencies = ["PyYAML>=6.0"]
+# The tools run on the Python that ships with macOS and most Linux systems,
+# and need nothing from PyPI. Development (pytest, ruff) wants 3.10 or newer.
+requires-python = ">=3.9"
+dependencies = []
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
