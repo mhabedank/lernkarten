@@ -25,8 +25,11 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
 ## Extraction per type
 
 - **folder**: collect files recursively by `pattern` (default: `*.pdf`, `*.md`,
-  `*.txt`, `*.html`, `*.docx`). PDFs as below; DOCX → the docx skill or
-  `textutil -convert txt` (macOS); MD/TXT taken as they are.
+  `*.txt`, `*.html`, `*.docx`, `*.png`, `*.jpg`, `*.jpeg`). PDFs as below;
+  DOCX → the docx skill or `textutil -convert txt` (macOS); MD/TXT taken as
+  they are; images as under **image** below. A folder of photos or screenshots
+  is therefore ingested without a `pattern` — say so in the summary, and ask
+  before ingesting more than 20 images, since each one is looked at.
 - **pdf**: read it with the Read tool, in chunks via `pages` (20 pages per
   call). Nothing has to be installed for this. If `pdftotext` happens to be
   available, prefer it for documents over ~40 pages — `pdftotext -layout`
@@ -36,7 +39,8 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
   pages as images.
 - **zotero (bulk)**: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/zotero_ingest.py --source-id <id>
   [--collection "Name"]` — uses the local API, extracts PDF attachments
-  including metadata frontmatter, works incrementally. Without `pdftotext` it
+  including metadata frontmatter, works incrementally. It writes into
+  `knowledge/<id>/` of the current folder; `--project` says otherwise. Without `pdftotext` it
   still writes one file per item with the metadata and `pending: <pdf path>`;
   fill those in with the Read tool and drop the `pending:` line.
 - **zotero** (Zotero 7 must be running):

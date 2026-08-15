@@ -38,6 +38,12 @@ REQUIRED_FILES = [
     "docs/workflow.md",
     "docs/design.md",
     "docs/index.html",
+    "docs/testing.md",
+    # The test data every test runs against. Its register is let back in past
+    # .gitignore by hand, so it is worth guarding that it is still there.
+    "tests/fixtures/demo-project/sources.yaml",
+    "tests/fixtures/demo-project/generators/handbook.typ",
+    "tests/fixtures/zotero/library.json",
     ".github/workflows/ci.yml",
 ]
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")

@@ -1,0 +1,17 @@
+# A third card language, in a non-Latin script: the bundled fonts have to cover
+# Greek, and the subtopics stay the English ones from the catalog.
+topic: 'Kestrel Islands: Παλίρροια (ελληνικά)'
+language: greek
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Τι σημαίνει ημιημερήσια παλίρροια;'
+    back: 'Δύο πλημμυρίδες και δύο αμπώτιδες σε κάθε παλιρροιακή ημέρα.'
+    source: 'Σημειώσεις πεδίου 2'
+  - subtopic: 'Rhythm of the tide'
+    front: 'Πόσο διαρκεί μια παλιρροιακή ημέρα;'
+    back: '$24 "h" 50 "min"$ — κάθε πλημμυρίδα έρχεται περίπου 50 λεπτά αργότερα από την προηγούμενη.'
+    source: 'Σημειώσεις πεδίου 2'
+  - subtopic: 'Range and the rule of twelfths'
+    front: 'Πώς ορίζεται το εύρος της παλίρροιας;'
+    back: 'Ύψος πλημμυρίδας μείον ύψος αμπώτιδας. \ Στο Torvig Harbour: $3.4 "m"$ κατά μέσο όρο.'
+    source: 'Σημειώσεις πεδίου 2'

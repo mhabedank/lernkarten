@@ -14,7 +14,13 @@ own sources are useless to everyone else, and ingested third-party texts do not
 belong here for copyright reasons.
 
 Example cards should demonstrate a format, not a field of study.
-`cards/example.yaml` is the only card file that is versioned.
+`cards/example.yaml` is the only card file of your own that is versioned.
+
+The one exception is the test data under `tests/fixtures/demo-project`: a
+complete miniature project about an invented archipelago, written for this
+repository and covered by its licence. Extend it when you need test material —
+and keep inventing rather than quoting, so it stays free of anyone else's
+copyright.
 
 ## Development setup
 
@@ -42,6 +48,19 @@ python3 scripts/check_docs.py                               # skill frontmatter 
 ```
 
 All of them have to be green — CI blocks the merge otherwise.
+
+The end-to-end tests need test data that is not in the repo — the PDFs, the
+scan, the infographic and the Word document are generated — and a typesetting
+engine. Both are one command each, and CI does the same:
+
+```bash
+python3 scripts/make_testdata.py            # builds the binary test material
+LERNKARTEN_E2E=1 pytest tests/test_e2e.py   # fetches the engine if missing
+```
+
+They run against the demo project in `tests/fixtures/demo-project`, which is
+also what you copy when you want to try the skills by hand. How to do that, and
+what to test that no script can check, is in [docs/testing.md](docs/testing.md).
 
 ## Branch model
 

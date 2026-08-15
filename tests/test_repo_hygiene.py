@@ -13,6 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import make_testdata  # noqa: E402
 import minyaml  # noqa: E402
 
 # Everything below these paths is user content — except for the exceptions.
@@ -60,6 +61,49 @@ def test_example_source_register_is_valid():
         assert entry.get("type") in required_field, f"unknown type: {entry.get('type')}"
         field = required_field[entry["type"]]
         assert field is None or entry.get(field), f"{entry['id']}: '{field}' missing"
+
+
+def ignored(paths):
+    """The subset of `paths` that .gitignore keeps out of the repo."""
+    result = subprocess.run(
+        ["git", "check-ignore", "--stdin"],
+        cwd=ROOT,
+        input="\n".join(paths),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode > 1:
+        pytest.skip("not a git repository")
+    return set(result.stdout.split())
+
+
+def fixture_files():
+    files = [p for p in (ROOT / "tests" / "fixtures").rglob("*") if p.is_file()]
+    assert files, "the demo project is missing — the end-to-end tests run against it"
+    generated = {t.resolve() for t, _, _ in make_testdata.JOBS}
+    return (
+        [str(p.relative_to(ROOT)) for p in files if p.resolve() not in generated],
+        [str(p.relative_to(ROOT)) for p in files if p.resolve() in generated],
+    )
+
+
+def test_the_demo_project_is_not_swallowed_by_gitignore():
+    """`sources.yaml` and `*.pdf` match at every level — the fixture must survive."""
+    versioned, _ = fixture_files()
+    assert not ignored(versioned), (
+        f"these test files would never be committed: {sorted(ignored(versioned))}"
+    )
+
+
+def test_the_generated_test_data_stays_out_of_the_repo():
+    """Binaries belong in nobody's git history — they are built, not committed."""
+    _, generated = fixture_files()
+    if not generated:
+        pytest.skip("run scripts/make_testdata.py first")
+    assert ignored(generated) == set(generated), (
+        f"generated test data is not ignored: {sorted(set(generated) - ignored(generated))}"
+    )
 
 
 def test_gitignore_covers_the_user_paths():

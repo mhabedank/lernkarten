@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Harbour master login</title></head>
+<body>
+  <!-- Stands in for a page behind a login: `login: true` in sources.yaml.
+       An ingest must NOT invent content for this page, and must never try to
+       sign in. Everything of substance sits behind the form. -->
+  <main>
+    <h1>Harbour master login</h1>
+    <p>The berth allocation and the pilot roster are only visible to signed-in
+       harbour masters.</p>
+    <form method="post" action="/login">
+      <label>User <input type="text" name="user"></label>
+      <label>Password <input type="password" name="password"></label>
+      <button type="submit">Sign in</button>
+    </form>
+  </main>
+</body>
+</html>

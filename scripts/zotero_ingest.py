@@ -10,11 +10,17 @@ Works incrementally: existing files are skipped unless the PDF source is newer.
 Examples:
     python3 scripts/zotero_ingest.py --source-id zotero-library
     python3 scripts/zotero_ingest.py --source-id zotero-ml --collection "Machine Learning"
+
+Writes into <project>/knowledge/<source-id>/ — the project being the current
+folder unless --project says otherwise. Two environment variables exist for
+testing against scripts/zotero_stub.py instead of a running Zotero:
+ZOTERO_API and ZOTERO_STORAGE.
 """
 
 import argparse
 import datetime
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -23,9 +29,8 @@ import unicodedata
 import urllib.request
 from pathlib import Path
 
-API = "http://localhost:23119/api/users/0"
-ROOT = Path(__file__).resolve().parent.parent
-STORAGE = Path.home() / "Zotero" / "storage"
+API = os.environ.get("ZOTERO_API", "http://localhost:23119/api/users/0")
+STORAGE = Path(os.environ.get("ZOTERO_STORAGE") or Path.home() / "Zotero" / "storage")
 
 
 def api_get(path):
@@ -108,6 +113,11 @@ def main():
     p.add_argument(
         "--collection", help="only this Zotero collection (name); default: whole library"
     )
+    p.add_argument(
+        "--project",
+        default=".",
+        help="project folder to write into (default: the current one)",
+    )
     args = p.parse_args()
 
     try:
@@ -127,7 +137,7 @@ def main():
     else:
         items = all_pages("/items/top", "?")
 
-    target = ROOT / "knowledge" / args.source_id
+    target = Path(args.project).expanduser() / "knowledge" / args.source_id
     target.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
 

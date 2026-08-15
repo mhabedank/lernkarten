@@ -1,0 +1,194 @@
+{
+  "_comment": [
+    "A fake Zotero library. scripts/zotero_stub.py serves this in the shape of",
+    "the Zotero 7 local API, so the zotero half of /ingest can be tested with",
+    "no Zotero installed. The attachment keys are the folder names under",
+    "storage/, which scripts/make_testdata.py fills with generated PDFs.",
+    "Everything here is invented — the papers do not exist.",
+    "A {STORAGE} placeholder in an attachment path is replaced by the stub with the absolute path of the storage folder."
+  ],
+  "collections": [
+    {
+      "key": "KCOLL1",
+      "name": "Kestrel Islands"
+    },
+    {
+      "key": "KCOLL2",
+      "name": "Mainland"
+    }
+  ],
+  "items": [
+    {
+      "key": "ITEM01",
+      "itemType": "journalArticle",
+      "title": "Currents in the Ashwind Sea: a first survey",
+      "creators": [
+        {
+          "firstName": "Marek",
+          "lastName": "Ovray"
+        },
+        {
+          "firstName": "Sanne",
+          "lastName": "Torvig"
+        }
+      ],
+      "date": "2019-06",
+      "collections": [
+        "KCOLL1"
+      ],
+      "attachments": [
+        {
+          "key": "KESTREL01",
+          "contentType": "application/pdf",
+          "path": "storage:ashwind-currents.pdf",
+          "filename": "ashwind-currents.pdf"
+        },
+        {
+          "key": "KESTREL06",
+          "contentType": "text/plain",
+          "path": "",
+          "filename": "",
+          "_note": "A Zotero note under the paper: not a PDF, nothing to extract."
+        }
+      ]
+    },
+    {
+      "key": "ITEM02",
+      "itemType": "book",
+      "title": "Tide tables of the Kestrel Islands (scanned)",
+      "creators": [
+        {
+          "name": "Tide office Fenmouth"
+        }
+      ],
+      "date": "2021",
+      "collections": [
+        "KCOLL1"
+      ],
+      "_note": "A scan: no text layer, so the ingest has to leave it pending.",
+      "attachments": [
+        {
+          "key": "KESTREL02",
+          "contentType": "application/pdf",
+          "path": "storage:tide-tables-scan.pdf",
+          "filename": "tide-tables-scan.pdf"
+        }
+      ]
+    },
+    {
+      "key": "ITEM03",
+      "itemType": "journalArticle",
+      "title": "Bird counts on Bellhorn, 1994-2004",
+      "creators": [
+        {
+          "firstName": "Ida",
+          "lastName": "Fenmouth"
+        }
+      ],
+      "date": "2005",
+      "collections": [
+        "KCOLL1"
+      ],
+      "_note": "No attachment at all — has to be counted, not ingested.",
+      "attachments": []
+    },
+    {
+      "key": "ITEM04",
+      "itemType": "note",
+      "title": "Ask the tide office about the Ovray deviation",
+      "creators": [],
+      "collections": [
+        "KCOLL1"
+      ],
+      "_note": "A note item: skipped before anything else happens.",
+      "attachments": []
+    },
+    {
+      "key": "ITEM05",
+      "itemType": "report",
+      "title": "Ferry statistics of the mainland ports",
+      "creators": [
+        {
+          "firstName": "Jonas",
+          "lastName": "Skarn"
+        }
+      ],
+      "date": "2022-11-03",
+      "collections": [
+        "KCOLL2"
+      ],
+      "_note": "Another collection — must stay out of a --collection run.",
+      "attachments": [
+        {
+          "key": "KESTREL03",
+          "contentType": "application/pdf",
+          "path": "storage:ferry-statistics.pdf",
+          "filename": "ferry-statistics.pdf"
+        }
+      ]
+    },
+    {
+      "key": "KESTREL04",
+      "itemType": "attachment",
+      "title": "Signal code of the Kestrel Islands (offprint)",
+      "creators": [],
+      "date": "2018",
+      "collections": [
+        "KCOLL1"
+      ],
+      "contentType": "application/pdf",
+      "path": "storage:signal-code-offprint.pdf",
+      "filename": "signal-code-offprint.pdf",
+      "_note": "A PDF filed without a parent item — its own key is its folder.",
+      "attachments": []
+    },
+    {
+      "key": "ITEM07",
+      "itemType": "journalArticle",
+      "title": "A link, not a file",
+      "creators": [
+        {
+          "firstName": "Nils",
+          "lastName": "Bellhorn"
+        }
+      ],
+      "date": "2020",
+      "collections": [
+        "KCOLL1"
+      ],
+      "_note": "The attachment is a web link, not a PDF — nothing to extract.",
+      "attachments": [
+        {
+          "key": "KESTREL09",
+          "contentType": "text/html",
+          "path": "",
+          "filename": ""
+        }
+      ]
+    },
+    {
+      "key": "ITEM08",
+      "itemType": "journalArticle",
+      "title": "Fog over the Kestrel Deep",
+      "creators": [
+        {
+          "firstName": "Ida",
+          "lastName": "Fenmouth"
+        }
+      ],
+      "date": "2017-03",
+      "collections": [
+        "KCOLL1"
+      ],
+      "_note": "Attached by absolute path, not storage: — the other branch of the path lookup.",
+      "attachments": [
+        {
+          "key": "KESTREL05",
+          "contentType": "application/pdf",
+          "path": "{STORAGE}/KESTREL01/ashwind-currents.pdf",
+          "filename": "fog-over-the-kestrel-deep.pdf"
+        }
+      ]
+    }
+  ]
+}
