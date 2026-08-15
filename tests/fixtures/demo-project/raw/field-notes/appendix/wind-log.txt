@@ -1,0 +1,16 @@
+ASHWIND LOG — Torvig Harbour, one week
+(Invented material. In a subfolder on purpose: a folder source is walked
+recursively, so this file has to turn up in knowledge/ as well.)
+
+Day 1   NE 4    clear
+Day 2   NE 5    clear, gusting 6 in the gap
+Day 3   NE 6    spray over the pier at high water
+Day 4   NE 3    fog over the Kestrel Deep from 06:00
+Day 5   E 2     fog all day, mail boat cancelled
+Day 6   NE 4    clear
+Day 7   NE 5    clear
+
+The ashwind blows on about 200 days a year. It is dry, it comes from the
+north-east, and it is the reason the Ashwind Sea has its name. Fog is the
+exception and occurs when warm air from the south meets the cold water over
+the Kestrel Deep — as on days 4 and 5.

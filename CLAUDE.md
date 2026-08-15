@@ -63,7 +63,9 @@ This is a public open-source repo — it holds the tools, not the knowledge.
 
 - **Never commit your own content**: `sources.yaml`, `knowledge/`, `catalog/`,
   `cards/` (except `example.yaml`) and `output/` are in `.gitignore`. Never
-  force them in with `git add -f` — not even "just briefly".
+  force them in with `git add -f` — not even "just briefly". The test data
+  under `tests/fixtures/demo-project` is the one exception: invented for this
+  repo, versioned on purpose, never anyone else's text.
 - **Stay subject-agnostic**: examples and docs demonstrate the format, not a
   field of study. No subject-specific content in the README, the skills or the
   code.
@@ -77,3 +79,14 @@ This is a public open-source repo — it holds the tools, not the knowledge.
   lernkarten check cards/example.yaml
   python3 scripts/check_docs.py
   ```
+
+- **Testing**: the demo project under `tests/fixtures/` carries raw material
+  for every source type. Its binary half (PDFs, a scan, an image, a DOCX, the
+  Zotero attachments) is generated from typst sources by
+  `scripts/make_testdata.py` — never commit binaries. `tests/test_e2e.py`
+  drives the real command and skips without a typesetting engine, so run it
+  once with `LERNKARTEN_E2E=1` before the PR. `scripts/check_project.py` checks
+  what the model-driven steps write, `scripts/zotero_stub.py` fakes Zotero, and
+  `scripts/demo.py` sets up a scratch project for testing by hand. The
+  checklist is in `docs/testing.md`; a new feature or failure mode belongs in
+  the demo project, not in a fixture of its own.

@@ -163,6 +163,11 @@ Bug reports and pull requests are welcome — see
 changes go through pull requests that have to pass the CI gates (lint, tests,
 card validation, PDF build).
 
+Want to try it out or test a change? `python3 scripts/demo.py ~/lernkarten-demo`
+sets up a small demo project — invented material, no licence questions — that
+you can run the five commands against. [docs/testing.md](docs/testing.md) has
+the checklist and describes the automated tests.
+
 ## License
 
 [MIT](LICENSE) — for the tools. The material you ingest and turn into cards

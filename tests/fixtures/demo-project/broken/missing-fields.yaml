@@ -1,0 +1,11 @@
+# The second card has no 'back'. Every card needs 'front' and 'back'.
+topic: 'Broken: missing fields'
+language: english
+cards:
+  - subtopic: 'Complete'
+    front: 'Which flag means the harbour is closed?'
+    back: 'The red flag.'
+    source: 'Demo'
+  - subtopic: 'Incomplete'
+    front: 'A question whose answer was never written.'
+    source: 'Demo'

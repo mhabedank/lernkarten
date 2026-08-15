@@ -1,0 +1,59 @@
+# Source register of the demo project — what /sources writes, with every
+# source type and every extraction path the ingest skill claims to handle.
+#
+# The paths are relative to this folder so the fixture works from any checkout;
+# `scripts/demo.py` rewrites them to absolute ones when it copies the project.
+# The binaries below (PDFs, the image, the DOCX) are not in the repo — build
+# them once with `python3 scripts/make_testdata.py`.
+
+sources:
+  - id: field-notes
+    type: folder
+    path: raw/field-notes
+    pattern: "*"
+    note: "Markdown, plain text, a subfolder, an umlaut file name and an empty file"
+
+  - id: handbook
+    type: pdf
+    path: raw/handbook/kestrel-handbook.pdf
+    pages: "1-2"
+    note: "Four pages with a text layer; 'pages' cuts it down to the first two"
+
+  - id: tide-tables
+    type: pdf
+    path: raw/handbook/tide-tables-scan.pdf
+    note: "A scan — no text layer, so it has to be looked at, not extracted"
+
+  - id: island-images
+    type: folder
+    path: raw/images
+    note: "An infographic and a photo — no pattern needed, images are a default"
+
+  - id: office-notes
+    type: folder
+    path: raw/office
+    pattern: "*.docx"
+    note: "A Word document — textutil or the docx skill"
+
+  - id: harbour-office
+    type: web
+    url: http://127.0.0.1:8137/
+    depth: 1
+    note: "Local site under raw/web — start it with python3 -m http.server 8137"
+
+  - id: harbour-office-members
+    type: web
+    url: http://127.0.0.1:8137/members.html
+    login: true
+    note: "Behind a form: never sign in, never invent what is behind it"
+
+  - id: kestrel-web
+    type: web
+    url: https://example.com/
+    depth: 0
+    note: "IANA's reserved example domain — the one source that needs the internet"
+
+  - id: kestrel-zotero
+    type: zotero
+    collection: "Kestrel Islands"
+    note: "Needs Zotero — or python3 scripts/zotero_stub.py, which fakes it"

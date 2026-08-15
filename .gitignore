@@ -12,6 +12,20 @@ cards/*
 !cards/example.yaml
 output/
 
+# The demo project under tests/ is the exception: invented content, written for
+# this repo, and the input of the end-to-end tests. `sources.yaml` above matches
+# at every level, so the fixture register has to be let back in.
+!tests/fixtures/**/sources.yaml
+
+# Its binary half — PDFs, the scan, the infographic, the DOCX, the attachments
+# of the fake Zotero library — is generated from the text sources next to it:
+#   python3 scripts/make_testdata.py
+tests/fixtures/demo-project/raw/handbook/
+tests/fixtures/demo-project/raw/images/
+tests/fixtures/demo-project/raw/office/
+tests/fixtures/demo-project/raw/field-notes/harbour-log.txt
+tests/fixtures/zotero/storage/
+
 # --- Build leftovers ----------------------------------------------------
 *.aux
 *.log

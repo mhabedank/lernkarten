@@ -1,0 +1,64 @@
+# Topic catalog — Kestrel Islands (demo project)
+
+Derived from `knowledge/` by `/catalog`. Topics are cut by content, not by
+source. Edit by hand: `/cards` follows whatever is written here.
+
+## Geography
+The archipelago itself — islands, relief and settlements.
+
+### The five islands
+Names, sizes and populations of the inhabited islands, and what makes Torvig
+the gateway to the archipelago.
+References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+
+### Relief and the crater
+The islands as the rim of a drowned crater, the Kestrel Deep between them, and
+Bellhorn as the exception.
+References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+
+### Settlements
+Where people live, which harbours are reachable how, and where the tide office
+sits.
+References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+
+## Tides
+The Ashwind tide cycle as the tide office in Fenmouth teaches it.
+
+### Rhythm of the tide
+Semidiurnal tide, the length of the tidal day and the daily shift of high
+water.
+References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
+
+### Range and the rule of twelfths
+Tidal range, spring and neap values, and how the rise is distributed over the
+six hours of the flood.
+References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
+
+### Chart datum and the Ovray rule
+What the charted heights refer to, and when Ovray Cove can be entered.
+References: [tide-cycle](../knowledge/field-notes/tide-cycle.md),
+[kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+
+## Gezeiten (deutsch)
+The tide topic once more in German — the demo needs two card languages in one
+PDF, and `/cards` follows the catalog, so the German subtopics belong here too.
+
+### Tidenrhythmus
+Halbtägige Tide, Länge des Tidentags, tägliche Verschiebung des Hochwassers.
+References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
+
+### Tidenhub
+Spring- und Nipptidenhub in Torvig Harbour und die Zwölftelregel.
+References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
+
+## Signals
+The flag code of the harbours, for the days the radio is down.
+
+### The six flags
+What each of the six flags means.
+References: [signal-code](../knowledge/field-notes/signal-code.md)
+
+### Rules of use
+Reading order, forbidden pairs, half mast, and what a hoisted flag can and
+cannot say.
+References: [signal-code](../knowledge/field-notes/signal-code.md)

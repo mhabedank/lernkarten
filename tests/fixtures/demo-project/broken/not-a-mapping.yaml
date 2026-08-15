@@ -1,0 +1,7 @@
+# A bare list where a mapping with 'topic' and 'cards' belongs.
+- subtopic: 'Any'
+  front: 'A question.'
+  back: 'An answer.'
+- subtopic: 'Any'
+  front: 'Another question.'
+  back: 'Another answer.'

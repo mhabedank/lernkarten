@@ -1,0 +1,9 @@
+# The indentation under 'cards' is inconsistent — the reader refuses to guess
+# and reports the line.
+topic: 'Broken: malformed YAML'
+language: english
+cards:
+  - subtopic: 'One'
+    front: 'A question.'
+      back: 'An answer indented one level too deep.'
+    source: 'Demo'
