@@ -1,0 +1,13 @@
+# Valid markup, but the back of the second card is far longer than a
+# 100 x 72 mm card can hold. The build succeeds and warns about that card.
+topic: 'Broken: overflowing card'
+language: english
+cards:
+  - subtopic: 'Fits'
+    front: 'How long is a tidal day?'
+    back: '$24 "h" 50 "min"$.'
+    source: 'Demo'
+  - subtopic: 'Does not fit'
+    front: 'Describe the whole tide cycle of the Ashwind Sea in one answer.'
+    back: 'The tide is semidiurnal, with two high waters and two low waters in a tidal day of 24 hours and 50 minutes, so every high water arrives about fifty minutes later than the one on the day before. The tidal range is the height of high water minus the height of low water; at Torvig Harbour the mean range is 3.4 metres, the spring range 5.1 metres and the neap range 1.7 metres, which makes the spring range exactly three times the neap range, a rule the tide office in Fenmouth applies to the whole archipelago even though Ovray Cove deviates by up to 0.4 metres. Between low water and high water the water rises for six hours, and the rise is distributed over those hours as one, two, three, three, two and one twelfth of the range, so that half the range is reached after three hours and the fastest rise falls in the third and fourth hour. Spring tides occur two days after new moon and two days after full moon, twice in a synodic month of 29.5 days, and the neap tides fall between them at the quarters; that two-day lag is called the age of the tide. All heights on the charts are given above chart datum, the lowest astronomical tide, so the soundings are a worst case and the real depth is almost always greater than the chart says.'
+    source: 'Demo'

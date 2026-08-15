@@ -1,0 +1,9 @@
+# 'klingon' is not a language the typesetter can hyphenate — the file is
+# rejected with the list of supported languages.
+topic: 'Broken: unknown language'
+language: klingon
+cards:
+  - subtopic: 'Any'
+    front: 'A perfectly fine question.'
+    back: 'A perfectly fine answer.'
+    source: 'Demo'

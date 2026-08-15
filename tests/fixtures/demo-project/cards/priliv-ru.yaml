@@ -1,0 +1,13 @@
+# And in Cyrillic — same reason: a script the fonts have to cover, and the
+# build must not silently fall back to boxes.
+topic: 'Kestrel Islands: Приливы (по-русски)'
+language: russian
+cards:
+  - subtopic: 'Range and the rule of twelfths'
+    front: 'Назовите правило двенадцатых.'
+    back: 'За шесть часов вода поднимается на $1/12, 2/12, 3/12, 3/12, 2/12, 1/12$ размаха. \ Половина достигается через три часа.'
+    source: 'Полевые заметки 2'
+  - subtopic: 'Chart datum and the Ovray rule'
+    front: 'От какого уровня отсчитываются глубины на картах архипелага?'
+    back: 'От нуля глубин — самого низкого астрономического уровня. \ Реальная глубина почти всегда больше.'
+    source: 'Полевые заметки 2'

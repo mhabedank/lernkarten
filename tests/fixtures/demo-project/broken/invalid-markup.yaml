@@ -1,0 +1,13 @@
+# The second card carries an unescaped '#', which the typesetter reads as the
+# start of code. The build has to fail and name exactly this card.
+topic: 'Broken: invalid markup'
+language: english
+cards:
+  - subtopic: 'Fine'
+    front: 'A card that typesets without trouble.'
+    back: 'Nothing wrong here.'
+    source: 'Demo'
+  - subtopic: 'Broken'
+    front: 'How many inhabitants live on Torvig?'
+    back: '#3200 people — the # is unescaped, so this card cannot be typeset.'
+    source: 'Demo'

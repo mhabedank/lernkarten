@@ -1,0 +1,21 @@
+# Same subject, another card language: the build hyphenates and quotes German
+# here and English in the other files, in one and the same PDF.
+topic: 'Kestrel-Inseln: Gezeiten (deutsch)'
+language: german
+cards:
+  - subtopic: 'Tidenrhythmus'
+    front: 'Was heißt halbtägige (semidiurnale) Tide?'
+    back: 'Zwei Hochwasser und zwei Niedrigwasser pro Tidentag.'
+    source: 'Feldnotizen 2'
+  - subtopic: 'Tidenrhythmus'
+    front: 'Wie lang ist ein Tidentag im Ashwind-Meer?'
+    back: '$24 "h" 50 "min"$ — jedes Hochwasser kommt rund 50 Minuten später als am Vortag.'
+    source: 'Feldnotizen 2'
+  - subtopic: 'Tidenhub'
+    front: 'Wie groß sind Spring- und Nipptidenhub in Torvig Harbour?'
+    back: 'Springtidenhub: $5.1 "m"$ \ Nipptidenhub: $1.7 "m"$ \ Der Springhub ist genau dreimal so groß wie der Nipphub.'
+    source: 'Feldnotizen 2'
+  - subtopic: 'Tidenhub'
+    front: 'Nenne die Zwölftelregel.'
+    back: 'Der Hub steigt in sechs Stunden um $1/12, 2/12, 3/12, 3/12, 2/12, 1/12$. \ Nach drei Stunden ist die Hälfte erreicht.'
+    source: 'Feldnotizen 2'

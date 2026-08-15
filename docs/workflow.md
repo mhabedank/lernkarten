@@ -209,6 +209,13 @@ lernkarten engine --check
 | Zotero ingest aborts | the local API does not answer | start Zotero 7 and enable the local API under Settings → Advanced |
 | `could not download the typesetting engine` | no network on the first build | retry when online, or install typst yourself and set `LERNKARTEN_ENGINE` |
 
+## Trying it without your own material
+
+`python3 scripts/demo.py ~/lernkarten-demo --raw` sets up a small project with
+invented material — three field notes about an archipelago that does not
+exist — so you can walk these five steps once before pointing them at your own
+sources. [testing.md](testing.md) has the checklist that goes with it.
+
 ## Where your data lives
 
 `sources.yaml`, `knowledge/`, `catalog/`, `cards/` and `output/` are excluded
