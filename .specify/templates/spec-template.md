@@ -89,7 +89,7 @@
 
 - **Missing optional tooling**: no `pdftotext`, no `sips`/`magick`, no typesetting engine yet. What happens? (Degrade or skip — never fail. See constitution II.)
 - **Fresh install on each platform**: Windows, macOS and Linux are equals. Does the install path work on all three with one ordinary command?
-- **Python floor**: does this work on 3.11, the supported floor, with only the declared dependencies?
+- **Python floor**: does this work on 3.12, the supported floor, with only the declared dependencies?
 - **Encoding and file names**: umlauts, Windows-1252, empty files, an unreadable PDF.
 - **Non-Latin card text**: Greek, Cyrillic — letters, not empty boxes. The engine does not warn on a missing glyph.
 - **Idempotence**: running the step twice changes nothing; deleting one output and re-running brings back exactly that one.
@@ -153,7 +153,7 @@
   is the *shape* of the need.
 -->
 
-- **Is anything being hand-rolled that a library already does?** [no / yes → name it, and say why. Constitution III makes reuse the default; `scripts/minyaml.py` and the `sips`/`magick` shell-out exist only because of the retired zero-dependency rule and are not precedent.]
+- **Is anything being hand-rolled that a library already does?** [no / yes → name it, and say why. Constitution III makes reuse the default, and the two things this project once hand-rolled have both been replaced, so neither is precedent.]
 - **New runtime dependency**: [none / name it — must install with a plain `pip install` on Windows, macOS **and** Linux, with prebuilt wheels or pure Python, no compiler. Vetting table goes in plan.md.]
 - **New dev dependency**: [none / name it]
 - **New external binary**: [none / name it, and say which of the two acceptable shapes it takes: self-fetching + checksum-pinned like `scripts/engine.py`, or genuinely optional with a graceful degrade. A binary the user must install by hand for a core path is neither.]
@@ -182,7 +182,7 @@
 
 ## Assumptions
 
-- [Assumption about the user's environment, e.g. "the user has Python 3.11+ and a working Claude Code install"]
+- [Assumption about the user's environment, e.g. "the user has Python 3.12+ and a working Claude Code install"]
 - [Assumption about scope, e.g. "only the `folder` source type in v1; `zotero` follows"]
 - [Assumption about test material, e.g. "the demo project already carries a fixture for this — no new corpus needed"]
-- [Dependency on existing behaviour, e.g. "relies on `minyaml` already parsing block scalars"]
+- [Dependency on existing behaviour, e.g. "relies on `yamlio` reporting the line number of a malformed card file"]

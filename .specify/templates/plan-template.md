@@ -17,21 +17,19 @@
   feature genuinely changes it.
 -->
 
-**Language/Version**: Python `>=3.11` (`pyproject.toml`), ruff targeting `py311`. CI tests 3.11 and 3.13, and an `oldest-python` job builds cards on the floor. The floor is part of constitution II because it decides which libraries are eligible — raise it deliberately, not incidentally.
+**Language/Version**: Python `>=3.12` (`pyproject.toml`), ruff targeting `py312`. CI tests 3.12 and 3.13, and an `oldest-python` job builds cards on the floor. The floor is part of constitution II because it decides which libraries are eligible — it has already been moved twice by that fact, most recently off 3.11 because PyYAML has no cp311 `win_arm64` wheel.
 
 **Secondary language**: Typst — the card (`templates/card.typ`), the press sheet (`templates/cards.typ`), the brand graphics (`assets/brand/*.typ`) and the test-data generators.
 
-**Runtime dependencies**: `dependencies = []` today, but **not by policy any more**. Constitution II permits any dependency that installs with a plain `pip install` on Windows, macOS and Linux with prebuilt wheels and no compiler. Constitution III says prefer a library over hand-rolling. Constitution IV is the vetting gate — fill in the section below if this feature adds one.
+**Runtime dependencies**: `pyyaml==6.0.3`, declared in `REQUIREMENTS` in `scripts/deps.py` and read through `scripts/yamlio.py`. They reach the user by installing themselves on first use — `pip install --target` into a cache directory, `--only-binary :all:`, reported by `lernkarten deps --check`. A new one must be pinned exactly and must have a wheel for every supported platform, Windows ARM64 included.
 
-**⚠️ A runtime dependency cannot ship yet.** There is no install step between `/plugin install` and the skills calling `bin/lernkarten`, so a runtime package has nowhere to come from. The decided fix is for `bin/lernkarten` to bootstrap a cached virtualenv on first run, the way `scripts/engine.py` fetches Typst — it is not built. Until it is, only **dev** dependencies are shippable. If this feature needs a runtime package, that mechanism is a prerequisite and belongs in this plan or ahead of it.
+**Dev dependencies**: `pytest>=9.1.1`, `ruff==0.16.2`, `pillow>=11,<13`, plus `pyyaml` so a checkout can run the tests without waiting for the bootstrap (`requirements-dev.txt`). Tools pinned exactly; libraries get a range.
 
-**Dev dependencies**: `pytest>=9.1.1`, `ruff==0.16.2` (`requirements-dev.txt`). Tools pinned exactly; libraries get a range.
-
-**Optional external tools**: `pdftotext` (poppler-utils) for PDF text, `sips`/`magick` for JPEG in the test data. Absent → the path degrades or the test skips, never fails. This is one of the two acceptable shapes for a binary dependency.
+**Optional external tools**: `pdftotext` (poppler-utils) for PDF text. Absent → the path degrades or the test skips, never fails. This is one of the two acceptable shapes for a binary dependency.
 
 **Storage**: plain files on disk — `sources.yaml`, `knowledge/`, `catalog/topics.md`, `cards/*.yaml`, `output/`. No database.
 
-**Testing**: pytest, `testpaths = ["tests"]`, `addopts = "-q"`. Six levels; see `docs/testing.md`. **Test-first is mandatory** (constitution XI).
+**Testing**: pytest, `testpaths = ["tests"]`, `addopts = "-q"`. Seven levels; see `docs/testing.md`. **Test-first is mandatory** (constitution XI). Two suites are opt-in: `LERNKARTEN_E2E=1` lets the engine be fetched, `LERNKARTEN_DEPS_NET=1` lets one test install from PyPI.
 
 **Lint/format**: ruff — line length 100, `select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]`.
 
@@ -45,7 +43,7 @@
 
 **Constraints**: frictionless install on all three platforms; works offline once installed and once the engine is cached; output must survive a black-only laser print and a photocopier.
 
-**Scale/Scope**: ~2 100 lines of Python across 10 flat modules, 5 skills, 2 Typst templates, ~1 700 lines of tests, one shared fixture corpus.
+**Scale/Scope**: ~2 000 lines of Python across 11 flat modules, 5 skills, 2 Typst templates, ~1 900 lines of tests, one shared fixture corpus.
 
 ## Dependency Decisions
 
@@ -55,7 +53,7 @@
 
 **Is anything being hand-rolled here?** [no / yes → name it]
 
-If yes: which libraries were considered, and why did each fail Principle II or IV? "Only 200 lines" is not a reason. Note that `scripts/minyaml.py` and the `sips`/`magick` shell-out exist because of the *retired* zero-dependency rule and may not be cited as precedent.
+If yes: which libraries were considered, and why did each fail Principle II or IV? "Only 200 lines" is not a reason. Both things this project once hand-rolled under the retired rule are gone — `minyaml` to PyYAML, `sips`/`magick` to Pillow — so neither is available as precedent.
 
 ### Vetting (constitution IV)
 
@@ -114,7 +112,7 @@ One table per proposed dependency. A row you cannot fill is a reason to stop.
 | XVI | `docs/design.md` read before any visible change; colour doubled by shape; no type shrunk to fit; brand PNGs re-rendered | [ ] |
 | XVII | Card style and Typst escaping rules from `CLAUDE.md` respected | [ ] |
 
-**Open-item check**: does this feature touch anything in the constitution's [Reconciliation → Still open](../memory/constitution.md#still-open) table — the virtualenv bootstrap, the advisory Windows legs, `minyaml` vs PyYAML, `sips`/`magick` vs Pillow? If so, say whether this plan closes that item or works around it.
+**Open-item check**: does this feature touch anything in the constitution's [Reconciliation → Still open](../memory/constitution.md#still-open) table — the advisory Windows CI legs, or hash-pinning dependencies? If so, say whether this plan closes that item or works around it.
 
 ## Project Structure
 
@@ -142,11 +140,12 @@ bin/
 └── lernkarten              # entry point; dispatches build | check | engine
 
 scripts/                    # flat, imported by bare name via sys.path
-├── minyaml.py              # LEAF — hand-written YAML reader; see constitution III
+├── deps.py                 # LEAF — installs the pinned runtime deps on first use
 ├── engine.py               # LEAF — finds/fetches Typst, pinned by SHA-256, 6 platforms
-├── build_pdf.py            # → engine, minyaml. The PDF build and --check
-├── check_project.py        # → build_pdf, minyaml. Gate on model-written artifacts
-├── check_docs.py           # → minyaml. Skill frontmatter, doc links, required files
+├── yamlio.py               # → deps. PyYAML plus a one-line error with the line number
+├── build_pdf.py            # → engine, yamlio. The PDF build and --check
+├── check_project.py        # → build_pdf, yamlio. Gate on model-written artifacts
+├── check_docs.py           # → yamlio. Skill frontmatter, doc links, required files
 ├── make_testdata.py        # → engine. Generates the binary test material
 ├── demo.py                 # → make_testdata. Scratch copy of the demo project
 ├── render_brand.py         # → engine. Renders assets/brand/*.typ to PNG
@@ -171,7 +170,8 @@ assets/
 └── *.png, *.svg            # rendered marks and graphics (committed)
 
 tests/
-├── test_minyaml.py         # unit
+├── test_yamlio.py          # unit
+├── test_deps.py            # the dependency bootstrap
 ├── test_engine.py          # unit
 ├── test_build_pdf.py       # unit
 ├── test_testdata.py        # the generator; the scan has no text layer
@@ -210,8 +210,8 @@ sources.example.yaml
 [Unknowns to resolve before design. Typical ones here:]
 
 - **Is there a library for this?** Constitution III makes this the *first* question, not the last. Name the candidates.
-- Do the candidates ship wheels for Windows, macOS and Linux, on 3.11? What is their transitive tree?
-- Is the need runtime or dev-only? Runtime is blocked on the virtualenv bootstrap; dev-only is not.
+- Do the candidates ship wheels for Windows (including ARM64), macOS and Linux, on the floor? What is their transitive tree?
+- Is the need runtime or dev-only? Runtime goes through `scripts/deps.py` and must have a wheel everywhere; dev-only goes in `requirements-dev.txt`.
 - Does Typst support the layout this needs?
 - Does the demo project already carry material for this, or must the fixture be extended?
 - What does the degraded path look like without `pdftotext` / without an engine?

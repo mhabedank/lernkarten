@@ -31,7 +31,7 @@ python3 -m pip install --user -r requirements-dev.txt
 ```
 
 That is pytest and ruff; the tools themselves currently need no packages of
-their own. Python 3.11 or newer. To try your changes as a plugin, add the clone
+their own. Python 3.12 or newer. To try your changes as a plugin, add the clone
 as a marketplace from inside Claude Code: `/plugin marketplace add .` and then
 `/plugin install lernkarten@mhabedank`.
 
@@ -103,7 +103,7 @@ build: make the page margin configurable
 - **Skills** (`skills/*/SKILL.md`): terse and action-oriented. A skill
   describes a procedure, not a theory. New skills need frontmatter with `name`
   and a `description` that spells out its triggers.
-- **Python**: 3.11 or newer. Dependencies are allowed — see
+- **Python**: 3.12 or newer. Dependencies are allowed — see
   [Dependencies](#dependencies) below for what one has to clear. Don't reinvent
   a wheel a maintained library already turns.
 - **Layout**: the card is `templates/card.typ`, the press sheet
@@ -142,11 +142,10 @@ optional, the way `pdftotext` is — absent, it degrades or skips, never fails.
 A binary the user must install by hand for a core path is neither.
 
 And prefer the library. Hand-rolling something a maintained package already does
-needs a reason in the pull request; "it is only 200 lines" is not one.
-`scripts/minyaml.py` exists *because of* the rule this section replaces, so it is
-not precedent — it is open to being replaced on its merits. The `sips`/`magick`
-shell-out in `scripts/make_testdata.py` was the other one, and Pillow has since
-taken its place.
+needs a reason in the pull request; "it is only 200 lines" is not one. Both
+things this project had hand-rolled under the old rule are gone: PyYAML replaced
+`scripts/minyaml.py`, and Pillow replaced the `sips`/`magick` shell-out in
+`scripts/make_testdata.py`.
 
 ### What a new dependency has to clear
 

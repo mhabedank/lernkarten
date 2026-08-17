@@ -68,10 +68,12 @@ So the rule is no longer "no dependencies". It is **no friction**:
 > A dependency is acceptable when a user on Windows, macOS or Linux gets it with
 > one ordinary command and no further work.
 
-The supported Python floor is **3.11** (`requires-python = ">=3.11"`), which is
+The supported Python floor is **3.12** (`requires-python = ">=3.12"`), which is
 part of this principle rather than incidental to it: the floor decides which
-libraries are eligible at all. 3.9 went end of life in October 2025 and was
-raised for exactly that reason.
+libraries are eligible at all. It has already been set twice by that fact — off
+3.9 because it was end of life, then off 3.11 because PyYAML publishes no
+`win_arm64` wheel for cp311 and Windows on ARM is a platform the engine
+supports.
 
 Concretely, to be acceptable a Python dependency must:
 
@@ -100,22 +102,27 @@ acceptable.
 
 Every dependency still has to clear Principle IV before it goes in.
 
-**Delivery is the open half of this principle.** There is no install step
-between `/plugin install` and the skills calling `bin/lernkarten` — no
-virtualenv, no `pip` hook, just whatever Python the user has. So a *runtime*
-dependency currently has nowhere to come from, and permitting one on paper does
-not make it shippable.
+**Delivery.** There is no install step between `/plugin install` and the skills
+calling `bin/lernkarten` — no virtualenv, no `pip` hook, just whatever Python the
+user has. A runtime dependency therefore has to fetch itself, or permitting one
+on paper does not make it shippable.
 
-The decided direction is to copy the engine: `bin/lernkarten` maintains a cached
-virtualenv and installs its pinned dependencies into it on first run, exactly as
-`scripts/engine.py` fetches Typst. That preserves the one-command install. It is
-not built. **Until it is, a runtime dependency cannot ship** — dev-only
-dependencies are unaffected, since contributors already run
-`pip install -r requirements-dev.txt`.
+`scripts/deps.py` does that: pinned requirements, installed once into a cache
+directory keyed by Python version and machine, reported by
+`lernkarten deps --check`. Two details are load-bearing rather than incidental:
+
+- **`pip install --target`, not a virtualenv.** `python3 -m venv` needs
+  `ensurepip`, which Debian and Ubuntu ship separately as `python3-venv`. A
+  bootstrap that can fail with "now apt-get something" would breach the rule
+  above on the most common Linux family there is.
+- **`--only-binary :all:`.** A package with no wheel for the user's platform
+  fails loudly instead of compiling on their machine. The friction rule,
+  enforced rather than merely written down — and it has already changed a
+  decision, by moving the Python floor off 3.11.
 
 *Decided. Reconciled in `CONTRIBUTING.md` ("Dependencies"), `CLAUDE.md`,
-`pyproject.toml`, `requirements-dev.txt`, `README.md` and `docs/index.html`.
-`dependencies = []` remains true — a fact now, not a promise.*
+`pyproject.toml`, `requirements-dev.txt`, `README.md` and `docs/index.html`, and
+implemented in `scripts/deps.py`.*
 
 ### III. Reuse over reimplementation *(Decided)*
 
@@ -132,29 +139,20 @@ Areas where a library is almost always the right answer: parsing and emitting
 file formats (YAML, HTML, DOCX, PDF, images), text extraction, HTTP, encoding
 detection, date handling.
 
-Two pieces of this repository exist *only* because of the rule this principle
-replaces, and should be re-evaluated on their merits rather than grandfathered:
+Two pieces of this repository existed *only* because of the rule this principle
+replaces. Both are gone:
 
-- `scripts/minyaml.py` — 222 lines of hand-written YAML parser, whose own
-  docstring says "no dependency needed". PyYAML or `ruamel.yaml` is the obvious
-  comparison.
-- the `sips`/`magick` shell-out in `scripts/make_testdata.py`, whose comment
-  reads "Nothing in the standard library writes a JPEG, and a runtime dependency
-  is …" — Pillow is the obvious comparison.
+- `scripts/minyaml.py`, 222 lines of hand-written YAML parser, is now
+  `scripts/yamlio.py` — a thin layer over PyYAML that owns the error message and
+  the bootstrap and nothing else.
+- the `sips`/`magick` shell-out in `scripts/make_testdata.py` is now Pillow, a
+  development dependency.
 
-Re-evaluating them is not automatic. It is a normal change: spec, plan,
-tests-first, pull request. But neither may be defended by citing the retired
-rule.
+Neither was removed automatically. Each was a normal change: spec, plan,
+tests-first, pull request. What the retired rule no longer buys is an argument.
 
-Note the ordering constraint: `minyaml` is a *runtime* import, so replacing it
-with PyYAML cannot ship until the delivery mechanism in Principle II exists. The
-`sips`/`magick` shell-out is only reached by `scripts/make_testdata.py`, which is
-a development tool — Pillow would be a dev dependency, so that one is
-unblocked today.
-
-*Decided. Stated in `CONTRIBUTING.md` ("Dependencies"). `scripts/minyaml.py` and
-`scripts/make_testdata.py:91` still stand — deliberately, pending their own
-change.*
+*Decided. Stated in `CONTRIBUTING.md` ("Dependencies") and carried out in
+`scripts/yamlio.py` and `scripts/make_testdata.py`.*
 
 ### IV. Dependency quality gates *(Decided)*
 
@@ -243,10 +241,11 @@ it does, the commands that invoke it, and why it exists.
 travel is:
 
 ```
-minyaml, engine            ← leaves, import nothing local
-build_pdf                  → engine, minyaml
-check_project              → build_pdf, minyaml
-check_docs                 → minyaml
+deps, engine               ← leaves, import nothing local
+yamlio                     → deps (only to bootstrap PyYAML)
+build_pdf                  → engine, yamlio
+check_project              → build_pdf, yamlio
+check_docs                 → yamlio
 make_testdata              → engine
 demo                       → make_testdata
 render_brand               → engine
@@ -255,9 +254,9 @@ zotero_ingest, zotero_stub → (no local imports)
 
 No cycles, and no import from `scripts/` into `tests/`. Whatever sits at the
 bottom of this graph must stay a leaf, because everything depends on it — today
-that is `minyaml` and `engine`. If Principle III retires `minyaml` in favour of a
-library, the *shape* of this rule survives the substitution: the format reader
-and the engine locator import nothing else of ours.
+that is `deps` and `engine`. The rule survived Principle III retiring `minyaml`:
+`yamlio` took its place and reaches only for `deps`, and only to install the
+parser it wraps.
 
 *Source: the import statements in `scripts/*.py`.*
 
@@ -352,7 +351,8 @@ Test placement is unchanged and still follows `docs/testing.md`:
 
 | Module | Level |
 |---|---|
-| `test_minyaml.py`, `test_engine.py`, `test_build_pdf.py` | unit, no typesetter |
+| `test_yamlio.py`, `test_engine.py`, `test_build_pdf.py` | unit, no typesetter |
+| `test_deps.py` | the dependency bootstrap: no package, no pip, a failing pip |
 | `test_testdata.py` | the generator; that the scan really has no text layer |
 | `test_ingest_sources.py` | the web source over a local server, zotero over the stub |
 | `test_e2e.py` | runs `bin/lernkarten` as a subprocess and takes the PDF apart |
@@ -483,7 +483,7 @@ to contributions too.
 The Decided principles once contradicted files still in the repository. Most of
 that is now settled, on two branches stacked on `e2e-testing`:
 
-- `docs/dependency-policy` — the floor at 3.11, and the dependency policy
+- `docs/dependency-policy` — the floor (since raised to 3.12), and the policy
   written into `CONTRIBUTING.md` (a new "Dependencies" section with the gates),
   `CLAUDE.md`, `pyproject.toml`, `requirements-dev.txt`, `README.md` and
   `docs/index.html`; test-first written into `docs/testing.md` and `CLAUDE.md`;
@@ -498,7 +498,7 @@ that is now settled, on two branches stacked on `e2e-testing`:
 | II | `CONTRIBUTING.md` "the standard library only … is a bug" | replaced by the friction standard and the quality gates |
 | II | `README.md` / `docs/index.html` promised no `pip install` ever | still say nothing needs installing today, without pledging it |
 | II | `pyproject.toml` comment claimed nothing from PyPI | comment now explains the policy; `dependencies = []` is a fact, not a promise |
-| II | floor `>=3.9`, end of life | `>=3.11`, with the ruff target and CI matrix moved in step |
+| II | floor `>=3.9`, end of life | `>=3.12`, with the ruff target and CI matrix moved in step |
 | II | Windows unverified by CI | advisory windows-latest legs on three jobs |
 | XI | `docs/testing.md` gave placement, not ordering | a "Write the test first" section, including the prompt-change case |
 | XIV | history had bare branch names | `<prefix>/<name>` documented in `CONTRIBUTING.md` and `CLAUDE.md` |
@@ -507,10 +507,8 @@ that is now settled, on two branches stacked on `e2e-testing`:
 
 | # | Item | Why it is still open |
 |---|---|---|
-| II | no way to deliver a runtime dependency to a plugin user | needs `bin/lernkarten` to bootstrap a cached virtualenv, the way `engine.py` fetches Typst. Until then a runtime dependency cannot ship, so Principle II is only half usable |
-| II | the Windows legs are `continue-on-error` | nothing has ever run there; expect real breakage. Drop the flag once green, and Windows becomes genuinely first-class |
-| III | `scripts/minyaml.py` vs PyYAML | a runtime import, so blocked behind the delivery mechanism above |
-| III | `sips`/`magick` vs Pillow | unblocked — `make_testdata.py` is a dev tool, so Pillow would be a dev dependency |
+| II | the Windows legs are `continue-on-error` | two rounds of real bugs found and fixed so far. Drop the flag once they are green, and Windows becomes genuinely first-class |
+| IV | dependencies are pinned by version, not by hash | `engine.py` refuses a binary whose SHA-256 does not match, and pip is trusted on TLS alone. `--require-hashes` would close the gap at the cost of a per-platform hash table to maintain on every bump |
 
 Each open item is a normal piece of work: spec, plan, tests-first, pull request.
 None of them is something this constitution changes on its own.
@@ -528,9 +526,10 @@ the rule.
 - Adding a dependency requires the Principle IV answers in the plan, and a
   reviewer who read them. This is the gate that replaces "no dependencies" —
   it only works if it is applied.
-- A **runtime** dependency additionally cannot ship until the delivery
-  mechanism in Principle II exists. Do not approve one on the strength of the
-  quality gates alone.
+- A **runtime** dependency reaches the user through `scripts/deps.py`, so it
+  must be pinned exactly and must have a wheel for every supported platform.
+  `--only-binary :all:` will refuse it otherwise, at the user's expense rather
+  than the reviewer's.
 - Principle VII (no content in the repo) additionally requires an explicit note
   in the pull request description saying what changed and why.
 - Principle XI is not waivable per-change. "I'll add the test after" is how a
@@ -541,7 +540,15 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.1.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-17
+**Version**: 2.2.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-17
+
+*2.2.0 — the floor moved to 3.12, decided by a dependency rather than by
+taste: PyYAML has no cp311 win_arm64 wheel and Windows on ARM is a supported
+platform. Principle II's delivery half is now built (`scripts/deps.py`, via
+`pip install --target` rather than a virtualenv, because ensurepip is not
+universal). Principle III's two hand-rolled leftovers are gone — `minyaml` to
+PyYAML, the `sips`/`magick` shell-out to Pillow — so Principle VI's leaves are
+now `deps` and `engine`.*
 
 *2.1.0 — set the Python floor at 3.11 and recorded the delivery mechanism as the
 gating half of Principle II (a runtime dependency cannot ship until

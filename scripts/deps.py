@@ -14,10 +14,6 @@ Set LERNKARTEN_DEPS_DIR to keep the packages somewhere of your own, or
 LERNKARTEN_NO_BOOTSTRAP=1 to forbid installing anything — then a missing
 dependency is an error and you install it however you like.
 
-There are no runtime dependencies at the moment: REQUIREMENTS is empty, so
-`activate()` does nothing at all. The machinery is here, and tested against
-synthetic requirements, so that the first one to arrive has somewhere to land.
-
 Why `pip install --target` and not a virtualenv: `python3 -m venv` needs
 ensurepip, which Debian and Ubuntu ship as a separate python3-venv package. A
 bootstrap whose failure mode is "now go and apt-get something" would defeat its
@@ -35,7 +31,14 @@ from pathlib import Path
 
 # (pip requirement, module name to import). Pinned exactly: the user is not
 # installing this on purpose, so it must not drift under them.
-REQUIREMENTS = []
+#
+# PyYAML reads the card files, the source register and skill frontmatter, via
+# scripts/yamlio.py. It publishes wheels for every platform the engine supports
+# — which is why the Python floor is 3.12 rather than 3.11: there is no cp311
+# win_arm64 wheel, and no pure-Python fallback to stand in for one.
+REQUIREMENTS = [
+    ("pyyaml==6.0.3", "yaml"),
+]
 
 # Bumped by hand when the layout of the cache directory changes.
 LAYOUT = "1"
@@ -74,6 +77,10 @@ def _importable(module, extra_path=None):
     if extra_path is not None:
         sys.path.insert(0, str(extra_path))
     try:
+        # The target directory is routinely created during this very run, and
+        # importlib remembers that it was not there a moment ago. Without this
+        # the packages we just installed look as though they had not been.
+        importlib.invalidate_caches()
         return importlib.util.find_spec(module) is not None
     except (ImportError, ValueError):
         return False
