@@ -1,3 +1,5 @@
-# Development only. At runtime the tools need nothing but Python itself.
+# Development only — the runtime has no dependencies of its own yet.
+# Tools are pinned exactly, so formatting never shifts under a contributor;
+# libraries would get a range instead.
 pytest>=9.1.1
 ruff==0.16.2
