@@ -45,3 +45,11 @@ venv/
 
 # --- Claude Code --------------------------------------------------------
 .claude/settings.local.json
+# Worktrees are whole checkouts of this repo. They never belong in it.
+.claude/worktrees/
+
+# --- Spec-kit -----------------------------------------------------------
+# .specify/ is versioned: the constitution and the templates are project rules,
+# and rules that only live on one machine are not rules. The catalog cache is
+# a download with timestamps in it, so that part stays out.
+.specify/extensions/.cache/
