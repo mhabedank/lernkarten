@@ -13,6 +13,36 @@ are broken on purpose. The subject is invented for this repository, so the
 fixture can be shipped and edited without a licence question. Keep it that way:
 invent, do not quote.
 
+## Write the test first
+
+The rest of this page says *where* a test goes. This section says *when*: before
+the code, always.
+
+Write the test, run it, watch it fail, then make it pass. A test written
+afterwards tells you what the code does; only a test you have seen fail tells
+you it does what was asked. "Fails with `ImportError`" is not a red test — make
+it fail on the assertion.
+
+For the deterministic half that is an ordinary pytest case at whichever level
+the [table below](#automated) prescribes. For the model-driven half it needs one
+more step, because a prompt has no unit test: the red artifact is **a check in
+`scripts/check_project.py` plus a case in `tests/test_check_project.py` that
+fails against what the current prompt produces.** Then change the prompt until
+it passes. If you cannot write a check that fails, the requirement is not yet
+sharp enough to implement — that is a signal to go back and pin down what the
+skill should write, not a licence to skip the test.
+
+Bug fixes reproduce first: the failing test names the culprit and stays in the
+suite for good.
+
+Design work is the one place this thins out. Page count, card count, an
+overflowing card *reported* rather than shrunk, an exit code — all of that is
+assertable and comes first. Whether the card actually looks right is not a
+pytest question and belongs on the [checklist](#the-checklist) below.
+
+Spikes are fine. Explore in a scratch branch, learn the answer, throw it away,
+then build it test-first. A spike does not go straight into a pull request.
+
 ## The test data
 
 A test that starts at `knowledge/` never touches `/ingest`, so the fixture
