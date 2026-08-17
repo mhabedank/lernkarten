@@ -1,5 +1,8 @@
 # Development only — the runtime has no dependencies of its own yet.
 # Tools are pinned exactly, so formatting never shifts under a contributor;
-# libraries would get a range instead.
+# libraries get a range instead.
 pytest>=9.1.1
 ruff==0.16.2
+# Writes the one JPEG in the test fixture (scripts/make_testdata.py). Replaces a
+# sips/magick/convert lottery that only ever paid out on macOS.
+pillow>=11,<13

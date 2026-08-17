@@ -143,9 +143,10 @@ A binary the user must install by hand for a core path is neither.
 
 And prefer the library. Hand-rolling something a maintained package already does
 needs a reason in the pull request; "it is only 200 lines" is not one.
-`scripts/minyaml.py` and the `sips`/`magick` shell-out in
-`scripts/make_testdata.py` exist *because of* the rule this section replaces, so
-they are not precedent — both are open to being replaced on their merits.
+`scripts/minyaml.py` exists *because of* the rule this section replaces, so it is
+not precedent — it is open to being replaced on its merits. The `sips`/`magick`
+shell-out in `scripts/make_testdata.py` was the other one, and Pillow has since
+taken its place.
 
 ### What a new dependency has to clear
 
