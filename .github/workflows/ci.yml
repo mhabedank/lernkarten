@@ -30,12 +30,22 @@ jobs:
         run: ruff format --check .
 
   test:
-    name: Tests (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    # Windows is a supported platform, but nothing has ever verified it. Until
+    # the leg is green it reports without blocking a merge; make it blocking
+    # (drop this line) as soon as it passes.
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.13"]
+    defaults:
+      run:
+        # bash on all three, so globs and paths behave the same everywhere.
+        # On Windows this is the git-bash that ships with the runner.
+        shell: bash
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -51,10 +61,15 @@ jobs:
   cards:
     name: Card validation & build
     runs-on: ${{ matrix.os }}
+    # See the note on the test job: advisory until the Windows leg is green.
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -62,16 +77,20 @@ jobs:
           python-version: "3.12"
       # Nothing is installed here on purpose: the first build fetches the
       # typesetting engine itself, which is exactly what a new user gets.
+      #
+      # `python bin/lernkarten` rather than `bin/lernkarten`: the file has no
+      # extension and its shebang asks for python3, neither of which Windows
+      # honours. Spelling out the interpreter works identically on all three.
       - name: Check the schema and test-build
-        run: bin/lernkarten check cards/*.yaml
+        run: python bin/lernkarten check cards/*.yaml
       - name: Report the engine
-        run: bin/lernkarten engine --check
+        run: python bin/lernkarten engine --check
       - name: Build the PDF for real
-        run: bin/lernkarten build cards/*.yaml -o output/cards.pdf
+        run: python bin/lernkarten build cards/*.yaml -o output/cards.pdf
       - name: Build the borderless, logo-free layout
-        run: bin/lernkarten build cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf
+        run: python bin/lernkarten build cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf
       - name: Build with a non-default card language
-        run: bin/lernkarten build cards/*.yaml --language german -o output/other-language.pdf
+        run: python bin/lernkarten build cards/*.yaml --language german -o output/other-language.pdf
       - uses: actions/upload-artifact@v7
         if: matrix.os == 'ubuntu-latest'
         with:
@@ -82,10 +101,17 @@ jobs:
   e2e:
     name: End-to-end (demo project)
     runs-on: ${{ matrix.os }}
+    # See the note on the test job: advisory until the Windows leg is green.
+    # This is the leg most likely to need work — it drives the real command,
+    # a local web server and the Zotero stub.
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -97,9 +123,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - name: Build the binary test data (PDFs, scan, image, DOCX)
-        run: python3 scripts/make_testdata.py
+        # No sips and no magick on Windows, so the JPEG is skipped there —
+        # make_testdata.py gates both on shutil.which and carries on.
+        run: python scripts/make_testdata.py
       - name: The demo project matches the documented contracts
-        run: python3 scripts/check_project.py tests/fixtures/demo-project --strict
+        run: python scripts/check_project.py tests/fixtures/demo-project --strict
       - name: Command, typesetter and PDF, end to end
         # LERNKARTEN_E2E=1 lets the first test fetch the engine; locally the
         # module skips instead of downloading anything.
@@ -107,7 +135,7 @@ jobs:
           LERNKARTEN_E2E: "1"
         run: python -m pytest tests/test_e2e.py tests/test_testdata.py tests/test_ingest_sources.py -v
       - name: The demo cards as a PDF
-        run: bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml -o output/demo.pdf
+        run: python bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml -o output/demo.pdf
       - uses: actions/upload-artifact@v7
         if: matrix.os == 'ubuntu-latest'
         with:
