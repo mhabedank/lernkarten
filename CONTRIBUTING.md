@@ -30,9 +30,9 @@ cd lernkarten
 python3 -m pip install --user -r requirements-dev.txt
 ```
 
-That is only pytest and ruff — the tools themselves need nothing but Python.
-To try your changes as a plugin, add the clone as a marketplace from inside
-Claude Code: `/plugin marketplace add .` and then
+That is pytest and ruff; the tools themselves currently need no packages of
+their own. Python 3.11 or newer. To try your changes as a plugin, add the clone
+as a marketplace from inside Claude Code: `/plugin marketplace add .` and then
 `/plugin install lernkarten@mhabedank`.
 
 ## Before the pull request
@@ -67,6 +67,10 @@ what to test that no script can check, is in [docs/testing.md](docs/testing.md).
 `main` is protected: **direct pushes are blocked server-side.** Every change
 goes through a pull request with green CI.
 
+Branch names are `<prefix>/<short-kebab-case>` — always a prefix, always a
+slash. The prefixes are `fix/`, `feat/`, `skill/`, `build/`, `docs/`, `ci/`,
+`test/` and `design/`.
+
 ```bash
 git switch -c fix/card-margin
 # … change, commit …
@@ -83,8 +87,9 @@ scripts/install-hooks.sh
 
 ## Commits
 
-A short, descriptive subject line in the imperative, ideally with a prefix
-(`skill:`, `build:`, `docs:`, `ci:`).
+A short, descriptive subject line in the imperative, with the same prefixes the
+branches use: `fix:`, `feat:`, `skill:`, `build:`, `docs:`, `ci:`, `test:`,
+`design:`.
 
 ```
 build: make the page margin configurable
@@ -98,9 +103,9 @@ build: make the page margin configurable
 - **Skills** (`skills/*/SKILL.md`): terse and action-oriented. A skill
   describes a procedure, not a theory. New skills need frontmatter with `name`
   and a `description` that spells out its triggers.
-- **Python**: the standard library only. A runtime dependency the user has to
-  install is a bug, not a trade-off — that is why `scripts/minyaml.py` exists
-  instead of PyYAML.
+- **Python**: 3.11 or newer. Dependencies are allowed — see
+  [Dependencies](#dependencies) below for what one has to clear. Don't reinvent
+  a wheel a maintained library already turns.
 - **Layout**: the card is `templates/card.typ`, the press sheet
   `templates/cards.typ` — never the generated file. Read
   [docs/design.md](docs/design.md) first: it says what the bands mean, why
@@ -110,6 +115,77 @@ build: make the page margin configurable
   you bump it, bump every platform's checksum with it.
 - **Card conventions** (schema, escaping, style) live in [CLAUDE.md](CLAUDE.md)
   and apply to contributions too.
+
+## Dependencies
+
+This project used to allow none at all, on the grounds that a non-technical
+person should not have to install anything. That reason no longer holds: this is
+a Claude Code extension, so the person running it already has a terminal and a
+working install. Optimising for someone who has neither cost real quality and
+bought nothing.
+
+So dependencies are allowed. What is not allowed is **friction**:
+
+> A dependency is acceptable when someone on Windows, macOS or Linux gets it
+> with one ordinary command and no further work.
+
+Concretely, a Python package has to install from PyPI with a plain
+`pip install`, on every supported Python version, on all three platforms. It
+ships prebuilt wheels or is pure Python — an sdist-only package that needs a
+C, C++ or Rust toolchain is friction and is out, however good it is. No `apt`,
+no `brew`, no `choco`, no manual `PATH` edit, no post-install step. It works
+offline once installed.
+
+An **external binary** has exactly two acceptable shapes: self-fetching and
+checksum-pinned, the way `scripts/engine.py` handles Typst, or genuinely
+optional, the way `pdftotext` is — absent, it degrades or skips, never fails.
+A binary the user must install by hand for a core path is neither.
+
+And prefer the library. Hand-rolling something a maintained package already does
+needs a reason in the pull request; "it is only 200 lines" is not one.
+`scripts/minyaml.py` and the `sips`/`magick` shell-out in
+`scripts/make_testdata.py` exist *because of* the rule this section replaces, so
+they are not precedent — both are open to being replaced on their merits.
+
+### What a new dependency has to clear
+
+Answer these in the pull request. A question you cannot answer is a reason to
+stop rather than a formality to skip.
+
+- **Wheels** for Windows, macOS and Linux, or pure Python. No compiler needed.
+- **Maintained**: a release within roughly the last 12 months, issues being
+  triaged, not archived or looking for a maintainer.
+- **Production-ready**: a stable line. No alpha, beta or release candidate;
+  either ≥ 1.0 or a long, obviously stable track record.
+- **Really used** by other people — meaningful download volume and real
+  dependents. A package with forty downloads a week is a liability.
+- **Provenance**: an identifiable maintainer or organisation, a public
+  repository, a PyPI history that matches it. Signed or attested releases are
+  a plus.
+- **Not a typo-squat.** Check the spelling against the package you actually
+  mean.
+- **No install-time scripts** that build, download or phone home.
+- **Licence** compatible with MIT.
+- **Proportionate**: a shallow transitive tree. Thirty packages to get one
+  function is a reason to copy the three lines instead.
+- **No known unfixed advisory**, and `.github/dependabot.yml` covers whatever
+  manifest declares it.
+- **Declared honestly**: actually imported somewhere, with a version bound and
+  a one-line comment saying what it is for. Tools pinned exactly (the way
+  `ruff==0.16.2` is), libraries given a range. Unused dependencies get deleted.
+
+### Getting one to the user
+
+Unsolved, and worth knowing before you plan a change that needs a package.
+There is no install step between `/plugin install` and the skills calling
+`bin/lernkarten` — no virtualenv, no `pip` hook, just whatever Python the user
+has. So a runtime dependency has nowhere to come from yet.
+
+The intended answer is to copy what the engine already does: have
+`bin/lernkarten` maintain a cached virtualenv and install its pinned
+dependencies into it on first run, the same way `scripts/engine.py` fetches
+Typst. That keeps the one-command install true. It is not built yet, so until it
+is, a runtime dependency cannot actually ship — a dev-only dependency is fine.
 
 ## Reporting bugs
 

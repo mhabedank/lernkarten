@@ -22,10 +22,10 @@ In [Claude Code](https://docs.claude.com/en/docs/claude-code/overview):
 /plugin install lernkarten@mhabedank
 ```
 
-That is the whole installation. No document toolchain, no package manager, no
-`pip install`. The first time you build a PDF, a 15 MB typesetting engine is
-downloaded once and cached; everything else runs on the Python your machine
-already has.
+That is the whole installation — there is no document toolchain to set up and
+nothing to `pip install`. The first time you build a PDF, a 15 MB typesetting
+engine is downloaded once and cached; the rest runs on Python 3.11 or newer,
+which your machine most likely already has.
 
 ## Use it
 

@@ -70,7 +70,15 @@ This is a public open-source repo — it holds the tools, not the knowledge.
   field of study. No subject-specific content in the README, the skills or the
   code.
 - **`main` is locked**: changes go through a branch and a pull request. The
-  server rejects direct pushes, and so does the `pre-push` hook.
+  server rejects direct pushes, and so does the `pre-push` hook. Branches are
+  `<prefix>/<short-kebab-case>` (`fix/card-margin`, `feat/zotero-tags`); the
+  prefixes are `fix/`, `feat/`, `skill/`, `build/`, `docs/`, `ci/`, `test/`,
+  `design/`, and commit subjects use the same set.
+- **Dependencies** are allowed when they install with a plain `pip install` on
+  Windows, macOS and Linux, with wheels and no compiler — and prefer a
+  maintained library over hand-rolling. There are none at runtime yet, and there
+  is no mechanism to deliver one to a plugin user, so a *runtime* dependency
+  cannot ship today. The gates are in `CONTRIBUTING.md`. Python 3.11 or newer.
 - **Before every PR** these four gates have to be green (CI checks the same):
 
   ```bash
@@ -80,6 +88,11 @@ This is a public open-source repo — it holds the tools, not the knowledge.
   python3 scripts/check_docs.py
   ```
 
+- **Test first**: write the test, watch it fail on its assertion, then make it
+  pass. For a skill (prompt) change the red artifact is a check in
+  `scripts/check_project.py` plus a failing case in
+  `tests/test_check_project.py` — if no failing check can be written, the
+  requirement is too vague to implement yet. Details in `docs/testing.md`.
 - **Testing**: the demo project under `tests/fixtures/` carries raw material
   for every source type. Its binary half (PDFs, a scan, an image, a DOCX, the
   Zotero attachments) is generated from typst sources by
