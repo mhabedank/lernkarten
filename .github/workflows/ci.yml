@@ -32,10 +32,6 @@ jobs:
   test:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
-    # Windows is a supported platform, but nothing has ever verified it. Until
-    # the leg is green it reports without blocking a merge; make it blocking
-    # (drop this line) as soon as it passes.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -61,8 +57,6 @@ jobs:
   cards:
     name: Card validation & build
     runs-on: ${{ matrix.os }}
-    # See the note on the test job: advisory until the Windows leg is green.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -101,10 +95,6 @@ jobs:
   e2e:
     name: End-to-end (demo project)
     runs-on: ${{ matrix.os }}
-    # See the note on the test job: advisory until the Windows leg is green.
-    # This is the leg most likely to need work — it drives the real command,
-    # a local web server and the Zotero stub.
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:

@@ -489,7 +489,7 @@ that is now settled, on two branches stacked on `e2e-testing`:
   `docs/index.html`; test-first written into `docs/testing.md` and `CLAUDE.md`;
   branch naming written into `CONTRIBUTING.md` and `CLAUDE.md`.
 - `ci/windows-matrix` — windows-latest legs on the `test`, `cards` and `e2e`
-  jobs.
+  jobs, advisory at first and blocking once the bugs they found were fixed.
 
 ### Settled
 
@@ -497,9 +497,9 @@ that is now settled, on two branches stacked on `e2e-testing`:
 |---|---|---|
 | II | `CONTRIBUTING.md` "the standard library only … is a bug" | replaced by the friction standard and the quality gates |
 | II | `README.md` / `docs/index.html` promised no `pip install` ever | still say nothing needs installing today, without pledging it |
-| II | `pyproject.toml` comment claimed nothing from PyPI | comment now explains the policy; `dependencies = []` is a fact, not a promise |
+| II | `pyproject.toml` comment claimed nothing from PyPI | it now says why the list stays empty: nobody pip-installs a plugin, so `scripts/deps.py` holds the real requirements |
 | II | floor `>=3.9`, end of life | `>=3.12`, with the ruff target and CI matrix moved in step |
-| II | Windows unverified by CI | advisory windows-latest legs on three jobs |
+| II | Windows unverified by CI | windows-latest legs on three jobs, blocking a merge like the others |
 | XI | `docs/testing.md` gave placement, not ordering | a "Write the test first" section, including the prompt-change case |
 | XIV | history had bare branch names | `<prefix>/<name>` documented in `CONTRIBUTING.md` and `CLAUDE.md` |
 
@@ -507,8 +507,7 @@ that is now settled, on two branches stacked on `e2e-testing`:
 
 | # | Item | Why it is still open |
 |---|---|---|
-| II | the Windows legs are `continue-on-error` | two rounds of real bugs found and fixed so far. Drop the flag once they are green, and Windows becomes genuinely first-class |
-| IV | dependencies are pinned by version, not by hash | `engine.py` refuses a binary whose SHA-256 does not match, and pip is trusted on TLS alone. `--require-hashes` would close the gap at the cost of a per-platform hash table to maintain on every bump |
+| IV | dependencies are pinned by version, not by hash | `engine.py` refuses a binary whose SHA-256 does not match; pip is trusted on TLS and PyPI alone. `--require-hashes` would close the gap at the cost of a per-platform hash table to maintain on every bump |
 
 Each open item is a normal piece of work: spec, plan, tests-first, pull request.
 None of them is something this constitution changes on its own.

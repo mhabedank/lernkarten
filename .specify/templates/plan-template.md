@@ -35,7 +35,7 @@
 
 **Typesetting engine**: Typst, one self-contained binary, pinned by version and SHA-256 per platform in `scripts/engine.py` — Darwin arm64/x86_64, Linux x86_64/aarch64, Windows AMD64/ARM64. Fetched once on first build. Override with `LERNKARTEN_ENGINE`. This is the reference pattern for a self-fetching binary.
 
-**Target Platform**: Windows, macOS and Linux, treated as equals (constitution II). `scripts/engine.py` covers all six platform pairs, and CI has windows-latest legs on the `test`, `cards` and `e2e` jobs — but they are `continue-on-error` until they go green, so a Windows failure does not currently block a merge. Check the Windows legs by hand before claiming a Windows fix works.
+**Target Platform**: Windows, macOS and Linux, treated as equals (constitution II). `scripts/engine.py` covers all six platform pairs, and CI runs windows-latest legs on the `test`, `cards` and `e2e` jobs. All three platforms block a merge, so a Windows failure is a failure.
 
 **Project Type**: CLI tool + Claude Code plugin (skills). Single module, flat `scripts/`.
 
@@ -112,7 +112,7 @@ One table per proposed dependency. A row you cannot fill is a reason to stop.
 | XVI | `docs/design.md` read before any visible change; colour doubled by shape; no type shrunk to fit; brand PNGs re-rendered | [ ] |
 | XVII | Card style and Typst escaping rules from `CLAUDE.md` respected | [ ] |
 
-**Open-item check**: does this feature touch anything in the constitution's [Reconciliation → Still open](../memory/constitution.md#still-open) table — the advisory Windows CI legs, or hash-pinning dependencies? If so, say whether this plan closes that item or works around it.
+**Open-item check**: does this feature touch the one thing left in the constitution's [Reconciliation → Still open](../memory/constitution.md#still-open) table — dependencies pinned by version rather than by hash? If so, say whether this plan closes it or works around it.
 
 ## Project Structure
 

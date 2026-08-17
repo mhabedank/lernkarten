@@ -9,9 +9,11 @@ license = { file = "LICENSE" }
 # supports, so the runtime dependency decided the floor rather than the other
 # way round. 3.9 went end of life in October 2025.
 requires-python = ">=3.12"
-# Empty today, which is a fact rather than a promise. A dependency is welcome
-# when it installs with a plain `pip install` on Windows, macOS and Linux, with
-# wheels and no compiler — see CONTRIBUTING.md for the gates it has to clear.
+# Deliberately empty, and not because there are none. Nobody installs lernkarten
+# with pip — it is a Claude Code plugin — so this list would be metadata nothing
+# reads, and a third place for the same pin to drift. The runtime requirements
+# live in REQUIREMENTS in scripts/deps.py, which is also what installs them;
+# `lernkarten deps --check` reports the state.
 dependencies = []
 
 [tool.ruff]

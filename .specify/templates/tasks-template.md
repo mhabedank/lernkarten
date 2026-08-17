@@ -62,7 +62,7 @@ This is a single flat module — there is no `src/`.
 - [ ] T007 **Runtime or dev-only?** A runtime package goes in `REQUIREMENTS` in `scripts/deps.py`, pinned exactly, and needs a wheel for every supported platform — `--only-binary :all:` refuses it otherwise. A dev-only package goes in `requirements-dev.txt`.
 - [ ] T008 Declare it with a version bound and a one-line comment saying what it is for — libraries get a range, dev tools an exact pin
 - [ ] T009 🔴 Write the test that fails without the dependency doing its job — not merely an import check
-- [ ] T010 Verify a clean install works on all three platforms. The Windows CI legs are `continue-on-error`, so a green run there proves less than it looks — read the log
+- [ ] T010 Verify a clean install works on all three platforms — the Windows CI legs block a merge, so a green run there means something
 - [ ] T011 Confirm cold `lernkarten` start is not visibly slower
 - [ ] T012 Delete anything the dependency makes redundant — hand-rolled code it replaces, and any dependency now unused
 - [ ] T013 Confirm `.github/dependabot.yml` covers the manifest that declares it
@@ -279,6 +279,6 @@ Also:
 - Never hand-edit `output/` or a rendered PNG. Edit the Typst source and re-render.
 - Extend the demo project. Do not start a second fixture corpus.
 - Engine-dependent tests skip without an engine, so a fresh checkout never downloads 30 MB unasked. `LERNKARTEN_E2E=1` opts in.
-- Windows, macOS and Linux are equals. CI has Windows legs, but they are `continue-on-error` until they go green — a passing check mark there is not yet proof.
+- Windows, macOS and Linux are equals, and all three block a merge.
 - A runtime dependency reaches users via `scripts/deps.py`; check `lernkarten deps --check` after adding one.
 - Commit after each task or logical group, and always at the 🔴 checkpoint.
