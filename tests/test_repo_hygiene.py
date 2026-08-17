@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import make_testdata  # noqa: E402
-import minyaml  # noqa: E402
+import yamlio  # noqa: E402
 
 # Everything below these paths is user content — except for the exceptions.
 BLOCKED = ("knowledge/", "catalog/", "cards/", "output/")
@@ -70,7 +70,7 @@ def test_no_personal_source_register_in_the_repo():
 
 
 def test_example_source_register_is_valid():
-    data = minyaml.load((ROOT / "sources.example.yaml").read_text(encoding="utf-8"))
+    data = yamlio.load((ROOT / "sources.example.yaml").read_text(encoding="utf-8"))
     assert isinstance(data, dict) and data.get("sources"), "key 'sources' missing"
 
     ids = set()

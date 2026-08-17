@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 import build_pdf
-import minyaml
+import yamlio
 
 SOURCE_TYPES = {"folder": "path", "pdf": "path", "web": "url", "zotero": None}
 LOCAL_TYPES = {"folder", "pdf"}
@@ -56,8 +56,8 @@ class Report:
 def read_yaml(path, report):
     """Parses a YAML file, reporting instead of raising. None on failure."""
     try:
-        return minyaml.load(path.read_text(encoding="utf-8"))
-    except (minyaml.YamlError, OSError) as e:
+        return yamlio.load(path.read_text(encoding="utf-8"))
+    except (yamlio.YamlError, OSError) as e:
         report.error(path.name, str(e))
         return None
 
@@ -70,8 +70,8 @@ def frontmatter(text):
     if len(parts) < 3:
         return None, text
     try:
-        return minyaml.load(parts[1]) or {}, parts[2]
-    except minyaml.YamlError:
+        return yamlio.load(parts[1]) or {}, parts[2]
+    except yamlio.YamlError:
         return None, parts[2]
 
 

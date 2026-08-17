@@ -98,11 +98,12 @@ merge. If you can reach a Windows machine, what fails there is worth a look;
 once the legs are green, drop the `continue-on-error` lines in
 `.github/workflows/ci.yml` and they start counting.
 
-`pytest` covers five levels:
+`pytest` covers seven levels:
 
 | Module | Level | What it does |
 |---|---|---|
-| `tests/test_minyaml.py`, `tests/test_engine.py`, `tests/test_build_pdf.py` | unit | the functions, without a typesetter |
+| `tests/test_yamlio.py`, `tests/test_engine.py`, `tests/test_build_pdf.py` | unit | the functions, without a typesetter |
+| `tests/test_deps.py` | dependencies | the bootstrap: what happens with no package, no pip, a failing pip |
 | `tests/test_testdata.py` | test data | the generator, and whether the scan really has no text layer |
 | `tests/test_ingest_sources.py` | ingest | the web source over a local server, the zotero source over the stub |
 | `tests/test_e2e.py` | end-to-end | runs `bin/lernkarten` as a subprocess and takes the PDF apart |
@@ -114,6 +115,14 @@ Without one they skip, so a fresh checkout never downloads 30 MB unasked:
 
 ```bash
 LERNKARTEN_E2E=1 pytest tests/test_e2e.py   # fetch the engine if it is missing
+```
+
+One test in `tests/test_deps.py` really installs a package from PyPI, and is
+skipped unless you ask for it — the same bargain, so a plain `pytest` reaches the
+network for nothing:
+
+```bash
+LERNKARTEN_DEPS_NET=1 pytest tests/test_deps.py
 ```
 
 Text extraction from the generated PDFs needs `pdftotext` (poppler-utils).

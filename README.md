@@ -24,7 +24,7 @@ In [Claude Code](https://docs.claude.com/en/docs/claude-code/overview):
 
 That is the whole installation — there is no document toolchain to set up and
 nothing to `pip install`. The first time you build a PDF, a 15 MB typesetting
-engine is downloaded once and cached; the rest runs on Python 3.11 or newer,
+engine is downloaded once and cached; the rest runs on Python 3.12 or newer,
 which your machine most likely already has.
 
 ## Use it

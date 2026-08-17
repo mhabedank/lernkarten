@@ -24,7 +24,7 @@ from collections import Counter
 from pathlib import Path
 
 import engine
-import minyaml
+import yamlio
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES = ROOT / "templates"
@@ -91,8 +91,8 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
     for name in files:
         path = Path(name)
         try:
-            data = minyaml.load(path.read_text(encoding="utf-8"))
-        except (minyaml.YamlError, OSError) as e:
+            data = yamlio.load(path.read_text(encoding="utf-8"))
+        except (yamlio.YamlError, OSError) as e:
             errors.append(f"{path}: {e}")
             continue
         if not isinstance(data, dict) or "cards" not in data:

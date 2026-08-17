@@ -21,7 +21,7 @@ RAW = DEMO / "raw"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import make_testdata  # noqa: E402
-import minyaml  # noqa: E402
+import yamlio  # noqa: E402
 import zotero_ingest  # noqa: E402
 
 HANDBOOK = RAW / "handbook" / "kestrel-handbook.pdf"
@@ -274,7 +274,7 @@ def test_the_ingest_skill_reads_the_image_formats_the_fixture_offers():
 
 
 def test_every_local_source_in_the_register_exists():
-    data = minyaml.load((DEMO / "sources.yaml").read_text(encoding="utf-8"))
+    data = yamlio.load((DEMO / "sources.yaml").read_text(encoding="utf-8"))
     for entry in data["sources"]:
         if entry["type"] in ("folder", "pdf"):
             assert (DEMO / entry["path"]).exists(), f"{entry['id']}: {entry['path']} is missing"

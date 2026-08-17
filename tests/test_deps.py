@@ -1,8 +1,9 @@
 """The dependency bootstrap: scripts/deps.py.
 
-REQUIREMENTS is empty today, so almost everything here works against synthetic
-requirement sets. That is the point — the machinery has to be known-good before
-the first real dependency leans on it, not after.
+Most of this works against synthetic requirement sets rather than the real
+REQUIREMENTS, because the interesting paths are the ones a development checkout
+never takes: a missing package, a Python without pip, a pip that fails. Those
+have to be known-good precisely because nobody here will hit them.
 
 The one test that really talks to PyPI is opt-in via LERNKARTEN_DEPS_NET=1, the
 same bargain tests/test_e2e.py strikes with the engine: a plain `pytest` never
@@ -34,18 +35,50 @@ def isolated_cache(tmp_path, monkeypatch):
     monkeypatch.delenv("CLAUDE_PLUGIN_DATA", raising=False)
 
 
-def test_there_are_no_runtime_dependencies_yet():
-    """A guard, not a wish. When this fails, the rest of the file matters."""
-    assert deps.REQUIREMENTS == [], (
-        "a runtime dependency has appeared — check it clears the gates in "
-        "CONTRIBUTING.md, and that bin/lernkarten still bootstraps it"
+def test_every_requirement_is_pinned_exactly():
+    """The user did not choose to install these, so they must not drift.
+
+    A range would mean two people on the same lernkarten version get different
+    parsers, and the second one's bug report is unreproducible.
+    """
+    assert deps.REQUIREMENTS, "if this is empty again, activate() has nothing to do"
+    for requirement, _ in deps.REQUIREMENTS:
+        assert "==" in requirement, f"{requirement} is not pinned to one version"
+
+
+def test_the_pins_here_and_in_requirements_dev_agree():
+    """Dependabot can see requirements-dev.txt. It cannot see this file.
+
+    The runtime pin lives in REQUIREMENTS as a Python literal, which no
+    dependency bot will ever read. requirements-dev.txt repeats it so a checkout
+    can run the tests without waiting for the bootstrap — and that repetition is
+    exactly what drifts. When Dependabot bumps the one it can see, this fails
+    until the other follows.
+    """
+    declared = dict(
+        line.split("==", 1)
+        for line in (ROOT / "requirements-dev.txt").read_text(encoding="utf-8").splitlines()
+        if "==" in line and not line.startswith("#")
     )
+    for requirement, _ in deps.REQUIREMENTS:
+        name, version = requirement.split("==", 1)
+        assert name in declared, f"{name} is pinned in deps.py but absent from requirements-dev.txt"
+        assert declared[name] == version, (
+            f"{name} is {version} in deps.py but {declared[name]} in requirements-dev.txt"
+        )
 
 
-def test_activate_does_nothing_while_nothing_is_required():
+def test_every_requirement_names_a_module_that_can_be_checked():
+    """The module name is how absence is detected, so it must be the real one."""
+    for requirement, module in deps.REQUIREMENTS:
+        assert module and " " not in module, f"{requirement}: {module!r} is not an import name"
+
+
+def test_activate_is_satisfied_by_an_installed_package():
+    """A development checkout has these already, so nothing should be fetched."""
     before = list(sys.path)
-    assert deps.activate() == "none"
-    assert sys.path == before, "an empty requirement set must not touch sys.path"
+    assert deps.activate() == "system"
+    assert sys.path == before, "already importable — sys.path must not be touched"
 
 
 def test_missing_spots_what_cannot_be_imported():
@@ -111,6 +144,32 @@ def test_a_failing_pip_is_reported_with_its_own_complaint(monkeypatch):
     assert "no matching distribution" in str(e.value), "pip's own words are the useful part"
 
 
+def test_a_freshly_created_directory_is_importable_at_once(monkeypatch, tmp_path):
+    """The one that bit: importlib caches the fact that a directory was absent.
+
+    The target directory does not exist when activate() starts, so the import
+    machinery records a negative result for it. Install into it, put it on
+    sys.path, and `find_spec` still says no — the install looked like it had
+    failed when in fact it had worked. Only invalidate_caches() clears that.
+    """
+    requirements = [("lernkarten-fake==1.0", "lernkarten_fake")]
+    monkeypatch.setattr(deps, "REQUIREMENTS", requirements)
+    target = deps.target_dir()
+    assert not target.exists(), "the point of this test is a directory born mid-run"
+
+    def fake_install(reqs=None, target=None, quiet=False):
+        directory = deps.target_dir() if target is None else Path(target)
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "lernkarten_fake.py").write_text("ok = True\n", encoding="utf-8")
+        return directory
+
+    monkeypatch.setattr(deps, "install", fake_install)
+    try:
+        assert deps.activate(quiet=True) == "installed"
+    finally:
+        sys.path[:] = [p for p in sys.path if p != str(target)]
+
+
 def test_activate_without_installing_refuses_rather_than_reaching_out(monkeypatch):
     monkeypatch.setattr(deps, "REQUIREMENTS", ABSENT)
     with pytest.raises(deps.DependencyError) as e:
@@ -130,7 +189,7 @@ def test_the_command_can_report_its_dependencies():
         text=True,
     )
     assert result.returncode == 0, result.stderr
-    assert "no runtime dependencies" in result.stdout
+    assert "requirement(s)" in result.stdout, result.stdout
 
 
 def test_the_check_flag_reports_and_installs_nothing():
@@ -140,7 +199,7 @@ def test_the_check_flag_reports_and_installs_nothing():
         text=True,
     )
     assert result.returncode == 0, result.stderr
-    assert "no runtime dependencies" in result.stdout
+    assert "requirement(s)" in result.stdout, result.stdout
 
 
 @pytest.mark.skipif(

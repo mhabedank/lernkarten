@@ -78,7 +78,7 @@ This is a public open-source repo — it holds the tools, not the knowledge.
   Windows, macOS and Linux, with wheels and no compiler — and prefer a
   maintained library over hand-rolling. There are none at runtime yet, and there
   is no mechanism to deliver one to a plugin user, so a *runtime* dependency
-  cannot ship today. The gates are in `CONTRIBUTING.md`. Python 3.11 or newer.
+  cannot ship today. The gates are in `CONTRIBUTING.md`. Python 3.12 or newer.
 - **Before every PR** these four gates have to be green (CI checks the same):
 
   ```bash
