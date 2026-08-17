@@ -4,10 +4,11 @@ version = "0.2.0"
 description = "Claude Code plugin: turn any knowledge source into print-ready flashcards"
 readme = "README.md"
 license = { file = "LICENSE" }
-# 3.11 is the floor: security-supported into 2027, shipped by every current
-# distribution, and accepted by every library worth depending on. 3.9 went end
-# of life in October 2025.
-requires-python = ">=3.11"
+# 3.12 is the floor. It was 3.11 until PyYAML turned out to publish no
+# win_arm64 wheel for cp311 — and Windows on ARM is a platform the engine
+# supports, so the runtime dependency decided the floor rather than the other
+# way round. 3.9 went end of life in October 2025.
+requires-python = ">=3.12"
 # Empty today, which is a fact rather than a promise. A dependency is welcome
 # when it installs with a plain `pip install` on Windows, macOS and Linux, with
 # wheels and no compiler — see CONTRIBUTING.md for the gates it has to clear.
@@ -15,7 +16,7 @@ dependencies = []
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]

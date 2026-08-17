@@ -16,7 +16,7 @@ import re
 import sys
 from pathlib import Path
 
-import minyaml
+import yamlio
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
@@ -75,8 +75,8 @@ def check_skills(errors):
 
         raw = text.split("---\n", 2)[1]
         try:
-            head = minyaml.load(raw) or {}
-        except minyaml.YamlError as e:
+            head = yamlio.load(raw) or {}
+        except yamlio.YamlError as e:
             errors.append(f"{path.relative_to(ROOT)}: frontmatter is not valid YAML: {e}")
             continue
 

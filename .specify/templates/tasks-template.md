@@ -59,7 +59,7 @@ This is a single flat module — there is no `src/`.
 **⚠️ Skip entirely if plan.md says "No dependency change".**
 
 - [ ] T006 Confirm the vetting table in plan.md is complete — wheels on Windows/macOS/Linux, last release, adoption, provenance, typo-squat check, licence, transitive tree, no advisory (constitution IV)
-- [ ] T007 **Runtime or dev-only?** A runtime package is blocked until `bin/lernkarten` bootstraps a cached virtualenv — that mechanism does not exist, so stop here unless this feature builds it. Dev-only is fine.
+- [ ] T007 **Runtime or dev-only?** A runtime package goes in `REQUIREMENTS` in `scripts/deps.py`, pinned exactly, and needs a wheel for every supported platform — `--only-binary :all:` refuses it otherwise. A dev-only package goes in `requirements-dev.txt`.
 - [ ] T008 Declare it with a version bound and a one-line comment saying what it is for — libraries get a range, dev tools an exact pin
 - [ ] T009 🔴 Write the test that fails without the dependency doing its job — not merely an import check
 - [ ] T010 Verify a clean install works on all three platforms. The Windows CI legs are `continue-on-error`, so a green run there proves less than it looks — read the log
@@ -272,7 +272,7 @@ Also:
 ## Notes
 
 - **Test-first, always.** A test written after the code tells you what the code does; only a test seen failing tells you it does what was asked.
-- **Prefer a library.** Hand-rolling needs a reason in plan.md (constitution III). `scripts/minyaml.py` and the `sips`/`magick` shell-out are artifacts of a retired rule and are not precedent.
+- **Prefer a library.** Hand-rolling needs a reason in plan.md (constitution III). The two things this project once hand-rolled have both been replaced, so neither is precedent.
 - **A dependency is a decision, not a task.** It needs the Principle IV vetting table filled in and read by a reviewer.
 - Never `git add -f` anything under `knowledge/`, `catalog/`, `cards/` (except `example.yaml`), `output/`, or `sources.yaml`.
 - Never commit a binary. Generate it from a text source.
@@ -280,5 +280,5 @@ Also:
 - Extend the demo project. Do not start a second fixture corpus.
 - Engine-dependent tests skip without an engine, so a fresh checkout never downloads 30 MB unasked. `LERNKARTEN_E2E=1` opts in.
 - Windows, macOS and Linux are equals. CI has Windows legs, but they are `continue-on-error` until they go green — a passing check mark there is not yet proof.
-- A runtime dependency cannot ship until `bin/lernkarten` bootstraps a cached virtualenv. Dev-only dependencies are unaffected.
+- A runtime dependency reaches users via `scripts/deps.py`; check `lernkarten deps --check` after adding one.
 - Commit after each task or logical group, and always at the 🔴 checkpoint.
