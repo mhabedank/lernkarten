@@ -142,7 +142,7 @@ def library():
     yield from serve(zotero_stub.serve(port=0, quiet=True))
 
 
-def ingest(library, project, *args, path=None):
+def ingest(library, project, *args, path=None, env_extra=None):
     """Runs zotero_ingest.py against the stub, writing into `project`."""
     env = dict(
         os.environ,
@@ -151,6 +151,8 @@ def ingest(library, project, *args, path=None):
     )
     if path is not None:
         env["PATH"] = path
+    if env_extra:
+        env.update(env_extra)
     return subprocess.run(
         [sys.executable, str(INGEST), "--project", str(project), *args],
         capture_output=True,
@@ -202,6 +204,31 @@ def test_the_metadata_of_an_item_lands_in_the_frontmatter(library, tmp_path):
     if shutil.which("pdftotext") is None:
         pytest.skip("the text needs pdftotext; the metadata above does not")
     assert "Journal of Invented Oceanography" in paper, "the text itself is missing"
+
+
+def test_extracted_text_survives_a_locale_that_is_not_utf8(library, tmp_path):
+    """pdftotext writes UTF-8. The machine's locale must not get a vote.
+
+    Decoding its output with whatever the locale happens to be is wrong in two
+    different ways: on Windows the ANSI code page maps every byte, so an em dash
+    turns into mojibake and is written into the user's knowledge store without a
+    word of complaint; under a C locale on Unix the decode raises and the ingest
+    dies. This forces the second case, which is the loud one.
+    """
+    if shutil.which("pdftotext") is None:
+        pytest.skip("nothing is extracted without pdftotext, so nothing can be mis-decoded")
+    result = ingest(
+        library,
+        tmp_path,
+        "--source-id",
+        "kestrel-zotero",
+        env_extra={"LC_ALL": "C", "LANG": "C", "PYTHONCOERCECLOCALE": "0", "PYTHONUTF8": "0"},
+    )
+    assert result.returncode == 0, result.stderr
+    written = documents(tmp_path)
+    assert any(not text.isascii() for text in written.values()), (
+        "no non-ASCII character survived the extraction — the locale mangled it"
+    )
 
 
 def test_a_scanned_attachment_is_left_for_the_read_tool(library, tmp_path):

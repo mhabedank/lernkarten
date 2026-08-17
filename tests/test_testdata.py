@@ -51,8 +51,13 @@ def pdf_text(path):
     """The text layer of a PDF, or None when no extractor is installed."""
     if shutil.which("pdftotext") is None:
         return None
+    # Both sides of the encoding stated outright — see scripts/zotero_ingest.py.
     result = subprocess.run(
-        ["pdftotext", "-layout", str(path), "-"], capture_output=True, text=True
+        ["pdftotext", "-enc", "UTF-8", "-layout", str(path), "-"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     return result.stdout if result.returncode == 0 else ""
 
