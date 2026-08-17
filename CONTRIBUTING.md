@@ -177,16 +177,37 @@ stop rather than a formality to skip.
 
 ### Getting one to the user
 
-Unsolved, and worth knowing before you plan a change that needs a package.
 There is no install step between `/plugin install` and the skills calling
 `bin/lernkarten` — no virtualenv, no `pip` hook, just whatever Python the user
-has. So a runtime dependency has nowhere to come from yet.
+has. So a runtime dependency has to fetch itself, exactly as the typesetting
+engine does.
 
-The intended answer is to copy what the engine already does: have
-`bin/lernkarten` maintain a cached virtualenv and install its pinned
-dependencies into it on first run, the same way `scripts/engine.py` fetches
-Typst. That keeps the one-command install true. It is not built yet, so until it
-is, a runtime dependency cannot actually ship — a dev-only dependency is fine.
+`scripts/deps.py` is that mechanism. It declares the runtime requirements,
+installs them once into a cache folder, and puts that folder on `sys.path`:
+
+```bash
+lernkarten deps --check      # what is required, and where it came from
+```
+
+To add a runtime dependency, put it in `REQUIREMENTS` there with the module name
+to import, pinned exactly — the user is not installing this on purpose, so it
+must not drift under them. Any module that imports it at the top level has to
+call `deps.activate()` first; `lernkarten build` and `lernkarten check` already
+do.
+
+Two details worth knowing before you rely on it:
+
+- It installs with `pip install --target`, not into a virtualenv, because
+  `python3 -m venv` needs `ensurepip` and Debian and Ubuntu ship that as a
+  separate `python3-venv` package. A bootstrap whose failure mode is "now
+  apt-get something" would defeat its own purpose.
+- It passes `--only-binary :all:`, so a package with no wheel for the user's
+  platform fails loudly here rather than trying to compile on their machine.
+  That is the friction rule of this section, enforced.
+
+`LERNKARTEN_NO_BOOTSTRAP=1` forbids installing anything, and
+`LERNKARTEN_DEPS_DIR` moves the cache. There are no runtime dependencies at the
+moment, so `activate()` currently returns without doing anything.
 
 ## Reporting bugs
 

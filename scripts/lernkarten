@@ -4,6 +4,7 @@
     lernkarten build cards/*.yaml -o output/cards.pdf
     lernkarten check cards/*.yaml
     lernkarten engine --check
+    lernkarten deps --check
 
 `build` and `check` take the same options; see `lernkarten build --help`.
 """
@@ -13,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-COMMANDS = {"build", "check", "engine"}
+COMMANDS = {"build", "check", "engine", "deps"}
 
 
 def main():
@@ -29,6 +30,23 @@ def main():
         sys.argv = ["lernkarten engine", *argv[1:]]
         engine.main()
         return
+
+    if command == "deps":
+        import deps
+
+        sys.argv = ["lernkarten deps", *argv[1:]]
+        deps.main()
+        return
+
+    # Anything that actually does work gets its dependencies first. There are
+    # none today, so this returns immediately; when the first one arrives it is
+    # installed here, once, rather than crashing with an ImportError.
+    import deps
+
+    try:
+        deps.activate()
+    except deps.DependencyError as e:
+        sys.exit(f"ERROR: {e}")
 
     import build_pdf
 
