@@ -131,14 +131,33 @@ def test_a_pdf_can_hold_four_languages_and_three_scripts(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "english, german, greek, russian" in result.stdout
 
-    text = subprocess.run(["pdftotext", str(target), "-"], capture_output=True, text=True).stdout
-    for word, script in [
-        ("semidiurnal", "Latin"),
-        ("halbtägige", "Latin with umlauts"),
-        ("σημαίνει", "Greek"),
-        ("правило", "Cyrillic"),
-    ]:
-        assert word in text, f"{script} did not survive into the PDF"
+    # `-enc UTF-8` and an explicit decode: left to itself, pdftotext falls back
+    # to the local charset, which on Windows cannot represent Greek or Cyrillic
+    # at all, and Python would then read the bytes through the ANSI code page.
+    text = subprocess.run(
+        ["pdftotext", "-enc", "UTF-8", str(target), "-"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    ).stdout
+
+    # Every script is checked before anything is reported. Failing on the first
+    # one hides whether the rest arrived, and this is the only place that would
+    # notice a font losing a whole alphabet.
+    missing = [
+        f"{script} ({word!r})"
+        for word, script in [
+            ("semidiurnal", "Latin"),
+            ("halbtägige", "Latin with umlauts"),
+            ("σημαίνει", "Greek"),
+            ("правило", "Cyrillic"),
+        ]
+        if word not in text
+    ]
+    assert not missing, (
+        f"these did not survive into the PDF: {', '.join(missing)}\nwhat came out instead:\n{text}"
+    )
 
 
 def test_the_language_flag_overrides_the_card_files(tmp_path):

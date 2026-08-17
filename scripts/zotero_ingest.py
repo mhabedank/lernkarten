@@ -94,7 +94,18 @@ def extract(pdf):
     if shutil.which("pdftotext") is None:
         # No extractor installed: leave the item for the Read tool to fill in.
         return None, True
-    r = subprocess.run(["pdftotext", "-layout", str(pdf), "-"], capture_output=True, text=True)
+    # Neither side may guess the encoding. `-enc UTF-8` stops pdftotext falling
+    # back to the local charset, which cannot represent Greek or Cyrillic at all,
+    # and the explicit decode stops Python reading its output through the ANSI
+    # code page on Windows — where an em dash would become mojibake and land in
+    # the knowledge store unremarked — or raising outright under a C locale.
+    r = subprocess.run(
+        ["pdftotext", "-enc", "UTF-8", "-layout", str(pdf), "-"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     text = r.stdout.strip()
     if r.returncode != 0:
         return None, True
