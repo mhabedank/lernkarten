@@ -182,6 +182,10 @@ def test_it_writes_one_document_per_item_with_a_pdf(library, tmp_path):
         "signal-code-of-the-kestrel-islands-offprint",
         "fog-over-the-kestrel-deep",
     }
+    # One file per item lands either way; only the split between extracted and
+    # pending depends on an extractor being there.
+    if shutil.which("pdftotext") is None:
+        pytest.skip("without pdftotext nothing is extracted, so the counts read differently")
     assert "3 new, 1 awaiting the Read tool" in result.stdout
 
 
@@ -193,6 +197,10 @@ def test_the_metadata_of_an_item_lands_in_the_frontmatter(library, tmp_path):
     assert 'collections: "Kestrel Islands"' in paper
     assert "zotero_key: ITEM01" in paper
     assert "source: kestrel-zotero" in paper
+    # The frontmatter above comes from the Zotero API. The body needs an
+    # extractor, so only that last assertion depends on pdftotext.
+    if shutil.which("pdftotext") is None:
+        pytest.skip("the text needs pdftotext; the metadata above does not")
     assert "Journal of Invented Oceanography" in paper, "the text itself is missing"
 
 
