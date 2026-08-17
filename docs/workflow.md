@@ -195,6 +195,9 @@ lernkarten build cards/*.yaml --no-logo
 
 # Where is the typesetting engine?
 lernkarten engine --check
+
+# What does the build need installed, and where did it come from?
+lernkarten deps --check
 ```
 
 ## When something goes wrong
@@ -208,6 +211,7 @@ lernkarten engine --check
 | Hyphenation looks wrong | the card file has no `language:` key | add it (`language: german`), or build once with `--language german` |
 | Zotero ingest aborts | the local API does not answer | start Zotero 7 and enable the local API under Settings → Advanced |
 | `could not download the typesetting engine` | no network on the first build | retry when online, or install typst yourself and set `LERNKARTEN_ENGINE` |
+| `could not install the dependencies` | no network, or no wheel for this platform | retry when online; `lernkarten deps --check` says what is wanted, and it can be installed by hand |
 
 ## Trying it without your own material
 
