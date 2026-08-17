@@ -94,8 +94,14 @@
     border-right: var(--rule); border-bottom: 0;
   }
   .nav__home span { font-family: var(--display); font-size: 22px; text-transform: lowercase; }
-  .nav__links { flex: 1; display: flex; align-items: center; gap: 26px; padding: 0 22px; flex-wrap: wrap; }
-  .nav__links a { border-bottom: 0; }
+  /* The links scroll sideways rather than wrapping: a wrapped row makes the
+     sticky bar two lines tall on a phone and eats the top of every section. */
+  .nav__links {
+    flex: 1; display: flex; align-items: center; gap: 26px; padding: 0 22px;
+    min-width: 0; overflow-x: auto; scrollbar-width: none;
+  }
+  .nav__links::-webkit-scrollbar { display: none; }
+  .nav__links a { border-bottom: 0; white-space: nowrap; }
   .nav__links a:hover { border-bottom: 2px solid var(--red); }
   .nav__gh {
     display: flex; align-items: center; padding: 0 26px; border-left: var(--rule);
@@ -106,10 +112,12 @@
   /* Hero */
   .hero { border-bottom: var(--rule); background: var(--sand); }
   .hero__stripe { display: flex; height: 16px; border-bottom: var(--rule); }
-  .hero__grid { display: grid; grid-template-columns: 1.35fr 1fr; }
+  .hero__grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
   .hero__text { border-right: var(--rule); padding: 48px 40px; display: flex; flex-direction: column; gap: 30px; }
   .hero h1 {
-    font-weight: 400; font-size: clamp(48px, 8vw, 104px); line-height: 0.86;
+    /* The floor is set by "flashcards" — one unbreakable word that has to fit
+       a 320 px screen. It reaches full size at about 870 px. */
+    font-weight: 400; font-size: clamp(40px, 12vw, 104px); line-height: 0.86;
     letter-spacing: -0.035em; text-transform: lowercase;
   }
   .hero__lead { font-family: var(--display); font-weight: 500; font-size: clamp(19px, 2.2vw, 25px); line-height: 1.35; max-width: 34ch; }
@@ -130,6 +138,9 @@
     font-family: var(--mono); font-size: 12.5px; line-height: 1.9; overflow-x: auto;
   }
   .terminal b { font-weight: 400; color: var(--yellow); }
+  /* Once the hero is a single column the terminal would run the full width
+     while the card stays at 380 — keep the two stacked to the same measure. */
+  .hero__side .terminal { width: 100%; max-width: 380px; }
 
   /* A card, at screen size */
   .card {
@@ -137,8 +148,11 @@
     display: flex; flex-direction: column; width: 100%; max-width: 380px; height: 269px;
   }
   .card__head { display: flex; border-bottom: var(--rule); height: 38px; flex: none; }
+  /* min-width:0 is what makes the clipping real: a flex item defaults to
+     min-width:auto, so the nowrap label would otherwise hold the card open
+     past a narrow screen instead of being cut. */
   .card__topic {
-    flex: 1; display: flex; align-items: center; padding: 0 16px; overflow: hidden;
+    flex: 1; display: flex; align-items: center; padding: 0 16px; overflow: hidden; min-width: 0;
     font-family: var(--display); font-weight: 500; font-size: 10.5px;
     letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap;
   }
@@ -158,14 +172,14 @@
   .card__mark { flex: none; width: 28px; border-right: var(--rule); display: flex; align-items: center; justify-content: center; }
   .card__mark--solid { background: var(--ink); }
   .card__by {
-    flex: 1; display: flex; align-items: center; padding: 0 12px; overflow: hidden;
+    flex: 1; display: flex; align-items: center; padding: 0 12px; overflow: hidden; min-width: 0;
     font-family: var(--display); font-weight: 500; font-size: 8.5px;
     letter-spacing: 0.22em; text-transform: uppercase; white-space: nowrap;
   }
   .card__id { flex: none; display: flex; align-items: center; padding: 0 12px; border-left: var(--rule); font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
 
   /* Five commands */
-  .steps { display: grid; grid-template-columns: repeat(5, 1fr); }
+  .steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .step { border-right: var(--rule); display: flex; flex-direction: column; background: var(--sand); }
   .step:last-child { border-right: 0; }
   .step__shape { height: 88px; display: flex; align-items: center; justify-content: center; border-bottom: var(--rule); }
@@ -175,8 +189,8 @@
   .step__writes { border-top: var(--rule); padding: 11px 20px; font-family: var(--mono); font-size: 11px; }
 
   /* Anatomy */
-  .anatomy { display: grid; grid-template-columns: 1.2fr 1fr; background: var(--sand); }
-  .anatomy__cards { padding: 40px; display: flex; gap: 26px; flex-wrap: wrap; background: var(--ground); border-right: var(--rule); }
+  .anatomy { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); background: var(--sand); }
+  .anatomy__cards { padding: 40px; display: flex; gap: 26px; flex-wrap: wrap; min-width: 0; background: var(--ground); border-right: var(--rule); }
   .anatomy__list { display: flex; flex-direction: column; }
   .anatomy__item { padding: 24px 30px; border-bottom: var(--rule); }
   .anatomy__item:last-child { border-bottom: 0; }
@@ -184,7 +198,7 @@
   .anatomy__item p { margin-top: 8px; font-size: 14px; line-height: 1.6; color: var(--muted); }
   .anatomy__key { font-family: var(--display); font-weight: 500; font-size: 11px; letter-spacing: 0.2em; color: var(--red); margin-right: 12px; }
 
-  .yaml { display: grid; grid-template-columns: 1.2fr 1fr; background: var(--sand); border-top: var(--rule); }
+  .yaml { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); background: var(--sand); border-top: var(--rule); }
   .yaml > div { padding: 34px 38px; display: flex; flex-direction: column; gap: 16px; }
   .yaml > div:first-child { border-right: var(--rule); }
   .yaml h3 { font-size: 26px; line-height: 1.15; text-transform: lowercase; }
@@ -215,7 +229,7 @@
   .print__cut p { font-size: 13px; line-height: 1.6; color: var(--muted); }
 
   /* Three principles */
-  .principles { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--sand); border-bottom: var(--rule); }
+  .principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--sand); border-bottom: var(--rule); }
   .principle { border-right: var(--rule); padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 14px; }
   .principle:last-child { border-right: 0; }
   .principle h3 { font-size: 22px; line-height: 1.15; text-transform: lowercase; }
@@ -230,9 +244,11 @@
   .install .band { background: var(--ink); border-bottom-color: var(--sand); }
   .install .band__no { border-right-color: var(--sand); }
   .install .band__note { border-left-color: var(--sand); color: #c9c4b8; }
-  .install__grid { display: grid; grid-template-columns: 1.2fr 1fr; }
+  .install__grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
   .install__main { border-right: 2px solid var(--sand); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
-  .install__cmd { border: 2px solid var(--sand); padding: 16px 20px; font-family: var(--mono); font-size: 15px; overflow-x: auto; }
+  /* The longer of the two commands is 44 characters — at a fixed 15 px it
+     forces a sideways scroll on every phone, so it scales down instead. */
+  .install__cmd { border: 2px solid var(--sand); padding: 16px 20px; font-family: var(--mono); font-size: clamp(11px, 3.4vw, 15px); overflow-x: auto; }
   .install__cmd + .install__cmd { border-top: 0; }
   .install p { font-size: 15px; line-height: 1.65; color: #c9c4b8; max-width: 52ch; }
   .install code { font-family: var(--mono); font-size: 13px; color: var(--yellow); }
@@ -261,26 +277,47 @@
   .toggle:hover { background: var(--ink); color: var(--sand); }
 
   @media (max-width: 1080px) {
-    .band__note, .print__rules { width: 100%; }
-    .hero__grid, .anatomy, .yaml, .install__grid { grid-template-columns: 1fr; }
+    /* The note goes full width, so the band has to wrap in the same breath —
+       a 100 % item in a non-wrapping row just pushes the page sideways. */
+    .band { flex-wrap: wrap; }
+    .band h2 { flex-basis: calc(100% - 72px); }
+    .band__note { width: 100%; border-left: 0; border-top: var(--rule); }
+    .install .band__note { border-top-color: var(--sand); }
+    .toggle { border-left: 0; border-top: var(--rule); width: 100%; padding: 14px; }
+    .print__rules { width: 100%; }
+    .hero__grid, .anatomy, .yaml, .install__grid { grid-template-columns: minmax(0, 1fr); }
     .hero__text, .anatomy__cards, .yaml > div:first-child, .install__main { border-right: 0; border-bottom: var(--rule); }
     .install__main { border-bottom-color: var(--sand); }
-    .steps { grid-template-columns: repeat(2, 1fr); }
+    .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .step { border-bottom: var(--rule); }
     .step:nth-child(2n) { border-right: 0; }
-    .principles { grid-template-columns: 1fr; }
+    /* Five steps in two columns leave the fifth alone in its row: let it run
+       the full width instead of sitting beside a hole. */
+    .step:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
+    .principles { grid-template-columns: minmax(0, 1fr); }
     .principle { border-right: 0; border-bottom: var(--rule); }
     .principle:last-child { border-bottom: 0; }
     .print__sheets { border-right: 0; border-bottom: var(--rule); }
   }
 
   @media (max-width: 760px) {
-    .band { flex-wrap: wrap; }
-    .band h2 { flex-basis: calc(100% - 72px); }
-    .band__note { border-left: 0; border-top: var(--rule); }
-    .steps { grid-template-columns: 1fr; }
+    /* Pull the gutter in. Forty pixels a side on a 360 px screen leaves a
+       measure too narrow to set text in — the rules stay, the air goes. */
+    .nav__home { padding: 12px 16px; gap: 10px; }
+    .nav__links { gap: 18px; padding: 0 16px; }
+    .nav__gh { padding: 0 18px; }
+    .hero__text, .hero__side, .anatomy__cards, .install__main, .install__side,
+    .yaml > div, .principle { padding: 28px 20px; }
+    .hero__facts { gap: 18px; }
+    .anatomy__item, .rule-item, .print__cut, .foot { padding: 20px; }
+    /* Without this the sheets hold the page open at 320 px and the whole
+       layout scrolls sideways. */
+    .print__sheets { min-width: 0; padding: 28px 20px; gap: 24px; }
+  }
+
+  @media (max-width: 540px) {
+    .steps { grid-template-columns: minmax(0, 1fr); }
     .step { border-right: 0; }
-    .toggle { border-left: 0; border-top: var(--rule); width: 100%; padding: 14px; }
   }
 
   @media (prefers-reduced-motion: no-preference) {
