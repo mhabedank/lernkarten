@@ -27,12 +27,33 @@ ALLOWED = {
 
 
 def versioned_files():
+    """Every path git tracks, verbatim — see `ignored()` for why that is fiddly."""
     result = subprocess.run(
-        ["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=False
+        ["git", "-c", "core.quotePath=false", "ls-files"],
+        cwd=ROOT,
+        capture_output=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.skip("not a git repository")
-    return result.stdout.split()
+    lines = result.stdout.decode("utf-8").splitlines()
+    return [line for line in lines if line]
+
+
+def test_versioned_files_are_reported_unquoted():
+    """A quoted name would slip straight past the guard below.
+
+    git wraps anything non-ASCII in quotes and octal escapes, and
+    `"knowledge/\\303\\274ber.md"` starts with a quote rather than with
+    `knowledge/` — so the check for user content would wave through exactly the
+    file it exists to catch. The demo project ships a path with an umlaut, so
+    this is not hypothetical.
+    """
+    files = versioned_files()
+    assert any(not f.isascii() for f in files), (
+        "no non-ASCII path is versioned any more — this test has stopped proving anything"
+    )
+    assert not [f for f in files if f.startswith('"')], "git quoted a path instead of reporting it"
 
 
 def test_no_user_content_in_the_repo():
@@ -64,27 +85,61 @@ def test_example_source_register_is_valid():
 
 
 def ignored(paths):
-    """The subset of `paths` that .gitignore keeps out of the repo."""
+    """The subset of `paths` that .gitignore keeps out of the repo.
+
+    Three things have to be got right, or the answer cannot be compared with
+    the question:
+
+    * `core.quotePath=false`, or git wraps anything non-ASCII in quotes and
+      octal escapes — and on Windows, where the separator is a backslash, that
+      is every single path.
+    * bytes rather than `text=True`, because a text-mode stdin translates the
+      newline between paths into CRLF on Windows and git then reads the
+      carriage return as part of the file name.
+    * split on line breaks, not on whitespace, so a name with a space in it
+      survives.
+    """
     result = subprocess.run(
-        ["git", "check-ignore", "--stdin"],
+        ["git", "-c", "core.quotePath=false", "check-ignore", "--stdin"],
         cwd=ROOT,
-        input="\n".join(paths),
+        input="\n".join(paths).encode("utf-8"),
         capture_output=True,
-        text=True,
         check=False,
     )
     if result.returncode > 1:
         pytest.skip("not a git repository")
-    return set(result.stdout.split())
+    lines = result.stdout.decode("utf-8").splitlines()
+    return {line.strip() for line in lines if line.strip()}
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "output/two words.pdf",
+        "output/über.pdf",
+    ],
+)
+def test_ignored_hands_back_exactly_what_it_was_given(path):
+    """The answer has to stay comparable with the question.
+
+    git quotes any path it thinks unusual — non-ASCII, backslashes — and
+    splitting its output on whitespace tears a name with a space in half.
+    Either one makes the result uncomparable with the input, which is how the
+    generated test data came back "not ignored" on Windows: there every path
+    arrives with backslash separators, so git quoted all of them.
+    """
+    assert ignored([path]) == {path}
 
 
 def fixture_files():
     files = [p for p in (ROOT / "tests" / "fixtures").rglob("*") if p.is_file()]
     assert files, "the demo project is missing — the end-to-end tests run against it"
     generated = {t.resolve() for t, _, _ in make_testdata.JOBS}
+    # as_posix(), not str(): git speaks forward slashes on every platform, and a
+    # backslash-separated path matches none of the .gitignore patterns.
     return (
-        [str(p.relative_to(ROOT)) for p in files if p.resolve() not in generated],
-        [str(p.relative_to(ROOT)) for p in files if p.resolve() in generated],
+        [p.relative_to(ROOT).as_posix() for p in files if p.resolve() not in generated],
+        [p.relative_to(ROOT).as_posix() for p in files if p.resolve() in generated],
     )
 
 
