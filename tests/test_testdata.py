@@ -75,7 +75,7 @@ def png_size(path):
 
 def test_it_builds_everything_it_promises():
     for target, _, _ in make_testdata.JOBS:
-        if target in make_testdata.OPTIONAL and not make_testdata.jpeg_converter():
+        if target in make_testdata.OPTIONAL and not make_testdata.jpeg_available():
             continue
         assert target.exists(), f"{target.relative_to(ROOT)} was not built"
         assert target.stat().st_size > 500, f"{target.name} is suspiciously small"
@@ -205,13 +205,28 @@ def test_the_infographic_is_a_real_image():
 
 
 def test_the_photo_is_a_real_jpeg():
-    """Optional: nothing in the standard library writes one."""
-    if not make_testdata.jpeg_converter():
-        pytest.skip("no JPEG converter on this machine — the PNG covers the path")
     data = PHOTO.read_bytes()
     assert data[:2] == b"\xff\xd8", "not a JPEG (no SOI marker)"
     assert data[-2:] == b"\xff\xd9", "the JPEG was not written completely"
     assert len(data) > 20_000
+
+
+def test_the_jpeg_needs_nothing_the_machine_happens_to_have(tmp_path, monkeypatch):
+    """Pillow is declared, so this no longer depends on finding sips or magick.
+
+    It used to be whichever of sips, magick or convert existed — which meant the
+    JPEG was built on macOS, sometimes on Linux and never on Windows, so the one
+    fixture covering a photographed notice quietly did not exist on most CI legs.
+    """
+    monkeypatch.setenv("PATH", str(tmp_path))
+    assert shutil.which("sips") is None and shutil.which("magick") is None, (
+        "the point of this test is that no system converter is reachable"
+    )
+    binary, _ = make_testdata.engine.find(fetch_if_missing=False)
+    target = tmp_path / "photo.jpg"
+    make_testdata.build_jpeg(binary, DEMO / "generators" / "noticeboard.typ", target)
+    data = target.read_bytes()
+    assert data[:2] == b"\xff\xd8" and data[-2:] == b"\xff\xd9", "not a complete JPEG"
 
 
 def test_the_docx_is_a_readable_word_file():

@@ -39,7 +39,7 @@ in *versioned* is generated:
 | `raw/handbook/tide-almanac.pdf` | PDF | | 61 pages — long enough to need chunking |
 | `raw/handbook/damaged.pdf` | PDF | | truncated: every extractor has to give up |
 | `raw/images/tide-chart.png` | PNG | | an infographic — transcribe it, never OCR it |
-| `raw/images/harbour-noticeboard.jpg` | JPEG | | a photo of a notice; built only where a converter exists |
+| `raw/images/harbour-noticeboard.jpg` | JPEG | | a photo of a notice |
 | `raw/office/mail-boat-timetable.docx` | DOCX | | a Word document |
 | `../zotero/storage/*/*.pdf` | PDF | | the attachments of the fake library |
 
@@ -51,9 +51,10 @@ python3 scripts/make_testdata.py
 
 It renders the `generators/*.typ` sources with the typesetting engine the
 project ships anyway, and writes the DOCX with nothing but `zipfile`. The JPEG
-is the one exception: no Python module here writes one, so it is converted with
-`sips`, `magick` or `convert` and skipped where none of them exists — a
-`SKIPPED:` line, not an error, since no code branches on the image format. Binaries
+needs Pillow, since nothing in the standard library writes one; it is a
+development dependency, so `pip install -r requirements-dev.txt` covers it. Only
+if Pillow is genuinely absent is that job skipped with a `SKIPPED:` line rather
+than an error, because no code branches on the image format. Binaries
 have no place in a git history, so they are `.gitignore`d and rebuilt from
 their text sources instead — which also means you can read and review every
 byte of the test data as text.

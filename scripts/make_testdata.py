@@ -17,7 +17,7 @@ What comes out (all of it .gitignored):
     raw/handbook/tide-almanac.pdf        61 pages — long enough to need chunking
     raw/handbook/damaged.pdf             truncated: extraction has to fail
     raw/images/tide-chart.png            an infographic
-    raw/images/harbour-noticeboard.jpg   a photo-like JPEG (where a converter exists)
+    raw/images/harbour-noticeboard.jpg   a photo-like JPEG (needs Pillow)
     raw/office/mail-boat-timetable.docx  a Word document
     raw/field-notes/harbour-log.txt      text that is not UTF-8
     ../zotero/storage/<key>/*.pdf        the attachments of the fake library
@@ -28,6 +28,7 @@ the honest way to test that without shipping someone's scanned book.
 """
 
 import argparse
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -88,16 +89,12 @@ class MissingTool(BuildError):
     """This machine cannot build that one artifact. Only optional jobs may."""
 
 
-# Nothing in the standard library writes a JPEG, and a runtime dependency is
-# not something this project takes on. So the one JPEG in the fixture is
-# converted with whatever the machine happens to have, and skipped where there
-# is nothing — no code branches on the image format anyway, so it costs no
-# coverage. `{i}` and `{o}` are the input and output paths.
-JPEG_CONVERTERS = [
-    ["sips", "-s", "format", "jpeg", "-s", "formatOptions", "80", "{i}", "--out", "{o}"],
-    ["magick", "{i}", "-quality", "80", "{o}"],
-    ["convert", "{i}", "-quality", "80", "{o}"],
-]
+# Nothing in the standard library writes a JPEG. This used to shell out to
+# whichever of sips, magick or convert the machine happened to have, and skip the
+# fixture where there was none — which meant it existed on macOS, sometimes on
+# Linux, and never on Windows. Pillow is a declared development dependency
+# instead: same result on all three platforms, no guessing.
+JPEG_QUALITY = 80
 
 
 def typst(binary, source, target, extra=()):
@@ -158,27 +155,29 @@ def build_image(binary, source, target):
     typst(binary, source, target, ["-f", "png", "--ppi", "150"])
 
 
-def jpeg_converter():
-    """The first JPEG converter this machine has, or None."""
-    return next((c for c in JPEG_CONVERTERS if shutil.which(c[0])), None)
-
-
 def build_jpeg(binary, source, target):
-    """Renders the source to PNG and converts it — a JPEG needs outside help."""
-    tool = jpeg_converter()
-    if tool is None:
+    """Renders the source to PNG, then re-encodes it as a JPEG with Pillow."""
+    # Imported here, not at the top: tests/test_repo_hygiene.py imports this
+    # module for its JOBS table alone, and should not need Pillow to do it.
+    try:
+        from PIL import Image
+    except ImportError as e:  # pragma: no cover - depends on the environment
         raise MissingTool(
-            f"{target.name}: no JPEG converter here (tried "
-            f"{', '.join(c[0] for c in JPEG_CONVERTERS)})"
-        )
+            f"{target.name}: Pillow is not installed "
+            "(python3 -m pip install -r requirements-dev.txt)"
+        ) from e
+
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
         png = Path(td) / "page.png"
         typst(binary, source, png, ["-f", "png", "--ppi", "150"])
-        command = [arg.replace("{i}", str(png)).replace("{o}", str(target)) for arg in tool]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0 or not target.exists():
-            raise MissingTool(f"{target.name}: {tool[0]} failed ({result.stderr.strip()[:120]})")
+        # A photographed notice has no transparency, and JPEG cannot store it
+        # anyway — flatten onto white rather than let the alpha channel decide.
+        with Image.open(png) as rendered:
+            photo = rendered.convert("RGB")
+        photo.save(target, "JPEG", quality=JPEG_QUALITY)
+    if not target.exists():
+        raise BuildError(f"{target.name}: Pillow wrote nothing")
 
 
 def _xml_escape(text):
@@ -288,9 +287,16 @@ JOBS = [
 ]
 
 
-# Artifacts that need a tool not every machine has. A job in here that cannot
-# be built is reported and skipped; anything else is a failure.
+# Artifacts that need something beyond the engine. A job in here that cannot be
+# built is reported and skipped; anything else is a failure. The JPEG is here
+# only for whoever has not installed requirements-dev.txt — which, unlike the
+# old hunt for sips or magick, is a thing they can fix.
 OPTIONAL = {RAW / "images" / "harbour-noticeboard.jpg"}
+
+
+def jpeg_available():
+    """Whether a JPEG can be written here — that is, whether Pillow is installed."""
+    return importlib.util.find_spec("PIL") is not None
 
 
 def stale(target, source):
@@ -301,7 +307,7 @@ def build(force=False, dry_run=False):
     """Builds everything that is missing or older than its source."""
     todo = [(t, s, f) for t, s, f in JOBS if force or stale(t, s)]
     if dry_run:
-        todo = [(t, s, f) for t, s, f in todo if t not in OPTIONAL or jpeg_converter()]
+        todo = [(t, s, f) for t, s, f in todo if t not in OPTIONAL or jpeg_available()]
     if not todo or dry_run:
         return [t for t, _, _ in todo]
 

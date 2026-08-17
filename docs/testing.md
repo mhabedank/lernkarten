@@ -56,7 +56,7 @@ python3 scripts/make_testdata.py     # build the binary half, once
 |---|---|---|
 | `folder` | markdown, plain text, HTML, a subfolder, an umlaut file name, an empty file, a Windows-1252 file | — |
 | `pdf` | a four-page handbook with a text layer, a scan with none, a 61-page almanac and a truncated file | `make_testdata.py` |
-| `folder` (images) | an infographic as PNG, a photographed notice as JPEG | `make_testdata.py` (JPEG needs `sips`/`magick`) |
+| `folder` (images) | an infographic as PNG, a photographed notice as JPEG | `make_testdata.py` |
 | `folder` (office) | a Word document | `make_testdata.py` |
 | `web` | a four-page site with links, nav, a cookie banner, a login page and a path that answers 403 | `http.server` |
 | `web` (internet) | `https://example.com/`, IANA's reserved example domain | a connection |
