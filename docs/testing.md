@@ -92,6 +92,12 @@ python3 scripts/check_docs.py              # skills, links, required files
 
 These four are the gates before every pull request, and CI runs the same.
 
+CI runs the suite on Linux, macOS and Windows. The Windows legs are new and
+still **advisory** — `continue-on-error`, so they report without blocking a
+merge. If you can reach a Windows machine, what fails there is worth a look;
+once the legs are green, drop the `continue-on-error` lines in
+`.github/workflows/ci.yml` and they start counting.
+
 `pytest` covers five levels:
 
 | Module | Level | What it does |
