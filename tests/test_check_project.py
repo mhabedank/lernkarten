@@ -643,3 +643,18 @@ def test_a_catalog_with_no_parents_or_related_is_unchanged(tmp_path):
     """Regression guard: absence means today's behaviour."""
     report = check(project(tmp_path, catalog=GOOD_CATALOG))
     assert not report.errors and not report.warnings, messages(report)
+
+
+def test_an_area_that_is_not_a_top_level_topic_warns(tmp_path):
+    """FR-010: each area of the goal becomes its own top-level topic.
+
+    Found by hand during the Wave G reconciliation, where the demo fixture had
+    three areas and four topics that did not correspond — so this is a check
+    that turns a prompt rule into something a test can hold, rather than
+    trusting the catalog skill to have followed it.
+    """
+    goal = GOOD_GOAL.replace("### Tides", "### Tides and navigation")
+    report = check(project(tmp_path, goal=goal))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "Tides and navigation" in said, said

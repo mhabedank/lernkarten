@@ -124,18 +124,19 @@ def check_goal(project, report):
     """goal.md: what the user is trying to learn, and the criterion for everything else.
 
     Absent is valid and means today's behaviour — the whole feature is opt-in.
-    Returns the required topics, which check_catalog uses for the drift warning.
+    Returns (required topics, area names); check_catalog uses both for the drift
+    warnings.
     """
     path = project / "goal.md"
     if not path.exists():
-        return set()
+        return set(), set()
 
     where = "goal.md"
     report.count("goals")
     head, body = frontmatter(path.read_text(encoding="utf-8"))
     if head is None:
         report.error(where, "no YAML frontmatter — 'goal', 'kind', 'depth' and 'updated' go there")
-        return set()
+        return set(), set()
 
     for key in ("goal", "kind", "depth", "updated"):
         if not head.get(key):
@@ -163,7 +164,7 @@ def check_goal(project, report):
         if not topics:
             report.error(where, f"area '{area}' lists no required topic")
         required.update(topics)
-    return required
+    return required, set(areas)
 
 
 # --- the four artifacts ---------------------------------------------------
@@ -399,7 +400,7 @@ def check_graph(catalog, subtopics, report):
                 )
 
 
-def check_catalog(project, report, required=()):
+def check_catalog(project, report, required=(), areas=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
@@ -458,6 +459,17 @@ def check_catalog(project, report, required=()):
 
     # Drift: goal.md asks for something the catalog never got. A warning, because
     # the fix is to re-run /catalog rather than to edit the file by hand.
+    # FR-010: each area of the goal is its own top-level topic. A warning, not an
+    # error — the catalog may simply predate the goal, and re-running fixes it.
+    topic_keys = {topic_key(name) for name in seen}
+    for area in areas:
+        if topic_key(area) not in topic_keys:
+            report.warn(
+                "catalog/topics.md",
+                f"goal.md area '{area}' is not a top-level topic (##) — each area "
+                "becomes its own topic, so re-run /catalog",
+            )
+
     names = [topic_key(n) for n in list(seen) + list(subtopics)]
     for topic in required:
         key = topic_key(topic)
@@ -525,10 +537,10 @@ def check_cards(project, subtopics, report, marked=None):
 
 
 def check(project, report):
-    required = check_goal(project, report)
+    required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
     check_knowledge(project, source_ids, report)
-    subtopics, marked = check_catalog(project, report, required)
+    subtopics, marked = check_catalog(project, report, required, areas)
     check_cards(project, subtopics, report, marked)
     return report
 

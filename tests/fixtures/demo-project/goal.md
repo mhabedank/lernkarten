@@ -14,20 +14,24 @@ Working depth throughout — enough to act on, not enough to teach.
 
 ## Required topics
 
-### Tides and navigation
+### Geography
+- The five islands, and why Torvig is the gateway
+- Settlements, harbours and where the tide office sits
+
+### Tides
 - Rhythm of the tide, and how far high water shifts from one day to the next
 - Range and the rule of twelfths
 - Chart datum and the Ovray rule
 - Storm surge and the Ashwind warning stages
 
-### Harbour signals
+### Gezeiten (deutsch)
+- Tidenrhythmus
+- Tidenhub
+
+### Signals
 - The six flags and what each one means
 - Rules of use: reading order, forbidden pairs, half mast
 - Right of way in the Kestrel Deep
-
-### Island geography
-- The five islands, and why Torvig is the gateway
-- Settlements, harbours and where the tide office sits
 
 ## Out of scope
 

@@ -328,15 +328,15 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ## Phase 10: Cross-Cutting
 
-- [ ] T089 Amend `.specify/memory/constitution.md` Principle I: the format table gains `goal.md`, making it five formats, not four
-- [ ] T090 Amend `.specify/memory/constitution.md` Identity section: the pipeline is no longer five steps
-- [ ] T114 Amend `.specify/memory/constitution.md` Principle XI: extend the existing "Layout and design" carve-out to cover **run output**. A requirement satisfied only by what a skill says during a run (FR-013, FR-016, FR-018, FR-019) has no on-disk artifact, so no `check_project.py` check can be written to fail against it — say so, and send it to the manual checklist the way layout already goes there. Without this, XI's model-driven clause ("if no failing check can be written, the requirement is under-specified") reads as forbidding four shipped requirements. See [plan.md](plan.md#complexity-tracking)
-- [ ] T091 Bump the constitution version and add a dated amendment note in the same style as the existing 2.2.0 / 2.1.0 entries, covering T089, T090 and T114
-- [ ] T092 Bump `version` in `.claude-plugin/marketplace.json` **and** `.claude-plugin/plugin.json` (both read `0.2.0` today) — the plugin gained two commands, and the two files drift apart if only one is bumped
-- [ ] T093 Confirm every relative markdown link resolves: `python3 scripts/check_docs.py` fails on a dead one
-- [ ] T094 English throughout — code, comments, docstrings, docs, commit subjects (constitution XIII)
+- [x] T089 Amend `.specify/memory/constitution.md` Principle I: the format table gains `goal.md`, making it five formats, not four
+- [x] T090 Amend `.specify/memory/constitution.md` Identity section: the pipeline is no longer five steps
+- [x] T114 Amend `.specify/memory/constitution.md` Principle XI: extend the existing "Layout and design" carve-out to cover **run output**. A requirement satisfied only by what a skill says during a run (FR-013, FR-016, FR-018, FR-019) has no on-disk artifact, so no `check_project.py` check can be written to fail against it — say so, and send it to the manual checklist the way layout already goes there. Without this, XI's model-driven clause ("if no failing check can be written, the requirement is under-specified") reads as forbidding four shipped requirements. See [plan.md](plan.md#complexity-tracking)
+- [x] T091 Bump the constitution version and add a dated amendment note in the same style as the existing 2.2.0 / 2.1.0 entries, covering T089, T090 and T114
+- [x] T092 Bump `version` in `.claude-plugin/marketplace.json` **and** `.claude-plugin/plugin.json` (both read `0.2.0` today) — the plugin gained two commands, and the two files drift apart if only one is bumped
+- [x] T093 Confirm every relative markdown link resolves: `python3 scripts/check_docs.py` fails on a dead one
+- [x] T094 English throughout — code, comments, docstrings, docs, commit subjects (constitution XIII)
 
-- [ ] T118 Wave G evidence ([plan.md](plan.md#test-plan-first)) — **before Phase 11, never after**. Copy `tests/fixtures/demo-project` to a scratch directory, run the four changed/new skills against the **copy**, and diff the result against the committed fixture. Where they disagree, the hand-written fixture is wrong and gets reconciled; where they agree, the prompts are proven to produce it. Two hard rules:
+- [x] T118 Wave G evidence ([plan.md](plan.md#test-plan-first)) — **before Phase 11, never after**. Copy `tests/fixtures/demo-project` to a scratch directory, run the four changed/new skills against the **copy**, and diff the result against the committed fixture. Where they disagree, the hand-written fixture is wrong and gets reconciled; where they agree, the prompts are proven to produce it. Two hard rules:
   - **Never run `/research-gaps` against the fixture or its copy for real.** It retrieves third-party web text, and constitution VII requires every byte of the demo project to be invented for this repo. T051's `research` document stays hand-written; the offline path is exercised by T112 instead.
   - If the reconciliation changes any fixture file, **re-run all of tasks.md Phase 11** — the gates and the e2e counts were measured against the old fixture
 
