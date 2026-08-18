@@ -29,6 +29,9 @@ import yamlio
 SOURCE_TYPES = {"folder": "path", "pdf": "path", "web": "url", "zotero": None}
 GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
 GOAL_DEPTHS = ("awareness", "working", "expert")
+# A subtopic is either covered, wanted-but-uncovered, or unwanted. Absent means
+# covered, so a catalog written before the goal-driven step stays valid.
+CATALOG_STATUS = ("gap", "out of scope")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
@@ -327,6 +330,23 @@ def check_catalog(project, report, required=()):
     for name, children in seen.items():
         if not children:
             report.warn("catalog/topics.md", f"topic '{name}' has no subtopic (###)")
+
+    for entry in catalog.subtopics:
+        status = entry.attribute("status")
+        if status is not None and status not in CATALOG_STATUS:
+            report.error(
+                "catalog/topics.md",
+                f"subtopic '{entry.name}': 'Status: {status}' is not one of "
+                f"{', '.join(CATALOG_STATUS)}",
+            )
+        references = (entry.attribute("references") or "").strip()
+        if (not references or references.lower() == "none") and status != "gap":
+            report.error(
+                "catalog/topics.md",
+                f"subtopic '{entry.name}' has no references and is not marked "
+                "'Status: gap' — a branch with nothing behind it is either a gap "
+                "or a mistake",
+            )
 
     for target in LINK.findall(text):
         if target.startswith(("http://", "https://", "mailto:", "#")):

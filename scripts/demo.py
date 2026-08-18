@@ -2,15 +2,17 @@
 """Copies the demo project into a scratch folder, ready to drive by hand.
 
 The demo project under tests/fixtures/demo-project is a complete miniature
-project about an invented archipelago: raw material, ingested texts, a topic
-catalog and card files. This puts a copy somewhere you can break it.
+project about an invented archipelago: a learning goal, raw material, ingested
+texts, a topic catalog and card files. This puts a copy somewhere you can break
+it.
 
     python3 scripts/demo.py ~/lernkarten-demo          # everything
     python3 scripts/demo.py ~/lernkarten-demo --raw    # only sources + raw
     python3 scripts/demo.py ~/lernkarten-demo --force  # overwrite an old copy
 
-With --raw the copy stops after the source register: knowledge/, catalog/ and
-cards/ stay empty, so /ingest, /catalog and /cards have something to do. That
+With --raw the copy stops after the goal and the source register: knowledge/,
+catalog/ and cards/ stay empty, so /ingest, /catalog and /cards have something
+to do — and because goal.md comes along, /catalog has a goal to build from. That
 is the version to use when testing the skills themselves; the full copy is for
 testing /print and the build script.
 
@@ -49,6 +51,9 @@ def copy(target, raw_only, force):
     target.mkdir(parents=True)
 
     shutil.copytree(FIXTURE / "raw", target / "raw")
+    # goal.md states the target rather than recording work done, so it comes
+    # along even with --raw: /catalog needs it to build a goal-driven tree.
+    shutil.copy2(FIXTURE / "goal.md", target / "goal.md")
     (target / "sources.yaml").write_text(
         absolute_sources((FIXTURE / "sources.yaml").read_text(encoding="utf-8"), target / "raw"),
         encoding="utf-8",

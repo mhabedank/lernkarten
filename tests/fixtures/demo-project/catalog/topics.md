@@ -1,7 +1,10 @@
 # Topic catalog — Kestrel Islands (demo project)
 
-Derived from `knowledge/` by `/catalog`. Topics are cut by content, not by
-source. Edit by hand: `/cards` follows whatever is written here.
+Derived from `goal.md` and `knowledge/` by `/catalog`. Topics are cut by what
+the goal requires, not by which document happened to mention them. Edit by
+hand: `/cards` follows whatever is written here.
+
+Goal: [goal.md](../goal.md)
 
 ## Geography
 The archipelago itself — islands, relief and settlements.
@@ -14,6 +17,7 @@ References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 ### Relief and the crater
 The islands as the rim of a drowned crater, the Kestrel Deep between them, and
 Bellhorn as the exception.
+Status: out of scope
 References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 
 ### Settlements
@@ -38,6 +42,12 @@ References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 What the charted heights refer to, and when Ovray Cove can be entered.
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md),
 [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+
+### Storm surge and the Ashwind warning stages
+What raises the water above the predicted tide, the three warning stages the
+tide office hoists, and what each one means for entering a harbour.
+Status: gap
+References: none
 
 ## Gezeiten (deutsch)
 The tide topic once more in German — the demo needs two card languages in one

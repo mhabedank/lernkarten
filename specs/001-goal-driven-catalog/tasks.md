@@ -151,30 +151,30 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### Test material first
 
-- [ ] T034 [US2] Extend `tests/fixtures/demo-project/catalog/topics.md`: a `Goal:` header field, one subtopic with `Status: gap` and `References: none` (the topic T021 left uncovered), one with `Status: out of scope` keeping its references
-- [ ] T035 [US2] Check whether the out-of-scope subtopic chosen in T034 has cards in `tests/fixtures/demo-project/cards/*.yaml`. If it does, either pick a subtopic that has none, or delete those cards and update **both** hard-coded counts — `DEMO_CARD_COUNT` at `tests/test_e2e.py:25` and the bare `assert counts["cards"] == 31` at `tests/test_check_project.py:108` (both currently 31) — a demo that ships cards for its own out-of-scope subtopic contradicts US3
+- [x] T034 [US2] Extend `tests/fixtures/demo-project/catalog/topics.md`: a `Goal:` header field, one subtopic with `Status: gap` and `References: none` (the topic T021 left uncovered), one with `Status: out of scope` keeping its references
+- [x] T035 [US2] Check whether the out-of-scope subtopic chosen in T034 has cards in `tests/fixtures/demo-project/cards/*.yaml`. If it does, either pick a subtopic that has none, or delete those cards and update **both** hard-coded counts — `DEMO_CARD_COUNT` at `tests/test_e2e.py:25` and the bare `assert counts["cards"] == 31` at `tests/test_check_project.py:108` (both currently 31) — a demo that ships cards for its own out-of-scope subtopic contradicts US3
 
 ### 🔴 Red
 
 <!-- sequential -->
-- [ ] T036 🔴 [P] [US2] `tests/test_check_project.py`: a subtopic with no references and no `Status: gap` is reported by name — fails, nothing checks this today
-- [ ] T037 🔴 [P] [US2] `tests/test_check_project.py`: `Status: gap` with `References: none` passes — fails
-- [ ] T038 🔴 [P] [US2] `tests/test_check_project.py`: an unknown `Status:` value is reported, naming subtopic and value — fails
+- [x] T036 🔴 [P] [US2] `tests/test_check_project.py`: a subtopic with no references and no `Status: gap` is reported by name — fails, nothing checks this today
+- [x] T037 🔴 [P] [US2] `tests/test_check_project.py`: `Status: gap` with `References: none` passes — fails
+- [x] T038 🔴 [P] [US2] `tests/test_check_project.py`: an unknown `Status:` value is reported, naming subtopic and value — fails
 <!-- sequential -->
-- [ ] T039 [US2] *Regression guard*: today's catalog shape, with no `Status:` anywhere, still passes
+- [x] T039 [US2] *Regression guard*: today's catalog shape, with no `Status:` anywhere, still passes
 
 **Checkpoint**: red on three assertions. Commit.
 
 ### 🟢 Green — deterministic half
 
-- [ ] T040 [US2] Add the `Status:` and `References: none` rules to `parse_catalog()` / `check_catalog()` in `scripts/check_project.py` (invariants C-6, C-7 in [data-model.md](data-model.md))
+- [x] T040 [US2] Add the `Status:` and `References: none` rules to `parse_catalog()` / `check_catalog()` in `scripts/check_project.py` (invariants C-6, C-7 in [data-model.md](data-model.md))
 
 ### 🟢 Green — model-driven half
 
-- [ ] T041 [US2] Rewrite the ordering in `skills/catalog/SKILL.md`: when `goal.md` exists, build the hierarchy from its areas and required topics **first**, then attach `knowledge/` references; each area becomes its own top-level topic and areas are never merged
-- [ ] T042 [US2] Add the marking rules to `skills/catalog/SKILL.md`: uncovered required topic → `Status: gap` + `References: none` + the bullets describing what it should cover; unmatched material → `Status: out of scope` with references kept
-- [ ] T043 [US2] Add the no-goal path to `skills/catalog/SKILL.md`: build exactly as today, **and** tell the user the catalog covers the material rather than the topic, pointing at `/learning-goal`. This is the discovery path for the whole feature
-- [ ] T044 [US2] Add the closing report to `skills/catalog/SKILL.md`: covered / gap / out-of-scope counts, pointing at `/research-gaps` when there is a gap
+- [x] T041 [US2] Rewrite the ordering in `skills/catalog/SKILL.md`: when `goal.md` exists, build the hierarchy from its areas and required topics **first**, then attach `knowledge/` references; each area becomes its own top-level topic and areas are never merged
+- [x] T042 [US2] Add the marking rules to `skills/catalog/SKILL.md`: uncovered required topic → `Status: gap` + `References: none` + the bullets describing what it should cover; unmatched material → `Status: out of scope` with references kept
+- [x] T043 [US2] Add the no-goal path to `skills/catalog/SKILL.md`: build exactly as today, **and** tell the user the catalog covers the material rather than the topic, pointing at `/learning-goal`. This is the discovery path for the whole feature
+- [x] T044 [US2] Add the closing report to `skills/catalog/SKILL.md`: covered / gap / out-of-scope counts, pointing at `/research-gaps` when there is a gap
 
 **Checkpoint**: gaps and out-of-scope material are visible in the catalog file. US1 still passes its own test.
 

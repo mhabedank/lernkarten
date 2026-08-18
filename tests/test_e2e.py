@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI = ROOT / "bin" / "lernkarten"
 DEMO = ROOT / "tests" / "fixtures" / "demo-project"
 CARDS = sorted(str(p) for p in (DEMO / "cards").glob("*.yaml"))
-DEMO_CARD_COUNT = 31
+DEMO_CARD_COUNT = 29
 
 sys.path.insert(0, str(ROOT / "scripts"))
 

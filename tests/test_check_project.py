@@ -129,7 +129,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 31
+    assert counts["cards"] == 29
 
 
 def test_the_demo_project_passes_on_the_command_line():
@@ -427,5 +427,59 @@ def test_a_project_without_a_goal_passes_unchanged(tmp_path):
     A regression guard, green from the first day — and it must never go red.
     """
     report = check(project(tmp_path))
+    assert not report.errors, messages(report)
+    assert not report.warnings, report.warnings
+
+
+# --- Status: gap and out of scope -----------------------------------------
+
+CATALOG_WITH_GAP = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+
+### Storm surge
+What the goal wants and no document covers.
+Status: gap
+References: none
+"""
+
+
+def test_a_subtopic_with_neither_references_nor_gap_is_reported(tmp_path):
+    """A branch with nothing behind it is either a gap or a mistake."""
+    catalog = GOOD_CATALOG + "\n### Storm surge\nNothing behind this one.\n"
+    report = check(project(tmp_path, catalog=catalog))
+    assert "Storm surge" in messages(report), messages(report)
+
+
+def test_a_gap_with_no_references_passes(tmp_path):
+    report = check(project(tmp_path, catalog=CATALOG_WITH_GAP))
+    assert not report.errors, messages(report)
+
+
+def test_an_unknown_status_is_reported(tmp_path):
+    """The message names the subtopic and the value — 'invalid status' helps nobody."""
+    catalog = CATALOG_WITH_GAP.replace("Status: gap", "Status: irrelevant")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Storm surge" in said, said
+    assert "irrelevant" in said, said
+
+
+def test_out_of_scope_keeps_its_references(tmp_path):
+    """Out-of-scope material is marked, not thrown away — the references still resolve."""
+    catalog = GOOD_CATALOG.replace(
+        "How the tide moves.", "How the tide moves.\nStatus: out of scope"
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    assert not report.errors, messages(report)
+
+
+def test_a_catalog_with_no_status_lines_is_unchanged(tmp_path):
+    """Regression guard: absence of every new line means today's behaviour."""
+    report = check(project(tmp_path, catalog=GOOD_CATALOG))
     assert not report.errors, messages(report)
     assert not report.warnings, report.warnings
