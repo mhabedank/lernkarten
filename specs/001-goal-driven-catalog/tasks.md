@@ -42,13 +42,13 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 ## Phase 1: Setup
 
 <!-- parallel-group: 1 (max 3 concurrent) -->
-- [ ] T001 [P] `python3 -m pip install -r requirements-dev.txt` — pytest, ruff, pillow, pyyaml
-- [ ] T002 [P] `scripts/install-hooks.sh` — confirm `core.hooksPath=.githooks` is set
-- [ ] T003 [P] `python3 scripts/make_testdata.py` — build the binary test material the demo project needs
+- [x] T001 [P] `python3 -m pip install -r requirements-dev.txt` — pytest, ruff, pillow, pyyaml
+- [x] T002 [P] `scripts/install-hooks.sh` — confirm `core.hooksPath=.githooks` is set
+- [x] T003 [P] `python3 scripts/make_testdata.py` — build the binary test material the demo project needs
 
 <!-- sequential -->
 - [x] T004 Branch created: `feat/goal-driven-catalog` (constitution XIV) — done in commit `53241d7`
-- [ ] T005 Confirm baseline green before changing anything: `ruff check . && pytest && python3 scripts/check_docs.py`
+- [x] T005 Confirm baseline green before changing anything: `ruff check . && pytest && python3 scripts/check_docs.py`
 
 **Checkpoint**: the suite passes on an untouched tree, so every red below is caused by this feature.
 
@@ -66,33 +66,33 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### The contracts are already written
 
-- [ ] T006 Re-read [contracts/goal-md.md](contracts/goal-md.md), [contracts/catalog-topics-md.md](contracts/catalog-topics-md.md) and [contracts/sources-yaml.md](contracts/sources-yaml.md) — these are the settled interface between the halves (constitution I). Do not re-litigate them here; changing one is a spec change
+- [x] T006 Re-read [contracts/goal-md.md](contracts/goal-md.md), [contracts/catalog-topics-md.md](contracts/catalog-topics-md.md) and [contracts/sources-yaml.md](contracts/sources-yaml.md) — these are the settled interface between the halves (constitution I). Do not re-litigate them here; changing one is a spec change
 
 ### Repo hygiene for the fifth format — 🔴 first
 
-- [ ] T007 🔴 Add a case to `tests/test_repo_hygiene.py` beside `test_no_personal_source_register_in_the_repo` (line 66) asserting no `goal.md` is versioned outside `tests/fixtures/` — fails, because nothing stops it today
-- [ ] T008 🔴 Add `"goal.md"` to the pattern tuple in `test_gitignore_covers_the_user_paths` (`tests/test_repo_hygiene.py:166`) — fails, `.gitignore` has no such entry
-- [ ] T009 🔴 Extend `test_the_demo_project_is_not_swallowed_by_gitignore` (`tests/test_repo_hygiene.py:146`) to assert the fixture's `goal.md` survives — fails; its docstring already names this exact hazard for `sources.yaml`
-- [ ] T010 Add `goal.md` to `.gitignore` beside `sources.yaml` (line 5), **and** `!tests/fixtures/**/goal.md` beside the existing negation (line 18), with a comment saying why — `goal.md` has no slash, so it matches at every level ([research.md R2](research.md#r2--where-does-goalmd-live-and-how-does-the-fixture-survive-gitignore))
-- [ ] T011 Add `goal\.md` to the grep pattern in `.githooks/pre-commit` (lines 7–8) so a stray goal is blocked before the round trip. The pattern is anchored (`^(knowledge/|catalog/|…|sources\.yaml)`), so this blocks a **root-level** `goal.md` only — the same reach `sources\.yaml` has there today. A `goal.md` deeper in the tree is caught by T010's `.gitignore` entry, which does match at every level; the hook is the second line of defence, not the first. Do not un-anchor the pattern to close the difference — that would start matching paths like `docs/goal.md.example`
-- [ ] T012 Verify T007–T009 now pass, and that `git check-ignore -v goal.md` reports the new rule while the fixture path does not
+- [x] T007 🔴 Add a case to `tests/test_repo_hygiene.py` beside `test_no_personal_source_register_in_the_repo` (line 66) asserting no `goal.md` is versioned outside `tests/fixtures/` — fails, because nothing stops it today
+- [x] T008 🔴 Add `"goal.md"` to the pattern tuple in `test_gitignore_covers_the_user_paths` (`tests/test_repo_hygiene.py:166`) — fails, `.gitignore` has no such entry
+- [x] T009 🔴 Extend `test_the_demo_project_is_not_swallowed_by_gitignore` (`tests/test_repo_hygiene.py:146`) to assert the fixture's `goal.md` survives — fails; its docstring already names this exact hazard for `sources.yaml`
+- [x] T010 Add `goal.md` to `.gitignore` beside `sources.yaml` (line 5), **and** `!tests/fixtures/**/goal.md` beside the existing negation (line 18), with a comment saying why — `goal.md` has no slash, so it matches at every level ([research.md R2](research.md#r2--where-does-goalmd-live-and-how-does-the-fixture-survive-gitignore))
+- [x] T011 Add `goal\.md` to the grep pattern in `.githooks/pre-commit` (lines 7–8) so a stray goal is blocked before the round trip. The pattern is anchored (`^(knowledge/|catalog/|…|sources\.yaml)`), so this blocks a **root-level** `goal.md` only — the same reach `sources\.yaml` has there today. A `goal.md` deeper in the tree is caught by T010's `.gitignore` entry, which does match at every level; the hook is the second line of defence, not the first. Do not un-anchor the pattern to close the difference — that would start matching paths like `docs/goal.md.example`
+- [x] T012 Verify T007–T009 now pass, and that `git check-ignore -v goal.md` reports the new rule while the fixture path does not
 
 ### Skill-name disambiguation — 🔴 first
 
-- [ ] T013 🔴 Create `tests/test_check_docs.py` — this module does not exist; `scripts/check_docs.py` has no coverage at all today. First case: a skill whose description names triggers but no domain word is reported. Fails, the rule does not exist
-- [ ] T014 🔴 Second case in `tests/test_check_docs.py` (**after** T013 — same file, T013 creates it; the [P] this task used to carry paired it with T007–T009, which are a different module): every shipped skill passes the rule — fails, because `catalog` and `ingest` descriptions do not say what the topics and sources are *for*
-- [ ] T015 Add the domain-word rule to `check_skills()` in `scripts/check_docs.py` (after the `"Triggers" not in description` branch, line 91), requiring `flashcard` or `flashcards` in the description
+- [x] T013 🔴 Create `tests/test_check_docs.py` — this module does not exist; `scripts/check_docs.py` has no coverage at all today. First case: a skill whose description names triggers but no domain word is reported. Fails, the rule does not exist
+- [x] T014 🔴 Second case in `tests/test_check_docs.py` (**after** T013 — same file, T013 creates it; the [P] this task used to carry paired it with T007–T009, which are a different module): every shipped skill passes the rule — fails, because `catalog` and `ingest` descriptions do not say what the topics and sources are *for*
+- [x] T015 Add the domain-word rule to `check_skills()` in `scripts/check_docs.py` (after the `"Triggers" not in description` branch, line 91), requiring `flashcard` or `flashcards` in the description
 <!-- parallel-group: 2 (max 3 concurrent) — two skill files, no overlap -->
-- [ ] T016 [P] Retrofit `skills/catalog/SKILL.md` frontmatter description to name flashcards
-- [ ] T017 [P] Retrofit `skills/ingest/SKILL.md` frontmatter description to name flashcards
+- [x] T016 [P] Retrofit `skills/catalog/SKILL.md` frontmatter description to name flashcards
+- [x] T017 [P] Retrofit `skills/ingest/SKILL.md` frontmatter description to name flashcards
 
 <!-- sequential -->
-- [ ] T018 Confirm `python3 scripts/check_docs.py` is green and T013–T014 pass
+- [x] T018 Confirm `python3 scripts/check_docs.py` is green and T013–T014 pass
 
 ### The catalog parser — refactor, not new behaviour
 
-- [ ] T019 Extract the heading scan in `check_catalog()` (`scripts/check_project.py:163`) into a pure `parse_catalog(text)` returning topics, subtopics and their attribute lines, reporting nothing. **No new red test**: this changes no behaviour and is guarded by the existing catalog cases in `tests/test_check_project.py` (lines 204–220). Say so in the commit rather than faking a red
-- [ ] T020 Confirm `pytest tests/test_check_project.py` is unchanged-green after the extraction
+- [x] T019 Extract the heading scan in `check_catalog()` (`scripts/check_project.py:163`) into a pure `parse_catalog(text)` returning topics, subtopics and their attribute lines, reporting nothing. **No new red test**: this changes no behaviour and is guarded by the existing catalog cases in `tests/test_check_project.py` (lines 204–220). Say so in the commit rather than faking a red
+- [x] T020 Confirm `pytest tests/test_check_project.py` is unchanged-green after the extraction
 
 **Checkpoint**: `goal.md` is a protected user-content path, the skill rule is enforced, and there is a parser to hang new rules on. Commit.
 
@@ -106,7 +106,7 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### Test material first
 
-- [ ] T021 [US1] Write `tests/fixtures/demo-project/goal.md` per [contracts/goal-md.md](contracts/goal-md.md) — invented Kestrel Islands content (constitution VII), **two independent areas** so US2's area-separation rule has something to bite on, one required topic nothing covers (the future gap), one out-of-scope entry matching existing demo material
+- [x] T021 [US1] Write `tests/fixtures/demo-project/goal.md` per [contracts/goal-md.md](contracts/goal-md.md) — invented Kestrel Islands content (constitution VII), **two independent areas** so US2's area-separation rule has something to bite on, one required topic nothing covers (the future gap), one out-of-scope entry matching existing demo material
 
 ### 🔴 Red
 

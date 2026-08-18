@@ -69,6 +69,16 @@ def test_no_personal_source_register_in_the_repo():
     )
 
 
+def test_no_personal_learning_goal_in_the_repo():
+    """`goal.md` states what its author is studying — the fifth user-content format."""
+    intruders = [
+        f
+        for f in versioned_files()
+        if Path(f).name == "goal.md" and not f.startswith("tests/fixtures/")
+    ]
+    assert not intruders, f"goal.md holds the user's learning goal and stays local: {intruders}"
+
+
 def test_example_source_register_is_valid():
     data = yamlio.load((ROOT / "sources.example.yaml").read_text(encoding="utf-8"))
     assert isinstance(data, dict) and data.get("sources"), "key 'sources' missing"
@@ -144,10 +154,26 @@ def fixture_files():
 
 
 def test_the_demo_project_is_not_swallowed_by_gitignore():
-    """`sources.yaml` and `*.pdf` match at every level — the fixture must survive."""
+    """`sources.yaml`, `goal.md` and `*.pdf` match at every level — the fixture must survive."""
     versioned, _ = fixture_files()
     assert not ignored(versioned), (
         f"these test files would never be committed: {sorted(ignored(versioned))}"
+    )
+
+
+def test_the_demo_learning_goal_survives_gitignore():
+    """The negation pattern, checked on its own.
+
+    `goal.md` has no slash, so it matches at every directory level — the same
+    hazard `sources.yaml` has. Without `!tests/fixtures/**/goal.md` the fixture's
+    copy is silently uncommittable, and the demo project loses the artifact the
+    whole goal-driven catalog is built on.
+    """
+    goal = ROOT / "tests/fixtures/demo-project/goal.md"
+    assert goal.exists(), "the demo project has no goal.md"
+    relative = goal.relative_to(ROOT).as_posix()
+    assert not ignored([relative]), (
+        f"{relative} is ignored — .gitignore needs !tests/fixtures/**/goal.md"
     )
 
 
@@ -163,5 +189,12 @@ def test_the_generated_test_data_stays_out_of_the_repo():
 
 def test_gitignore_covers_the_user_paths():
     lines = (ROOT / ".gitignore").read_text(encoding="utf-8").split()
-    for pattern in ("sources.yaml", "knowledge/*", "catalog/*", "cards/*", "output/"):
+    for pattern in (
+        "sources.yaml",
+        "goal.md",
+        "knowledge/*",
+        "catalog/*",
+        "cards/*",
+        "output/",
+    ):
         assert pattern in lines, f".gitignore does not cover {pattern}"

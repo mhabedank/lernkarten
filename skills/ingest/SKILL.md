@@ -1,7 +1,7 @@
 ---
 name: ingest
 description: >-
-  Read (scrape) the registered knowledge sources — extract PDFs, walk folders, fetch Zotero collections and web pages — and store them as text under knowledge/. Triggers: /ingest, "read my sources", "scrape my sources".
+  Read (scrape) the registered knowledge sources the flashcards are built from — extract PDFs, walk folders, fetch Zotero collections and web pages — and store them as text under knowledge/. Triggers: /ingest, "read my sources", "scrape my sources".
 ---
 
 # /ingest — read the sources

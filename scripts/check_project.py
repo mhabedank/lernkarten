@@ -18,6 +18,7 @@ warnings are style questions and only fail with --strict.
 """
 
 import argparse
+import dataclasses
 import re
 import sys
 from pathlib import Path
@@ -30,6 +31,8 @@ LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+# The attribute lines a catalog entry may carry, as `Key: value` in its body.
+ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal):(.*)$")
 # Front at most ~2 lines, back at most ~6 — the card is only 100 x 72 mm.
 MAX_FRONT = 120
 MAX_BACK = 400
@@ -160,6 +163,65 @@ def check_knowledge(project, source_ids, report):
                 report.warn(where, "barely any text — did the extraction work?")
 
 
+@dataclasses.dataclass
+class Entry:
+    """One `##` topic or `###` subtopic, with the attribute lines in its body."""
+
+    kind: str  # "topic" (##) or "subtopic" (###)
+    name: str
+    heading: str | None  # for a subtopic, the topic it sits under — None if orphaned
+    attributes: dict
+
+    def attribute(self, key):
+        return self.attributes.get(key.lower())
+
+
+@dataclasses.dataclass
+class Catalog:
+    """`catalog/topics.md` as a structure, in the order it was written."""
+
+    entries: list
+
+    @property
+    def topics(self):
+        return [e for e in self.entries if e.kind == "topic"]
+
+    @property
+    def subtopics(self):
+        return [e for e in self.entries if e.kind == "subtopic"]
+
+
+def parse_catalog(text):
+    """Read the catalog into a structure. Reports nothing — that is the caller's job.
+
+    Kept pure and separate so the rules that read `Status:`, `Parents:`,
+    `Also covers:` and `Related:` have something to hang on, and so the parsing
+    can be unit-tested without going through a whole project folder.
+    """
+    entries = []
+    current = None  # the entry whose body we are inside
+    heading = None  # the most recent `##`, which a subtopic belongs under
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("### "):
+            current = Entry(kind="subtopic", name=line[4:].strip(), heading=heading, attributes={})
+            entries.append(current)
+        elif line.startswith("## "):
+            heading = line[3:].strip()
+            current = Entry(kind="topic", name=heading, heading=None, attributes={})
+            entries.append(current)
+        elif current is not None:
+            match = ATTRIBUTE.match(line)
+            if match:
+                key, value = match.group(1).lower(), match.group(2).strip()
+                # A repeated key keeps the first: References: may wrap onto a
+                # second line, and that continuation is not a new attribute.
+                current.attributes.setdefault(key, value)
+
+    return Catalog(entries=entries)
+
+
 def check_catalog(project, report):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
@@ -167,23 +229,21 @@ def check_catalog(project, report):
         return set()
 
     text = path.read_text(encoding="utf-8")
+    catalog = parse_catalog(text)
     subtopics = set()
-    topic = None
     seen = {}
-    for raw in text.splitlines():
-        line = raw.strip()
-        if line.startswith("## "):
-            topic = line[3:].strip()
-            seen[topic] = []
+    for entry in catalog.entries:
+        if entry.kind == "topic":
+            # A repeated `## name` starts the list again, as the line scan did.
+            seen[entry.name] = []
             report.count("topics")
-        elif line.startswith("### "):
-            name = line[4:].strip()
-            if topic is None:
-                report.error("catalog/topics.md", f"subtopic '{name}' before any topic (##)")
-            else:
-                seen[topic].append(name)
-            subtopics.add(name)
-            report.count("subtopics")
+            continue
+        if entry.heading is None or entry.heading not in seen:
+            report.error("catalog/topics.md", f"subtopic '{entry.name}' before any topic (##)")
+        else:
+            seen[entry.heading].append(entry.name)
+        subtopics.add(entry.name)
+        report.count("subtopics")
 
     if not seen:
         report.error("catalog/topics.md", "no topic (##) found")

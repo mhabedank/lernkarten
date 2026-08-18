@@ -1,7 +1,7 @@
 ---
 name: catalog
 description: >-
-  Build or update a topic catalog with topics, subtopics and references from the ingested knowledge under knowledge/. Triggers: /catalog, "build the topic catalog", "which topics are there".
+  Build or update the topic catalog the flashcards are generated from — topics, subtopics and references drawn from the ingested knowledge under knowledge/. Triggers: /catalog, "build the topic catalog", "which topics are there".
 ---
 
 # /catalog — build the topic catalog
