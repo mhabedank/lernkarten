@@ -294,33 +294,33 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### 🔴 Red
 
-- [ ] T072 🔴 [P] [US6] Add a case to `tests/test_repo_hygiene.py` asserting no versioned file outside `specs/` contains "five commands" (case-insensitive) — fails on all six files that match today: `README.md` (lines 1, 8, 46, 168), `docs/index.html` (lines 7, 11, 181, 361, 405), `docs/workflow.md` (line 26), `assets/brand/banner.typ` (line 1), `assets/brand/pipeline.typ` (line 1) and `assets/brand/social-card.typ` (line 23). Re-run `git grep -in "five commands"` before writing the assertion rather than trusting this list
+- [x] T072 🔴 [P] [US6] Add a case to `tests/test_repo_hygiene.py` asserting no versioned file outside `specs/` contains "five commands" (case-insensitive) — fails on all six files that match today: `README.md` (lines 1, 8, 46, 168), `docs/index.html` (lines 7, 11, 181, 361, 405), `docs/workflow.md` (line 26), `assets/brand/banner.typ` (line 1), `assets/brand/pipeline.typ` (line 1) and `assets/brand/social-card.typ` (line 23). Re-run `git grep -in "five commands"` before writing the assertion rather than trusting this list
 
 ### 🟢 Green — text
 
 <!-- parallel-group: 10 (max 3 concurrent) — README.md, CLAUDE.md, docs/testing.md: three different files -->
-- [ ] T076 [P] [US6] `CLAUDE.md` — the pipeline line, and `goal.md` in the conventions list beside the other artifacts
-- [ ] T077 [P] [US6] `docs/testing.md` — the fixture table gains `goal.md` and the `research` source type; the manual checklist gains the rows from [quickstart.md](quickstart.md) §4
-- [ ] T073 [P] [US6] `README.md` — the banner alt text (line 1), the intro sentence (line 8), the `## The five commands` heading (line 46), the pipeline diagram alt text (line 48), the command table (lines 52–56) and the "five commands" mention near line 168. Mark `/learning-goal` and `/research-gaps` optional
+- [x] T076 [P] [US6] `CLAUDE.md` — the pipeline line, and `goal.md` in the conventions list beside the other artifacts
+- [x] T077 [P] [US6] `docs/testing.md` — the fixture table gains `goal.md` and the `research` source type; the manual checklist gains the rows from [quickstart.md](quickstart.md) §4
+- [x] T073 [P] [US6] `README.md` — the banner alt text (line 1), the intro sentence (line 8), the `## The five commands` heading (line 46), the pipeline diagram alt text (line 48), the command table (lines 52–56) and the "five commands" mention near line 168. Mark `/learning-goal` and `/research-gaps` optional
 <!-- sequential — T074 and T075 edit the same file -->
-- [ ] T074 [US6] `docs/workflow.md` — renumber the step sections, add one per new step in pipeline order, and rewrite Step 3 for the goal-first ordering
-- [ ] T075 [US6] `docs/workflow.md` — add a passage explaining what a gap is, what out-of-scope material is, and what the user does about each (**FR-040**), and fix the "five commands" sentence at line 26
+- [x] T074 [US6] `docs/workflow.md` — renumber the step sections, add one per new step in pipeline order, and rewrite Step 3 for the goal-first ordering
+- [x] T075 [US6] `docs/workflow.md` — add a passage explaining what a gap is, what out-of-scope material is, and what the user does about each (**FR-040**), and fix the "five commands" sentence at line 26
 
 ### 🟢 Green — visible surfaces
 
-- [ ] T078 [US6] Read `docs/design.md` §"Type" and §"The screen surfaces" before touching anything visible (constitution XVI)
-- [ ] T079 [US6] `assets/brand/common.typ:67` — replace the `commands` tuple with the new pipeline
+- [x] T078 [US6] Read `docs/design.md` §"Type" and §"The screen surfaces" before touching anything visible (constitution XVI)
+- [x] T079 [US6] `assets/brand/common.typ:67` — replace the `commands` tuple with the new pipeline
 <!-- parallel-group: 11 (max 3 concurrent) — three brand sources, all after T079, all before T083 -->
-- [ ] T080 [P] [US6] `assets/brand/banner.typ` — the "five commands" comment (line 1) and the rendered command row
-- [ ] T081 [P] [US6] `assets/brand/pipeline.typ` — the comment (line 1) and the step entries (lines 33+), marking the optional steps
-- [ ] T082 [P] [US6] `assets/brand/social-card.typ:23` — the standfirst "Five commands."
+- [x] T080 [P] [US6] `assets/brand/banner.typ` — the "five commands" comment (line 1) and the rendered command row
+- [x] T081 [P] [US6] `assets/brand/pipeline.typ` — the comment (line 1) and the step entries (lines 33+), marking the optional steps
+- [x] T082 [P] [US6] `assets/brand/social-card.typ:23` — the standfirst "Five commands."
 <!-- sequential -->
-- [ ] T083 [US6] `python3 scripts/render_brand.py` and commit the regenerated PNGs. **Never** hand-edit a PNG (constitution IX)
-- [ ] T084 [US6] `docs/index.html` — **every** "five commands" occurrence outside the step strip: the `<meta name="description">` (line 7), `og:description` (line 11), the `/* Five commands */` CSS comment (line 181), the `hero__lead` paragraph "Five commands later you print an A4 sheet…" (line 361) and the `<h2>five commands</h2>` section heading (line 405). T085/T086 cover the strip itself; without this task T103 and SC-010 still fail on lines 361 and 405
-- [ ] T085 [US6] `docs/index.html` — the step strip markup (lines 408+): add the two steps, marking the optional ones visually distinct
-- [ ] T086 [US6] `docs/index.html` — the grid at line 182 and the breakpoint rules at lines 291–296 and 319. Do **not** go to seven equal columns: the caption measure drops from ~176 px to ~114 px under 13.5 px text ([research.md R3](research.md#r3--how-do-seven-steps-fit-a-five-column-strip)). Re-derive the orphaned-last-step rule for the new count instead of inheriting the five-step one
-- [ ] T087 [US6] Check the strip by eye at > 1080 px, 541–1080 px and ≤ 540 px — every step legible, optional steps readable as optional, nothing orphaned by accident. Also confirm SC-013's other half: the **README command table** still fits one screen at the desktop breakpoint now that it has seven rows
-- [ ] T088 [P] [US6] `docs/design.md` — update §"The screen surfaces" if the strip gained a new part
+- [x] T083 [US6] `python3 scripts/render_brand.py` and commit the regenerated PNGs. **Never** hand-edit a PNG (constitution IX)
+- [x] T084 [US6] `docs/index.html` — **every** "five commands" occurrence outside the step strip: the `<meta name="description">` (line 7), `og:description` (line 11), the `/* Five commands */` CSS comment (line 181), the `hero__lead` paragraph "Five commands later you print an A4 sheet…" (line 361) and the `<h2>five commands</h2>` section heading (line 405). T085/T086 cover the strip itself; without this task T103 and SC-010 still fail on lines 361 and 405
+- [x] T085 [US6] `docs/index.html` — the step strip markup (lines 408+): add the two steps, marking the optional ones visually distinct
+- [x] T086 [US6] `docs/index.html` — the grid at line 182 and the breakpoint rules at lines 291–296 and 319. Do **not** go to seven equal columns: the caption measure drops from ~176 px to ~114 px under 13.5 px text ([research.md R3](research.md#r3--how-do-seven-steps-fit-a-five-column-strip)). Re-derive the orphaned-last-step rule for the new count instead of inheriting the five-step one
+- [x] T087 [US6] Check the strip by eye at > 1080 px, 541–1080 px and ≤ 540 px — every step legible, optional steps readable as optional, nothing orphaned by accident. Also confirm SC-013's other half: the **README command table** still fits one screen at the desktop breakpoint now that it has seven rows
+- [x] T088 [P] [US6] `docs/design.md` — update §"The screen surfaces" if the strip gained a new part
 
 **Checkpoint**: the picture, the README and the plugin agree.
 

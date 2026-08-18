@@ -1,19 +1,31 @@
 # Lernkarten — project instructions
 
-Pipeline: `/sources` → `/ingest` → `/catalog` → `/cards` → `/print`.
+Pipeline: `/learning-goal` → `/sources` → `/ingest` → `/catalog` →
+`/research-gaps` → `/cards` → `/print`. `/learning-goal` and
+`/research-gaps` are optional: without them the pipeline behaves as it did
+before they existed.
 The skills live under `skills/`. The project language is English:
 code, comments, docs and commit messages are written in English.
 
 ## Conventions
 
+- **Learning goal**: `goal.md` at the project root — frontmatter (`goal`,
+  `kind`, `depth`, `updated`), `## Required topics` grouped into `### <Area>`,
+  and `## Out of scope`. Optional; when present, `/catalog` builds the topic
+  tree from it and a required topic nothing covers becomes `Status: gap`.
 - **Source register**: `sources.yaml` is the single source of truth about
-  registered sources. Every source has a unique `id` (kebab-case).
+  registered sources. Every source has a unique `id` (kebab-case). The
+  `research` type is written by `/research-gaps`, not by hand, and carries the
+  `gap` it closes instead of a `path`/`url`.
 - **Knowledge store**: `knowledge/<source-id>/<document>.md` — plain
   text/markdown with one frontmatter block (`source`, `path`/`url`,
   `ingested`).
 - **Topic catalog**: `catalog/topics.md` — a hierarchy of topics (`##`) and
   subtopics (`###`), each with a short description and references (links to
-  files under `knowledge/`).
+  files under `knowledge/`). Optional per subtopic: `Status: gap` |
+  `out of scope`, `Parents:` (every topic it belongs under, primary first) and
+  `Related:`; optional per topic: `Also covers:`. Every one of them absent
+  means the behaviour this repo had before the goal-driven catalog.
 - **Cards**: `cards/<topic-slug>.yaml` with this schema:
 
   ```yaml

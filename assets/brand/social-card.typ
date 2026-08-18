@@ -20,7 +20,7 @@
   spacing: 26pt,
   wordmark(92pt, fill: sand),
   box(width: 700pt, text(font: display, weight: 500, size: 38pt, fill: sand)[
-    Lecture PDFs in, paper flashcards out. Five commands.
+    Lecture PDFs in, paper flashcards out. Say what you are learning.
   ]),
 ))
 

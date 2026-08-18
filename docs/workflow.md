@@ -6,7 +6,12 @@ is statistics, but anatomy, vocabulary or recipes work just as well.
 
 ## Overview
 
-![The pipeline: /sources writes sources.yaml, /ingest writes knowledge/, /catalog writes catalog/topics.md, /cards writes cards/*.yaml, /print writes output/cards.pdf](../assets/pipeline.png)
+![The pipeline: /learning-goal writes goal.md, /sources writes sources.yaml, /ingest writes knowledge/, /catalog writes catalog/topics.md, /research-gaps fills the gaps, /cards writes cards/*.yaml, /print writes output/cards.pdf](../assets/pipeline.png)
+
+Seven steps, of which two — `/learning-goal` and `/research-gaps` — are
+optional. Skip both and the pipeline behaves exactly as it did before they
+existed; run them and the deck covers the topic you named rather than the
+material you happened to have.
 
 Every step writes a file you can read and correct by hand. Nothing is a black
 box: if a step goes wrong, you fix its output file and carry on with the next
@@ -23,10 +28,34 @@ claude
 ```
 
 Any folder will do — this is where your sources, texts and cards will live.
-The five commands come from the plugin (see [Install](../README.md#install)).
+The commands come from the plugin (see [Install](../README.md#install)).
 Everything from here happens in the chat.
 
-## Step 1 — `/sources`: register your material
+## Step 1 — `/learning-goal`: say what you are learning *(optional)*
+
+```
+> /learning-goal I have a low-code exam in September; the professor cares
+  about governance and the make-or-buy decision
+```
+
+Writes `goal.md`: a one-line statement, the occasion (`exam`, `meeting`,
+`interview`, `self-study`), the depth (`awareness`, `working`, `expert`), and
+the topics you need — grouped into **areas**, because a goal may hold strands
+with nothing in common. Preparing for an interview legitimately means "the
+technology stack" *and* "the behavioural round"; those are two areas, and
+nothing downstream tries to relate them.
+
+You can give it prose, a pasted job ad or module handbook, or a URL. What it
+fetches to read your requirements is **not** registered as a source — a job ad
+states the target, it is not study material.
+
+Run it again later and it reconciles rather than overwrites: additions merge
+silently, contradictions are listed and put to you one at a time.
+
+Skip this step and everything below still works. What you lose is the criterion
+that makes a gap a gap.
+
+## Step 2 — `/sources`: register your material
 
 ```
 > /sources ~/Documents/University/Statistics
@@ -57,7 +86,7 @@ the entry (already ingested texts stay where they are).
 | `/sources https://en.wikipedia.org/wiki/Bayes%27_theorem` | web page |
 | `/sources add my Zotero collection "ML"` | Zotero collection |
 
-## Step 2 — `/ingest`: read the content
+## Step 3 — `/ingest`: read the content
 
 ```
 > /ingest
@@ -89,14 +118,20 @@ limits the run to one source.
 session there is `login: true` in `sources.yaml` — the fetch then goes through
 your already signed-in browser, and no credentials are typed anywhere.
 
-## Step 3 — `/catalog`: derive the topics
+## Step 4 — `/catalog`: derive the topics
 
 ```
 > /catalog
 ```
 
-Condenses `knowledge/` into `catalog/topics.md`. Topics are cut by content, not
-by source — the same thing from two sources is one topic with two references:
+Writes `catalog/topics.md`. **If you set a goal, the tree is built from it
+first** — the areas and topics somebody pursuing that goal needs — and only then
+does `/catalog` walk `knowledge/` and attach each document to the branch it
+belongs to. Without a goal it works the other way round, from the material, as
+it always did.
+
+Topics are cut by content, not by source — the same thing from two sources is
+one topic with two references:
 
 ```markdown
 ## Probability
@@ -111,7 +146,73 @@ This file is the selection menu for the next step. It may and should be edited
 by hand: rename topics, merge them, delete what you do not want — `/cards`
 follows whatever is written here.
 
-## Step 4 — `/cards`: write the cards
+### Gaps and out-of-scope material
+
+Building from the goal makes two things visible that the material alone cannot
+say:
+
+**A gap** is a subtopic your goal requires and no document covers. It is written
+into the catalog as a real entry, marked `Status: gap` with `References: none`,
+keeping the bullet points that say what it *ought* to cover:
+
+```markdown
+### Storm surge and the Ashwind warning stages
+What raises the water above the predicted tide, and the three warning stages.
+Status: gap
+References: none
+```
+
+That is the point of the whole exercise. Before, a subtopic existed only if some
+document produced it, so material you were missing was simply invisible — you
+could not tell you were learning a partial deck. Now it is an entry you can see.
+
+What to do about one: register a source that covers it (`/sources`), run
+`/research-gaps` to have it researched for you, or decide the gap is acceptable
+and leave it. `/cards` will warn you it is there, by name, every time — because
+a number you cannot act on would be useless.
+
+**Out-of-scope material** is the opposite: something you ingested that belongs
+to no topic your goal wants. It stays in the catalog with its references intact,
+marked `Status: out of scope`, so nothing is silently lost:
+
+```markdown
+### Relief and the crater
+The islands as the rim of a drowned crater.
+Status: out of scope
+References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+```
+
+`/cards` skips it and reports only a count — you already decided this was
+irrelevant and do not need it re-litigated on every run. Name it explicitly
+(`/cards relief and the crater`) and it is generated anyway: the mark is a
+default, not a lock.
+
+A catalog that is almost entirely gaps is a valid, useful state. It is your
+to-do list, not an error.
+
+---
+
+## Step 5 — `/research-gaps`: close what nothing covers *(optional)*
+
+```
+> /research-gaps
+```
+
+Takes the `Status: gap` subtopics as its work list, researches each on the web,
+and writes one synthesised document per gap into `knowledge/<id>/` — registered
+in `sources.yaml` as `type: research`, naming the gap it closes. The catalog
+entry then stops being a gap and `/cards` picks it up.
+
+You can always tell this material from your own: different source id, different
+type, and every document names the URL it was built from. Deleting the source
+entry and its folder removes all of it, and the subtopic goes back to being a
+gap.
+
+No network? It reports which gaps it could not close and writes nothing. It
+never fills a gap from the model's own memory — a card you cannot check is
+worse than a gap you can see.
+
+## Step 6 — `/cards`: write the cards
 
 ```
 > /cards                 # everything in the catalog
@@ -146,7 +247,7 @@ Finally the skill validates its own output with `lernkarten check cards/*.yaml`.
 cards and does not duplicate existing fronts. Only an explicit "regenerate"
 replaces them.
 
-## Step 5 — `/print`: build the PDF
+## Step 7 — `/print`: build the PDF
 
 ```
 > /print

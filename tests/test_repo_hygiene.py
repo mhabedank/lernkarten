@@ -198,3 +198,22 @@ def test_gitignore_covers_the_user_paths():
         "output/",
     ):
         assert pattern in lines, f".gitignore does not cover {pattern}"
+
+
+def test_the_repo_does_not_still_promise_five_commands():
+    """The pipeline is seven steps now, two of them optional.
+
+    A release whose landing page promises five commands while the plugin has
+    seven is not a release. `specs/` is exempt: it records what was true when
+    each feature was specified.
+    """
+    offenders = []
+    for name in versioned_files():
+        if name.startswith("specs/") or not name.endswith((".md", ".html", ".typ", ".yaml")):
+            continue
+        path = ROOT / name
+        if not path.exists():
+            continue
+        if "five commands" in path.read_text(encoding="utf-8", errors="ignore").lower():
+            offenders.append(name)
+    assert not offenders, f"these still promise five commands: {offenders}"

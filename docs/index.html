@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lernkarten — flashcards you can hold</title>
-<meta name="description" content="Point it at your lecture PDFs, your textbook, your Zotero library. Five commands later you print an A4 sheet, cut along the lines, and the stack is in your hand. Open source, MIT, a Claude Code plugin.">
+<meta name="description" content="Say what you are learning, then point it at your lecture PDFs, your textbook, your Zotero library. You print an A4 sheet, cut along the lines, and the stack is in your hand. Open source, MIT, a Claude Code plugin.">
 <link rel="canonical" href="https://mhabedank.github.io/lernkarten/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Lernkarten — flashcards you can hold">
-<meta property="og:description" content="Lecture PDFs in, paper flashcards out. Five commands.">
+<meta property="og:description" content="Lecture PDFs in, paper flashcards out. Say what you are learning.">
 <meta property="og:url" content="https://mhabedank.github.io/lernkarten/">
 <meta property="og:image" content="https://raw.githubusercontent.com/mhabedank/lernkarten/main/assets/social-card.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -178,15 +178,26 @@
   }
   .card__id { flex: none; display: flex; align-items: center; padding: 0 12px; border-left: var(--rule); font-family: var(--mono); font-size: 8.5px; color: var(--muted); }
 
-  /* Five commands */
-  .steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  /* The pipeline strip — seven columns, re-derived rather than inherited.
+     At the 1280px shell each column is 183px. The binding constraint is not the
+     caption but the command: `/learning-goal` is 14 characters, and IBM Plex
+     Mono advances 0.6em, so at the old 18px it needs 151px and clips a 143px
+     measure. Dropping the command to 16px (134px) buys enough room to pad at
+     16px and still raise the caption to 15px — the floor docs/design.md sets
+     for reading text, which the old 13.5px quietly sat below. Narrower cells
+     for the two optional steps were considered and rejected: they carry the
+     two longest command names, so shrinking them is exactly backwards. */
+  .steps { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .step { border-right: var(--rule); display: flex; flex-direction: column; background: var(--sand); }
   .step:last-child { border-right: 0; }
   .step__shape { height: 88px; display: flex; align-items: center; justify-content: center; border-bottom: var(--rule); }
-  .step__body { padding: 18px 20px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
-  .step__body h3 { font-family: var(--mono); font-weight: 500; font-size: 18px; }
-  .step__body p { font-size: 13.5px; line-height: 1.55; color: var(--muted); }
-  .step__writes { border-top: var(--rule); padding: 11px 20px; font-family: var(--mono); font-size: 11px; }
+  .step__body { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .step__body h3 { font-family: var(--mono); font-weight: 500; font-size: 16px; }
+  .step__body p { font-size: 15px; line-height: 1.5; color: var(--muted); }
+  .step__writes { border-top: var(--rule); padding: 10px 16px; font-family: var(--mono); font-size: 11px; }
+  /* Optional steps say so in words. Colour never carries meaning on its own. */
+  .step__optional { font-family: var(--display); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); position: absolute; top: 8px; left: 10px; }
+  .step__shape { position: relative; }
 
   /* Anatomy */
   .anatomy { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); background: var(--sand); }
@@ -291,8 +302,10 @@
     .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .step { border-bottom: var(--rule); }
     .step:nth-child(2n) { border-right: 0; }
-    /* Five steps in two columns leave the fifth alone in its row: let it run
-       the full width instead of sitting beside a hole. */
+    /* Seven steps in two columns fill three rows and leave the seventh alone.
+       The rule survives the change from five for one reason only — both counts
+       are odd — so it is re-derived here rather than carried over: let the last
+       one run the full width instead of sitting beside a hole. */
     .step:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
     .principles { grid-template-columns: minmax(0, 1fr); }
     .principle { border-right: 0; border-bottom: var(--rule); }
@@ -358,7 +371,7 @@
       <div class="hero__text">
         <p class="label" style="color:var(--muted)">open source · mit · claude code plugin</p>
         <h1>flashcards you can hold</h1>
-        <p class="hero__lead">Point it at your lecture PDFs, your textbook, your Zotero library. Five commands later you print an A4 sheet, cut along the lines, and the stack is in your hand.</p>
+        <p class="hero__lead">Say what you are learning, then point it at your lecture PDFs, your textbook, your Zotero library. You print an A4 sheet, cut along the lines, and the stack is in your hand — covering the topic you named, not whatever the material happened to hold.</p>
         <div class="button-row">
           <a class="button button--solid" href="#install">install it</a>
           <a class="button button--ghost" href="https://github.com/mhabedank/lernkarten">read the source</a>
@@ -388,6 +401,7 @@
           </div>
         </div>
         <div class="terminal">
+          &gt; /learning-goal stats exam, Bayes and estimators<br>
           &gt; /sources ~/uni/statistics<br>
           &gt; /ingest<br>
           &gt; /catalog<br>
@@ -402,17 +416,28 @@
   <section id="how" style="border-bottom:var(--rule)">
     <div class="band">
       <div class="band__no" style="background:var(--blue);color:var(--sand)">01</div>
-      <h2>five commands</h2>
-      <p class="band__note">Every step writes a plain text file you can read and edit. Every step is repeatable: add a source next month, run it again, and you only pay for what is new.</p>
+      <h2>the pipeline</h2>
+      <p class="band__note">Seven steps, two of them optional. Every step writes a plain text file you can read and edit, and every step is repeatable: add a source next month, run it again, and you only pay for what is new.</p>
     </div>
     <div class="steps">
+      <article class="step">
+        <div class="step__shape" style="background:var(--blue)">
+          <span class="step__optional">optional</span>
+          <svg viewBox="0 0 60 60" width="42" height="42" aria-hidden="true"><path d="M30 8 L52 30 L30 52 L8 30 Z" fill="#f2efe6"/></svg>
+        </div>
+        <div class="step__body">
+          <h3>/learning-goal</h3>
+          <p>Name what you are learning.</p>
+        </div>
+        <div class="step__writes">goal.md</div>
+      </article>
       <article class="step">
         <div class="step__shape" style="background:var(--red)">
           <svg viewBox="0 0 60 60" width="42" height="42" aria-hidden="true"><rect x="8" y="8" width="44" height="44" fill="#f2efe6"/></svg>
         </div>
         <div class="step__body">
           <h3>/sources</h3>
-          <p>Say where your material lives — folders, PDFs, Zotero, web pages.</p>
+          <p>Say where your material lives.</p>
         </div>
         <div class="step__writes">sources.yaml</div>
       </article>
@@ -422,7 +447,7 @@
         </div>
         <div class="step__body">
           <h3>/ingest</h3>
-          <p>Read it all and store it as text. Skips what has not changed.</p>
+          <p>Read it and store it as text.</p>
         </div>
         <div class="step__writes">knowledge/</div>
       </article>
@@ -432,9 +457,20 @@
         </div>
         <div class="step__body">
           <h3>/catalog</h3>
-          <p>Propose topics and subtopics. You pick what is worth learning.</p>
+          <p>Derive the topics — from your goal, if you set one.</p>
         </div>
         <div class="step__writes">catalog/topics.md</div>
+      </article>
+      <article class="step">
+        <div class="step__shape" style="background:var(--yellow)">
+          <span class="step__optional">optional</span>
+          <svg viewBox="0 0 60 60" width="42" height="42" aria-hidden="true"><rect x="10" y="8" width="17" height="44" fill="#f2efe6"/><rect x="33" y="8" width="17" height="44" fill="#f2efe6"/></svg>
+        </div>
+        <div class="step__body">
+          <h3>/research-gaps</h3>
+          <p>Research what nothing you have covers.</p>
+        </div>
+        <div class="step__writes">knowledge/&lt;id&gt;/</div>
       </article>
       <article class="step">
         <div class="step__shape" style="background:var(--red)">
@@ -442,7 +478,7 @@
         </div>
         <div class="step__body">
           <h3>/cards</h3>
-          <p>Write the cards — everything, or one topic. Appends, never overwrites.</p>
+          <p>Write the cards. Appends, never overwrites.</p>
         </div>
         <div class="step__writes">cards/*.yaml</div>
       </article>
@@ -452,7 +488,7 @@
         </div>
         <div class="step__body">
           <h3>/print</h3>
-          <p>Compile a print-ready A4 PDF, eight cards to the page.</p>
+          <p>Compile a print-ready A4 PDF.</p>
         </div>
         <div class="step__writes">output/cards.pdf</div>
       </article>

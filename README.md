@@ -1,12 +1,14 @@
-![Lernkarten — turn what you have to learn into flashcards you can hold. Five commands: /sources, /ingest, /catalog, /cards, /print.](assets/banner.png)
+![Lernkarten — turn what you have to learn into flashcards you can hold. Seven commands: /learning-goal, /sources, /ingest, /catalog, /research-gaps, /cards, /print.](assets/banner.png)
 
 [![CI](https://github.com/mhabedank/lernkarten/actions/workflows/ci.yml/badge.svg)](https://github.com/mhabedank/lernkarten/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code plugin](https://img.shields.io/badge/Claude_Code-plugin-c2251b.svg)](https://docs.claude.com/en/docs/claude-code/overview)
 
-Point it at a folder of lecture PDFs, a textbook, your Zotero library or a web
-page. Five commands later you have an A4 PDF: print it double-sided, cut along
-the lines, and you are holding a stack of paper flashcards.
+Say what you are trying to learn, then point it at a folder of lecture PDFs, a
+textbook, your Zotero library or a web page. A few commands later you have an A4
+PDF: print it double-sided, cut along the lines, and you are holding a stack of
+paper flashcards — covering the topic you named, not whatever the material
+happened to contain.
 
 ![A finished card, front and back: the front asks how Bayes' theorem is stated, the back answers it with the formula and names the source](assets/example-cards.png)
 
@@ -33,6 +35,7 @@ Go to the folder where you want your cards to live, start Claude Code, and walk
 the pipeline:
 
 ```
+> /learning-goal stats exam in March, Bayes and the estimators
 > /sources ~/Documents/University/Statistics
 > /ingest
 > /catalog
@@ -40,20 +43,30 @@ the pipeline:
 > /print
 ```
 
+`/learning-goal` is optional — skip it and the pipeline works exactly as it
+always did. Set it and `/catalog` builds the topics from what you need to know,
+marks what none of your material covers, and `/cards` tells you what the deck is
+missing.
+
 That is: say where your material lives, read it, let it propose a topic
 catalog, write cards for the topics you pick, and build the PDF.
 
-## The five commands
+## The commands
 
-![The pipeline: /sources writes sources.yaml, /ingest writes knowledge/, /catalog writes catalog/topics.md, /cards writes cards/*.yaml, /print writes output/cards.pdf](assets/pipeline.png)
+![The pipeline: /learning-goal writes goal.md, /sources writes sources.yaml, /ingest writes knowledge/, /catalog writes catalog/topics.md, /research-gaps fills the gaps, /cards writes cards/*.yaml, /print writes output/cards.pdf](assets/pipeline.png)
 
 | Command | What it does | What you get |
 |---|---|---|
+| `/learning-goal` *(optional)* | state what you are trying to learn | `goal.md` |
 | `/sources` | register your material: folders, PDFs, Zotero, web pages | `sources.yaml` |
 | `/ingest` | read the sources and store them as text | `knowledge/<source>/*.md` |
-| `/catalog` | derive topics and subtopics from the material | `catalog/topics.md` |
+| `/catalog` | derive topics and subtopics — from your goal if you set one | `catalog/topics.md` |
+| `/research-gaps` *(optional)* | research the topics nothing you have covers | `knowledge/<research>/*.md` |
 | `/cards` | write cards — everything, or filtered by topic | `cards/<topic>.yaml` |
 | `/print` | compile the cards into a print-ready PDF | `output/cards.pdf` |
+
+The two optional steps are what make the deck cover the *topic* rather than the
+*material*. Skip them and everything works exactly as it always did.
 
 Every step is repeatable and works incrementally: `/ingest` skips material that
 has not changed, `/catalog` extends the topics you already have, `/cards`
@@ -165,7 +178,7 @@ card validation, PDF build).
 
 Want to try it out or test a change? `python3 scripts/demo.py ~/lernkarten-demo`
 sets up a small demo project — invented material, no licence questions — that
-you can run the five commands against. [docs/testing.md](docs/testing.md) has
+you can run the whole pipeline against. [docs/testing.md](docs/testing.md) has
 the checklist and describes the automated tests.
 
 ## License

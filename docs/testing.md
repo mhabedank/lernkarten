@@ -61,6 +61,13 @@ python3 scripts/make_testdata.py     # build the binary half, once
 | `web` | a four-page site with links, nav, a cookie banner, a login page and a path that answers 403 | `http.server` |
 | `web` (internet) | `https://example.com/`, IANA's reserved example domain | a connection |
 | `zotero` | an eight-item library: text PDFs, a scan, a note, a link, an absolute path, a second collection | `zotero_stub.py` |
+| `research` | one source written the way `/research-gaps` writes them: a `gap:` instead of a path, and a document naming the URL it was built from | — |
+
+The fixture also carries a `goal.md` with three areas, and a catalog holding
+all three subtopic states at once: one `Status: gap` (nothing covers it), one
+`Status: out of scope` (ingested but off-goal), one closed by the `research`
+source, plus a two-parent subtopic with its reciprocal `Also covers:` line and
+a `Related:` pair.
 
 The binaries — PDFs, the scan, the image, the DOCX, the Zotero attachments —
 are **generated, not versioned**: `make_testdata.py` renders them from the
@@ -192,9 +199,21 @@ python3 scripts/zotero_stub.py
 | 8e | `/ingest` | `/ingest harbour-office` (server running) | three pages under `knowledge/harbour-office/`, nav bar and cookie banner dropped, `depth: 1` followed |
 | 8f | `/ingest` | `/ingest harbour-office-members` | the login page is *not* ingested and nothing behind it is invented; no credentials are typed anywhere |
 | 8g | `/ingest` | `/ingest kestrel-zotero` (stub running) | three documents, the scan among them flagged `pending:`; the Mainland item is left out |
+| 8h | `/learning-goal` | `/learning-goal` with a short brief | `goal.md` with frontmatter, at least one area, at least one topic |
+| 8i | `/learning-goal` | run it again with a brief that only **adds** | merges without a single question, `updated` moves to today |
+| 8j | `/learning-goal` | run it again with a **contradictory** brief | every contradiction listed and put to you; nothing written until answered |
+| 8k | `/learning-goal` | make a required topic out-of-scope on a re-run | names the catalog subtopics and card files that would be affected |
 | 9 | `/catalog` | `/catalog` | `catalog/topics.md` with topics, subtopics and references that resolve |
+| 9a | `/catalog` | `/catalog` with a `goal.md` present | the tree follows the goal's areas; uncovered topics are `Status: gap`, off-goal material `Status: out of scope` |
+| 9b | `/catalog` | delete `goal.md`, `/catalog` again | no `Status:` lines at all, plus one line saying the catalog covers the material rather than the topic |
+| 9c | `/catalog` | read the closing report | covered / gap / out-of-scope counts, and `/research-gaps` named when there is a gap |
+| 9d | `/research-gaps` | `/research-gaps` with no network | reports which gaps stayed open, writes nothing, never invents a document |
+| 9e | `/research-gaps` | delete a `research` source and its folder, `/catalog` | the subtopic goes back to `Status: gap` |
 | 10 | `/catalog` | rename a subtopic by hand, `/catalog` again | your edit survives |
 | 11 | `/cards` | `/cards Tides` | `cards/tides.yaml`, 3–8 cards per subtopic, `language:` set |
+| 11a | `/cards` | `/cards` with gaps in the catalog | out-of-scope reported as a bare count; gaps as a warning naming each one |
+| 11b | `/cards` | `/cards` naming an out-of-scope subtopic | generated anyway — the mark is a default, not a lock |
+| 11c | `/cards` | `/cards` naming a **secondary** parent | generated once, and the file its cards went into is reported |
 | 12 | `/cards` | `/cards Tides` again | new cards appended, no duplicated fronts |
 | 13 | `/cards` | ask for cards in another language | `language:` follows, umlauts and quotes come out right in the PDF |
 | 13b | `/print` | look at the Greek and Cyrillic cards in the PDF | letters, not empty boxes — the engine does not warn when a glyph is missing |
