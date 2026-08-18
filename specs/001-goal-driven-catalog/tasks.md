@@ -248,37 +248,37 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### Test material first
 
-- [ ] T058 [US5] Extend `tests/fixtures/demo-project/catalog/topics.md` with one two-parent subtopic (`Parents:` primary first), its reciprocal `Also covers:` line on the secondary topic, and one `Related:` pair
+- [x] T058 [US5] Extend `tests/fixtures/demo-project/catalog/topics.md` with one two-parent subtopic (`Parents:` primary first), its reciprocal `Also covers:` line on the secondary topic, and one `Related:` pair
 
 ### 🔴 Red
 
 <!-- sequential -->
-- [ ] T059 🔴 [P] [US5] `tests/test_check_project.py`: a `Parents:` naming a topic that does not exist is reported (C-1) — fails
-- [ ] T060 🔴 [P] [US5] `tests/test_check_project.py`: a primary parent that is not the heading the subtopic sits under is reported (C-2) — fails
-- [ ] T061 🔴 [P] [US5] `tests/test_check_project.py`: a non-primary parent with no reciprocal `Also covers:` is reported (C-3) — fails
+- [x] T059 🔴 [P] [US5] `tests/test_check_project.py`: a `Parents:` naming a topic that does not exist is reported (C-1) — fails
+- [x] T060 🔴 [P] [US5] `tests/test_check_project.py`: a primary parent that is not the heading the subtopic sits under is reported (C-2) — fails
+- [x] T061 🔴 [P] [US5] `tests/test_check_project.py`: a non-primary parent with no reciprocal `Also covers:` is reported (C-3) — fails
 
 <!-- sequential -->
-- [ ] T062 🔴 [P] [US5] `tests/test_check_project.py`: an `Also covers:` naming a subtopic whose `Parents:` omits that topic is reported (C-4) — fails
-- [ ] T063 🔴 [P] [US5] `tests/test_check_project.py`: a `Related:` name that is not a subtopic is reported (C-5) — fails
+- [x] T062 🔴 [P] [US5] `tests/test_check_project.py`: an `Also covers:` naming a subtopic whose `Parents:` omits that topic is reported (C-4) — fails
+- [x] T063 🔴 [P] [US5] `tests/test_check_project.py`: a `Related:` name that is not a subtopic is reported (C-5) — fails
 
 <!-- sequential -->
-- [ ] T064 🔴 [US5] `tests/test_check_project.py`: a two-parent subtopic counts **once** in `report.counts["subtopics"]` and appears once in the set returned to `check_cards()` (C-9) — fails
-- [ ] T065 [US5] *Regression guard*: a catalog with no `Parents:` and no `Related:` behaves exactly as before
+- [x] T064 🔴 [US5] `tests/test_check_project.py`: a two-parent subtopic counts **once** in `report.counts["subtopics"]` and appears once in the set returned to `check_cards()` (C-9) — fails
+- [x] T065 [US5] *Regression guard*: a catalog with no `Parents:` and no `Related:` behaves exactly as before
 
 **Checkpoint**: red on six assertions. Commit. There is deliberately **no acyclicity test** — the catalog is two levels deep and edges run only topic → subtopic, so the graph is bipartite and cycles cannot form ([data-model.md](data-model.md)).
 
 ### 🟢 Green — deterministic half
 
-- [ ] T066 [US5] Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`
-- [ ] T119 [US5] For C-4, compare only the **name** on an `Also covers:` line: the contract writes `Also covers: Access control (cards in cards/security.yaml)` ([contracts/catalog-topics-md.md](contracts/catalog-topics-md.md)), so strip the trailing parenthetical before matching or every reciprocity check fails on a catalog that follows the contract
-- [ ] T067 [US5] Implement C-9 — `Also covers:` must not be parsed as a subtopic heading, or the existing `###` scan double-counts and `check_cards()` sees a duplicate name
+- [x] T066 [US5] Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`
+- [x] T119 [US5] For C-4, compare only the **name** on an `Also covers:` line: the contract writes `Also covers: Access control (cards in cards/security.yaml)` ([contracts/catalog-topics-md.md](contracts/catalog-topics-md.md)), so strip the trailing parenthetical before matching or every reciprocity check fails on a catalog that follows the contract
+- [x] T067 [US5] Implement C-9 — `Also covers:` must not be parsed as a subtopic heading, or the existing `###` scan double-counts and `check_cards()` sees a duplicate name
 
 ### 🟢 Green — model-driven half
 
-- [ ] T068 [US5] Add multi-parent writing to `skills/catalog/SKILL.md`: a subtopic belonging under several topics is written **once** under its primary, carrying `Parents:` with the primary first; every other parent gets an `Also covers:` line naming where the cards live
-- [ ] T069 [US5] Add the primary-reassignment rule to `skills/catalog/SKILL.md`: if the primary parent is out of scope and another parent is required, the in-scope parent becomes primary
-- [ ] T070 [US5] Add the projection rule to `skills/cards/SKILL.md`: cards written once, into the primary parent's `cards/<topic-slug>.yaml`, with the primary topic as `topic:`; naming a secondary parent still reaches the subtopic and reports which file its cards went into
-- [ ] T071 [US5] Add connection cards to `skills/cards/SKILL.md`: use `Related:` for distinction and connection cards, written once rather than once per branch, and never for a target that is a gap or out of scope
+- [x] T068 [US5] Add multi-parent writing to `skills/catalog/SKILL.md`: a subtopic belonging under several topics is written **once** under its primary, carrying `Parents:` with the primary first; every other parent gets an `Also covers:` line naming where the cards live
+- [x] T069 [US5] Add the primary-reassignment rule to `skills/catalog/SKILL.md`: if the primary parent is out of scope and another parent is required, the in-scope parent becomes primary
+- [x] T070 [US5] Add the projection rule to `skills/cards/SKILL.md`: cards written once, into the primary parent's `cards/<topic-slug>.yaml`, with the primary topic as `topic:`; naming a secondary parent still reaches the subtopic and reports which file its cards went into
+- [x] T071 [US5] Add connection cards to `skills/cards/SKILL.md`: use `Related:` for distinction and connection cards, written once rather than once per branch, and never for a target that is a gap or out of scope
 
 **Checkpoint**: the catalog stops lying about shared subtopics, and connection cards exist.
 

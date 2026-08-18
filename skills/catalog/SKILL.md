@@ -53,7 +53,8 @@ how a deck ends up full of research-methodology cards nobody wanted.
 
 Build the catalog from the sources exactly as before — no `Status:` lines, no
 gaps, no `Goal:` header. A project that has never run `/learning-goal` must get
-byte-for-byte what it would have got before this step existed.
+a catalog carrying no line this feature introduced — indistinguishable from what
+it would have got before this step existed.
 
 Then say one line, once:
 
@@ -85,8 +86,41 @@ absent:
 - `Status: gap` — required by the goal, covered by nothing. Takes
   `References: none`.
 - `Status: out of scope` — ingested but outside the goal. Keeps its references.
+- `Parents: <primary>, <other>, …` — every topic this subtopic belongs under.
+- `Related: <subtopic>, …` — subtopics it is associated with.
+
+And on a topic: `Also covers: <subtopic> (cards in cards/<slug>.yaml)`.
 
 Drop the `Goal:` field when there is no `goal.md`.
+
+## A subtopic under more than one topic
+
+Containment is genuinely many-to-many. "Access control" belongs under *Security*
+and under *Governance*, and a catalog that claims one of them is lying about the
+subject. So:
+
+- Write the subtopic **once**, under its **primary** parent.
+- Give it `Parents:` naming every topic it belongs under, **primary first**.
+- Give every other parent an `Also covers:` line naming it and saying which card
+  file its cards live in.
+
+The primary parent is a projection rule, not a claim about importance: a printed
+card carries `TOPIC / SUBTOPIC` in a fixed-height header band, so one topic has
+to be chosen before ink hits paper. First in `Parents:` decides both the card
+file and what the band prints.
+
+**Keep the two halves in step.** A `Parents:` line without its matching
+`Also covers:`, or the reverse, is an error rather than a warning —
+`check_project.py` reports it by name, because otherwise the next step files the
+cards where the user cannot find them.
+
+If the primary parent is out of scope while another parent is required, **make
+the in-scope parent primary**. Otherwise the subtopic materialises into a file
+that is skipped and the cards never appear.
+
+`Related:` is a different relation and not a substitute: two subtopics that
+belong together without either containing the other. It is symmetric, and only
+`/cards` consumes it.
 
 ## Guidelines
 

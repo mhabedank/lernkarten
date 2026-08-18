@@ -27,6 +27,7 @@ References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 
 ## Tides
 The Ashwind tide cycle as the tide office in Fenmouth teaches it.
+Also covers: Right of way in the Kestrel Deep (cards in cards/signals.yaml)
 
 ### Rhythm of the tide
 Semidiurnal tide, the length of the tidal day and the daily shift of high
@@ -40,6 +41,7 @@ References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
 ### Chart datum and the Ovray rule
 What the charted heights refer to, and when Ovray Cove can be entered.
+Related: Right of way in the Kestrel Deep
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md),
 [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 
@@ -77,4 +79,5 @@ References: [signal-code](../knowledge/field-notes/signal-code.md)
 Who holds course and who gives way in the channel, and what the black cylinder
 with flag Kell means. Closed by `/research-gaps` — the field notes never
 covered it.
+Parents: Signals, Tides
 References: [right-of-way](../knowledge/right-of-way-research/right-of-way.md)

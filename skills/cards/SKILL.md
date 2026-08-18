@@ -56,6 +56,36 @@ They mean opposite things, so do not give them the same treatment:
 
 If there are no gaps, say nothing about gaps at all.
 
+## Subtopics with several parents
+
+A subtopic carrying `Parents:` is written **once**, into the **primary**
+(first-named) parent's `cards/<topic-slug>.yaml`, with that primary topic as the
+file's `topic:`. It is the topic the printed header band will carry.
+
+If the user names a **non-primary** parent (`/cards governance` for a subtopic
+whose primary is Security), still generate it — and say which file the cards
+went into, or they will look in the wrong one.
+
+Never write the same subtopic into two files. The catalog models the overlap;
+the card file is a projection of it.
+
+## Connection cards
+
+`Related:` names subtopics that belong together without either containing the
+other. Use it for exactly two things:
+
+- **Connection and distinction cards** — "What is the difference between X and
+  Y?", "How does X constrain Y?". These are what understanding a concept
+  actually needs, and nothing else in the catalog says which pairs are worth
+  contrasting.
+- **De-duplication** — when two branches converge on one idea, write the card
+  once rather than once per branch.
+
+Write a connection card **once** for a pair, not once from each side. And write
+none at all when the other end is a gap or out of scope: there is nothing to
+read at a gap, and out-of-scope material is what the user asked not to be
+tested on.
+
 ## Card schema
 
 ```yaml

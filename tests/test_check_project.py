@@ -551,3 +551,95 @@ def test_a_research_source_needs_neither_path_nor_url(tmp_path):
     """It was synthesised from the web, so there is no local file to point at."""
     report = check(project(tmp_path, sources=RESEARCH_SOURCES))
     assert not [e for e in report.errors if "surge-research" in e], messages(report)
+
+
+# --- the catalog as a graph -----------------------------------------------
+
+GRAPH_CATALOG = """# Topics
+
+## Tides
+The tide.
+Also covers: Access control (cards in cards/security.yaml)
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+
+## Security
+Who may do what.
+
+### Access control
+Belongs under both.
+Parents: Security, Tides
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+
+def test_a_two_parent_subtopic_passes(tmp_path):
+    report = check(project(tmp_path, catalog=GRAPH_CATALOG))
+    assert not report.errors, messages(report)
+
+
+def test_a_parent_that_is_not_a_topic_is_reported(tmp_path):
+    """C-1."""
+    catalog = GRAPH_CATALOG.replace("Parents: Security, Tides", "Parents: Security, Weather")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said and "Weather" in said, said
+
+
+def test_a_primary_parent_that_is_not_the_heading_is_reported(tmp_path):
+    """C-2: the first parent decides the card file, so it must be where it lives."""
+    catalog = GRAPH_CATALOG.replace("Parents: Security, Tides", "Parents: Tides, Security")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said, said
+    assert "Tides" in said and "Security" in said, said
+
+
+def test_a_non_primary_parent_without_a_reciprocal_listing_is_reported(tmp_path):
+    """C-3: half an edit is the failure this format actually invites."""
+    catalog = GRAPH_CATALOG.replace(
+        "Also covers: Access control (cards in cards/security.yaml)\n", ""
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said and "Tides" in said, said
+
+
+def test_an_also_covers_the_subtopic_does_not_claim_is_reported(tmp_path):
+    """C-4: the other half of the same edit."""
+    catalog = GRAPH_CATALOG.replace("Parents: Security, Tides", "Parents: Security")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said, said
+
+
+def test_a_dangling_related_name_is_reported(tmp_path):
+    """C-5."""
+    catalog = GRAPH_CATALOG.replace(
+        "Belongs under both.", "Belongs under both.\nRelated: Sea level"
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Sea level" in said, said
+
+
+def test_a_two_parent_subtopic_counts_once(tmp_path):
+    """C-9: written once, so counted once — and handed to check_cards once."""
+    report = check(project(tmp_path, catalog=GRAPH_CATALOG))
+    assert report.counts["subtopics"] == 2, report.counts
+
+
+def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
+    """C-9 again: an `Also covers:` line is a topic attribute, not a heading."""
+    subtopics, marked = check_project.check_catalog(
+        project(tmp_path, catalog=GRAPH_CATALOG), check_project.Report()
+    )
+    assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
+
+
+def test_a_catalog_with_no_parents_or_related_is_unchanged(tmp_path):
+    """Regression guard: absence means today's behaviour."""
+    report = check(project(tmp_path, catalog=GOOD_CATALOG))
+    assert not report.errors and not report.warnings, messages(report)

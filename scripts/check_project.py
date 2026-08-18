@@ -317,6 +317,88 @@ def parse_catalog(text):
     return Catalog(entries=entries)
 
 
+def catalog_names(line):
+    """The comma-separated names on a `Parents:`, `Related:` or `Also covers:` line.
+
+    An `Also covers:` entry carries `(cards in cards/x.yaml)` after the name so a
+    reader knows where to look — that parenthetical is prose, and comparing names
+    with it attached makes every reciprocity check fail on a catalog that follows
+    the contract.
+    """
+    names = []
+    for part in (line or "").split(","):
+        name = re.sub(r"\s*\([^)]*\)\s*$", "", part.strip()).strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def check_graph(catalog, subtopics, report):
+    """The catalog is a graph: containment is many-to-many, association is symmetric.
+
+    Nothing here checks for cycles. Topics contain subtopics and the catalog stays
+    two levels deep, so edges only ever run topic -> subtopic and the graph is
+    bipartite. The invariants that matter are reciprocity ones, because the failure
+    this format actually invites is half an edit.
+    """
+    where = "catalog/topics.md"
+    topics = {entry.name for entry in catalog.topics}
+    by_name = {entry.name: entry for entry in catalog.subtopics}
+
+    borrowed = {}
+    for entry in catalog.topics:
+        for name in catalog_names(entry.attribute("also covers")):
+            borrowed.setdefault(entry.name, []).append(name)
+
+    for entry in catalog.subtopics:
+        parents = catalog_names(entry.attribute("parents"))
+        if parents:
+            for parent in parents:  # C-1
+                if parent not in topics:
+                    report.error(
+                        where,
+                        f"subtopic '{entry.name}': 'Parents:' names '{parent}', "
+                        "which is not a topic in this catalog",
+                    )
+            if parents[0] != entry.heading:  # C-2
+                report.error(
+                    where,
+                    f"subtopic '{entry.name}': the primary parent is '{parents[0]}' "
+                    f"but it sits under '{entry.heading}' — the first parent decides "
+                    "which card file it lands in, so the two must agree",
+                )
+            for parent in parents[1:]:  # C-3
+                if entry.name not in borrowed.get(parent, []):
+                    report.error(
+                        where,
+                        f"subtopic '{entry.name}': '{parent}' is listed as a parent "
+                        f"but '## {parent}' carries no 'Also covers:' line naming it",
+                    )
+        for name in catalog_names(entry.attribute("related")):  # C-5
+            if name not in subtopics:
+                report.error(
+                    where,
+                    f"subtopic '{entry.name}': 'Related:' names '{name}', "
+                    "which is not a subtopic of this catalog",
+                )
+
+    for topic, names in borrowed.items():  # C-4
+        for name in names:
+            entry = by_name.get(name)
+            if entry is None:
+                report.error(
+                    where,
+                    f"topic '{topic}': 'Also covers:' names '{name}', "
+                    "which is not a subtopic of this catalog",
+                )
+            elif topic not in catalog_names(entry.attribute("parents")):
+                report.error(
+                    where,
+                    f"topic '{topic}': 'Also covers:' claims '{name}', but that "
+                    "subtopic's own 'Parents:' does not list it back",
+                )
+
+
 def check_catalog(project, report, required=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
@@ -365,6 +447,8 @@ def check_catalog(project, report, required=()):
                 "'Status: gap' — a branch with nothing behind it is either a gap "
                 "or a mistake",
             )
+
+    check_graph(catalog, subtopics, report)
 
     for target in LINK.findall(text):
         if target.startswith(("http://", "https://", "mailto:", "#")):
