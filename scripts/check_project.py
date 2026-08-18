@@ -27,6 +27,8 @@ import build_pdf
 import yamlio
 
 SOURCE_TYPES = {"folder": "path", "pdf": "path", "web": "url", "zotero": None}
+GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
+GOAL_DEPTHS = ("awareness", "working", "expert")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
@@ -76,6 +78,81 @@ def frontmatter(text):
         return yamlio.load(parts[1]) or {}, parts[2]
     except yamlio.YamlError:
         return None, parts[2]
+
+
+def topic_key(text):
+    """A required topic and a catalog heading, reduced to something comparable.
+
+    Deliberately loose. A goal bullet is prose ("Rhythm of the tide, and how far
+    high water shifts") while the heading is a label ("Rhythm of the tide"), so
+    exact equality would report drift on a correct catalog. This is a warning
+    telling the user to re-run /catalog; one that cries wolf gets ignored.
+    """
+    return " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split())
+
+
+def parse_goal(text):
+    """The areas of `## Required topics` as {area: [topic, ...]}, in order."""
+    areas = {}
+    current = None
+    in_required = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("## "):
+            in_required = line[3:].strip().lower() == "required topics"
+            current = None
+        elif in_required and line.startswith("### "):
+            current = line[4:].strip()
+            areas.setdefault(current, [])
+        elif in_required and current and line.startswith("- "):
+            areas[current].append(line[2:].strip())
+    return areas
+
+
+def check_goal(project, report):
+    """goal.md: what the user is trying to learn, and the criterion for everything else.
+
+    Absent is valid and means today's behaviour — the whole feature is opt-in.
+    Returns the required topics, which check_catalog uses for the drift warning.
+    """
+    path = project / "goal.md"
+    if not path.exists():
+        return set()
+
+    where = "goal.md"
+    report.count("goals")
+    head, body = frontmatter(path.read_text(encoding="utf-8"))
+    if head is None:
+        report.error(where, "no YAML frontmatter — 'goal', 'kind', 'depth' and 'updated' go there")
+        return set()
+
+    for key in ("goal", "kind", "depth", "updated"):
+        if not head.get(key):
+            report.error(where, f"'{key}' missing — the frontmatter needs it")
+
+    kind = head.get("kind")
+    if kind and kind not in GOAL_KINDS:
+        report.error(where, f"'kind: {kind}' is not one of {', '.join(GOAL_KINDS)}")
+
+    depth = head.get("depth")
+    if depth and depth not in GOAL_DEPTHS:
+        report.error(where, f"'depth: {depth}' is not one of {', '.join(GOAL_DEPTHS)}")
+
+    updated = head.get("updated")
+    if updated and not DATE.match(str(updated)):
+        report.error(where, f"'updated' is not a date (YYYY-MM-DD): {updated}")
+
+    areas = parse_goal(body)
+    if not areas:
+        report.error(
+            where, "'## Required topics' holds no area (###) — nothing to build a catalog from"
+        )
+    required = set()
+    for area, topics in areas.items():
+        if not topics:
+            report.error(where, f"area '{area}' lists no required topic")
+        required.update(topics)
+    return required
 
 
 # --- the four artifacts ---------------------------------------------------
@@ -222,7 +299,7 @@ def parse_catalog(text):
     return Catalog(entries=entries)
 
 
-def check_catalog(project, report):
+def check_catalog(project, report, required=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
@@ -256,6 +333,17 @@ def check_catalog(project, report):
             continue
         if not (path.parent / target.split("#", 1)[0]).resolve().exists():
             report.error("catalog/topics.md", f"reference points nowhere -> {target}")
+
+    # Drift: goal.md asks for something the catalog never got. A warning, because
+    # the fix is to re-run /catalog rather than to edit the file by hand.
+    names = [topic_key(n) for n in list(seen) + list(subtopics)]
+    for topic in required:
+        key = topic_key(topic)
+        if not any(key in name or name in key for name in names):
+            report.warn(
+                "catalog/topics.md",
+                f"goal.md requires '{topic}', which is nowhere in the catalog — re-run /catalog",
+            )
     return subtopics
 
 
@@ -306,9 +394,10 @@ def check_cards(project, subtopics, report):
 
 
 def check(project, report):
+    required = check_goal(project, report)
     source_ids = check_sources(project, report)
     check_knowledge(project, source_ids, report)
-    subtopics = check_catalog(project, report)
+    subtopics = check_catalog(project, report, required)
     check_cards(project, subtopics, report)
     return report
 

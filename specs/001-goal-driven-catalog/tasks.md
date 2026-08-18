@@ -111,33 +111,33 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 ### 🔴 Red
 
 <!-- sequential -->
-- [ ] T022 🔴 [P] [US1] `tests/test_check_project.py`: a `goal.md` missing `kind` is reported, the message naming the key — fails
-- [ ] T023 🔴 [P] [US1] `tests/test_check_project.py`: an unknown `depth` is reported, naming the value and the closed set — fails
-- [ ] T024 🔴 [P] [US1] `tests/test_check_project.py`: an `updated` that is not ISO is reported — fails
+- [x] T022 🔴 [P] [US1] `tests/test_check_project.py`: a `goal.md` missing `kind` is reported, the message naming the key — fails
+- [x] T023 🔴 [P] [US1] `tests/test_check_project.py`: an unknown `depth` is reported, naming the value and the closed set — fails
+- [x] T024 🔴 [P] [US1] `tests/test_check_project.py`: an `updated` that is not ISO is reported — fails
 
 <!-- sequential -->
-- [ ] T025 🔴 [P] [US1] `tests/test_check_project.py`: an area with no topics is reported, naming the area — fails
+- [x] T025 🔴 [P] [US1] `tests/test_check_project.py`: an area with no topics is reported, naming the area — fails
 
 <!-- sequential -->
-- [ ] T026 🔴 [US1] `tests/test_check_project.py`: a required topic absent from the catalog **warns** — fails
-- [ ] T027 [US1] *Regression guard, green from the start*: a project with no `goal.md` passes unchanged. Add it anyway — it is the assertion protecting SC-006, and it must never go red
+- [x] T026 🔴 [US1] `tests/test_check_project.py`: a required topic absent from the catalog **warns** — fails
+- [x] T027 [US1] *Regression guard, green from the start*: a project with no `goal.md` passes unchanged. Add it anyway — it is the assertion protecting SC-006, and it must never go red
 
 **Checkpoint**: `pytest tests/test_check_project.py` red on five assertions. Commit.
 
 ### 🟢 Green — deterministic half
 
-- [ ] T028 [US1] Add `check_goal(project, report)` to `scripts/check_project.py` beside `check_sources()` — frontmatter via the existing `frontmatter()` helper, `updated` via the existing `DATE` regex, closed sets as module constants next to `SOURCE_TYPES`
-- [ ] T029 [US1] Wire `check_goal` into `check()` (`scripts/check_project.py:248`) **before** `check_catalog`, and pass the required topics through so the drift warning in T026 can fire
-- [ ] T030 [US1] Confirm every message names the file and the culprit, matching the existing house style
+- [x] T028 [US1] Add `check_goal(project, report)` to `scripts/check_project.py` beside `check_sources()` — frontmatter via the existing `frontmatter()` helper, `updated` via the existing `DATE` regex, closed sets as module constants next to `SOURCE_TYPES`
+- [x] T029 [US1] Wire `check_goal` into `check()` (`scripts/check_project.py:248`) **before** `check_catalog`, and pass the required topics through so the drift warning in T026 can fire
+- [x] T030 [US1] Confirm every message names the file and the culprit, matching the existing house style
 
 ### 🟢 Green — model-driven half
 
-- [ ] T031 [US1] Write `skills/learning-goal/SKILL.md` — name `learning-goal` (not `goal`; generic names risk shadowing, **FR-025**), description naming triggers **and** flashcards, procedure covering: accept prose/text/URLs (FR-001), fetch requirement documents without registering them as sources (FR-004), group required topics into independent areas (FR-003), detect and ask about contradictions on re-run (FR-005), name what a narrowing change would orphan (FR-006), **merge without asking when the re-run only adds — preserving the existing areas and topics and moving `updated` to today (FR-007)**, refuse to invent a syllabus (FR-008)
-- [ ] T032 [US1] Confirm `python3 scripts/check_docs.py` accepts the new skill
+- [x] T031 [US1] Write `skills/learning-goal/SKILL.md` — name `learning-goal` (not `goal`; generic names risk shadowing, **FR-025**), description naming triggers **and** flashcards, procedure covering: accept prose/text/URLs (FR-001), fetch requirement documents without registering them as sources (FR-004), group required topics into independent areas (FR-003), detect and ask about contradictions on re-run (FR-005), name what a narrowing change would orphan (FR-006), **merge without asking when the re-run only adds — preserving the existing areas and topics and moving `updated` to today (FR-007)**, refuse to invent a syllabus (FR-008)
+- [x] T032 [US1] Confirm `python3 scripts/check_docs.py` accepts the new skill
 
 ### Refactor
 
-- [ ] T033 [US1] Clean up `check_goal` now that it is green — red, green, *refactor*
+- [x] T033 [US1] Clean up `check_goal` now that it is green — red, green, *refactor*
 
 **Checkpoint**: US1 stands alone. A user can state a goal and have it validated, with nothing else built.
 

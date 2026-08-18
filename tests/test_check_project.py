@@ -41,6 +41,27 @@ GOOD_CATALOG = """# Topics
 How the tide moves.
 References: [a](../knowledge/field-notes/a.md)
 """
+GOOD_GOAL = """---
+goal: 'Read the tide for any hour'
+kind: exam
+depth: working
+updated: 2026-08-14
+---
+
+# Learning goal
+
+Be able to read the tide unsupervised.
+
+## Required topics
+
+### Tides
+- Rhythm of the tide
+
+## Out of scope
+
+- The history of the tide office
+"""
+
 GOOD_CARDS = """topic: 'Tides'
 language: english
 cards:
@@ -58,6 +79,7 @@ def project(
     catalog=GOOD_CATALOG,
     cards=GOOD_CARDS,
     knowledge_dir="field-notes",
+    goal=None,
 ):
     """A minimal project on disk; pass None to leave a part out."""
     (tmp_path / "raw").mkdir()
@@ -74,6 +96,8 @@ def project(
     if cards is not None:
         (tmp_path / "cards").mkdir()
         (tmp_path / "cards" / "tides.yaml").write_text(cards, encoding="utf-8")
+    if goal is not None:
+        (tmp_path / "goal.md").write_text(goal, encoding="utf-8")
     return tmp_path
 
 
@@ -338,3 +362,70 @@ def test_force_refuses_a_folder_that_is_not_a_demo_project(tmp_path):
     with pytest.raises(SystemExit, match="no demo project"):
         demo.copy(target, raw_only=False, force=True)
     assert (target / "thesis.txt").exists()
+
+
+# --- goal.md, the fifth format --------------------------------------------
+
+
+def test_a_goal_without_kind_is_reported(tmp_path):
+    report = check(project(tmp_path, goal=GOOD_GOAL.replace("kind: exam\n", "")))
+    assert "kind" in messages(report), messages(report)
+
+
+def test_an_unknown_depth_is_reported(tmp_path):
+    """The message has to name the value and the closed set — 'invalid' helps nobody."""
+    report = check(project(tmp_path, goal=GOOD_GOAL.replace("depth: working", "depth: fluent")))
+    said = messages(report)
+    assert "fluent" in said, said
+    assert "awareness" in said and "expert" in said, said
+
+
+def test_an_unknown_kind_is_reported(tmp_path):
+    report = check(project(tmp_path, goal=GOOD_GOAL.replace("kind: exam", "kind: viva")))
+    said = messages(report)
+    assert "viva" in said, said
+    assert "self-study" in said, said
+
+
+def test_an_updated_that_is_not_a_date_is_reported(tmp_path):
+    goal = GOOD_GOAL.replace("updated: 2026-08-14", "updated: soon")
+    report = check(project(tmp_path, goal=goal))
+    said = messages(report)
+    assert "updated" in said and "soon" in said, said
+
+
+def test_an_area_with_no_topics_is_reported(tmp_path):
+    """An empty area is a syllabus that promises a strand and delivers nothing."""
+    goal = GOOD_GOAL.replace("### Tides\n- Rhythm of the tide", "### Tides\n\n### Signals\n- Flags")
+    report = check(project(tmp_path, goal=goal))
+    assert "Tides" in messages(report), messages(report)
+
+
+def test_a_goal_with_no_area_is_reported(tmp_path):
+    goal = GOOD_GOAL.replace("### Tides\n- Rhythm of the tide\n", "")
+    report = check(project(tmp_path, goal=goal))
+    assert "Required topics" in messages(report) or "area" in messages(report), messages(report)
+
+
+def test_a_required_topic_missing_from_the_catalog_warns(tmp_path):
+    """Drift: the goal moved on and /catalog was never re-run. A warning, not an error."""
+    goal = GOOD_GOAL.replace("- Rhythm of the tide", "- Storm surge warnings")
+    report = check(project(tmp_path, goal=goal))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "Storm surge warnings" in said, said
+
+
+def test_a_good_goal_passes(tmp_path):
+    report = check(project(tmp_path, goal=GOOD_GOAL))
+    assert not report.errors, messages(report)
+
+
+def test_a_project_without_a_goal_passes_unchanged(tmp_path):
+    """SC-006: the added step costs nothing to a user who does not want it.
+
+    A regression guard, green from the first day — and it must never go red.
+    """
+    report = check(project(tmp_path))
+    assert not report.errors, messages(report)
+    assert not report.warnings, report.warnings
