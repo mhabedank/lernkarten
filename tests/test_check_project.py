@@ -483,3 +483,38 @@ def test_a_catalog_with_no_status_lines_is_unchanged(tmp_path):
     report = check(project(tmp_path, catalog=GOOD_CATALOG))
     assert not report.errors, messages(report)
     assert not report.warnings, report.warnings
+
+
+# --- cards stay inside the goal -------------------------------------------
+
+
+def test_a_card_for_an_out_of_scope_subtopic_warns(tmp_path):
+    """The artifact-level assertion behind US3.
+
+    /cards skipping a marked subtopic is console behaviour and leaves no trace,
+    but the card file it did *not* write does. A warning rather than an error:
+    naming an out-of-scope subtopic explicitly still generates it (FR-020).
+    """
+    catalog = GOOD_CATALOG.replace(
+        "How the tide moves.", "How the tide moves.\nStatus: out of scope"
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "Rhythm of the tide" in said, said
+    assert "out of scope" in said, said
+
+
+def test_a_card_for_a_gap_subtopic_warns(tmp_path):
+    """A gap has nothing to read, so a card for it was written from thin air."""
+    catalog = CATALOG_WITH_GAP
+    cards = GOOD_CARDS.replace("subtopic: 'Rhythm of the tide'", "subtopic: 'Storm surge'")
+    report = check(project(tmp_path, catalog=catalog, cards=cards))
+    said = " | ".join(report.warnings)
+    assert "Storm surge" in said and "gap" in said, said
+
+
+def test_a_card_for_an_ordinary_subtopic_warns_about_nothing(tmp_path):
+    """Regression guard: the check only fires on a marked subtopic."""
+    report = check(project(tmp_path, catalog=GOOD_CATALOG))
+    assert not report.warnings, report.warnings

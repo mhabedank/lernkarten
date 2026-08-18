@@ -306,7 +306,7 @@ def check_catalog(project, report, required=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
-        return set()
+        return set(), {}
 
     text = path.read_text(encoding="utf-8")
     catalog = parse_catalog(text)
@@ -331,8 +331,11 @@ def check_catalog(project, report, required=()):
         if not children:
             report.warn("catalog/topics.md", f"topic '{name}' has no subtopic (###)")
 
+    marked = {}
     for entry in catalog.subtopics:
         status = entry.attribute("status")
+        if status in CATALOG_STATUS:
+            marked[entry.name] = status
         if status is not None and status not in CATALOG_STATUS:
             report.error(
                 "catalog/topics.md",
@@ -364,10 +367,10 @@ def check_catalog(project, report, required=()):
                 "catalog/topics.md",
                 f"goal.md requires '{topic}', which is nowhere in the catalog — re-run /catalog",
             )
-    return subtopics
+    return subtopics, marked
 
 
-def check_cards(project, subtopics, report):
+def check_cards(project, subtopics, report, marked=None):
     """cards/*.yaml: the schema /print reads, plus the card-style limits."""
     root = project / "cards"
     if not root.is_dir():
@@ -405,6 +408,15 @@ def check_cards(project, subtopics, report):
                 report.warn(where, f"card {i}: no subtopic")
             elif subtopics and card["subtopic"] not in subtopics:
                 report.warn(where, f"card {i}: subtopic '{card['subtopic']}' is not in the catalog")
+            elif (marked or {}).get(card["subtopic"]):
+                # A warning, not an error: /cards generates a marked subtopic when
+                # the user names it explicitly, and that card is legitimate.
+                status = marked[card["subtopic"]]
+                report.warn(
+                    where,
+                    f"card {i}: subtopic '{card['subtopic']}' is marked "
+                    f"'Status: {status}' in the catalog",
+                )
             if len(front) > MAX_FRONT:
                 report.warn(where, f"card {i}: front is long ({len(front)} characters)")
             if len(back) > MAX_BACK:
@@ -417,8 +429,8 @@ def check(project, report):
     required = check_goal(project, report)
     source_ids = check_sources(project, report)
     check_knowledge(project, source_ids, report)
-    subtopics = check_catalog(project, report, required)
-    check_cards(project, subtopics, report)
+    subtopics, marked = check_catalog(project, report, required)
+    check_cards(project, subtopics, report, marked)
     return report
 
 

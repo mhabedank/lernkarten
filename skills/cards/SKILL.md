@@ -14,7 +14,8 @@ Creates flashcards from the topic catalog and the references under
 1. No `catalog/topics.md` → point at `/catalog`, done.
 2. **Determine the selection**: arguments name a topic/subtopic (match fuzzily,
    e.g. "bayes" → subtopic "Bayes' theorem"). Without arguments: cover the
-   whole catalog. When ambiguous, name the matches and ask briefly.
+   whole catalog **except the subtopics the catalog marks** — see *Scope*.
+   When ambiguous, name the matches and ask briefly.
 3. **Per subtopic**: read the referenced files (not just the catalog bullet
    points!) and write cards. Aim for 3–8 cards per subtopic, depending on how
    dense the material is. With > 5 subtopics, parallelise generation via an
@@ -25,7 +26,35 @@ Creates flashcards from the topic catalog and the references under
    substance. Replace only on an explicit request ("regenerate").
 5. Validate after writing: `lernkarten check cards/*.yaml`
    (checks the schema and test-compiles). Fix errors right away.
-6. Summary: number of cards per topic/subtopic, then point at `/print`.
+6. Summary: number of cards per topic/subtopic, then the scope report below,
+   then point at `/print`.
+
+## Scope — what to skip, and what to say about it
+
+A subtopic carrying `Status:` in `catalog/topics.md` is skipped when `/cards`
+runs **with no arguments**:
+
+- `Status: out of scope` — the user declared this material irrelevant.
+- `Status: gap` — the goal wants it and no document covers it, so there is
+  nothing to read. Writing a card here would mean inventing one.
+
+**Naming one explicitly still generates it.** `/cards research methodology`
+produces the cards; the mark is a default, not a lock.
+
+### Report the two asymmetrically
+
+They mean opposite things, so do not give them the same treatment:
+
+- **Out of scope is the feature working.** A bare count, nothing else:
+  "12 subtopics skipped as out of scope". No warning, no list. The user already
+  decided this; do not re-litigate it on every run.
+- **A gap means the deck is incomplete.** A warning that says so in plain
+  terms — *these cards do not cover the whole topic* — followed by every gap
+  **by name**, then the two ways to act on it: register a source with
+  `/sources`, or run `/research-gaps`. A count alone is useless here, because
+  the user cannot act on a number.
+
+If there are no gaps, say nothing about gaps at all.
 
 ## Card schema
 

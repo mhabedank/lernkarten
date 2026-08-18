@@ -188,18 +188,18 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### 🔴 Red
 
-- [ ] T045 🔴 [US3] `tests/test_check_project.py`: a card whose `subtopic` is marked `Status: out of scope` or `Status: gap` in the catalog **warns** — fails. This is the artifact-level assertion that makes US3 implementable at all; without it the story is only console output and constitution XI would call it under-specified
-- [ ] T046 [US3] *Regression guard*: a card for an ordinary subtopic warns about nothing
+- [x] T045 🔴 [US3] `tests/test_check_project.py`: a card whose `subtopic` is marked `Status: out of scope` or `Status: gap` in the catalog **warns** — fails. This is the artifact-level assertion that makes US3 implementable at all; without it the story is only console output and constitution XI would call it under-specified
+- [x] T046 [US3] *Regression guard*: a card for an ordinary subtopic warns about nothing
 
 ### 🟢 Green — deterministic half
 
-- [ ] T047 [US3] Extend `check_cards()` in `scripts/check_project.py` (line 202) to take the marked subtopics from `check_catalog()` and warn on a card that belongs to one. **Warning, not error** — the user may have named the subtopic explicitly, which **FR-020** permits
+- [x] T047 [US3] Extend `check_cards()` in `scripts/check_project.py` (line 202) to take the marked subtopics from `check_catalog()` and warn on a card that belongs to one. **Warning, not error** — the user may have named the subtopic explicitly, which **FR-020** permits
 
 ### 🟢 Green — model-driven half
 
-- [ ] T048 [US3] Add scope skipping to `skills/cards/SKILL.md`: with no arguments, skip `Status: out of scope` and `Status: gap`
-- [ ] T049 [US3] Add the asymmetric reporting to `skills/cards/SKILL.md` — out-of-scope as a **count only**, no warning, no list; gaps as a **warning that the deck does not cover the whole topic**, naming every gap and pointing at both ways to act. State the asymmetry's reason in the prompt so it survives editing: skipping out-of-scope is the feature working, a gap means the deck is incomplete
-- [ ] T050 [US3] Add the override to `skills/cards/SKILL.md`: naming an out-of-scope subtopic explicitly still generates it
+- [x] T048 [US3] Add scope skipping to `skills/cards/SKILL.md`: with no arguments, skip `Status: out of scope` and `Status: gap`
+- [x] T049 [US3] Add the asymmetric reporting to `skills/cards/SKILL.md` — out-of-scope as a **count only**, no warning, no list; gaps as a **warning that the deck does not cover the whole topic**, naming every gap and pointing at both ways to act. State the asymmetry's reason in the prompt so it survives editing: skipping out-of-scope is the feature working, a gap means the deck is incomplete
+- [x] T050 [US3] Add the override to `skills/cards/SKILL.md`: naming an out-of-scope subtopic explicitly still generates it
 
 **Checkpoint**: the low-code failure is fixed — off-goal material no longer becomes cards, and the user is told what is missing.
 
