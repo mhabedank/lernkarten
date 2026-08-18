@@ -18,8 +18,9 @@ The pipeline becomes:
 /learning-goal → /sources → /ingest → /catalog → (/research-gaps) → /cards → /print
 ```
 
-Six required steps, one optional. Both new steps are skippable: a project with no
-`goal.md` behaves as it does today, apart from one advisory line.
+Seven steps: five required and two optional. Both new steps are skippable — a
+project with no `goal.md` behaves as it does today, apart from one advisory line
+— which is why both carry the optional marking in FR-037 and SC-013.
 
 **Implementation half**:
 
@@ -562,6 +563,14 @@ reproduces the committed PNGs byte-for-byte from the Typst sources.
   not require a `path` or `url` on it.
 - **FR-036**: MUST warn when `goal.md` names a required topic that appears nowhere
   in `catalog/topics.md` — the catalog has drifted and `/catalog` should be re-run.
+  **Matching is deliberately loose**: a goal bullet is prose ("What low-code is, and
+  where the boundary to no-code runs") while the catalog heading is a label ("What
+  low-code is"), so exact string equality would warn on a correct catalog. Compare
+  case-insensitively after stripping punctuation, and treat a required topic as
+  present when a topic or subtopic name is contained in the bullet or the bullet in
+  it. False negatives are acceptable here and false positives are not: this is a
+  warning that tells the user to re-run `/catalog`, and one that cries wolf gets
+  ignored.
 
 **Documentation, landing page and brand graphics**
 
@@ -631,7 +640,14 @@ order, and nothing consumes an order today — `/print` emits a sheet, not a
 schedule. Adding an edge type nothing reads would be format surface without a
 consumer.
 
-**Backwards compatibility**: yes, in both directions. A project on disk today has
+**Backwards compatibility**: yes, in both directions, with **one** deliberate
+exception. Invariant C-6 (FR-032) makes a subtopic carrying neither references nor
+`Status: gap` an error, and a catalog written before this feature could contain one.
+That is intended — US2 acceptance scenario 7 asks for exactly this report, because a
+branch with nothing behind it is either a gap or a mistake — but it means the claim
+below is "every *well-formed* artifact stays valid", not literally every artifact. A
+project hitting it fixes it by adding `Status: gap`, which is one line and is what the
+error message says. Everything else is additive: a project on disk today has
 no `goal.md`, so `/catalog` and `/cards` write what they write today and
 `check_project.py` passes it unchanged; the only difference the user sees is one
 advisory line. A catalog written by the new `/catalog` is still valid for the old
@@ -721,10 +737,13 @@ is touched (constitution XVI).
 - **SC-005**: A re-run of `/learning-goal` that contradicts the stored goal
   writes nothing until every contradiction has been put to the user and
   answered; a re-run that only adds writes without asking.
-- **SC-006**: A project with no `goal.md` produces a byte-identical
-  `catalog/topics.md` and byte-identical card files compared with the version
-  before this feature. The only difference is one advisory line in the run
-  output — the added steps cost nothing to a user who does not want them.
+- **SC-006**: A project with no `goal.md` produces a `catalog/topics.md` and card
+  files carrying **no new line this feature introduces** — no `Status:`, no
+  `Parents:`, no `Also covers:`, no `Related:`, no `Goal:` — and both validate
+  unchanged against `check_project.py`. The only difference is one advisory line
+  in the run output — the added steps cost nothing to a user who does not want
+  them. (Byte-identity is not asserted: both artifacts are model-generated and
+  two runs of today's pipeline do not reproduce each other byte for byte either.)
 - **SC-007**: A project whose goal exceeds its knowledge base reports its gaps as
   a named list, and after `/research-gaps` the number of `Status: gap` subtopics
   is strictly lower, with every newly covered subtopic backed by at least one

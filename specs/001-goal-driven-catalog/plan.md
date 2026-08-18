@@ -259,9 +259,9 @@ Four questions had to be answered before design. Full reasoning in
    research.md.
 4. **Where do the new broken fixtures go?** In `tmp_path` via the existing
    `project()` helper — **not** in `tests/fixtures/demo-project/broken/`, which
-   holds only broken *card YAML* for the build. This corrects the spec's SC-008
-   wording, which said `broken/`; the intent (six named failure cases, each
-   naming the culprit) is unchanged.
+   holds only broken *card YAML* for the build. The spec's Assumptions say the
+   same; SC-008's six named failure cases (each naming the culprit) are
+   unchanged by where the fixtures live.
 
 ## Phase 1: Design
 
@@ -374,5 +374,14 @@ the branch that does not exist yet (XIV), and the design reading plus re-render
 | A **fifth file format** (`goal.md`), where Principle I enumerates four | I | The goal is the criterion every relevance judgement in this feature depends on. It has to outlive a session, be editable by hand, and be readable by three skills | Putting it in `sources.yaml` conflates "what I want to learn" with "where my material is" and breaks a format the ingest path depends on. Putting it in `catalog/topics.md` makes the goal an output of the step it is supposed to drive. A `/cards` argument does not persist and is invisible to `/catalog`. The constitution is amended in this PR rather than the format being smuggled in |
 | A **new test module** (`tests/test_check_docs.py`) | V | The domain-word rule needs a failing test, and `check_docs.py` has none anywhere | There is no existing module it fits: `test_repo_hygiene.py` is about what is committed, `test_check_project.py` about user projects. Adding doc-tool tests to either would misfile them permanently |
 | **Three attribute lines** added to `catalog/topics.md` at once (`Status:`, `Parents:`/`Also covers:`, `Related:`) | I | `Status:` is required by the core fix; the graph lines serve catalog fidelity | They could ship in two PRs, and US5 remains the separable one if this proves too large. Shipping the format additions together avoids changing the same contract twice in a row, which costs `check_project.py`, the demo fixture and the docs both times |
+| **Four requirements with no red assertion** — FR-013 (the no-goal advisory), FR-016 (the closing counts), FR-018 (the out-of-scope count), FR-019 (the gap warning) | XI | Each of the four is satisfied by what a skill *says during a run*. Nothing on disk records that, so no `check_project.py` check can be written to fail against it — the artifact these prompts produce is identical either way. They are manual checks T107/T108 instead | Deleting the requirements would remove the only thing that tells a user their deck is incomplete (FR-019) and the only route by which `/learning-goal` is ever discovered (FR-013). Inventing a log file for the skills to write, purely so a test can read it, adds a **sixth** file format to make an assertion possible rather than to serve the user |
 
-Principle XI has no row here. It is not waivable.
+Principle XI is not waivable, so the row above is **not** a waiver: it records
+that the constitution's model-driven clause ("if no failing check can be written,
+the requirement is under-specified") has no answer for a requirement whose whole
+effect is console output. Constitution XI already carves out exactly this shape
+of problem for layout and design — *"whether it looks right is not a pytest
+question and belongs on the manual checklist"*. **T114 extends that carve-out to
+run output**, in the same amendment T089–T091 is already making. Until T114
+lands, these four requirements are the one place this plan is knowingly ahead of
+the constitution, and it is written here rather than discovered in review.
