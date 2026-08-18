@@ -72,3 +72,9 @@ References: [signal-code](../knowledge/field-notes/signal-code.md)
 Reading order, forbidden pairs, half mast, and what a hoisted flag can and
 cannot say.
 References: [signal-code](../knowledge/field-notes/signal-code.md)
+
+### Right of way in the Kestrel Deep
+Who holds course and who gives way in the channel, and what the black cylinder
+with flag Kell means. Closed by `/research-gaps` — the field notes never
+covered it.
+References: [right-of-way](../knowledge/right-of-way-research/right-of-way.md)

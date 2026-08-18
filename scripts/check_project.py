@@ -26,7 +26,15 @@ from pathlib import Path
 import build_pdf
 import yamlio
 
-SOURCE_TYPES = {"folder": "path", "pdf": "path", "web": "url", "zotero": None}
+# `research` carries no location: /research-gaps synthesised it from the web,
+# so what identifies it is the gap it was created to close.
+SOURCE_TYPES = {
+    "folder": "path",
+    "pdf": "path",
+    "web": "url",
+    "zotero": None,
+    "research": None,
+}
 GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
 GOAL_DEPTHS = ("awareness", "working", "expert")
 # A subtopic is either covered, wanted-but-uncovered, or unwanted. Absent means
@@ -198,6 +206,13 @@ def check_sources(project, report):
         field = SOURCE_TYPES[kind]
         if field and not entry.get(field):
             report.error(where, f"'{field}' missing for type {kind}")
+            continue
+        if kind == "research" and not entry.get("gap"):
+            report.error(
+                where,
+                "'gap' missing for type research — it names the catalog subtopic "
+                "this source was created to close",
+            )
             continue
         if kind in LOCAL_TYPES:
             target = Path(str(entry[field])).expanduser()

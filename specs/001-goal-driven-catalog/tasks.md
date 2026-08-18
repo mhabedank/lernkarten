@@ -213,26 +213,26 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### Test material first
 
-- [ ] T051 [US4] **Do this after T054, not before** — `test_the_demo_project_is_consistent` (`tests/test_check_project.py:99`) asserts the demo has zero errors, so a `research` source added while `SOURCE_TYPES` still rejects it turns an unrelated existing test red for the wrong reason. Add a `type: research` entry to `tests/fixtures/demo-project/sources.yaml` with a `gap:` naming the T034 gap subtopic, and one document under `tests/fixtures/demo-project/knowledge/<research-id>/` carrying `source` / `url` / `ingested` frontmatter — invented content, a plausible but non-resolving example URL
+- [x] T051 [US4] **Do this after T054, not before** — `test_the_demo_project_is_consistent` (`tests/test_check_project.py:99`) asserts the demo has zero errors, so a `research` source added while `SOURCE_TYPES` still rejects it turns an unrelated existing test red for the wrong reason. Add a `type: research` entry to `tests/fixtures/demo-project/sources.yaml` with a `gap:` naming the T034 gap subtopic, and one document under `tests/fixtures/demo-project/knowledge/<research-id>/` carrying `source` / `url` / `ingested` frontmatter — invented content, a plausible but non-resolving example URL
 
 ### 🔴 Red
 
 <!-- sequential -->
-- [ ] T052 🔴 [P] [US4] `tests/test_check_project.py`: `type: research` without `gap` is reported, naming the source id — **assert the message text, not merely that an error fired**. Today `research` is an unknown type, so an error already appears for the wrong reason; a bare `assert report.errors` is green from the start and proves nothing. Make it red on the *missing-`gap`* wording
-- [ ] T053 🔴 [P] [US4] `tests/test_check_project.py`: `type: research` with `gap` and neither `path` nor `url` passes — fails
+- [x] T052 🔴 [P] [US4] `tests/test_check_project.py`: `type: research` without `gap` is reported, naming the source id — **assert the message text, not merely that an error fired**. Today `research` is an unknown type, so an error already appears for the wrong reason; a bare `assert report.errors` is green from the start and proves nothing. Make it red on the *missing-`gap`* wording
+- [x] T053 🔴 [P] [US4] `tests/test_check_project.py`: `type: research` with `gap` and neither `path` nor `url` passes — fails
 
 **Checkpoint**: red on two assertions. Commit.
 
 ### 🟢 Green — deterministic half
 
-- [ ] T054 [US4] Add `research` to `SOURCE_TYPES` in `scripts/check_project.py:28` with no location field (like `zotero`), and add the `gap`-required rule in `check_sources()`
+- [x] T054 [US4] Add `research` to `SOURCE_TYPES` in `scripts/check_project.py:28` with no location field (like `zotero`), and add the `gap`-required rule in `check_sources()`
 
 ### 🟢 Green — model-driven half
 
-- [ ] T055 [US4] Write `skills/research-gaps/SKILL.md` — name `research-gaps` (not `research`, **FR-025**), description naming triggers and flashcards, procedure covering: take `Status: gap` subtopics as the work list, exit cleanly when there are none, register findings as `type: research` with `gap:`, write one document per gap with its `url`, **never** write a document without a retrieved source, report gaps it could not close, and flip the closed catalog entries off `Status: gap`
-- [ ] T056 [US4] Add the offline degraded path explicitly to `skills/research-gaps/SKILL.md`: report, write nothing, never fill from the model's own recall
-- [ ] T057 [US4] Add a note to `skills/sources/SKILL.md` that `research` entries are written by `/research-gaps`, and that deleting one plus its knowledge folder returns its subtopics to `Status: gap`
-- [ ] T116 [P] [US4] `sources.example.yaml` — add a `type: research` entry **commented out**, with a line saying `/research-gaps` writes these and a user does not hand-author one. The spec's Format Contracts table lists this file under the `sources.yaml` change; leaving it out is why the table and the tasks disagreed. Commented, so the example register keeps demonstrating only what a user actually types
+- [x] T055 [US4] Write `skills/research-gaps/SKILL.md` — name `research-gaps` (not `research`, **FR-025**), description naming triggers and flashcards, procedure covering: take `Status: gap` subtopics as the work list, exit cleanly when there are none, register findings as `type: research` with `gap:`, write one document per gap with its `url`, **never** write a document without a retrieved source, report gaps it could not close, and flip the closed catalog entries off `Status: gap`
+- [x] T056 [US4] Add the offline degraded path explicitly to `skills/research-gaps/SKILL.md`: report, write nothing, never fill from the model's own recall
+- [x] T057 [US4] Add a note to `skills/sources/SKILL.md` that `research` entries are written by `/research-gaps`, and that deleting one plus its knowledge folder returns its subtopics to `Status: gap`
+- [x] T116 [P] [US4] `sources.example.yaml` — add a `type: research` entry **commented out**, with a line saying `/research-gaps` writes these and a user does not hand-author one. The spec's Format Contracts table lists this file under the `sources.yaml` change; leaving it out is why the table and the tasks disagreed. Commented, so the example register keeps demonstrating only what a user actually types
 
 **Checkpoint**: a user can learn a topic their own material does not cover, and can still tell the two apart.
 

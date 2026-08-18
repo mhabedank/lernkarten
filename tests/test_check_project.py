@@ -518,3 +518,36 @@ def test_a_card_for_an_ordinary_subtopic_warns_about_nothing(tmp_path):
     """Regression guard: the check only fires on a marked subtopic."""
     report = check(project(tmp_path, catalog=GOOD_CATALOG))
     assert not report.warnings, report.warnings
+
+
+# --- the research source type ---------------------------------------------
+
+RESEARCH_SOURCES = """
+sources:
+  - id: field-notes
+    type: folder
+    path: raw
+  - id: surge-research
+    type: research
+    gap: 'Storm surge'
+"""
+
+
+def test_a_research_source_without_a_gap_is_reported(tmp_path):
+    """Assert the message, not merely that something failed.
+
+    `research` was an unknown type before this feature, so an error fires
+    either way — a bare `assert report.errors` would be green from the start
+    and prove nothing. What has to be red is the missing-`gap` wording.
+    """
+    sources = RESEARCH_SOURCES.replace("    gap: 'Storm surge'\n", "")
+    report = check(project(tmp_path, sources=sources, knowledge_dir="field-notes"))
+    said = messages(report)
+    assert "surge-research" in said, said
+    assert "gap" in said, said
+
+
+def test_a_research_source_needs_neither_path_nor_url(tmp_path):
+    """It was synthesised from the web, so there is no local file to point at."""
+    report = check(project(tmp_path, sources=RESEARCH_SOURCES))
+    assert not [e for e in report.errors if "surge-research" in e], messages(report)

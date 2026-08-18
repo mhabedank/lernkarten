@@ -23,6 +23,7 @@ Working depth throughout — enough to act on, not enough to teach.
 ### Harbour signals
 - The six flags and what each one means
 - Rules of use: reading order, forbidden pairs, half mast
+- Right of way in the Kestrel Deep
 
 ### Island geography
 - The five islands, and why Torvig is the gateway

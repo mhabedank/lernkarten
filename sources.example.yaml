@@ -34,3 +34,11 @@ sources:
     type: web
     url: https://en.wikipedia.org/wiki/Bayes%27_theorem
     depth: 0
+
+  # Written by /research-gaps, never by hand — shown here so you recognise one.
+  # It closes a `Status: gap` subtopic of catalog/topics.md and names which;
+  # the URLs it was built from live in the documents, not on the entry.
+  # - id: shadow-it-research
+  #   type: research
+  #   gap: 'Governance and shadow IT'
+  #   note: 'Synthesised for a catalog gap'
