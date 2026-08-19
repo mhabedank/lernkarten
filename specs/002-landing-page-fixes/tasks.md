@@ -44,9 +44,9 @@ likewise serialized. What genuinely parallelises is small and marked.
 
 **Purpose**: get the environment able to verify the work
 
-- [ ] T001 [P] `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
-- [ ] T002 [P] `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
-- [ ] T003 Confirm the branch: `git branch --show-current` reads `fix/landing-page`, and `git merge-base --is-ancestor feat/goal-driven-catalog HEAD` succeeds — the base is the feature branch, not `main` (see the base-branch assumption in [spec.md](spec.md#assumptions))
+- [X] T001 [P] `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
+- [X] T002 [P] `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
+- [X] T003 Confirm the branch: `git branch --show-current` reads `fix/landing-page`, and `git merge-base --is-ancestor feat/goal-driven-catalog HEAD` succeeds — the base is the feature branch, not `main` (see the base-branch assumption in [spec.md](spec.md#assumptions))
 
 `make_testdata.py` and `lernkarten engine --check` are **deliberately skipped**:
 this feature builds no PDF and adds no fixture, so neither the binary test
@@ -58,8 +58,8 @@ material nor the typesetting engine is needed to verify it.
 
 **Purpose**: the two things every story needs before it can go red
 
-- [ ] T004 Create `tests/test_landing_page.py` with a module docstring saying what it guards and **why it is not in `tests/test_repo_hygiene.py`** (that module is scoped to user content and committed binaries — see [research.md R1](research.md#r1--how-does-a-landing-page-requirement-become-an-assertion-that-fails-first)); add a helper that reads `docs/index.html` from the repo root and one that parses it with `html.parser` from the standard library. No assertions yet — this task is infrastructure, not a test
-- [ ] T005 **Spike (thrown away)**: in a scratch file outside the repo, build the `<details>` desktop override — `summary { display: none }` above 760 px plus an explicit `display` on the panel — and open it in current Chromium, Firefox and Safari. Record in [research.md](research.md#r2--which-no-javascript-disclosure-pattern-for-the-mobile-navigation) whether the override holds against the user-agent rule, then **delete the scratch file**. If it fails, switch to the documented fallback (`open` in the markup, summary hidden above the breakpoint). Constitution XI: a spike is never promoted straight to a pull request
+- [X] T004 Create `tests/test_landing_page.py` with a module docstring saying what it guards and **why it is not in `tests/test_repo_hygiene.py`** (that module is scoped to user content and committed binaries — see [research.md R1](research.md#r1--how-does-a-landing-page-requirement-become-an-assertion-that-fails-first)); add a helper that reads `docs/index.html` from the repo root and one that parses it with `html.parser` from the standard library. No assertions yet — this task is infrastructure, not a test
+- [X] T005 **Spike (thrown away)**: in a scratch file outside the repo, build the `<details>` desktop override — `summary { display: none }` above 760 px plus an explicit `display` on the panel — and open it in current Chromium, Firefox and Safari. Record in [research.md](research.md#r2--which-no-javascript-disclosure-pattern-for-the-mobile-navigation) whether the override holds against the user-agent rule, then **delete the scratch file**. *(Done: variant B, measured in Chrome 151; Gecko and WebKit are not installed here and ride on T039.)* If it fails, switch to the documented fallback (`open` in the markup, summary hidden above the breakpoint). Constitution XI: a spike is never promoted straight to a pull request
 
 **T005 blocks T012–T014 (the US1 implementation), not T006–T008 (the US1 tests).**
 Both the primary pattern and the fallback use `<details>`/`<summary>`, so the
@@ -80,23 +80,23 @@ differs. The red tests can therefore be written while the spike runs.
 
 > Each must fail **on its assertion**. A failure reading `FileNotFoundError` or `ImportError` does not count.
 
-- [ ] T006 🔴 [US1] Assertion A1 in `tests/test_landing_page.py`: no `overflow-x: auto` applies to the nav link row — red today, `.nav__links` declares it at `docs/index.html:101` (FR-001)
-- [ ] T007 🔴 [US1] Assertion A2 in `tests/test_landing_page.py`: the nav contains exactly one `<details>` whose `<summary>` has non-empty text content — red today, the page has no `<details>` at all. Assert on text, not on the element's presence alone: a summary holding only an SVG fails FR-002 (FR-002)
-- [ ] T008 🔴 [US1] Assertion A3 in `tests/test_landing_page.py`: all four nav links (`#how`, `#cards`, `#print`, `#install`) sit inside that `<details>`, and `.nav__home` and `.nav__gh` sit outside it — the second half guards FR-004's one-line bar (FR-002, FR-003, FR-004)
+- [X] T006 🔴 [US1] Assertion A1 in `tests/test_landing_page.py`: no `overflow-x: auto` applies to the nav link row — red today, `.nav__links` declares it at `docs/index.html:101` (FR-001)
+- [X] T007 🔴 [US1] Assertion A2 in `tests/test_landing_page.py`: the nav contains exactly one `<details>` whose `<summary>` has non-empty text content — red today, the page has no `<details>` at all. Assert on text, not on the element's presence alone: a summary holding only an SVG fails FR-002 (FR-002)
+- [X] T008 🔴 [US1] Assertion A3 in `tests/test_landing_page.py`: all four nav links (`#how`, `#cards`, `#print`, `#install`) sit inside that `<details>`, and `.nav__home` and `.nav__gh` sit outside it — the second half guards FR-004's one-line bar (FR-002, FR-003, FR-004)
 
 **Checkpoint**: `pytest tests/test_landing_page.py` is red on three assertions. Commit here.
 
 ### 🟢 Green — `docs/index.html`
 
-- [ ] T009 [US1] Wrap `.nav__links` in `<details class="nav__menu">` with `<summary>menu</summary>` at `docs/index.html:355-360`, keeping the four links, their `href` values and their order exactly as they are; leave `.nav__home` and `.nav__gh` as siblings of the `<details>` (see the tree in [data-model.md](data-model.md#the-navigation))
-- [ ] T010 [US1] Style the control in the stylesheet near the other nav rules: remove the default disclosure marker (`summary { list-style: none }` plus `summary::-webkit-details-marker { display: none }` for older Safari), and give it the same `label` treatment the existing nav links have — no icon carries the meaning (constitution XVI)
-- [ ] T011 [US1] In the `@media (max-width: 760px)` block at `docs/index.html:316-321`, make the summary the visible control; above the breakpoint hide the summary and force the panel visible, using whichever of the two patterns T005 settled on
-- [ ] T012 [US1] Delete `overflow-x: auto`, `scrollbar-width: none` and the `.nav__links::-webkit-scrollbar` rule at `docs/index.html:101-103` — they have nothing left to do once the row is not an overflow container (the *Anything this makes redundant* line in [spec.md](spec.md#dependency--portability-impact))
-- [ ] T013 [US1] Replace the comment at `docs/index.html:96-97` — it explains a sideways scroll that no longer exists. The new one says why the bar still refuses to wrap, so the next reader does not undo T009 with a `flex-wrap`
+- [X] T009 [US1] Wrap `.nav__links` in `<details class="nav__menu">` with `<summary>menu</summary>` at `docs/index.html:355-360`, keeping the four links, their `href` values and their order exactly as they are; leave `.nav__home` and `.nav__gh` as siblings of the `<details>` (see the tree in [data-model.md](data-model.md#the-navigation))
+- [X] T010 [US1] Style the control in the stylesheet near the other nav rules: remove the default disclosure marker (`summary { list-style: none }` plus `summary::-webkit-details-marker { display: none }` for older Safari), and give it the same `label` treatment the existing nav links have — no icon carries the meaning (constitution XVI)
+- [X] T011 [US1] In the `@media (max-width: 760px)` block at `docs/index.html:316-321`, make the summary the visible control; above the breakpoint hide the summary and force the panel visible, using whichever of the two patterns T005 settled on
+- [X] T012 [US1] Delete `overflow-x: auto`, `scrollbar-width: none` and the `.nav__links::-webkit-scrollbar` rule at `docs/index.html:101-103` — they have nothing left to do once the row is not an overflow container (the *Anything this makes redundant* line in [spec.md](spec.md#dependency--portability-impact))
+- [X] T013 [US1] Replace the comment at `docs/index.html:96-97` — it explains a sideways scroll that no longer exists. The new one says why the bar still refuses to wrap, so the next reader does not undo T009 with a `flex-wrap`
 
 ### Refactor
 
-- [ ] T014 [US1] Green now — clean up. Check the new rules sit with their neighbours rather than at the end of the stylesheet, and that the nav block still reads top to bottom
+- [X] T014 [US1] Green now — clean up. Check the new rules sit with their neighbours rather than at the end of the stylesheet, and that the nav block still reads top to bottom
 
 **Checkpoint**: A1–A3 green, US1 stands alone.
 
@@ -110,18 +110,18 @@ differs. The red tests can therefore be written while the spike runs.
 
 ### 🔴 Red
 
-- [ ] T015 🔴 [US2] Assertion A4 in `tests/test_landing_page.py`: no `<p class="band__note">` is a child of a `<div class="band">` — red today, all three are (FR-006, FR-007)
-- [ ] T016 🔴 [US2] Assertion A5 in `tests/test_landing_page.py`: each `band__note` is the immediate next sibling of a `band`, and there are exactly three of them — the sibling check is what keeps the reading order in SC-004 (FR-007, SC-004)
-- [ ] T017 🔴 [US2] Assertion A6 in `tests/test_landing_page.py`: `.band__note` declares no `border-left`, and the `@media (max-width: 1080px)` block no longer redefines the note's borders — red today at `docs/index.html:82` and `:295` (FR-009)
+- [X] T015 🔴 [US2] Assertion A4 in `tests/test_landing_page.py`: no `<p class="band__note">` is a child of a `<div class="band">` — red today, all three are (FR-006, FR-007)
+- [X] T016 🔴 [US2] Assertion A5 in `tests/test_landing_page.py`: each `band__note` is the immediate next sibling of a `band`, and there are exactly three of them — the sibling check is what keeps the reading order in SC-004 (FR-007, SC-004)
+- [X] T017 🔴 [US2] Assertion A6 in `tests/test_landing_page.py`: `.band__note` declares no `border-left`, and the `@media (max-width: 1080px)` block no longer redefines the note's borders — red today at `docs/index.html:82` and `:295` (FR-009)
 
 **Checkpoint**: three more assertions red. Commit here.
 
 ### 🟢 Green — `docs/index.html`
 
-- [ ] T018 [US2] Move the `<p class="band__note">` out of its `<div class="band">` in all three sections — `01 the pipeline` (`:420`), `03 print it, cut it` (`:590`) and `04 install` (`:669`) — making each the band's immediate next sibling. **Do not touch section `02`**: its band holds a `.toggle` button, not a note (`:502`)
-- [ ] T019 [US2] Rewrite `.band__note` at `docs/index.html:81-84`: drop `width: 400px` for full width, drop `border-left`, add `border-bottom: var(--rule)`. **No `border-top`** — the band's existing `border-bottom` already separates heading from note, and adding one would stack into a 4 px rule (FR-009)
-- [ ] T020 [US2] In the `@media (max-width: 1080px)` block, delete `.band__note { width: 100%; border-left: 0; border-top: var(--rule) }` (`:295`) and `.install .band__note { border-top-color: var(--sand) }` (`:296`) — both existed only to fake this arrangement on narrow screens. **Keep `.band { flex-wrap: wrap }` (`:293`) and `.band h2 { flex-basis: calc(100% - 72px) }` (`:294`)**: section `02`'s toggle still needs them (`:297`). This is the one deletion that could quietly break something the bug report never mentions
-- [ ] T021 [US2] Change `.install .band__note` at `docs/index.html:257` from `border-left-color: var(--sand)` to `border-bottom-color: var(--sand)`; the selector itself needs no change, because it is rooted at `.install`, not at `.band`, and still matches after the move (FR-010)
+- [X] T018 [US2] Move the `<p class="band__note">` out of its `<div class="band">` in all three sections — `01 the pipeline` (`:420`), `03 print it, cut it` (`:590`) and `04 install` (`:669`) — making each the band's immediate next sibling. **Do not touch section `02`**: its band holds a `.toggle` button, not a note (`:502`)
+- [X] T019 [US2] Rewrite `.band__note` at `docs/index.html:81-84`: drop `width: 400px` for full width, drop `border-left`, add `border-bottom: var(--rule)`. **No `border-top`** — the band's existing `border-bottom` already separates heading from note, and adding one would stack into a 4 px rule (FR-009)
+- [X] T020 [US2] In the `@media (max-width: 1080px)` block, delete `.band__note { width: 100%; border-left: 0; border-top: var(--rule) }` (`:295`) and `.install .band__note { border-top-color: var(--sand) }` (`:296`) — both existed only to fake this arrangement on narrow screens. **Keep `.band { flex-wrap: wrap }` (`:293`) and `.band h2 { flex-basis: calc(100% - 72px) }` (`:294`)**: section `02`'s toggle still needs them (`:297`). This is the one deletion that could quietly break something the bug report never mentions
+- [X] T021 [US2] Change `.install .band__note` at `docs/index.html:257` from `border-left-color: var(--sand)` to `border-bottom-color: var(--sand)`; the selector itself needs no change, because it is rooted at `.install`, not at `.band`, and still matches after the move (FR-010)
 
 **Checkpoint**: A4–A6 green. `01`, `03` and `04` restructured, `02` untouched.
 
@@ -135,13 +135,13 @@ differs. The red tests can therefore be written while the spike runs.
 
 ### 🔴 Red
 
-- [ ] T022 🔴 [US3] Assertion A7 in `tests/test_landing_page.py`: the stylesheet contains a `[hidden]` rule declaring `display: none` **with `!important`** — red today, the file has no `[hidden]` rule anywhere. Assert the `!important` explicitly: without it the rule is a no-op, because `[hidden]` and `.card` tie at specificity (0,1,0) and `.card` wins on source order (FR-012, [research.md R4](research.md#r4--how-is-the-hidden-attribute-made-effective-without-setting-a-new-trap))
+- [X] T022 🔴 [US3] Assertion A7 in `tests/test_landing_page.py`: the stylesheet contains a `[hidden]` rule declaring `display: none` **with `!important`** — red today, the file has no `[hidden]` rule anywhere. Assert the `!important` explicitly: without it the rule is a no-op, because `[hidden]` and `.card` tie at specificity (0,1,0) and `.card` wins on source order (FR-012, [research.md R4](research.md#r4--how-is-the-hidden-attribute-made-effective-without-setting-a-new-trap))
 
 **Checkpoint**: red. Commit here.
 
 ### 🟢 Green — `docs/index.html`
 
-- [ ] T023 [US3] Add `[hidden] { display: none !important; }` to the reset near `docs/index.html:40`, beside `*, *::before, *::after { box-sizing: border-box }`, with a one-line comment saying why `!important` is right here — `hidden` is a statement that the element is not relevant, not a style preference
+- [X] T023 [US3] Add `[hidden] { display: none !important; }` to the reset near `docs/index.html:40`, beside `*, *::before, *::after { box-sizing: border-box }`, with a one-line comment saying why `!important` is right here — `hidden` is a statement that the element is not relevant, not a style preference
 
 **No markup change.** The cards and the button are already correct: both cards
 are authored without `hidden` (`:507`, `:527`) and only the script sets it, which
@@ -155,10 +155,10 @@ toggle — those stay open on issue #28.
 
 ## Phase 6: Regression guard & docs
 
-- [ ] T024 [P] Assertion A8 in `tests/test_landing_page.py`: the file holds exactly one `<script>` block and no external stylesheet, script or image reference. **Green today** — label it in the test as a regression guard, not as a red assertion, so nobody looks for a failure that cannot exist without breaking the page on purpose (FR-014, SC-007)
-- [ ] T025 [P] Add a `page` row to the automated-levels table in `docs/testing.md:111-117`: `tests/test_landing_page.py` | page | the structure of the landing page — the seven other levels are listed there and this one is new
-- [ ] T026 Add a landing-page subsection to the manual checklist in `docs/testing.md` (after the numbered pipeline steps) with the three rows from [plan.md](plan.md#test-plan-first), each naming the viewport width and the JavaScript state to test at. "On a phone" is not reproducible; 360 px is
-- [ ] T027 Confirm every relative link added to `docs/testing.md` resolves — `python3 scripts/check_docs.py` fails on a dead one
+- [X] T024 [P] Assertion A8 in `tests/test_landing_page.py`: the file holds exactly one `<script>` block and no external stylesheet, script or image reference. **Green today** — label it in the test as a regression guard, not as a red assertion, so nobody looks for a failure that cannot exist without breaking the page on purpose (FR-014, SC-007)
+- [X] T025 [P] Add a `page` row to the automated-levels table in `docs/testing.md:111-117`: `tests/test_landing_page.py` | page | the structure of the landing page — the seven other levels are listed there and this one is new
+- [X] T026 Add a landing-page subsection to the manual checklist in `docs/testing.md` (after the numbered pipeline steps) with the three rows from [plan.md](plan.md#test-plan-first), each naming the viewport width and the JavaScript state to test at. "On a phone" is not reproducible; 360 px is
+- [X] T027 Confirm every relative link added to `docs/testing.md` resolves — `python3 scripts/check_docs.py` fails on a dead one
 
 `docs/design.md` needs **no** change: nothing in it becomes untrue. The page is
 still flat colour and type, still one self-contained file, and the step strip's
@@ -172,13 +172,13 @@ is not run.
 
 **Purpose**: exactly what CI checks. All green before the pull request.
 
-- [ ] T028 [P] `ruff check .`
-- [ ] T029 [P] `ruff format --check .`
-- [ ] T030 `pytest`
-- [ ] T031 [P] `bin/lernkarten check cards/example.yaml`
-- [ ] T032 [P] `python3 scripts/check_docs.py`
-- [ ] T033 Evidence for SC-008: check out the parent commit, run `pytest tests/test_landing_page.py -q`, confirm **seven** assertions fail on their assertions (A8 is the guard and passes), and paste the output into the pull request
-- [ ] T034 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
+- [X] T028 [P] `ruff check .`
+- [X] T029 [P] `ruff format --check .`
+- [X] T030 `pytest`
+- [X] T031 [P] `bin/lernkarten check cards/example.yaml`
+- [X] T032 [P] `python3 scripts/check_docs.py`
+- [X] T033 Evidence for SC-008: check out the parent commit, run `pytest tests/test_landing_page.py -q`, confirm **seven** assertions fail on their assertions (A8 is the guard and passes), and paste the output into the pull request
+- [X] T034 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
 - [ ] T035 Push the branch and open a pull request against `feat/goal-driven-catalog`, **not** `main` — 002 is stacked on 001 and `main` does not yet carry the note text issue #29 describes. Confirm commit subjects use the `fix:` and `test:` and `docs:` prefixes
 
 **Deliberately skipped, with the reason stated rather than silently dropped**:
