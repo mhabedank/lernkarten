@@ -70,7 +70,7 @@
 
   .mono { font-family: var(--mono); }
 
-  /* Header rule: the number chip, the title, the note beside it. */
+  /* Header rule: the number chip and the title. The note goes underneath. */
   .band { display: flex; align-items: stretch; border-bottom: var(--rule); background: var(--sand); }
   .band__no {
     width: 72px; flex: none; border-right: var(--rule);
@@ -78,8 +78,12 @@
     font-family: var(--display); font-weight: 500; font-size: 20px;
   }
   .band h2 { flex: 1; padding: 18px 28px; font-size: clamp(26px, 4vw, 38px); line-height: 1; text-transform: lowercase; }
+  /* Under the band, never inside it. As a flex child the note set the row
+     height whenever it ran taller than the heading — which every one of them
+     does, by 52, 29 and 7 px. The band's own bottom rule already divides the
+     two, so this takes a bottom border and never a top one. */
   .band__note {
-    width: 400px; flex: none; border-left: var(--rule); padding: 18px 24px;
+    border-bottom: var(--rule); padding: 18px 24px; background: var(--sand);
     font-size: 14px; line-height: 1.6; color: var(--muted);
   }
 
@@ -261,7 +265,7 @@
   .install { background: var(--ink); color: var(--sand); }
   .install .band { background: var(--ink); border-bottom-color: var(--sand); }
   .install .band__no { border-right-color: var(--sand); }
-  .install .band__note { border-left-color: var(--sand); color: #c9c4b8; }
+  .install .band__note { background: var(--ink); border-bottom-color: var(--sand); color: #c9c4b8; }
   .install__grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
   .install__main { border-right: 2px solid var(--sand); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
   /* The longer of the two commands is 44 characters — at a fixed 15 px it
@@ -295,12 +299,11 @@
   .toggle:hover { background: var(--ink); color: var(--sand); }
 
   @media (max-width: 1080px) {
-    /* The note goes full width, so the band has to wrap in the same breath —
-       a 100 % item in a non-wrapping row just pushes the page sideways. */
+    /* The toggle goes full width, so the band has to wrap in the same breath —
+       a 100 % item in a non-wrapping row just pushes the page sideways. Only
+       section 02 still has a child that needs this; the notes left the band. */
     .band { flex-wrap: wrap; }
     .band h2 { flex-basis: calc(100% - 72px); }
-    .band__note { width: 100%; border-left: 0; border-top: var(--rule); }
-    .install .band__note { border-top-color: var(--sand); }
     .toggle { border-left: 0; border-top: var(--rule); width: 100%; padding: 14px; }
     .print__rules { width: 100%; }
     .hero__grid, .anatomy, .yaml, .install__grid { grid-template-columns: minmax(0, 1fr); }
@@ -451,8 +454,8 @@
     <div class="band">
       <div class="band__no" style="background:var(--blue);color:var(--sand)">01</div>
       <h2>the pipeline</h2>
-      <p class="band__note">Seven steps, two of them optional. Every step writes a plain text file you can read and edit, and every step is repeatable: add a source next month, run it again, and you only pay for what is new.</p>
     </div>
+    <p class="band__note">Seven steps, two of them optional. Every step writes a plain text file you can read and edit, and every step is repeatable: add a source next month, run it again, and you only pay for what is new.</p>
     <div class="steps">
       <article class="step">
         <div class="step__shape" style="background:var(--blue)">
@@ -621,8 +624,8 @@
     <div class="band">
       <div class="band__no" style="background:var(--yellow)">03</div>
       <h2>print it, cut it</h2>
-      <p class="band__note">Eight cards to an A4 page, fronts and backs on consecutive pages with the backs mirrored so duplex lines them up.</p>
     </div>
+    <p class="band__note">Eight cards to an A4 page, fronts and backs on consecutive pages with the backs mirrored so duplex lines them up.</p>
     <div class="print">
       <div class="print__sheets">
         <div class="sheet">
@@ -700,8 +703,8 @@
     <div class="band">
       <div class="band__no" style="background:var(--red);color:var(--sand)">04</div>
       <h2>install</h2>
-      <p class="band__note">Two lines in Claude Code. That is the whole installation.</p>
     </div>
+    <p class="band__note">Two lines in Claude Code. That is the whole installation.</p>
     <div class="install__grid">
       <div class="install__main">
         <div>
