@@ -94,13 +94,20 @@
     border-right: var(--rule); border-bottom: 0;
   }
   .nav__home span { font-family: var(--display); font-size: 22px; text-transform: lowercase; }
-  /* The links scroll sideways rather than wrapping: a wrapped row makes the
-     sticky bar two lines tall on a phone and eats the top of every section. */
-  .nav__links {
-    flex: 1; display: flex; align-items: center; gap: 26px; padding: 0 22px;
-    min-width: 0; overflow-x: auto; scrollbar-width: none;
+  /* The bar never wraps: a wrapped row of links makes the sticky bar two lines
+     tall on a phone and eats the top of every section. It used to scroll
+     sideways instead, with the scrollbar hidden — which meant links existed
+     that nobody could see. So the links now collapse behind a control below the
+     breakpoint, and the bar is still one line at rest. */
+  .nav__menu { min-width: 0; }
+  .nav__menu > summary {
+    display: flex; align-items: center; padding: 0 22px;
+    list-style: none; cursor: pointer;
   }
-  .nav__links::-webkit-scrollbar { display: none; }
+  .nav__menu > summary::-webkit-details-marker { display: none; }
+  .nav__links {
+    display: flex; align-items: center; gap: 26px; padding: 0 22px; min-width: 0;
+  }
   .nav__links a { border-bottom: 0; white-space: nowrap; }
   .nav__links a:hover { border-bottom: 2px solid var(--red); }
   .nav__gh {
@@ -313,12 +320,36 @@
     .print__sheets { border-right: 0; border-bottom: var(--rule); }
   }
 
+  /* Above the breakpoint there is no menu: the summary goes away and the panel
+     is shown whether the disclosure is open or not, so the bar is the row it has
+     always been. Both user-agent behaviours have to be overridden to do that —
+     older engines hid the closed panel with display:none, current Chrome wraps
+     it in ::details-content and hides that instead. Overriding only the panel's
+     own display looks like it works (the computed value even reads `flex`) and
+     lays the panel out at zero width. An engine that has never heard of the
+     pseudo-element just drops that line, so no feature query is needed. */
+  @media (min-width: 761px) {
+    .nav__menu { flex: 1; min-width: 0; }
+    .nav__menu > summary { display: none; }
+    .nav__menu::details-content { content-visibility: visible !important; }
+  }
+
   @media (max-width: 760px) {
     /* Pull the gutter in. Forty pixels a side on a 360 px screen leaves a
        measure too narrow to set text in — the rules stay, the air goes. */
     .nav__home { padding: 12px 16px; gap: 10px; }
-    .nav__links { gap: 18px; padding: 0 16px; }
     .nav__gh { padding: 0 18px; }
+    /* The panel drops out of the bar rather than growing it, so the bar stays
+       one line whether the menu is open or shut. `.nav` is sticky, which makes
+       it the containing block this positions against. */
+    .nav__menu > summary { padding: 0 16px; }
+    .nav__links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch;
+      gap: 0; padding: 0;
+      background: var(--sand); border-bottom: var(--rule);
+    }
+    .nav__links a { padding: 14px 16px; border-top: var(--rule); }
     .hero__text, .hero__side, .anatomy__cards, .install__main, .install__side,
     .yaml > div, .principle { padding: 28px 20px; }
     .hero__facts { gap: 18px; }
@@ -351,12 +382,15 @@
       </svg>
       <span>lernkarten</span>
     </a>
-    <div class="nav__links label">
-      <a href="#how">how it works</a>
-      <a href="#cards">the card</a>
-      <a href="#print">printing</a>
-      <a href="#install">install</a>
-    </div>
+    <details class="nav__menu">
+      <summary class="label">menu</summary>
+      <div class="nav__links label">
+        <a href="#how">how it works</a>
+        <a href="#cards">the card</a>
+        <a href="#print">printing</a>
+        <a href="#install">install</a>
+      </div>
+    </details>
     <a class="nav__gh label" href="https://github.com/mhabedank/lernkarten">github</a>
   </nav>
 
