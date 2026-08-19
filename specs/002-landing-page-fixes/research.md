@@ -139,13 +139,25 @@ selector. No feature query is needed.
 phone at load, which costs FR-004's one-line resting bar on exactly the viewport
 the feature exists to fix.
 
-**Verified in Chromium and WebKit.** The numbers above are Chrome 151, headless.
-Safari was checked by hand afterwards and behaves the same: above the breakpoint
-the four links stand in the bar, below it the disclosure opens and every link is
-reachable, with JavaScript on and off. **Gecko is unverified** — Firefox is not
-installed on the machine this was built on, and the maintainer waived it rather
-than install one. CI has no browser leg and will not grow one for this, so row 31
-of the manual checklist stays the place this is checked.
+**Verified in all three engines.** The numbers above are Chrome 151, headless.
+Safari was checked by hand and behaves the same: above the breakpoint the four
+links stand in the bar, below it the disclosure opens and every link is
+reachable, with JavaScript on and off. Firefox 154 was checked last, after being
+waived once and then installed, and passes the same four states — links visible
+above the breakpoint whether the disclosure is open or shut, hidden below it when
+shut, visible when opened.
+
+Firefox settled a second question on the way. Chrome headless clamps its window
+to 500 px, so the 360 px viewport the checklist names had never actually been
+measured; Firefox honours `--window-size=360` and confirms all three claims
+there — the bar is one line at rest, all four links appear once the disclosure is
+open, and nothing overflows horizontally.
+
+That closes the risk this section was written around: the override defeats two
+different user-agent behaviours, and the failure mode is silent, so an untested
+engine was a real exposure rather than a formality. CI still has no browser leg,
+so row 31 of the manual checklist remains where this gets re-checked when the
+nav changes again.
 
 **Closing the panel after a tap** is deliberately *not* required. FR-003 asks
 that the links be reachable without JavaScript, and they are. Closing is an
