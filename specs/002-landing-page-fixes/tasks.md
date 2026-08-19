@@ -46,7 +46,7 @@ likewise serialized. What genuinely parallelises is small and marked.
 
 - [X] T001 [P] `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
 - [X] T002 [P] `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
-- [X] T003 Confirm the branch: `git branch --show-current` reads `fix/landing-page`, and `git merge-base --is-ancestor feat/goal-driven-catalog HEAD` succeeds — the base is the feature branch, not `main` (see the base-branch assumption in [spec.md](spec.md#assumptions))
+- [X] T003 Confirm the branch: `git branch --show-current` reads `fix/landing-page`, and `git merge-base --is-ancestor origin/main HEAD` succeeds. *(Originally this checked against `feat/goal-driven-catalog`, on which the branch was stacked; feature 001 landed in `main` as PR #32 on 2026-08-19 and the branch was rebased onto it — see the base-branch assumption in [spec.md](spec.md#assumptions).)*
 
 `make_testdata.py` and `lernkarten engine --check` are **deliberately skipped**:
 this feature builds no PDF and adds no fixture, so neither the binary test
@@ -179,7 +179,7 @@ is not run.
 - [X] T032 [P] `python3 scripts/check_docs.py`
 - [X] T033 Evidence for SC-008: check out the parent commit, run `pytest tests/test_landing_page.py -q`, confirm **seven** assertions fail on their assertions (A8 is the guard and passes), and paste the output into the pull request
 - [X] T034 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
-- [ ] T035 Push the branch and open a pull request against `feat/goal-driven-catalog`, **not** `main` — 002 is stacked on 001 and `main` does not yet carry the note text issue #29 describes. Confirm commit subjects use the `fix:` and `test:` and `docs:` prefixes
+- [ ] T035 Push the branch and open a pull request against **`main`** — feature 001 landed there as PR #32, so the stacking this task originally described no longer applies. Confirm commit subjects use the `fix:`, `test:` and `docs:` prefixes
 
 **Deliberately skipped, with the reason stated rather than silently dropped**:
 `make_testdata.py`, the `LERNKARTEN_E2E=1` suites, `check_project.py --strict`,
@@ -257,5 +257,5 @@ no exception (constitution XI).
 - **T020 is the dangerous task.** Deleting the wrong rule from the 1080 px block breaks section `02`'s toggle, which no assertion covers and which the bug report never mentions
 - **T007 asserts on text, not presence.** A `<summary>` holding only a hamburger glyph would pass a naive check and fail FR-002
 - **T022 asserts `!important`.** Without it the rule is a no-op — the whole point of [research.md R4](research.md#r4--how-is-the-hidden-attribute-made-effective-without-setting-a-new-trap)
-- **The PR targets `feat/goal-driven-catalog`**, not `main` (T035)
+- **The PR targets `main`** (T035). It was stacked on `feat/goal-driven-catalog` until that landed as PR #32; the branch has since been rebased onto `main`
 - Commit after each task or logical group, and always at a 🔴 checkpoint

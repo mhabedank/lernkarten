@@ -84,7 +84,7 @@ no tree to walk and `tests/test_repo_hygiene.py` already reads this file as text
 | XI | **(NON-WAIVABLE)** Every behaviour tested first | [x] Eight assertions listed in *Phase 1*, each red before its fix. The three claims no test can reach are named on the manual checklist rather than left implicit — constitution XI's own carve-out for layout, used explicitly and not as a loophole. |
 | XII | The four gates pass; ruff not loosened | [x] Ruff config untouched; the new test module is ordinary Python under `tests/`. |
 | XIII | English throughout | [x] |
-| XIV | Branch `<prefix>/<short-kebab-name>`; `main` untouched | [x] `fix/landing-page`, branched from the tip of `feat/goal-driven-catalog` — see the base-branch assumption in the spec. |
+| XIV | Branch `<prefix>/<short-kebab-name>`; `main` untouched | [x] `fix/landing-page`, cut from the tip of `feat/goal-driven-catalog` and rebased onto `main` once that landed as PR #32 — see the base-branch assumption in the spec. |
 | XV | Engine version unchanged, or all checksums bumped | [x] `scripts/engine.py` untouched. |
 | XVI | `docs/design.md` read before a visible change | [x] Read, and it bound three decisions: the control is a word rather than a hamburger glyph (colour and shape never carry meaning alone), the page stays one self-contained file, and note type size is frozen at 14 px so this feature does not pre-empt issue #30. No brand PNG needs re-rendering — `assets/brand/` is untouched and the step strip's own geometry does not change. |
 | XVII | Card style and Typst escaping respected | [x] No card content involved. |

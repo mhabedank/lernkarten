@@ -368,13 +368,15 @@ strip's own geometry.
 
 ## Assumptions
 
-- **The base is `feat/goal-driven-catalog`, not `main`.** Issue #29 quotes the
-  note "Seven steps, two of them optional. …" and derives its height from those
-  three-to-four lines. That text exists only on the feature branch; `main` still
-  carries the shorter two-sentence note and the `five commands` heading. #27 and
-  #28 reproduce on both branches, but all three are specified against the
-  feature-branch state so they share one base. This feature therefore merges
-  after, or together with, feature 001.
+- **The base is `main`** — since 2026-08-19, when feature 001 landed there as
+  [PR #32](https://github.com/mhabedank/lernkarten/pull/32). This branch was
+  originally cut from `feat/goal-driven-catalog` and stacked on it, because
+  issue #29 quotes the note "Seven steps, two of them optional. …" and derives
+  its height from those three-to-four lines — text that existed only on the
+  feature branch while `main` still carried the shorter note and the `five
+  commands` heading. That stacking is now moot: the branch has been rebased onto
+  `main`, which carries the same tree, and the pull request targets `main`.
+  (#27 and #28 always reproduced on both.)
 - **The mobile breakpoint for the nav fix is the existing 760 px**
   (`docs/index.html:316`), not a new one. The plan may move it with a reason.
 - **The band breakpoint stays 1080 px** (`docs/index.html:291`). US2 changes
