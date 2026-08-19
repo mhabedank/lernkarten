@@ -38,6 +38,12 @@ Schema per entry (the comment header in `sources.yaml` shows examples):
 - `zotero`: `collection` (name of the Zotero collection; omit for the whole library), `note`
 - `web`: `url` (required), `depth` (optional: 0 = this page only,
   1 = plus directly linked subpages on the same domain; default 0), `note`
+- `research`: `gap` (required — the catalog subtopic it closes), `note`. No
+  `path` and no `url`: the URLs live in the documents. **You do not write these
+  by hand** — `/research-gaps` creates them when it closes a gap. Deleting one
+  together with its `knowledge/<id>/` folder returns the affected subtopics to
+  `Status: gap` on the next `/catalog` run, which is the supported way to throw
+  model-supplied material away.
 
 Validate before writing: expand paths (`~`), check that they exist; for
 Zotero check whether the local API answers

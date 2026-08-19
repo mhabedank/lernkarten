@@ -18,6 +18,7 @@ warnings are style questions and only fail with --strict.
 """
 
 import argparse
+import dataclasses
 import re
 import sys
 from pathlib import Path
@@ -25,11 +26,26 @@ from pathlib import Path
 import build_pdf
 import yamlio
 
-SOURCE_TYPES = {"folder": "path", "pdf": "path", "web": "url", "zotero": None}
+# `research` carries no location: /research-gaps synthesised it from the web,
+# so what identifies it is the gap it was created to close.
+SOURCE_TYPES = {
+    "folder": "path",
+    "pdf": "path",
+    "web": "url",
+    "zotero": None,
+    "research": None,
+}
+GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
+GOAL_DEPTHS = ("awareness", "working", "expert")
+# A subtopic is either covered, wanted-but-uncovered, or unwanted. Absent means
+# covered, so a catalog written before the goal-driven step stays valid.
+CATALOG_STATUS = ("gap", "out of scope")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+# The attribute lines a catalog entry may carry, as `Key: value` in its body.
+ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal):(.*)$")
 # Front at most ~2 lines, back at most ~6 — the card is only 100 x 72 mm.
 MAX_FRONT = 120
 MAX_BACK = 400
@@ -75,6 +91,82 @@ def frontmatter(text):
         return None, parts[2]
 
 
+def topic_key(text):
+    """A required topic and a catalog heading, reduced to something comparable.
+
+    Deliberately loose. A goal bullet is prose ("Rhythm of the tide, and how far
+    high water shifts") while the heading is a label ("Rhythm of the tide"), so
+    exact equality would report drift on a correct catalog. This is a warning
+    telling the user to re-run /catalog; one that cries wolf gets ignored.
+    """
+    return " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split())
+
+
+def parse_goal(text):
+    """The areas of `## Required topics` as {area: [topic, ...]}, in order."""
+    areas = {}
+    current = None
+    in_required = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("## "):
+            in_required = line[3:].strip().lower() == "required topics"
+            current = None
+        elif in_required and line.startswith("### "):
+            current = line[4:].strip()
+            areas.setdefault(current, [])
+        elif in_required and current and line.startswith("- "):
+            areas[current].append(line[2:].strip())
+    return areas
+
+
+def check_goal(project, report):
+    """goal.md: what the user is trying to learn, and the criterion for everything else.
+
+    Absent is valid and means today's behaviour — the whole feature is opt-in.
+    Returns (required topics, area names); check_catalog uses both for the drift
+    warnings.
+    """
+    path = project / "goal.md"
+    if not path.exists():
+        return set(), set()
+
+    where = "goal.md"
+    report.count("goals")
+    head, body = frontmatter(path.read_text(encoding="utf-8"))
+    if head is None:
+        report.error(where, "no YAML frontmatter — 'goal', 'kind', 'depth' and 'updated' go there")
+        return set(), set()
+
+    for key in ("goal", "kind", "depth", "updated"):
+        if not head.get(key):
+            report.error(where, f"'{key}' missing — the frontmatter needs it")
+
+    kind = head.get("kind")
+    if kind and kind not in GOAL_KINDS:
+        report.error(where, f"'kind: {kind}' is not one of {', '.join(GOAL_KINDS)}")
+
+    depth = head.get("depth")
+    if depth and depth not in GOAL_DEPTHS:
+        report.error(where, f"'depth: {depth}' is not one of {', '.join(GOAL_DEPTHS)}")
+
+    updated = head.get("updated")
+    if updated and not DATE.match(str(updated)):
+        report.error(where, f"'updated' is not a date (YYYY-MM-DD): {updated}")
+
+    areas = parse_goal(body)
+    if not areas:
+        report.error(
+            where, "'## Required topics' holds no area (###) — nothing to build a catalog from"
+        )
+    required = set()
+    for area, topics in areas.items():
+        if not topics:
+            report.error(where, f"area '{area}' lists no required topic")
+        required.update(topics)
+    return required, set(areas)
+
+
 # --- the four artifacts ---------------------------------------------------
 
 
@@ -115,6 +207,13 @@ def check_sources(project, report):
         field = SOURCE_TYPES[kind]
         if field and not entry.get(field):
             report.error(where, f"'{field}' missing for type {kind}")
+            continue
+        if kind == "research" and not entry.get("gap"):
+            report.error(
+                where,
+                "'gap' missing for type research — it names the catalog subtopic "
+                "this source was created to close",
+            )
             continue
         if kind in LOCAL_TYPES:
             target = Path(str(entry[field])).expanduser()
@@ -160,30 +259,169 @@ def check_knowledge(project, source_ids, report):
                 report.warn(where, "barely any text — did the extraction work?")
 
 
-def check_catalog(project, report):
+@dataclasses.dataclass
+class Entry:
+    """One `##` topic or `###` subtopic, with the attribute lines in its body."""
+
+    kind: str  # "topic" (##) or "subtopic" (###)
+    name: str
+    heading: str | None  # for a subtopic, the topic it sits under — None if orphaned
+    attributes: dict
+
+    def attribute(self, key):
+        return self.attributes.get(key.lower())
+
+
+@dataclasses.dataclass
+class Catalog:
+    """`catalog/topics.md` as a structure, in the order it was written."""
+
+    entries: list
+
+    @property
+    def topics(self):
+        return [e for e in self.entries if e.kind == "topic"]
+
+    @property
+    def subtopics(self):
+        return [e for e in self.entries if e.kind == "subtopic"]
+
+
+def parse_catalog(text):
+    """Read the catalog into a structure. Reports nothing — that is the caller's job.
+
+    Kept pure and separate so the rules that read `Status:`, `Parents:`,
+    `Also covers:` and `Related:` have something to hang on, and so the parsing
+    can be unit-tested without going through a whole project folder.
+    """
+    entries = []
+    current = None  # the entry whose body we are inside
+    heading = None  # the most recent `##`, which a subtopic belongs under
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("### "):
+            current = Entry(kind="subtopic", name=line[4:].strip(), heading=heading, attributes={})
+            entries.append(current)
+        elif line.startswith("## "):
+            heading = line[3:].strip()
+            current = Entry(kind="topic", name=heading, heading=None, attributes={})
+            entries.append(current)
+        elif current is not None:
+            match = ATTRIBUTE.match(line)
+            if match:
+                key, value = match.group(1).lower(), match.group(2).strip()
+                # A repeated key keeps the first: References: may wrap onto a
+                # second line, and that continuation is not a new attribute.
+                current.attributes.setdefault(key, value)
+
+    return Catalog(entries=entries)
+
+
+def catalog_names(line):
+    """The comma-separated names on a `Parents:`, `Related:` or `Also covers:` line.
+
+    An `Also covers:` entry carries `(cards in cards/x.yaml)` after the name so a
+    reader knows where to look — that parenthetical is prose, and comparing names
+    with it attached makes every reciprocity check fail on a catalog that follows
+    the contract.
+    """
+    names = []
+    for part in (line or "").split(","):
+        name = re.sub(r"\s*\([^)]*\)\s*$", "", part.strip()).strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def check_graph(catalog, subtopics, report):
+    """The catalog is a graph: containment is many-to-many, association is symmetric.
+
+    Nothing here checks for cycles. Topics contain subtopics and the catalog stays
+    two levels deep, so edges only ever run topic -> subtopic and the graph is
+    bipartite. The invariants that matter are reciprocity ones, because the failure
+    this format actually invites is half an edit.
+    """
+    where = "catalog/topics.md"
+    topics = {entry.name for entry in catalog.topics}
+    by_name = {entry.name: entry for entry in catalog.subtopics}
+
+    borrowed = {}
+    for entry in catalog.topics:
+        for name in catalog_names(entry.attribute("also covers")):
+            borrowed.setdefault(entry.name, []).append(name)
+
+    for entry in catalog.subtopics:
+        parents = catalog_names(entry.attribute("parents"))
+        if parents:
+            for parent in parents:  # C-1
+                if parent not in topics:
+                    report.error(
+                        where,
+                        f"subtopic '{entry.name}': 'Parents:' names '{parent}', "
+                        "which is not a topic in this catalog",
+                    )
+            if parents[0] != entry.heading:  # C-2
+                report.error(
+                    where,
+                    f"subtopic '{entry.name}': the primary parent is '{parents[0]}' "
+                    f"but it sits under '{entry.heading}' — the first parent decides "
+                    "which card file it lands in, so the two must agree",
+                )
+            for parent in parents[1:]:  # C-3
+                if entry.name not in borrowed.get(parent, []):
+                    report.error(
+                        where,
+                        f"subtopic '{entry.name}': '{parent}' is listed as a parent "
+                        f"but '## {parent}' carries no 'Also covers:' line naming it",
+                    )
+        for name in catalog_names(entry.attribute("related")):  # C-5
+            if name not in subtopics:
+                report.error(
+                    where,
+                    f"subtopic '{entry.name}': 'Related:' names '{name}', "
+                    "which is not a subtopic of this catalog",
+                )
+
+    for topic, names in borrowed.items():  # C-4
+        for name in names:
+            entry = by_name.get(name)
+            if entry is None:
+                report.error(
+                    where,
+                    f"topic '{topic}': 'Also covers:' names '{name}', "
+                    "which is not a subtopic of this catalog",
+                )
+            elif topic not in catalog_names(entry.attribute("parents")):
+                report.error(
+                    where,
+                    f"topic '{topic}': 'Also covers:' claims '{name}', but that "
+                    "subtopic's own 'Parents:' does not list it back",
+                )
+
+
+def check_catalog(project, report, required=(), areas=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
-        return set()
+        return set(), {}
 
     text = path.read_text(encoding="utf-8")
+    catalog = parse_catalog(text)
     subtopics = set()
-    topic = None
     seen = {}
-    for raw in text.splitlines():
-        line = raw.strip()
-        if line.startswith("## "):
-            topic = line[3:].strip()
-            seen[topic] = []
+    for entry in catalog.entries:
+        if entry.kind == "topic":
+            # A repeated `## name` starts the list again, as the line scan did.
+            seen[entry.name] = []
             report.count("topics")
-        elif line.startswith("### "):
-            name = line[4:].strip()
-            if topic is None:
-                report.error("catalog/topics.md", f"subtopic '{name}' before any topic (##)")
-            else:
-                seen[topic].append(name)
-            subtopics.add(name)
-            report.count("subtopics")
+            continue
+        if entry.heading is None or entry.heading not in seen:
+            report.error("catalog/topics.md", f"subtopic '{entry.name}' before any topic (##)")
+        else:
+            seen[entry.heading].append(entry.name)
+        subtopics.add(entry.name)
+        report.count("subtopics")
 
     if not seen:
         report.error("catalog/topics.md", "no topic (##) found")
@@ -191,15 +429,59 @@ def check_catalog(project, report):
         if not children:
             report.warn("catalog/topics.md", f"topic '{name}' has no subtopic (###)")
 
+    marked = {}
+    for entry in catalog.subtopics:
+        status = entry.attribute("status")
+        if status in CATALOG_STATUS:
+            marked[entry.name] = status
+        if status is not None and status not in CATALOG_STATUS:
+            report.error(
+                "catalog/topics.md",
+                f"subtopic '{entry.name}': 'Status: {status}' is not one of "
+                f"{', '.join(CATALOG_STATUS)}",
+            )
+        references = (entry.attribute("references") or "").strip()
+        if (not references or references.lower() == "none") and status != "gap":
+            report.error(
+                "catalog/topics.md",
+                f"subtopic '{entry.name}' has no references and is not marked "
+                "'Status: gap' — a branch with nothing behind it is either a gap "
+                "or a mistake",
+            )
+
+    check_graph(catalog, subtopics, report)
+
     for target in LINK.findall(text):
         if target.startswith(("http://", "https://", "mailto:", "#")):
             continue
         if not (path.parent / target.split("#", 1)[0]).resolve().exists():
             report.error("catalog/topics.md", f"reference points nowhere -> {target}")
-    return subtopics
+
+    # Drift: goal.md asks for something the catalog never got. A warning, because
+    # the fix is to re-run /catalog rather than to edit the file by hand.
+    # FR-010: each area of the goal is its own top-level topic. A warning, not an
+    # error — the catalog may simply predate the goal, and re-running fixes it.
+    topic_keys = {topic_key(name) for name in seen}
+    for area in areas:
+        if topic_key(area) not in topic_keys:
+            report.warn(
+                "catalog/topics.md",
+                f"goal.md area '{area}' is not a top-level topic (##) — each area "
+                "becomes its own topic, so re-run /catalog",
+            )
+
+    names = [topic_key(n) for n in list(seen) + list(subtopics)]
+    for topic in required:
+        key = topic_key(topic)
+        if not any(key in name or name in key for name in names):
+            report.warn(
+                "catalog/topics.md",
+                f"goal.md requires '{topic}', which is nowhere in the catalog — re-run /catalog",
+            )
+    return subtopics, marked
 
 
-def check_cards(project, subtopics, report):
+def check_cards(project, subtopics, report, marked=None):
     """cards/*.yaml: the schema /print reads, plus the card-style limits."""
     root = project / "cards"
     if not root.is_dir():
@@ -237,6 +519,15 @@ def check_cards(project, subtopics, report):
                 report.warn(where, f"card {i}: no subtopic")
             elif subtopics and card["subtopic"] not in subtopics:
                 report.warn(where, f"card {i}: subtopic '{card['subtopic']}' is not in the catalog")
+            elif (marked or {}).get(card["subtopic"]):
+                # A warning, not an error: /cards generates a marked subtopic when
+                # the user names it explicitly, and that card is legitimate.
+                status = marked[card["subtopic"]]
+                report.warn(
+                    where,
+                    f"card {i}: subtopic '{card['subtopic']}' is marked "
+                    f"'Status: {status}' in the catalog",
+                )
             if len(front) > MAX_FRONT:
                 report.warn(where, f"card {i}: front is long ({len(front)} characters)")
             if len(back) > MAX_BACK:
@@ -246,10 +537,11 @@ def check_cards(project, subtopics, report):
 
 
 def check(project, report):
+    required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
     check_knowledge(project, source_ids, report)
-    subtopics = check_catalog(project, report)
-    check_cards(project, subtopics, report)
+    subtopics, marked = check_catalog(project, report, required, areas)
+    check_cards(project, subtopics, report, marked)
     return report
 
 

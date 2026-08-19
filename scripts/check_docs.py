@@ -20,6 +20,11 @@ import yamlio
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "skills"
+
+# Every skill description has to tie itself to this plugin, not only name its
+# triggers: the plugin ships into environments this repo cannot inspect, where
+# `/catalog` or `/research` may already mean something else.
+DOMAIN_WORD = "flashcard"
 REQUIRED_FILES = [
     "README.md",
     "LICENSE",
@@ -92,6 +97,12 @@ def check_skills(errors):
             errors.append(
                 f"{path.relative_to(ROOT)}: 'description' names no triggers — "
                 "without them Claude Code finds the skill less reliably"
+            )
+        elif DOMAIN_WORD not in description.lower():
+            errors.append(
+                f"{path.relative_to(ROOT)}: 'description' names no domain word — "
+                f"say '{DOMAIN_WORD}s' somewhere, or a generic trigger like /catalog "
+                "resolves to whichever other installed skill claimed it first"
             )
 
 

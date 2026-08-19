@@ -127,6 +127,21 @@ shadows, no rounded corners.
 | social card, 1200 × 630 | [`assets/brand/social-card.typ`](../assets/brand/social-card.typ) |
 | example cards | [`assets/brand/example-cards.typ`](../assets/brand/example-cards.typ) |
 
+### The step strip
+
+The pipeline strip — on the landing page and as `pipeline.png` — carries seven
+cells, two of which are optional. Two rules hold there:
+
+- **Optional is a word, not a colour.** Each optional cell carries a literal
+  `OPTIONAL` label. Colour never carries meaning on its own, and a muted fill
+  alone would say nothing on a black-and-white screenshot.
+- **The measure is set by the longest command, not by the caption.**
+  `/learning-goal` is fourteen characters of mono, so it decides the column
+  width; the caption then gets whatever is left. That is why the landing page
+  sets the command at 16 px rather than 18 px — it buys the room that keeps the
+  caption at 15 px, the floor above. Narrower cells for the optional steps were
+  considered and rejected: they hold the two longest names.
+
 The graphics are drawn in Typst, not by hand, so they take their inks and faces
 from the card itself — and the example-cards picture is drawn by the very
 layout that goes to the printer. Re-render after changing any of them:

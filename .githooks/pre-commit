@@ -4,7 +4,7 @@
 # Install with: scripts/install-hooks.sh
 
 forbidden=$(git diff --cached --name-only --diff-filter=A \
-    | grep -E '^(knowledge/|catalog/|cards/|output/|sources\.yaml)' \
+    | grep -E '^(knowledge/|catalog/|cards/|output/|sources\.yaml|goal\.md)' \
     | grep -v -E '^(knowledge/\.gitkeep|catalog/\.gitkeep|cards/\.gitkeep|cards/example\.yaml)$')
 
 if [ -n "$forbidden" ]; then

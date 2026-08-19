@@ -1,4 +1,4 @@
-// The readme banner, 1280 x 320. The mark, the sentence, the five commands —
+// The readme banner, 1280 x 320. The mark, the sentence, the seven commands —
 // and one card, because the card is the product.
 
 #import "common.typ": *
@@ -54,7 +54,9 @@
   )),
   {
     set text(font: mono, size: 13pt, fill: muted)
-    grid(columns: 5, column-gutter: 26pt, ..commands)
+    // auto columns, not 7 equal ones: `/learning-goal` is twice the width of
+    // `/print`, and equal columns would either clip it or strand the short ones.
+    grid(columns: (auto,) * 7, column-gutter: 15pt, ..commands)
   },
 )))
 

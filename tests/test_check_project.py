@@ -41,6 +41,27 @@ GOOD_CATALOG = """# Topics
 How the tide moves.
 References: [a](../knowledge/field-notes/a.md)
 """
+GOOD_GOAL = """---
+goal: 'Read the tide for any hour'
+kind: exam
+depth: working
+updated: 2026-08-14
+---
+
+# Learning goal
+
+Be able to read the tide unsupervised.
+
+## Required topics
+
+### Tides
+- Rhythm of the tide
+
+## Out of scope
+
+- The history of the tide office
+"""
+
 GOOD_CARDS = """topic: 'Tides'
 language: english
 cards:
@@ -58,6 +79,7 @@ def project(
     catalog=GOOD_CATALOG,
     cards=GOOD_CARDS,
     knowledge_dir="field-notes",
+    goal=None,
 ):
     """A minimal project on disk; pass None to leave a part out."""
     (tmp_path / "raw").mkdir()
@@ -74,6 +96,8 @@ def project(
     if cards is not None:
         (tmp_path / "cards").mkdir()
         (tmp_path / "cards" / "tides.yaml").write_text(cards, encoding="utf-8")
+    if goal is not None:
+        (tmp_path / "goal.md").write_text(goal, encoding="utf-8")
     return tmp_path
 
 
@@ -105,7 +129,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 31
+    assert counts["cards"] == 29
 
 
 def test_the_demo_project_passes_on_the_command_line():
@@ -338,3 +362,299 @@ def test_force_refuses_a_folder_that_is_not_a_demo_project(tmp_path):
     with pytest.raises(SystemExit, match="no demo project"):
         demo.copy(target, raw_only=False, force=True)
     assert (target / "thesis.txt").exists()
+
+
+# --- goal.md, the fifth format --------------------------------------------
+
+
+def test_a_goal_without_kind_is_reported(tmp_path):
+    report = check(project(tmp_path, goal=GOOD_GOAL.replace("kind: exam\n", "")))
+    assert "kind" in messages(report), messages(report)
+
+
+def test_an_unknown_depth_is_reported(tmp_path):
+    """The message has to name the value and the closed set — 'invalid' helps nobody."""
+    report = check(project(tmp_path, goal=GOOD_GOAL.replace("depth: working", "depth: fluent")))
+    said = messages(report)
+    assert "fluent" in said, said
+    assert "awareness" in said and "expert" in said, said
+
+
+def test_an_unknown_kind_is_reported(tmp_path):
+    report = check(project(tmp_path, goal=GOOD_GOAL.replace("kind: exam", "kind: viva")))
+    said = messages(report)
+    assert "viva" in said, said
+    assert "self-study" in said, said
+
+
+def test_an_updated_that_is_not_a_date_is_reported(tmp_path):
+    goal = GOOD_GOAL.replace("updated: 2026-08-14", "updated: soon")
+    report = check(project(tmp_path, goal=goal))
+    said = messages(report)
+    assert "updated" in said and "soon" in said, said
+
+
+def test_an_area_with_no_topics_is_reported(tmp_path):
+    """An empty area is a syllabus that promises a strand and delivers nothing."""
+    goal = GOOD_GOAL.replace("### Tides\n- Rhythm of the tide", "### Tides\n\n### Signals\n- Flags")
+    report = check(project(tmp_path, goal=goal))
+    assert "Tides" in messages(report), messages(report)
+
+
+def test_a_goal_with_no_area_is_reported(tmp_path):
+    goal = GOOD_GOAL.replace("### Tides\n- Rhythm of the tide\n", "")
+    report = check(project(tmp_path, goal=goal))
+    assert "Required topics" in messages(report) or "area" in messages(report), messages(report)
+
+
+def test_a_required_topic_missing_from_the_catalog_warns(tmp_path):
+    """Drift: the goal moved on and /catalog was never re-run. A warning, not an error."""
+    goal = GOOD_GOAL.replace("- Rhythm of the tide", "- Storm surge warnings")
+    report = check(project(tmp_path, goal=goal))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "Storm surge warnings" in said, said
+
+
+def test_a_good_goal_passes(tmp_path):
+    report = check(project(tmp_path, goal=GOOD_GOAL))
+    assert not report.errors, messages(report)
+
+
+def test_a_project_without_a_goal_passes_unchanged(tmp_path):
+    """SC-006: the added step costs nothing to a user who does not want it.
+
+    A regression guard, green from the first day — and it must never go red.
+    """
+    report = check(project(tmp_path))
+    assert not report.errors, messages(report)
+    assert not report.warnings, report.warnings
+
+
+# --- Status: gap and out of scope -----------------------------------------
+
+CATALOG_WITH_GAP = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+
+### Storm surge
+What the goal wants and no document covers.
+Status: gap
+References: none
+"""
+
+
+def test_a_subtopic_with_neither_references_nor_gap_is_reported(tmp_path):
+    """A branch with nothing behind it is either a gap or a mistake."""
+    catalog = GOOD_CATALOG + "\n### Storm surge\nNothing behind this one.\n"
+    report = check(project(tmp_path, catalog=catalog))
+    assert "Storm surge" in messages(report), messages(report)
+
+
+def test_a_gap_with_no_references_passes(tmp_path):
+    report = check(project(tmp_path, catalog=CATALOG_WITH_GAP))
+    assert not report.errors, messages(report)
+
+
+def test_an_unknown_status_is_reported(tmp_path):
+    """The message names the subtopic and the value — 'invalid status' helps nobody."""
+    catalog = CATALOG_WITH_GAP.replace("Status: gap", "Status: irrelevant")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Storm surge" in said, said
+    assert "irrelevant" in said, said
+
+
+def test_out_of_scope_keeps_its_references(tmp_path):
+    """Out-of-scope material is marked, not thrown away — the references still resolve."""
+    catalog = GOOD_CATALOG.replace(
+        "How the tide moves.", "How the tide moves.\nStatus: out of scope"
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    assert not report.errors, messages(report)
+
+
+def test_a_catalog_with_no_status_lines_is_unchanged(tmp_path):
+    """Regression guard: absence of every new line means today's behaviour."""
+    report = check(project(tmp_path, catalog=GOOD_CATALOG))
+    assert not report.errors, messages(report)
+    assert not report.warnings, report.warnings
+
+
+# --- cards stay inside the goal -------------------------------------------
+
+
+def test_a_card_for_an_out_of_scope_subtopic_warns(tmp_path):
+    """The artifact-level assertion behind US3.
+
+    /cards skipping a marked subtopic is console behaviour and leaves no trace,
+    but the card file it did *not* write does. A warning rather than an error:
+    naming an out-of-scope subtopic explicitly still generates it (FR-020).
+    """
+    catalog = GOOD_CATALOG.replace(
+        "How the tide moves.", "How the tide moves.\nStatus: out of scope"
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "Rhythm of the tide" in said, said
+    assert "out of scope" in said, said
+
+
+def test_a_card_for_a_gap_subtopic_warns(tmp_path):
+    """A gap has nothing to read, so a card for it was written from thin air."""
+    catalog = CATALOG_WITH_GAP
+    cards = GOOD_CARDS.replace("subtopic: 'Rhythm of the tide'", "subtopic: 'Storm surge'")
+    report = check(project(tmp_path, catalog=catalog, cards=cards))
+    said = " | ".join(report.warnings)
+    assert "Storm surge" in said and "gap" in said, said
+
+
+def test_a_card_for_an_ordinary_subtopic_warns_about_nothing(tmp_path):
+    """Regression guard: the check only fires on a marked subtopic."""
+    report = check(project(tmp_path, catalog=GOOD_CATALOG))
+    assert not report.warnings, report.warnings
+
+
+# --- the research source type ---------------------------------------------
+
+RESEARCH_SOURCES = """
+sources:
+  - id: field-notes
+    type: folder
+    path: raw
+  - id: surge-research
+    type: research
+    gap: 'Storm surge'
+"""
+
+
+def test_a_research_source_without_a_gap_is_reported(tmp_path):
+    """Assert the message, not merely that something failed.
+
+    `research` was an unknown type before this feature, so an error fires
+    either way — a bare `assert report.errors` would be green from the start
+    and prove nothing. What has to be red is the missing-`gap` wording.
+    """
+    sources = RESEARCH_SOURCES.replace("    gap: 'Storm surge'\n", "")
+    report = check(project(tmp_path, sources=sources, knowledge_dir="field-notes"))
+    said = messages(report)
+    assert "surge-research" in said, said
+    assert "gap" in said, said
+
+
+def test_a_research_source_needs_neither_path_nor_url(tmp_path):
+    """It was synthesised from the web, so there is no local file to point at."""
+    report = check(project(tmp_path, sources=RESEARCH_SOURCES))
+    assert not [e for e in report.errors if "surge-research" in e], messages(report)
+
+
+# --- the catalog as a graph -----------------------------------------------
+
+GRAPH_CATALOG = """# Topics
+
+## Tides
+The tide.
+Also covers: Access control (cards in cards/security.yaml)
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+
+## Security
+Who may do what.
+
+### Access control
+Belongs under both.
+Parents: Security, Tides
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+
+def test_a_two_parent_subtopic_passes(tmp_path):
+    report = check(project(tmp_path, catalog=GRAPH_CATALOG))
+    assert not report.errors, messages(report)
+
+
+def test_a_parent_that_is_not_a_topic_is_reported(tmp_path):
+    """C-1."""
+    catalog = GRAPH_CATALOG.replace("Parents: Security, Tides", "Parents: Security, Weather")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said and "Weather" in said, said
+
+
+def test_a_primary_parent_that_is_not_the_heading_is_reported(tmp_path):
+    """C-2: the first parent decides the card file, so it must be where it lives."""
+    catalog = GRAPH_CATALOG.replace("Parents: Security, Tides", "Parents: Tides, Security")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said, said
+    assert "Tides" in said and "Security" in said, said
+
+
+def test_a_non_primary_parent_without_a_reciprocal_listing_is_reported(tmp_path):
+    """C-3: half an edit is the failure this format actually invites."""
+    catalog = GRAPH_CATALOG.replace(
+        "Also covers: Access control (cards in cards/security.yaml)\n", ""
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said and "Tides" in said, said
+
+
+def test_an_also_covers_the_subtopic_does_not_claim_is_reported(tmp_path):
+    """C-4: the other half of the same edit."""
+    catalog = GRAPH_CATALOG.replace("Parents: Security, Tides", "Parents: Security")
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Access control" in said, said
+
+
+def test_a_dangling_related_name_is_reported(tmp_path):
+    """C-5."""
+    catalog = GRAPH_CATALOG.replace(
+        "Belongs under both.", "Belongs under both.\nRelated: Sea level"
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Sea level" in said, said
+
+
+def test_a_two_parent_subtopic_counts_once(tmp_path):
+    """C-9: written once, so counted once — and handed to check_cards once."""
+    report = check(project(tmp_path, catalog=GRAPH_CATALOG))
+    assert report.counts["subtopics"] == 2, report.counts
+
+
+def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
+    """C-9 again: an `Also covers:` line is a topic attribute, not a heading."""
+    subtopics, marked = check_project.check_catalog(
+        project(tmp_path, catalog=GRAPH_CATALOG), check_project.Report()
+    )
+    assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
+
+
+def test_a_catalog_with_no_parents_or_related_is_unchanged(tmp_path):
+    """Regression guard: absence means today's behaviour."""
+    report = check(project(tmp_path, catalog=GOOD_CATALOG))
+    assert not report.errors and not report.warnings, messages(report)
+
+
+def test_an_area_that_is_not_a_top_level_topic_warns(tmp_path):
+    """FR-010: each area of the goal becomes its own top-level topic.
+
+    Found by hand during the Wave G reconciliation, where the demo fixture had
+    three areas and four topics that did not correspond — so this is a check
+    that turns a prompt rule into something a test can hold, rather than
+    trusting the catalog skill to have followed it.
+    """
+    goal = GOOD_GOAL.replace("### Tides", "### Tides and navigation")
+    report = check(project(tmp_path, goal=goal))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "Tides and navigation" in said, said

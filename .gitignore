@@ -3,6 +3,8 @@
 # Sources, ingested texts, the catalog and your cards belong to you and are
 # never versioned.
 sources.yaml
+# What you are trying to learn is as personal as where you read it.
+goal.md
 knowledge/*
 !knowledge/.gitkeep
 catalog/*
@@ -16,6 +18,8 @@ output/
 # this repo, and the input of the end-to-end tests. `sources.yaml` above matches
 # at every level, so the fixture register has to be let back in.
 !tests/fixtures/**/sources.yaml
+# `goal.md` has no slash either, so it matches at every level too.
+!tests/fixtures/**/goal.md
 
 # Its binary half — PDFs, the scan, the infographic, the DOCX, the attachments
 # of the fake Zotero library — is generated from the text sources next to it:

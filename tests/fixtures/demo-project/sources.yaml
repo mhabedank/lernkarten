@@ -57,3 +57,11 @@ sources:
     type: zotero
     collection: "Kestrel Islands"
     note: "Needs Zotero — or python3 scripts/zotero_stub.py, which fakes it"
+
+  # Written by /research-gaps, not by hand: it closes a catalog gap and names
+  # which one. Delete this entry together with knowledge/right-of-way-research/
+  # and the subtopic goes back to `Status: gap`.
+  - id: right-of-way-research
+    type: research
+    gap: 'Right of way in the Kestrel Deep'
+    note: 'Synthesised for the gap the field notes never covered'

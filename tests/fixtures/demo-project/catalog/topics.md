@@ -1,7 +1,10 @@
 # Topic catalog — Kestrel Islands (demo project)
 
-Derived from `knowledge/` by `/catalog`. Topics are cut by content, not by
-source. Edit by hand: `/cards` follows whatever is written here.
+Derived from `goal.md` and `knowledge/` by `/catalog`. Topics are cut by what
+the goal requires, not by which document happened to mention them. Edit by
+hand: `/cards` follows whatever is written here.
+
+Goal: [goal.md](../goal.md)
 
 ## Geography
 The archipelago itself — islands, relief and settlements.
@@ -14,6 +17,7 @@ References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 ### Relief and the crater
 The islands as the rim of a drowned crater, the Kestrel Deep between them, and
 Bellhorn as the exception.
+Status: out of scope
 References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 
 ### Settlements
@@ -23,6 +27,7 @@ References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 
 ## Tides
 The Ashwind tide cycle as the tide office in Fenmouth teaches it.
+Also covers: Right of way in the Kestrel Deep (cards in cards/signals.yaml)
 
 ### Rhythm of the tide
 Semidiurnal tide, the length of the tidal day and the daily shift of high
@@ -36,8 +41,15 @@ References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
 ### Chart datum and the Ovray rule
 What the charted heights refer to, and when Ovray Cove can be entered.
+Related: Right of way in the Kestrel Deep
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md),
 [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+
+### Storm surge and the Ashwind warning stages
+What raises the water above the predicted tide, the three warning stages the
+tide office hoists, and what each one means for entering a harbour.
+Status: gap
+References: none
 
 ## Gezeiten (deutsch)
 The tide topic once more in German — the demo needs two card languages in one
@@ -62,3 +74,10 @@ References: [signal-code](../knowledge/field-notes/signal-code.md)
 Reading order, forbidden pairs, half mast, and what a hoisted flag can and
 cannot say.
 References: [signal-code](../knowledge/field-notes/signal-code.md)
+
+### Right of way in the Kestrel Deep
+Who holds course and who gives way in the channel, and what the black cylinder
+with flag Kell means. Closed by `/research-gaps` — the field notes never
+covered it.
+Parents: Signals, Tides
+References: [right-of-way](../knowledge/right-of-way-research/right-of-way.md)

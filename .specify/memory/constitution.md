@@ -20,9 +20,14 @@ a knowledge source — a folder, a PDF collection, a Zotero library, a website �
 into a print-ready flashcard PDF. MIT licensed, distributed as a plugin through
 `.claude-plugin/marketplace.json`.
 
-The pipeline is five steps: `/sources` → `/ingest` → `/catalog` → `/cards` →
-`/print`. Every feature belongs to one of those steps or to the machinery under
-them.
+The pipeline is seven steps, two of them optional: `/learning-goal` →
+`/sources` → `/ingest` → `/catalog` → `/research-gaps` → `/cards` → `/print`.
+Every feature belongs to one of those steps or to the machinery under them.
+
+`/learning-goal` and `/research-gaps` are skippable by design. A project with no
+`goal.md` behaves exactly as it did when the pipeline was five steps, which is
+what keeps the optional pair honest: they have to earn their place on every run
+rather than being imposed on users who do not want them.
 
 **Who the user is**: someone already running Claude Code. That is the audience
 this project actually has, and it is a *somewhat technical* one — a person who
@@ -39,18 +44,25 @@ The pipeline splits into a **model-driven half** (`/sources`, `/ingest`,
 `scripts/*.py`, `templates/*.typ`).
 
 The two halves never call into each other's internals. Their entire contract is
-four file formats:
+five file formats:
 
 | Artifact | Format |
 |---|---|
-| `sources.yaml` | source register; every entry has a unique kebab-case `id` |
+| `goal.md` | the learning goal: frontmatter (`goal`, `kind`, `depth`, `updated`), `## Required topics` grouped into `### <Area>`, `## Out of scope`. Optional — absent means the pipeline behaves as it did before it existed |
+| `sources.yaml` | source register; every entry has a unique kebab-case `id`. `type: research` is written by `/research-gaps` and carries the `gap` it closes instead of a `path`/`url` |
 | `knowledge/<source-id>/<document>.md` | text with one frontmatter block (`source`, `path`/`url`, `ingested`) |
-| `catalog/topics.md` | topics (`##`) and subtopics (`###`), each with a description and references into `knowledge/` |
+| `catalog/topics.md` | topics (`##`) and subtopics (`###`), each with a description and references into `knowledge/`. Optional per subtopic: `Status: gap` \| `out of scope`, `Parents:` (every topic it belongs under, primary first), `Related:`; optional per topic: `Also covers:`. Every one absent means the pre-goal behaviour |
 | `cards/<topic-slug>.yaml` | `topic`, `language`, `cards[]` with `subtopic`, `front`, `back`, optional `source` |
 
-Changing one of these four formats is a breaking change: it touches the skill
+Changing one of these five formats is a breaking change: it touches the skill
 that writes it, the script that reads it, `scripts/check_project.py`, the demo
 project and the docs. Treat it as such.
+
+The catalog is a **graph**, not a tree: containment is many-to-many, so a
+subtopic may name several `Parents:`. It stays two levels deep and edges run
+only topic → subtopic, so the graph is bipartite and no cycle can form — there
+is nothing to check for acyclicity. What does need checking is reciprocity,
+because the failure this format invites is half an edit.
 
 *Source: `skills/`, `scripts/`, `docs/testing.md` ("The pipeline has two
 halves"), `CLAUDE.md` conventions.*
@@ -343,6 +355,16 @@ count, an overflowing card reported rather than shrunk, an exit code. Whether it
 *looks* right is not a pytest question and belongs on the manual checklist in
 `docs/testing.md`.
 
+**Run output**: the same carve-out, for the same reason. A requirement satisfied
+only by what a skill *says* during a run — an advisory line, a count, a warning
+naming what is missing — leaves nothing on disk, so no `check_project.py` check
+can be written that fails against it. The artifact is identical either way.
+Those requirements go on the manual checklist and are **named there**, never
+left implicit. This is a narrow exception and it is not a licence: if a
+requirement changes a file, it is assertable and the clause above applies. When
+in doubt, ask what a test would open — if the answer is "nothing", it belongs
+here; if the answer is a path, it does not.
+
 **Spikes** are allowed, and are thrown away. Explore in a scratch branch, learn
 the answer, then build it test-first. A spike is never promoted straight to a
 pull request.
@@ -539,7 +561,20 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.2.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-17
+**Version**: 2.3.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-18
+
+*2.3.0 — the goal-driven catalog. Principle I's contract is now **five**
+formats, not four: `goal.md` joins it, `sources.yaml` gains the `research`
+type, and `catalog/topics.md` gains `Status:`, `Parents:`, `Also covers:` and
+`Related:` — all optional, so every artifact written before this still
+validates. The catalog is therefore a bipartite graph rather than a tree, which
+adds reciprocity invariants and no acyclicity check. The Identity pipeline is
+seven steps, two optional. Principle XI's layout carve-out is extended to run
+output, because four requirements in this feature (the no-goal advisory, the
+catalog counts, the out-of-scope count, the gap warning) are satisfied by what a
+skill says rather than by what it writes, and XI as written would have called
+them under-specified rather than sending them to the manual checklist where they
+belong.*
 
 *2.2.0 — the floor moved to 3.12, decided by a dependency rather than by
 taste: PyYAML has no cp311 win_arm64 wheel and Windows on ARM is a supported

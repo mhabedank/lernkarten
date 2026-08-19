@@ -64,4 +64,15 @@
   upper(body),
 )
 
-#let commands = ("/sources", "/ingest", "/catalog", "/cards", "/print")
+// The pipeline, in order. Two of the seven are optional — `optional-commands`
+// names which, so no graphic has to hard-code the answer twice.
+#let commands = (
+  "/learning-goal",
+  "/sources",
+  "/ingest",
+  "/catalog",
+  "/research-gaps",
+  "/cards",
+  "/print",
+)
+#let optional-commands = ("/learning-goal", "/research-gaps")
