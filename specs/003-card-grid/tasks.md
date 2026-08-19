@@ -55,62 +55,79 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 ---
 
-## Phase 3: Foundational (Blocking — no story can start without this)
+## Phase 3: Foundational — pure functions only (Blocking)
 
-**Purpose**: the grid must exist as a value, reach the template, and reach **all five** call sites. This is where the feature's one silent failure mode is created or avoided.
+**Purpose**: the grid as a *value*: parsing, aliases, rejection, page count. Nothing is wired into the build here.
+
+> **Scoped down after cross-model review C4.** Threading and the template moved into US1's green step. Previously this phase implemented the whole feature before US1's red tests existed, so those tests could not fail when scheduled — which is not test-first, and constitution XI is not waivable.
 
 <!-- sequential -->
 
-- [ ] T008 🔴 Add unit tests to `tests/test_build_pdf.py` for grid parsing — `parse_grid("4x4") == (4, 4)`, `parse_grid("a8") == parse_grid("4x4")`, `parse_grid("2x4") == parse_grid("a7") == (2, 4)`. Fails: `parse_grid` does not exist *(plan assertions 1–2)*
-- [ ] T009 🔴 Extend `tests/test_build_pdf.py` with the rejection cases — `parse_grid("3 x 4")`, `"3,4"`, `"0x4"`, `"3x0"`, `"-1x4"` raise naming the value; `parse_grid("3x4")` and `parse_grid("2x6")` raise with a message listing `2x4` and `4x4` **and** their A-series names. Fails *(plan assertions 3–4)*
-- [ ] T010 Implement `parse_grid()`, the supported-set constant and the alias table in `scripts/build_pdf.py` until T008 and T009 pass. Standard library only — no dependency (constitution III; see plan.md Reuse check)
-- [ ] T011 🔴 Add page-count tests to `tests/test_build_pdf.py` — `pages(29, (4, 4)) == 4`, `pages(1, (4, 4)) == 2`, `pages(29, (2, 4)) == 8`. Fails: the count is hard-wired to `CARDS_PER_PAGE = 8` *(plan assertion 5)*
+- [ ] T008 🔴 Add unit tests to `tests/test_build_pdf.py` for grid parsing — `parse_grid("4x4") == (4, 4)`, `parse_grid("a8") == parse_grid("4x4")`, `parse_grid("2x4") == parse_grid("a7") == (2, 4)`, case-insensitively. Fails: `parse_grid` does not exist *(assertions 1–2)*
+- [ ] T009 🔴 Extend `tests/test_build_pdf.py` with rejections — `"3 x 4"`, `"3,4"`, `"0x4"`, `"3x0"`, `"-1x4"` raise naming the value; `"3x4"` and `"2x6"` raise listing `2x4` and `4x4` **and** their A-series names. Fails *(assertions 3–4)*
+- [ ] T010 Implement `parse_grid()`, the supported-set constant and the alias table in `scripts/build_pdf.py` until T008–T009 pass. Standard library only (constitution III)
+- [ ] T011 🔴 Add page-count tests to `tests/test_build_pdf.py` — `pages(29, (4, 4)) == 4`, `pages(1, (4, 4)) == 2`, `pages(29, (2, 4)) == 8`. Fails: the count is hard-wired to `CARDS_PER_PAGE = 8` *(assertion 5)*
 - [ ] T012 Replace `CARDS_PER_PAGE` with a derived `pages(n, grid)` in `scripts/build_pdf.py` until T011 passes
-- [ ] T013 **Build the `--input` list through one shared helper** in `scripts/build_pdf.py`, and have `typeset()` and `overflowing()` both call it. This is structural, not cosmetic: the two build their own lists today, and that is exactly how the grid reaches the compile call but not the overflow query (research.md R6). One helper makes the divergence impossible to reintroduce
-- [ ] T014 Thread the grid through all five sites in `scripts/build_pdf.py` — `typeset()`, `overflowing()`, `offending_card()`, `report_failure()`, and the page report. Missing `overflowing()` is the silent one
-- [ ] T015 Parameterise `templates/cards.typ`: read `columns` and `rows` from `sys.inputs` with defaults `2` and `4`, exactly as `margin` and `logo` already do. Everything else — `cw`, `ch`, `per-page`, the crop-mark loops `range(0, columns + 1)` / `range(0, rows + 1)`, the `sheet()` mirroring `column = columns - 1 - column`, the pagination loop — already derives and must not be touched. **`templates/card.typ` is not edited at all**
-- [ ] T016 Add `--grid` to the argument parser in `scripts/build_pdf.py`, beside `--margin` and `--no-logo`. `bin/lernkarten` needs no change — argv passes straight through
+- [ ] T013 Confirm nothing user-visible has changed yet: `pytest` green, `bin/lernkarten build` output identical to the T004 baseline. No flag exists, so no behaviour can have moved
 
-**Checkpoint**: `pytest tests/test_build_pdf.py` green; the grid reaches the template and all five call sites.
+**Checkpoint**: the grid exists as a value with full unit coverage; the build still behaves exactly as before.
 
 ---
 
 ## Phase 4: User Story 1 — Print a deck at A8 and halve the paper (Priority: P1) 🎯 MVP
 
-**Goal**: `lernkarten build --grid a8` puts 16 cards on an A4 sheet at exactly DIN A8, halving the paper for the same deck.
+**Goal**: `lernkarten build --grid a8` puts 16 cards on an A4 sheet at DIN A8, halving the paper.
 
 **Independent Test**: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml -o /tmp/a8.pdf --grid a8` → 4 pages, against 8 today.
 
+### 🔴 Red — mostly failing on `--grid` being an unknown option
+
+> T016 is the exception: it asserts the *unchanged* default and therefore passes from birth. It is a regression guard carrying a 🔴 for grouping, not a test that can go red here. Same for T031, T032 (Phase 5) and T052, T053 (Phase 7), whose behaviour partly exists once T010/T021 land. The one assertion where red-ness is load-bearing is T030, and T034 exists precisely to *see* it fail.
+
 <!-- sequential -->
 
-- [ ] T017 🔴 [US1] Add an end-to-end case to `tests/test_e2e.py`: `--grid a8` over the demo cards gives `pdf_pages(...) == 4` and the summary says `4 pages, duplex`. Fails — the flag is accepted but the sheet is still 2 × 4 until T015 landed; if T015 is done this fails on the page count *(plan assertion 8)*
-- [ ] T018 🔴 [US1] Add the alias case to `tests/test_e2e.py`: `--grid 4x4` produces the same page count and card geometry as `--grid a8` *(FR-002)*
-- [ ] T019 🔴 [US1] Add the regression guard to `tests/test_e2e.py`: **no** `--grid` flag gives 8 pages and output matching the T004 baseline. Fails if the default drifted *(plan assertion 11, SC-002)*
-- [ ] T020 [US1] Make T017–T019 pass — most of the work is already in Phase 3; this task is where the wiring is finished and the defaults proven untouched
-- [ ] T021 🔴 [US1] Add the exact-dimension case to `tests/test_e2e.py`: at `--margin 0`, `--grid a7` cuts to 105 × 74.25 mm and `--grid a8` to 52.5 × 74.25 mm — DIN A7 and DIN A8 *(SC-003)*. This is the assertion that ties the feature to the box it has to fit
-- [ ] T022 [US1] Make T021 pass
-- [ ] T023 [US1] Confirm the card itself is untouched at A8 — reading text still 11 pt, front prompt still 14 pt, `scale` still `1.0`, `head-h` still 8.6 mm, `foot-h` still 6.2 mm. Read `docs/design.md` first (constitution XVI)
-- [ ] T024 [US1] Refactor — red-green-**refactor**. Tidy the grid plumbing now it is green
+- [ ] T014 🔴 [US1] `tests/test_e2e.py`: `--grid a8` over the demo cards gives `pdf_pages(...) == 4` and the summary says `4 pages, duplex` *(assertion 8)*
+- [ ] T015 🔴 [US1] `tests/test_e2e.py`: `--grid 4x4` gives the same page count and geometry as `--grid a8` *(FR-002)*
+- [ ] T016 🔴 [US1] `tests/test_e2e.py`: **no** `--grid` gives 8 pages and output matching the T004 baseline *(assertion 11, SC-002)*
+- [ ] T017 🔴 [US1] `tests/test_e2e.py`: **duplex mirroring** — each footer prints the card id, so `pdftotext -layout` gives reading order per page; for every row the back page's ids must be the front's row **reversed** (0↔3, 1↔2, 2↔1, 3↔0 at A8; 0↔1 at A7) *(FR-007, US1 scenario 4)*
+- [ ] T018 🔴 [US1] `tests/test_e2e.py`: `bin/lernkarten check tests/fixtures/demo-project/cards/*.yaml --grid a8` exits 0 — FR-001 requires **both** subcommands to accept the flag
+- [ ] T019 🔴 [US1] `tests/test_e2e.py`: at `--margin 0`, `--grid a7` cuts to 105 × 74.25 mm and `--grid a8` to 52.5 × 74.25 mm *(SC-003)*
+- [ ] T020 🔴 [US1] Extend `test_the_build_help_documents_the_options` in `tests/test_e2e.py` to require `--grid` *(review W2)*
 
-**Checkpoint**: A8 builds at half the sheets; the default is provably unchanged. **This alone is a shippable increment.**
+**Checkpoint**: `pytest` is red for exactly the reasons this story exists. Commit here.
+
+### 🟢 Green
+
+- [ ] T021 [US1] Add `--grid` to the argument parser in `scripts/build_pdf.py`, beside `--margin` and `--no-logo`. `bin/lernkarten` needs no change — argv passes straight through
+- [ ] T022 [US1] **Build the `--input` list through one shared helper** in `scripts/build_pdf.py`, called by both `typeset()` and `overflowing()`. Structural, not cosmetic: they build their own lists today, which is exactly how the grid reaches the compile call but not the overflow query
+- [ ] T023 [US1] Parameterise `templates/cards.typ`: read `columns` and `rows` from `sys.inputs` with defaults `2` and `4`, as `margin` and `logo` already do. `cw`, `ch`, `per-page`, the crop-mark loops, the `sheet()` mirroring and the pagination already derive — leave the *logic* alone. **`templates/card.typ` is not edited at all**
+- [ ] T024 [US1] Thread the grid through all five sites in `scripts/build_pdf.py` — `typeset()`, `overflowing()`, `offending_card()`, `report_failure()`, the page report. Missing `overflowing()` is the silent one; `offending_card()`/`report_failure()` have no assertion of their own because a markup failure is grid-independent
+- [ ] T025 [US1] Make T014–T020 pass
+- [ ] T026 [US1] Update the now-stale header comments — `templates/cards.typ` says "A4 with 2 x 4 cards" and "A sheet of up to 8 cards"; the module docstring in `scripts/build_pdf.py` says "A4 with 8 cards (105 x 74.25 mm) per page" *(review W2 — T023's "leave the logic alone" must not freeze wrong comments)*
+- [ ] T027 [US1] Confirm the card is untouched at A8 — reading text still 11 pt, front prompt 14 pt, `scale` 1.0, `head-h` 8.6 mm, `foot-h` 6.2 mm. Read `docs/design.md` first (constitution XVI)
+- [ ] T028 [US1] Refactor — red-green-**refactor**
+
+**Checkpoint**: A8 builds at half the sheets; the default is provably unchanged. **Shippable increment.**
 
 ---
 
 ## Phase 5: User Story 3 — Overflow reporting survives both grids (Priority: P2)
 
-**Goal**: a card that does not fit is reported at either grid, never silently clipped — and the report is computed against the grid actually typeset.
+**Goal**: a card that does not fit is reported at the grid actually typeset, never silently clipped.
 
-**Independent Test**: `bin/lernkarten check tests/fixtures/demo-project/broken/overflowing.yaml --grid a8` names `overflowing-2`.
+**Independent Test**: `broken/overflows-only-at-a8.yaml` is reported at `--grid a8` and silent at the default.
 
-> **Highest-risk story.** Scheduled before US2 because a defect here is invisible: the PDF is correct and every warning is wrong.
+> **Reworked after cross-model review C1.** The original trap-catcher was an assertion of *absence* ("no demo card warns at A8"), which cannot detect the bug: if `overflowing()` misses the grid the query runs at A7, where the demo cards also do not overflow, so it returns an empty set on both paths. Confirmed by re-measurement. Only an assertion of *presence* works.
 
 <!-- sequential -->
 
-- [ ] T025 🔴 [US3] Add to `tests/test_e2e.py`: `overflowing.yaml` built at `--grid a8` reports `overflowing-2` by id. **Measured**: that card overflows at both grids *(plan assertion 9)*
-- [ ] T026 🔴 [US3] Add to `tests/test_e2e.py`: the 29 demo cards at `--grid a8` emit **no** `WARNING`. **Measured in Phase 0**: zero demo cards overflow at A8. ⚠️ **This assertion must not be dropped as redundant with T025.** T025 passes even if `overflowing()` ignores the grid, because `overflowing-2` is reported either way. T026 is the *only* assertion that fails when the overflow query runs against A7 geometry *(plan assertion 10, FR-010)*
-- [ ] T027 [US3] Make T025 and T026 pass. If T013 and T014 were done properly they already do — that is the point of the shared helper
-- [ ] T028 [US3] **Prove the test bites**: temporarily remove the grid from the `overflowing()` call only, run `pytest tests/test_e2e.py`, and confirm **T026 fails and T025 still passes**. Restore. Paste the failure into the pull request. Without this step nobody knows the trap is actually covered
-- [ ] T029 [US3] Confirm an overflowing card is still drawn at full 11 pt with its text clipped — reported, never rescaled (constitution XIV) *(FR-011)*
+- [ ] T029 [US3] Add `tests/fixtures/demo-project/broken/overflows-only-at-a8.yaml` — one card whose back **fits A7 and overflows A8**. Measured: a ~300-character back gives no warning at 2 × 4 and is reported at 4 × 4. Add a row to that folder's `README.md`
+- [ ] T030 🔴 [US3] `tests/test_e2e.py`: that fixture is reported at `--grid a8` and **not** at the default. ⚠️ **This is the only assertion that catches the FR-010 trap.** Do not merge it with T031 or T032 *(SC-005, FR-010)*
+- [ ] T031 🔴 [US3] `tests/test_e2e.py`: `broken/overflowing.yaml` is reported at **both** grids *(assertion 9)*
+- [ ] T032 🔴 [US3] `tests/test_e2e.py`: the 29 demo cards at `--grid a8` emit **no** `WARNING` — a regression guard. Measured: zero overflow at A8. It passes under the bug too, so it is **not** the trap-catcher *(assertion 10)*
+- [ ] T033 [US3] Make T030–T032 pass. If T022 and T024 were done properly they already do
+- [ ] T034 [US3] **Prove the test bites**: temporarily remove the grid from the `overflowing()` call only, run `pytest tests/test_e2e.py`, and confirm **T030 fails** while T031 and T032 still pass. Restore. Paste the failure into the pull request — without this nobody knows the trap is covered
+- [ ] T035 [US3] Confirm an overflowing card is still drawn at full 11 pt with its text clipped — reported, never rescaled (constitution XIV) *(FR-011)*
 
 **Checkpoint**: the silent failure mode is covered by an assertion that has been *seen* to catch it.
 
@@ -118,52 +135,56 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 ## Phase 6: User Story 2 — A deck declares the size it was written for (Priority: P2)
 
-**Goal**: a card file records the grid it was written for; `/cards` writes to that size; the flag overrides it; disagreeing decks fail loudly.
+**Goal**: a card file records its grid; `/cards` writes to it; the flag overrides; disagreement fails loudly.
 
-**Independent Test**: a fixture carrying `grid: a8` builds 4 pages with no flag, and 8 pages with `--grid a7`.
+**Independent Test**: `grids/tides-a8.yaml` (12 cards) builds 2 pages with no flag and 4 with `--grid a7`.
 
 ### Test material first
 
 <!-- parallel-group: 1 (max 3 concurrent) -->
 
-- [ ] T030 [P] [US2] Add `tests/fixtures/demo-project/cards/tides-a8.yaml` — a short deck carrying `grid: a8`, invented content in the existing tides idiom (constitution VII), labels within the ~22-character A8 budget so it is also the short-label sample the print gate needs
-- [ ] T031 [P] [US2] Add `tests/fixtures/demo-project/broken/grid-conflict.yaml` — a deck declaring a *different* grid, so the FR-014 conflict error has something to fire against. One file cannot conflict with itself. Add a row to that folder's `README.md`
+- [ ] T036 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a8.yaml` — **exactly 12 cards**, declaring `grid: a8`, invented content in the existing tides idiom (constitution VII), every label inside the ~22-character A8 budget so it doubles as the short-label sample the print gate needs. ⚠️ **`grids/`, not `cards/`** — `CARDS` in `tests/test_e2e.py:24` globs `cards/*.yaml`, so a declaring deck there would change or break every unflagged demo build *(review C2)*
+- [ ] T037 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a7.yaml` — declares `grid: a7`, so the FR-014 conflict has a partner. Add a `README.md` to `grids/` explaining the folder holds decks that declare a grid and is deliberately outside the globbed corpus
 
 <!-- sequential -->
 
-- [ ] T032 [US2] Update `DEMO_CARD_COUNT` in `tests/test_e2e.py` and every affected page assertion, now that the demo corpus has grown
+- [ ] T038 [US2] Add `"grids"` to `SKIP` in `scripts/demo.py`. **Note the real mechanism**: `SKIP` is currently dead code (defined at `demo.py:33`, referenced nowhere), and `demo.copy()` is safe because it copies an explicit allowlist — `raw`, `goal.md`, `sources.yaml`, then `GENERATED = ("knowledge", "catalog", "cards")`. So `grids/` can never be copied whatever `SKIP` says; adding it is documentary, keeping the constant honest for whoever revives it. Confirm `test_the_demo_copy_is_a_valid_project`'s `== 6` card-file assertion (`tests/test_check_project.py:330`) still holds — it does, because nothing was added to `cards/` *(review C2)*
 
 ### 🔴 Red
 
-- [ ] T033 🔴 [US2] Add resolution tests to `tests/test_build_pdf.py`: flag beats deck; deck beats default; all-absent gives `(2, 4)`. Fails — `resolve_grid` does not exist *(plan assertion 6, FR-013)*
-- [ ] T034 🔴 [US2] Add the conflict test to `tests/test_build_pdf.py`: two decks declaring different grids with no flag raises, naming **both** files **and** both values; with `--grid` given it resolves silently. Fails *(plan assertion 7, FR-014)*
-- [ ] T035 🔴 [US2] Add end-to-end cases to `tests/test_e2e.py`: the `grid: a8` fixture builds 4 pages with no flag; the same fixture with `--grid a7` builds 8 pages *(plan assertions 13–14)*
-- [ ] T036 🔴 [US2] Add grid-aware length cases to `tests/test_check_project.py`: a 300-character back warns at A8 but **not** at A7; the A7 thresholds are unchanged from today *(plan assertion 16, SC-002)*
-- [ ] T037 🔴 [US2] Add the label-budget case to `tests/test_check_project.py`: a 40-character `TOPIC / SUBTOPIC` warns at A8; it is a **warning, not an error** (FR-023 — 11 of 38 shipped cards already exceed the A7 budget and an error would fail the gates on unrelated content) *(plan assertion 17)*
+- [ ] T039 🔴 [US2] `tests/test_build_pdf.py`: resolution precedence — flag beats deck, deck beats default, all-absent gives `(2, 4)`. Fails: `resolve_grid` does not exist *(assertion 6, FR-013)*
+- [ ] T040 🔴 [US2] `tests/test_build_pdf.py`: two decks declaring **different** grids with no flag raises naming both files and both values; with `--grid` it resolves silently *(assertion 7, FR-014)*
+- [ ] T041 🔴 [US2] `tests/test_build_pdf.py`: **mixed absent and declared** — one `grid: a8` deck plus decks declaring nothing is a **conflict**, and the message distinguishes a declared value from an absent one *(FR-014a, review C2)*
+- [ ] T042 🔴 [US2] `tests/test_e2e.py`: `grids/tides-a8.yaml` (12 cards) builds **2** pages with no flag and **4** with `--grid a7`. ⚠️ The counts follow `2 × ⌈n ÷ per-page⌉` and constrain the fixture size: at n ≤ 8 both grids give 2 pages and the test cannot distinguish them, so 12 is the smallest round size that works *(assertions 13–14)*
+- [ ] T043 🔴 [US2] `tests/test_check_project.py`: a 300-character back warns at A8 but **not** at A7; the A7 thresholds are unchanged *(assertion 16, SC-002)*
+- [ ] T044 🔴 [US2] `tests/test_check_project.py`: a 40-character `TOPIC / SUBTOPIC` warns for an **A8** deck and **not** for an A7 one, and is a warning rather than an error *(assertion 17, FR-023)*
+- [ ] T045 🔴 [US2] `tests/test_check_project.py`: under `--strict`, a deck with no `grid:` key warns; without `--strict` it does not *(FR-015a — the red artifact for the `/cards` prompt change)*
 
 ### 🟢 Green
 
-- [ ] T038 [US2] Implement `resolve_grid()` in `scripts/build_pdf.py` until T033–T035 pass. Precedence: flag → deck key → `(2, 4)`; disagreement with no flag is an error naming every file and value
-- [ ] T039 [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T036 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Record in a comment that these are measured (hard limits: front 291 / 145, back 455 / 185) and tunable within that range, so the next reader does not treat them as folklore
-- [ ] T040 [US2] Add the head-band label-budget check to `scripts/check_project.py` until T037 passes — ~53 characters at A7, ~22 at A8, uppercase `TOPIC / SUBTOPIC`. A warning. This is also the red artifact constitution XI requires for the prompt change in T041
-- [ ] T041 [US2] Update `skills/cards/SKILL.md` until T037's check passes against what it produces — write the `grid:` key, and size card text to the declared grid rather than one assumed size. Keep the frontmatter valid: `name` matches the folder, `description` names its triggers
+- [ ] T046 [US2] Implement `resolve_grid()` in `scripts/build_pdf.py` until T039–T042 pass, and extend `load_cards()` to surface each file's declared grid — it discards top-level keys today, so FR-014's per-file error has nothing to name *(review W2)*
+- [ ] T047 [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
+- [ ] T048 [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
+- [ ] T049 [US2] Add the `--strict`-only missing-`grid:` warning to `scripts/check_project.py` until T045 passes. It must **not** fire outside `--strict` *(FR-015a)*
+- [ ] T050 [US2] Add `grid: a7` to all six decks in `tests/fixtures/demo-project/cards/` so `check_project.py … --strict` — which CI runs at `.github/workflows/ci.yml:120` and gate T070 repeats — stays green *(FR-015b, review C3)*
+- [ ] T051 [US2] Update `skills/cards/SKILL.md` until **both** T044's label check and T045's `--strict` check pass against what it produces — write the `grid:` key, size card text to the declared grid. Keep the frontmatter valid
 
-**Checkpoint**: the seam works in both directions — the deck tells the build, and `/cards` writes for the size.
+**Checkpoint**: the seam works both ways, and this repo's own `--strict` gate is still green.
 
 ---
 
 ## Phase 7: User Story 4 — A grid the build cannot honour is refused (Priority: P3)
 
-**Goal**: bad input is refused before anything is typeset, with a message that says what is allowed, and the user's previous output survives.
+**Goal**: bad input is refused before anything is typeset, and the user's previous output survives.
 
-**Independent Test**: `--grid 2x6` exits non-zero, lists the supported grids, and leaves any existing PDF untouched.
+**Independent Test**: `--grid 2x6` exits non-zero, lists the supported grids, leaves any existing PDF untouched.
 
 <!-- sequential -->
 
-- [ ] T042 🔴 [US4] Add to `tests/test_e2e.py`: `--grid 2x6` and `--grid 3x4` exit non-zero, the message lists `2x4 (A7)` and `4x4 (A8)`, and **no** PDF is written *(plan assertion 12, FR-003)*
-- [ ] T043 🔴 [US4] Add to `tests/test_e2e.py`: with a PDF **already present** at the output path, a refused build leaves it byte-identical — not truncated, not deleted, not partially written *(FR-022)*
-- [ ] T044 [US4] Make T042 and T043 pass in `scripts/build_pdf.py` — validate the grid before the engine is invoked and before the output path is opened
-- [ ] T045 [US4] Confirm the malformed cases from T009 produce the same refusal behaviour end to end, not just at the unit level
+- [ ] T052 🔴 [US4] `tests/test_e2e.py`: `--grid 2x6` and `--grid 3x4` exit non-zero, the message lists `2x4 (A7)` and `4x4 (A8)`, and no PDF is written *(assertion 12, FR-003)*
+- [ ] T053 🔴 [US4] `tests/test_e2e.py`: with a PDF **already present** at the output path, a refused build leaves it byte-identical *(FR-022)*
+- [ ] T054 [US4] Make T052–T053 pass — validate the grid before the engine is invoked and before the output path is opened
+- [ ] T055 [US4] Confirm the malformed cases from T009 behave identically end to end, not just at unit level
 
 **Checkpoint**: every rejection path is loud, informative and non-destructive.
 
@@ -175,21 +196,21 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- parallel-group: 2 (max 3 concurrent) -->
 
-- [ ] T046 [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
-- [ ] T047 [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
-- [ ] T048 [P] Update `skills/print/SKILL.md` — document `--grid` beside `--margin` and `--no-logo`, naming both grids and their A-series equivalents *(FR-018)*
+- [ ] T056 [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
+- [ ] T057 [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
+- [ ] T058 [P] Update `skills/print/SKILL.md` — document `--grid` beside `--margin` and `--no-logo`, naming both grids and their A-series equivalents *(FR-018)*
 
 <!-- parallel-group: 3 (max 3 concurrent) -->
 
-- [ ] T049 [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
-- [ ] T050 [P] Update `cards/example.yaml` — show the `grid:` key with a comment saying it is optional and defaults to A7
-- [ ] T051 [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
+- [ ] T059 [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
+- [ ] T060 [P] Update `cards/example.yaml` — add `grid: a7` explicitly, with a comment saying the key is optional and that A7 is the default. **`a7`, not `a8`**: the example is built by gate T067 and by every user's first run, so declaring A8 would silently switch the shipped example to a different card size *(review W5)*
+- [ ] T061 [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
 
 <!-- sequential -->
 
-- [ ] T052 Fix the stale comments in `tests/test_e2e.py` at lines 78 and 230 — they say "31 cards"; `DEMO_CARD_COUNT` is 29. Issue #23 inherited the wrong figure from them
-- [ ] T053 Confirm every relative markdown link added in T046–T051 resolves — `scripts/check_docs.py` fails on a dead one
-- [ ] T054 English throughout — code, comments, docstrings, docs, commit messages (constitution XIII)
+- [ ] T062 Fix the stale comments in `tests/test_e2e.py` at lines 78 and 230 — they say "31 cards"; `DEMO_CARD_COUNT` is 29. Issue #23 inherited the wrong figure from them
+- [ ] T063 Confirm every relative markdown link added in T056–T061 resolves — `scripts/check_docs.py` fails on a dead one
+- [ ] T064 English throughout — code, comments, docstrings, docs, commit messages (constitution XIII)
 
 ---
 
@@ -199,13 +220,13 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- sequential -->
 
-- [ ] T055 `ruff check . && ruff format --check .`
-- [ ] T056 `pytest`
-- [ ] T057 `bin/lernkarten check cards/example.yaml`
-- [ ] T058 `python3 scripts/check_docs.py`
-- [ ] T059 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v`
-- [ ] T060 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
-- [ ] T061 `bin/lernkarten build cards/example.yaml --grid a8 --margin 0 --no-logo -o output/a8-borderless.pdf` — the flag composes with the existing options
+- [ ] T065 `ruff check . && ruff format --check .`
+- [ ] T066 `pytest`
+- [ ] T067 `bin/lernkarten check cards/example.yaml`
+- [ ] T068 `python3 scripts/check_docs.py`
+- [ ] T069 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v`
+- [ ] T070 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
+- [ ] T071 `bin/lernkarten build cards/example.yaml --grid a8 --margin 0 --no-logo -o output/a8-borderless.pdf` — the flag composes with the existing options
 
 ---
 
@@ -217,14 +238,14 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- sequential -->
 
-- [ ] T062 Build the gate sheet: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml -o /tmp/gate.pdf --grid a8`. ⚠️ Include the short-label deck from T030 — **all 38 cards previously shipped in this repo exceed the ~22-character A8 label budget**, so without a short-label card the legibility check is vacuous
-- [ ] T063 Print `/tmp/gate.pdf` duplex, flip on long edge, **100 % scale**, on real card stock
-- [ ] T064 Check registration — every back sits behind its front. A8 has 5 vertical cut lines to A7's 3, and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a 100 mm one
-- [ ] T065 Cut on the crop marks — cards measure 50 × 71.75 mm with nothing clipped that should not be
-- [ ] T066 Confirm a cut card drops into a DIN A8 Lernbox
-- [ ] T067 Confirm a label **within** the ~22-character budget is complete and legible at 6 pt
-- [ ] T068 Confirm an **over-budget** label clips cleanly at the band edge without disturbing the layout
-- [ ] T069 Record the outcome in the pull request description. A screenshot of a PDF viewer does not satisfy this gate
+- [ ] T072 Build the gate sheet: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml tests/fixtures/demo-project/grids/tides-a8.yaml -o /tmp/gate.pdf --grid a8`. ⚠️ Include the short-label deck from T036 — **all 38 cards previously shipped in this repo exceed the ~22-character A8 label budget**, so without a short-label card the legibility check is vacuous
+- [ ] T073 Print `/tmp/gate.pdf` duplex, flip on long edge, **100 % scale**, on real card stock
+- [ ] T074 Check registration — every back sits behind its front. A8 has 5 vertical cut lines to A7's 3, and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a 100 mm one
+- [ ] T075 Cut on the crop marks — confirm **5 vertical and 5 horizontal** cut lines at A8 (3 and 5 at A7), and that cards measure 50 × 71.75 mm with nothing clipped that should not be. Deliberately manual: counting stroke objects in a PDF is brittle across engine bumps, and the property that matters is whether the cuts land right *(FR-008, analysis E2)*
+- [ ] T076 Confirm a cut card drops into a DIN A8 Lernbox
+- [ ] T077 Confirm a label **within** the ~22-character budget is complete and legible at 6 pt
+- [ ] T078 Confirm an **over-budget** label clips cleanly at the band edge without disturbing the layout
+- [ ] T079 Record the outcome in the pull request description. A screenshot of a PDF viewer does not satisfy this gate
 
 **Checkpoint**: the physical artifact has been made and inspected. Only now is the feature done.
 
@@ -235,15 +256,15 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 ```
 Phase 1 (Setup)
    └─> Phase 2 (Format contract)  ── blocking
-          └─> Phase 3 (Foundational) ── blocking, creates the grid and all five call sites
-                 ├─> Phase 4  US1 (P1)  🎯 MVP — shippable alone
-                 ├─> Phase 5  US3 (P2)  needs Phase 3 only
-                 ├─> Phase 6  US2 (P2)  needs Phase 3; fixtures gate the e2e cases
-                 └─> Phase 7  US4 (P3)  needs Phase 3 only
+          └─> Phase 3 (Foundational — pure functions only) ── blocking
+                 ├─> Phase 4  US1 (P1)  🎯 MVP — wires the grid in; shippable alone
+                 │        └─> Phase 5  US3 (P2)  needs the helper + threading (T022/T024)
+                 ├─> Phase 6  US2 (P2)  needs Phase 3; fixtures gate its e2e cases
+                 └─> Phase 7  US4 (P3)  needs T021 (the flag) only
                         └─> Phase 8 (Docs) ─> Phase 9 (Gates) ─> Phase 10 (Print gate) 🚧
 ```
 
-**Story independence**: US1, US3 and US4 each stand alone on top of Phase 3. US2 is the only one needing new test material. US3's assertions constrain nothing in US1 — they only observe it.
+**Why Phase 5 now depends on Phase 4**: the threading tasks moved out of Foundational into US1's green step (review C4), so US3 can only be exercised once T022 and T024 have landed. US2 and US4 still stand on Phase 3 alone.
 
 ## Parallel opportunities
 
@@ -251,18 +272,22 @@ Three groups, and no more, because most work lands in five heavily-shared files:
 
 | Group | Tasks | Files |
 |---|---|---|
-| 1 | T030, T031 | two new fixture files |
-| 2 | T046, T047, T048 | `docs/design.md`, `docs/testing.md`, `skills/print/SKILL.md` |
-| 3 | T049, T050, T051 | `CLAUDE.md`, `cards/example.yaml`, `.specify/memory/constitution.md` |
+| 1 | T036, T037 | `grids/tides-a8.yaml`, `grids/tides-a7.yaml` |
+| 2 | T056, T057, T058 | `docs/design.md`, `docs/testing.md`, `skills/print/SKILL.md` |
+| 3 | T059, T060, T061 | `CLAUDE.md`, `cards/example.yaml`, `.specify/memory/constitution.md` |
 
-Everything else is `<!-- sequential -->`. `scripts/build_pdf.py` alone is touched by T010, T012, T013, T014, T016, T038 and T044 — those must never be dispatched concurrently.
+Everything else is `<!-- sequential -->`. `scripts/build_pdf.py` alone is touched by T010, T012, T021, T022, T024, T046 and T054; `scripts/check_project.py` by T006, T047, T048 and T049. Those must never be dispatched concurrently.
 
 ## Implementation strategy
 
-**MVP is Phase 1 → 4.** That delivers the whole point of the ticket: a deck printed at A8 on half the paper, with the default provably unchanged. It is shippable without US2, US3 or US4.
+**MVP is Phase 1 → 4.** That delivers the point of the ticket: a deck printed at A8 on half the paper, with the default provably unchanged. Shippable without US2, US3 or US4.
 
-**Then Phase 5 (US3)** — highest risk, and cheap once Phase 3 is right. T028 in particular is the task that turns "we wrote a test" into "we know the test catches it".
+**Then Phase 5 (US3).** T030 is the one assertion that catches the feature's named highest risk, and T034 is what proves it does. Neither is optional, and neither may be merged into T031 or T032 — those pass under the bug.
 
-**Then Phase 6 (US2)** — the seam, and the largest single chunk. **Then Phase 7 (US4)** — the polish on the error paths.
+**Then Phase 6 (US2)** — the seam, and the largest chunk. **Then Phase 7 (US4)** — the error paths.
 
-**Phase 10 is not optional and is not a formality.** It is the only check that touches the thing the feature actually produces.
+**Phase 10 is not a formality.** It is the only check that touches what the feature actually produces.
+
+### If this needs splitting
+
+The cross-model review suggested a split, and the seam is the format contract: **PR1** = Phases 1–5 and 7 plus docs (flag, template, overflow, refusal, constitution amendment, print gate); **PR2** = Phase 6 (the `grid:` key, the `check_project` checks, `/cards`). Every design collision the review found — the mixed absent/declared semantics and both `--strict` conflicts — lives entirely in PR2, so PR1 could ship the paper saving while those are settled. Not taken, because the constitution amendment and the card-style guidance are hard to justify without the key; recorded so the option stays open.

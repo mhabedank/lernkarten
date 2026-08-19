@@ -95,8 +95,12 @@ Five sites in `scripts/build_pdf.py`, and missing one is a silent bug
 
 `typeset()` and `overflowing()` each build their own `--input` list today. They
 should build it through **one shared helper**, so the two cannot drift apart
-again. That is the structural fix; the test that catches it is the A8 build of
-`overflowing.yaml`.
+again. That is the structural fix.
+
+The test that catches it is **not** the A8 build of `overflowing.yaml` — that
+card is reported at both grids and so passes under the bug. It is the assertion
+that a card which *fits A7 and overflows A8* is reported only at A8
+(`broken/overflows-only-at-a8.yaml`). An assertion of absence cannot detect this.
 
 ## What does not change
 

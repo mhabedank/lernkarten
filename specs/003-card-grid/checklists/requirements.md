@@ -85,7 +85,9 @@ must carry rather than rediscover:
 
 1. **SC-007 is a release gate that blocks on hardware.** The plan needs to place
    the physical print check explicitly, not leave it implied.
-2. **The A8 overflow set is unmeasured.** Some demo cards were written for A7 and
-   are expected to overflow at 46 % of the writing area. Measuring which ones is
-   implementation work, and the test asserts the reported set matches that
-   measured truth rather than asserting it is empty.
+2. **The A8 overflow set was measured in Phase 0, and it is empty.** All 29 demo
+   cards fit at A8 despite the 46 % writing area — the corpus is short (longest
+   back 154 characters against an A8 hard limit of 185). The assertion is
+   therefore a fixed expectation — *no demo card overflows at either grid* — not
+   a golden value anyone must re-measure. `overflowing-2` is still reported at
+   both grids, so detection itself works.

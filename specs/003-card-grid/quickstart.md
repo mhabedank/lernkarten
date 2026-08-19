@@ -80,14 +80,23 @@ Both must print `WARNING: card overflowing-2 does not fit`. **Measured**: the
 same single card is reported at both grids.
 
 ```bash
+lernkarten check tests/fixtures/demo-project/broken/overflows-only-at-a8.yaml
+lernkarten check tests/fixtures/demo-project/broken/overflows-only-at-a8.yaml --grid a8
+```
+
+The first must print **no** warning; the second **must** report the card. This
+is the check that catches the FR-010 trap: if the grid reaches the compile call
+but not the overflow query, the second command evaluates A7 geometry, stays
+silent, and the result is wrong while the PDF is right.
+
+```bash
 lernkarten check $DEMO/*.yaml --grid a8
 ```
 
-Must print **no** `WARNING` at all. **Measured**: zero of the 29 demo cards
-overflow at A8 — they fit at 46 % of the area. This is the check that catches
-the FR-010 trap; if the grid reaches the compile call but not the overflow
-query, this command reports against A7 geometry and the result is wrong while
-the PDF is right.
+Must print **no** `WARNING` — a regression guard, **not** the trap-catcher.
+Measured: zero of the 29 demo cards overflow at A8. Because they overflow at
+neither grid, this command stays silent under the bug as well, so it cannot
+detect it on its own.
 
 ## 6. A bad grid is refused, and writes nothing
 
@@ -106,9 +115,14 @@ written. That is SC-004.
 ## 7. The deck declares its own size
 
 ```bash
-lernkarten build $DEMO/*.yaml -o /tmp/declared.pdf              # deck says a8
-lernkarten build $DEMO/*.yaml -o /tmp/override.pdf --grid a7    # flag wins
+GRIDS=tests/fixtures/demo-project/grids
+lernkarten build $GRIDS/tides-a8.yaml -o /tmp/declared.pdf            # deck says a8
+lernkarten build $GRIDS/tides-a8.yaml -o /tmp/override.pdf --grid a7  # flag wins
 ```
+
+Note the deck lives in `grids/`, **not** in `$DEMO`. A deck declaring a grid must
+stay out of the directory `tests/test_e2e.py` globs, or every unflagged demo
+build in §1 and §3 changes size or fails on the FR-014a conflict.
 
 The first uses A8 with no flag; the second is A7 despite the deck. Then the
 conflict case:
@@ -143,8 +157,12 @@ python3 scripts/check_project.py tests/fixtures/demo-project --strict
 **This blocks the merge and cannot be automated** (SC-007).
 
 ```bash
-lernkarten build $DEMO/*.yaml -o /tmp/gate.pdf --grid a8
+lernkarten build $DEMO/*.yaml tests/fixtures/demo-project/grids/tides-a8.yaml \
+  -o /tmp/gate.pdf --grid a8
 ```
+
+The `grids/` deck is not optional here — it is the only short-label material in
+the repo, and check 4 below is vacuous without it.
 
 Print `/tmp/gate.pdf` **duplex, flip on long edge, 100 % scale** on real card
 stock. Then check, in this order:

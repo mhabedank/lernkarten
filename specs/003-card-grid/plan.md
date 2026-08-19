@@ -141,7 +141,11 @@ tests/
 ├── test_check_project.py          # the red artifact for the prompt-half change
 ├── test_e2e.py                    # page counts, overflow at A8, refusal, no-PDF-on-error
 │                                  #   also: fix stale "31 cards" comments at lines 78, 230
-└── fixtures/demo-project/cards/   # NEW: a deck declaring grid:, and one that disagrees
+└── fixtures/demo-project/
+    ├── grids/                  # NEW dir: decks that declare a grid — deliberately
+    │                           #   outside cards/, which tests/test_e2e.py globs
+    ├── broken/                 # NEW: overflows-only-at-a8.yaml, the trap-catcher fixture
+    └── cards/                  # unchanged file count; the six decks gain `grid: a7`
 
 cards/example.yaml                 # CHANGED — show the grid: key
 CLAUDE.md                          # CHANGED — per-grid card-style guidance (FR-017)
@@ -193,10 +197,11 @@ and **two contradict the spec**:
 | R6 | The grid must reach five call sites | `overflowing()` is the dangerous one — miss it and every warning is wrong while the PDF is right, with no test failing |
 | R7 | Constitution XVI and XVII state A7 as a fixed fact | Amendment rides in this PR |
 
-### Spec corrections this plan requires
+### Spec corrections this plan required — applied 2026-08-19
 
-These are not optional; the spec is wrong on two measured points and should be
-fixed before tasks are generated:
+The spec was wrong on two measured points. All three corrections below were
+applied to spec.md before Phase 5 generated tasks; they are recorded here as the
+reasoning behind the change, not as outstanding work:
 
 1. **Delete** the Assumption "Some demo cards are expected to overflow at A8".
    Replace User Story 3 scenario 5 and SC-005 with: *no demo card overflows at
@@ -252,8 +257,9 @@ actually go red on its own.
 | 6 | resolution precedence | flag beats deck; deck beats default; all-absent gives `(2, 4)` | `test_build_pdf.py` |
 | 7 | conflict errors | two decks disagreeing, no flag → raises naming both files | `test_build_pdf.py` |
 | 8 | **A8 builds 4 pages** | `pdf_pages(...) == 4` with `--grid a8` over the demo cards | `test_e2e.py` |
-| 9 | **overflow query gets the grid** | `overflowing.yaml --grid a8` reports `overflowing-2` | `test_e2e.py` |
-| 10 | **no demo card overflows at A8** | `--grid a8` over the 29 demo cards emits no `WARNING` | `test_e2e.py` |
+| 9 | **the trap-catcher** | `broken/overflows-only-at-a8.yaml` — a card that fits A7 and overflows A8 — is reported at `--grid a8` and **not** at the default | `test_e2e.py` |
+| 9a | overflow still reported at both grids | `overflowing.yaml --grid a8` reports `overflowing-2` | `test_e2e.py` |
+| 10 | no demo card overflows at A8 | `--grid a8` over the 29 demo cards emits no `WARNING` | `test_e2e.py` |
 | 11 | default unchanged | no flag → 8 pages, identical to pre-feature output | `test_e2e.py` |
 | 12 | refusal writes nothing | `--grid 2x6` exits non-zero and no PDF exists | `test_e2e.py` |
 | 13 | deck-declared grid | fixture with `grid: a8` builds 4 pages with no flag | `test_e2e.py` |
@@ -262,10 +268,16 @@ actually go red on its own.
 | 16 | grid-aware length warnings | a 300-char back warns at A8, not at A7 | `test_check_project.py` |
 | 17 | **label budget check** | a 40-char `TOPIC / SUBTOPIC` warns at A8 | `test_check_project.py` |
 
-Tests 9 and 10 together are what catch the R6 trap. Test 9 alone is not enough:
-a build that ignores the grid in `overflowing()` still reports `overflowing-2`,
-because that card overflows at both sizes. Test 10 is the one that fails if the
-query runs against A7 geometry — so **it must not be dropped as redundant**.
+**Corrected after cross-model review.** This section first claimed tests 9a and
+10 together catch the R6 trap. They do not. If `overflowing()` misses the grid
+the query runs at A7, where the demo cards also do not overflow — so test 10
+returns an empty set and passes on **both** the correct and the buggy path.
+Re-measured to confirm. An assertion of *absence* cannot detect this.
+
+**Test 9 is the trap-catcher**, and the only one: a card that fits A7 and
+overflows A8, asserted *present* at A8 and *absent* at A7. Tests 9a and 10 are
+regression guards and are worth keeping, but neither may be mistaken for the
+thing that bites when the grid goes missing.
 
 Tests 15–17 are the red artifacts for the model-driven half. Without them the
 `/cards` prompt change is unverifiable and constitution XI is not met.
@@ -285,6 +297,6 @@ it blocks the merge; it is not a footnote.
 |---|---|---|---|
 | Amending constitution XVI and XVII | XVI, XVII | Both quote A7 as *the* card size; the feature makes it one of two | Leaving them would make the constitution contradict `docs/design.md` and `CLAUDE.md` in the same PR that changes those. Governance already provides for amendment by PR |
 | A third card-style check in `check_project.py` (head-band label budget) | V, XI | It is the only red artifact available for the `/cards` prompt change, and it turns an existing silent truncation into a named warning | Shipping the prompt change with no check fails XI outright. Putting the check in a new module fails V — it belongs beside `MAX_FRONT`/`MAX_BACK` |
-| Two new fixtures in the demo project | XI | FR-014's conflict error needs two decks that disagree; one file cannot conflict with itself | A dedicated fixture directory was rejected — `CLAUDE.md` says a new failure mode belongs in the demo project |
+| A new `grids/` directory plus one `broken/` fixture | XI, V | FR-014's conflict needs two decks that disagree, and the FR-010 trap needs a card that fits A7 and overflows A8 | Keeping the declaring decks in `cards/` was rejected after cross-model review: `tests/test_e2e.py:24` globs that directory, so a deck declaring a grid there changes or breaks every unflagged demo build. `grids/` sits inside the demo project, so `CLAUDE.md`'s rule still holds |
 
 Principle XI has no row here. It is not waivable, and this plan meets it.

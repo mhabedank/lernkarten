@@ -13,8 +13,8 @@
 - [ ] CHK001 Is it stated that **both** the compile invocation and the `typst query <overflow>` invocation must receive the grid, rather than just "the build uses the grid"? [Clarity, Spec §FR-010]
 - [ ] CHK002 Are all five threading sites enumerated somewhere an implementer will see them — `typeset()`, `overflowing()`, `offending_card()`, `report_failure()`, the page count? [Completeness, research.md §R6]
 - [ ] CHK003 Is the *asymmetry* of the failure documented — that a missed grid in `overflowing()` leaves the PDF correct and every warning wrong, so no existing test fails? [Clarity, research.md §R6]
-- [ ] CHK004 Is it recorded that the `overflowing.yaml` A8 test does **not** catch this alone, because that card overflows at both grids and is reported either way? [Ambiguity, Spec §SC-005]
-- [ ] CHK005 Is the assertion that actually catches it — no demo card warns at A8 — marked as non-redundant so it cannot be dropped during review as duplicative? [Completeness, plan.md test #10]
+- [ ] CHK004 Is it recorded that **neither** the `overflowing.yaml` test **nor** the "no demo card warns at A8" test catches this — the first because that card is reported at both grids, the second because the demo cards overflow at neither, so the query returns an empty set under the bug too? [Ambiguity, Spec §SC-005]
+- [ ] CHK005 Is the assertion that actually catches it — a card that **fits A7 and overflows A8**, asserted *present* at A8 and *absent* at A7 — specified with its fixture? An assertion of absence cannot detect this bug. [Completeness, Spec §SC-005]
 - [ ] CHK006 Is the structural mitigation (one shared helper building the `--input` list, so the two call sites cannot drift again) stated as a requirement, or only as advice? [Clarity, data-model.md]
 
 ## Backwards compatibility
@@ -64,9 +64,9 @@
 
 ## Test-first adequacy (constitution XI, non-waivable)
 
-- [ ] CHK034 Does every one of the 17 planned assertions describe a state in which it can actually go **red** on the assertion, rather than erroring on a missing import? [Measurability, plan.md §Test plan]
+- [ ] CHK034 Does every 🔴 task describe a state in which it can actually go **red**, rather than erroring on a missing import — and where it cannot (a guard asserting unchanged behaviour), is that said openly? tasks.md now carries 23 🔴 tasks against plan.md's 17-row table. [Measurability, tasks.md]
 - [ ] CHK035 Is it specified that the model-driven half's only acceptable red artifact is a `check_project.py` check plus a failing case in `tests/test_check_project.py`? [Clarity, Spec §US2 Independent Test]
-- [ ] CHK036 Does each of FR-001..FR-020 map to at least one planned assertion, and is any FR with no assertion identified as such rather than silently unverified? [Coverage, Traceability]
+- [ ] CHK036 Does each of **FR-001..FR-023, plus FR-014a and FR-015a/b**, map to at least one planned assertion, and is any FR with no assertion identified as such rather than silently unverified? The review-era FRs are the ones most likely to be orphaned. [Coverage, Traceability]
 - [ ] CHK037 Are the two new demo fixtures specified precisely enough to write — one deck declaring `grid:`, and a second declaring a *different* one? [Completeness, research.md §R5]
 
 ## Consistency across artifacts

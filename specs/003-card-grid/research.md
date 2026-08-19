@@ -214,10 +214,25 @@ while checking overflow against A7 geometry. Every warning would be wrong, and
 silently bogus. This is FR-010 and it is the single most important correctness
 risk in the feature.
 
-**Mitigation**: the test written first for this is the one that builds
-`overflowing.yaml` at A8 and asserts the reported id. It fails if the query call
-misses the grid. Beyond that, the two `--input` lists should be built by one
-shared helper so they cannot diverge again.
+**Mitigation — corrected after cross-model review.** The original mitigation
+here was wrong, and the correction matters more than the original finding.
+
+This document first claimed that "no demo card warns at A8" catches the bug. It
+does not. If `overflowing()` misses the grid, the query runs at the template
+default of 2 x 4 — and the demo cards do not overflow at A7 *either* (R2). So the
+query returns an empty set under **both** the correct and the buggy path, and an
+assertion of *absence* cannot tell them apart. Re-measured against the engine to
+confirm: `[]` at 2 x 4 and `[]` at 4 x 4.
+
+Catching it requires an assertion of **presence**, via a card that fits A7 and
+overflows A8. Measured: a ~300-character back gives `[]` at 2 x 4 and
+`['mid-1']` at 4 x 4. That card becomes
+`tests/fixtures/demo-project/broken/overflows-only-at-a8.yaml`, and the test
+asserts it is reported at `--grid a8` and not at the default.
+
+Beyond the test, the two `--input` lists should be built by one shared helper so
+they cannot diverge again — that is the structural half of the fix, and it is
+what makes the defect unlikely rather than merely detectable.
 
 ---
 
