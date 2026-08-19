@@ -269,7 +269,7 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### 🟢 Green — deterministic half
 
-- [X] ⚠️ **Reopened, now closed by T122** T066 [US5] *(reopened — BUG-005)* Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`. It was marked done and the five invariants do work — for names without a comma. `catalog_names()` splits on every comma unconditionally, so a name that contains one is torn into pieces that match nothing and all five checks fire at once ([BUG-005](bugs/BUG-005.md)). T120–T124 finish it; this stays open until they are green
+- [X] ⚠️ **Reopened, now closed by T122** T066 [US5] *(reopened — BUG-005)* Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`. It was marked done and the five invariants do work — for names without a comma. `catalog_names()` splits on every comma unconditionally, so a name that contains one is torn into pieces that match nothing and all five checks fire at once ([BUG-005](bugs/BUG-005.md)). T120–T124 finished it and are green, so this closes with them
 - [x] T119 [US5] For C-4, compare only the **name** on an `Also covers:` line: the contract writes `Also covers: Access control (cards in cards/security.yaml)` ([contracts/catalog-topics-md.md](contracts/catalog-topics-md.md)), so strip the trailing parenthetical before matching or every reciprocity check fails on a catalog that follows the contract
 - [x] T067 [US5] Implement C-9 — `Also covers:` must not be parsed as a subtopic heading, or the existing `###` scan double-counts and `check_cards()` sees a duplicate name
 
@@ -573,7 +573,7 @@ and with the check.
       `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` — this batch touches the
       pipeline and the fixture corpus, so the once-before-the-PR set in
       constitution XII is **not** skippable here the way it was for feature 002
-- [ ] T147 Run `/speckit.bugfix.verify` and confirm every report reads
+- [X] T147 Run `/speckit.bugfix.verify` and confirm every report reads
       `Status: Patched` with its tasks closed
 
 ### Dependencies
