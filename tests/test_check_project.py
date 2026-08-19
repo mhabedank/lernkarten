@@ -665,7 +665,10 @@ def test_a_document_marked_sparse_is_not_read_as_a_failed_extraction(tmp_path):
     assert not report.errors, messages(report)
     said = " | ".join(report.warnings)
     assert "did the extraction work" not in said, said
-    assert "sparse" in said, said
+    assert "knowledge/field-notes/a.md" not in said, (
+        "a correctly marked document is not a finding — warning about it every "
+        "run trades a false alarm for a permanent true one"
+    )
 
 
 def test_an_unknown_content_value_is_reported(tmp_path):

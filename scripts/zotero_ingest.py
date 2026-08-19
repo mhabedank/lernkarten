@@ -5,6 +5,9 @@ Uses the local Zotero API (Zotero 7, port 23119) for metadata and collection
 membership, and reads the PDFs straight from ~/Zotero/storage. Text is pulled
 out with pdftotext when that happens to be installed; otherwise the item is
 written with its metadata and a `pending:` line for the Read tool to fill in.
+A PDF with no text layer is a scan and goes the same way; one that yields text
+but very little is complete rather than broken, and is written with what it has
+plus `content: sparse` so the catalog step can tell the two apart.
 Works incrementally: existing files are skipped unless the PDF source is newer.
 
 Examples:
@@ -28,6 +31,11 @@ import sys
 import unicodedata
 import urllib.request
 from pathlib import Path
+
+# Below this many characters an extraction that *worked* is still too thin to
+# treat as evidence — a cover sheet, a form template. The document is written
+# with the text it has and marked, so `/catalog` can tell it from a failure.
+SPARSE = 200
 
 API = os.environ.get("ZOTERO_API", "http://localhost:23119/api/users/0")
 STORAGE = Path(os.environ.get("ZOTERO_STORAGE") or Path.home() / "Zotero" / "storage")
@@ -109,7 +117,11 @@ def extract(pdf):
     text = r.stdout.strip()
     if r.returncode != 0:
         return None, True
-    if len(text) < 200:  # no text layer — a scan, which the Read tool can see
+    if not text:
+        # No text layer at all — a scan, which the Read tool can see as images.
+        # This used to read `len(text) < 200`, which answered a second question
+        # it cannot answer: whether the document is worth anything. A scan has
+        # no text; a cover sheet has one page and a little (BUG-004).
         return None, True
     return text, False
 
@@ -192,7 +204,7 @@ def main():
     target.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
 
-    stats = {"new": 0, "skipped": 0, "no_pdf": 0, "pending": 0, "collisions": 0}
+    stats = {"new": 0, "skipped": 0, "no_pdf": 0, "pending": 0, "collisions": 0, "sparse": 0}
     written = set()  # what this run has already put on disk, so a same-run
     # collision can never be mistaken for an incremental skip
     for it in items:
@@ -215,6 +227,7 @@ def main():
             continue
 
         text, pending = extract(pdf)
+        sparse = text is not None and len(text) < SPARSE
 
         authors = ", ".join(
             " ".join(filter(None, [c.get("firstName"), c.get("lastName")])) or c.get("name", "")
@@ -234,6 +247,8 @@ def main():
                     f'collections: "{collections}"' if collections else None,
                     f"zotero_key: {it['key']}",
                     f'pending: "{pdf}"' if pending else None,
+                    "content: sparse" if sparse else None,
+                    f"characters: {len(text)}" if sparse else None,
                     f"ingested: {today}",
                     "---",
                 ],
@@ -243,12 +258,13 @@ def main():
         md.write_text(f"{head}\n\n{body}\n", encoding="utf-8")
         written.add(md)
         stats["pending" if pending else "new"] += 1
+        stats["sparse"] += 1 if sparse else 0
         print(f"OK: {title[:70]}")
 
     print(
         f"\nDone: {stats['new']} new, {stats['pending']} awaiting the Read tool, "
-        f"{stats['skipped']} skipped, {stats['collisions']} collision(s) renamed, "
-        f"{stats['no_pdf']} without a PDF"
+        f"{stats['skipped']} skipped, {stats['sparse']} thin but complete, "
+        f"{stats['collisions']} collision(s) renamed, {stats['no_pdf']} without a PDF"
     )
     # Name the destination. Every wrong one looked exactly like every right one
     # until this line existed, which is how an ingest into the plugin cache went

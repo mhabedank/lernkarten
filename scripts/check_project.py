@@ -39,6 +39,11 @@ GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
 GOAL_DEPTHS = ("awareness", "working", "expert")
 # A subtopic is either covered, wanted-but-uncovered, or unwanted. Absent means
 # covered, so a catalog written before the goal-driven step stays valid.
+# `content:` in a knowledge document says how much the extraction yielded. Only
+# `sparse` is defined: it means the extraction succeeded and there is little
+# there — a cover sheet, a form template — which is a different thing from a
+# scan with no text layer, and the two used to be written identically (BUG-004).
+CONTENT_STATES = ("sparse",)
 CATALOG_STATUS = ("gap", "out of scope")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
@@ -241,10 +246,16 @@ def check_sources(project, report):
 
 
 def check_knowledge(project, source_ids, report):
-    """knowledge/<source-id>/*.md: one document per file, frontmatter intact."""
+    """knowledge/<source-id>/*.md: one document per file, frontmatter intact.
+
+    Returns the paths of the documents marked `content: sparse`, relative to the
+    project — the catalog check needs them to see a subtopic that rests on
+    nothing but cover sheets.
+    """
     root = project / "knowledge"
+    sparse = set()
     if not root.is_dir():
-        return
+        return sparse
     for folder in sorted(p for p in root.iterdir() if p.is_dir()):
         if source_ids and folder.name not in source_ids:
             report.error(
@@ -268,10 +279,28 @@ def check_knowledge(project, source_ids, report):
             if not DATE.match(ingested):
                 shown = ingested or "missing"
                 report.error(where, f"'ingested' is not a date (YYYY-MM-DD): {shown}")
+            content = head.get("content")
+            if content is not None and str(content) not in CONTENT_STATES:
+                report.error(
+                    where,
+                    f"'content: {content}' is not one of {', '.join(CONTENT_STATES)}",
+                )
+                content = None
             if head.get("pending"):
                 report.warn(where, "still marked 'pending' — the text was never filled in")
+            elif content == "sparse":
+                # Silence, deliberately. The marker's whole job is to answer
+                # "did the extraction work?" with yes, and warning about a
+                # correctly marked document every run would replace a false
+                # alarm with a permanent true one. Where thinness has a
+                # consequence — a subtopic resting on nothing else — check_catalog
+                # says so, because that is where the user can act on it.
+                pass
             elif len(body.strip()) < 200:
                 report.warn(where, "barely any text — did the extraction work?")
+            if content == "sparse":
+                sparse.add(path.resolve())
+    return sparse
 
 
 @dataclasses.dataclass
@@ -450,7 +479,7 @@ def check_graph(catalog, subtopics, report):
                 )
 
 
-def check_catalog(project, report, required=(), areas=()):
+def check_catalog(project, report, required=(), areas=(), sparse=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
@@ -498,6 +527,23 @@ def check_catalog(project, report, required=(), areas=()):
                 "'Status: gap' — a branch with nothing behind it is either a gap "
                 "or a mistake",
             )
+        if sparse and status is None:
+            resolved = [
+                (path.parent / target.split("#", 1)[0]).resolve()
+                for target in LINK.findall(references)
+                if not target.startswith(("http://", "https://", "mailto:", "#"))
+            ]
+            if resolved and all(document in sparse for document in resolved):
+                # A warning rather than an error: it is a real subtopic backed by
+                # real documents, and the user may know the cover sheet is all
+                # there is. What they may not do is find out by accident.
+                report.warn(
+                    "catalog/topics.md",
+                    f"subtopic '{entry.name}': every reference is marked "
+                    "'content: sparse' — a cover sheet or a form template is not "
+                    "enough to build cards from. Treat this as a gap, or ingest "
+                    "the document itself",
+                )
 
     check_graph(catalog, subtopics, report)
 
@@ -618,8 +664,8 @@ def check_markup(where, i, front, back, report):
 def check(project, report):
     required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
-    check_knowledge(project, source_ids, report)
-    subtopics, marked = check_catalog(project, report, required, areas)
+    sparse = check_knowledge(project, source_ids, report)
+    subtopics, marked = check_catalog(project, report, required, areas, sparse)
     check_cards(project, subtopics, report, marked)
     return report
 

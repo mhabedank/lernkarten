@@ -23,7 +23,8 @@ References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 ### Settlements
 Where people live, which harbours are reachable how, and where the tide office
 sits.
-References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
+References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md),
+[tide-office-cover](../knowledge/field-notes/tide-office-cover.md)
 
 ## Tides
 The Ashwind tide cycle as the tide office in Fenmouth teaches it.

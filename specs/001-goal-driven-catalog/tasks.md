@@ -534,26 +534,33 @@ and with the check.
 
 ### BUG-004 — thin document versus failed extraction
 
-- [ ] T136 🔴 `tests/test_ingest_sources.py`: an item whose PDF yields a short
+- [X] T136 🔴 `tests/test_ingest_sources.py`: an item whose PDF yields a short
       but non-empty text is written **with that text** and a yield marker, and
       **without** `pending:` — red today, it is written as `pending:` with the
       text thrown away (FR-047)
-- [ ] T137 Split the two signals in `extract()`
+- [X] T137 Split the two signals in `extract()`
       (`scripts/zotero_ingest.py:92-116`): no text at all → a scan → `pending:`;
       short text → return it with its length. The `len(text) < 200` threshold
       currently answers both questions and can only answer one (FR-047)
-- [ ] T138 Write the marker into the knowledge frontmatter contract at
+- [X] T138 Write the marker into the knowledge frontmatter contract at
       `skills/ingest/SKILL.md:76-90`, and teach `skills/catalog/SKILL.md` what a
       marked document may be used as evidence for — referenced yes, coverage of
       a required topic no (FR-047, FR-048)
-- [ ] T139 🔴 `tests/test_check_project.py`: the marker is accepted in knowledge
+- [X] T139 🔴 `tests/test_check_project.py`: the marker is accepted in knowledge
       frontmatter and a required topic whose only reference is a marked document
       is reported — the model-driven half's red artifact for FR-048, per
       constitution XI (FR-048)
-- [ ] T140 Implement that check in `scripts/check_project.py` (FR-048)
-- [ ] T141 [P] Add one marked document to
+- [X] T140 Implement that check in `scripts/check_project.py` (FR-048)
+- [X] T141 [P] Add one marked document to
       `tests/fixtures/demo-project/knowledge/`, generated from a deliberately
-      thin Typst source under `generators/`
+      thin Typst source under `generators/`. *(Done in two halves, and the split
+      is deliberate: the Zotero side needed a real PDF, so `generators/zotero-cover.typ`
+      and ITEM11 make the third state reachable through the extractor. The demo
+      project itself gets a hand-written marked document referenced **alongside**
+      a full one — a project that is consistent, which is what that corpus is
+      for. The failure case, a subtopic backed by nothing else, stays in
+      `tests/test_check_project.py`, because a warning in the demo project would
+      fail `check_project.py --strict` in CI forever.)*
 
 ### Gates
 

@@ -85,6 +85,8 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
 source: <source-id>
 document: "Original title or file name"
 path: "/absolute/path or URL"
+content: sparse          # optional — see below
+characters: 68           # with `content: sparse`, how much text there was
 ingested: 2026-08-10
 ---
 
@@ -94,3 +96,16 @@ ingested: 2026-08-10
 Slug = file name/title in kebab-case, without the extension. Do not shorten or
 summarise the text — completeness is what counts here; only obvious extraction
 debris (headers/footers, page numbers) may be cleaned up.
+
+**Three outcomes, not two.** A document is either extracted, or waiting for the
+Read tool, or *thin*:
+
+- Text came out → write it, no marker.
+- **No text layer at all** — a scan → `pending: <path>`, and the Read tool sees
+  the pages as images.
+- **Text came out and there is barely any of it** — a cover sheet standing in
+  for a book, an empty form template → write what there is and add
+  `content: sparse` with the character count. Do **not** mark it `pending:`:
+  the extraction is complete and a second pass has nothing to find. Leaving the
+  two indistinguishable is what made `/catalog` guess whether a near-empty
+  document was broken or real.
