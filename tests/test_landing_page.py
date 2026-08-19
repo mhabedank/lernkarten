@@ -230,3 +230,66 @@ def test_the_four_nav_links_sit_inside_the_disclosure_and_the_rest_does_not():
     for cls in ("nav__home", "nav__gh"):
         element = one(nav, cls=cls)
         assert menu not in ancestors(element), f".{cls} must stay in the bar, not in the panel"
+
+
+def next_element_sibling(node):
+    """The element that follows this one under the same parent, or None."""
+    siblings = node.parent.children
+    index = siblings.index(node)
+    return siblings[index + 1] if index + 1 < len(siblings) else None
+
+
+# ---------------------------------------------------------------------------
+# US2 — the band note stops inflating the section heading (issue #29)
+#
+# `.band` is a flex row with align-items: stretch, so its tallest child sets the
+# row height. All three notes are taller than their heading — by 52, 29 and 7 px
+# — so the defect is the coupling, not the length of any one note. Moving the
+# note out is what removes the coupling; shortening copy would only move the
+# threshold. None of those heights is reachable from here, so what follows
+# asserts the structure that makes them impossible, and the manual checklist
+# carries the geometry.
+# ---------------------------------------------------------------------------
+
+
+def test_no_band_note_is_a_child_of_its_band():
+    """A4 — nothing but the number and the heading sizes the heading row."""
+    trapped = [note for note in find(tree(), "p", "band__note") if note.parent.has_class("band")]
+    assert not trapped, (
+        f"{len(trapped)} note(s) still sit inside a .band, where a long one stretches "
+        "the heading row it shares"
+    )
+
+
+def test_every_band_note_follows_its_band():
+    """A5 — the reading order stays number, heading, note, content."""
+    notes = find(tree(), "p", "band__note")
+    assert len(notes) == 3, f"expected three band notes (pipeline, printing, install), found {len(notes)}"
+    for note in notes:
+        previous = [
+            sibling
+            for sibling in note.parent.children
+            if sibling.tag == "div" and sibling.has_class("band")
+        ]
+        assert previous, f"{note!r} has no .band sibling to follow"
+        assert next_element_sibling(previous[0]) is note, (
+            "a note must come directly after its band — anything between them "
+            "reorders what the reader meets"
+        )
+
+
+def test_the_band_note_carries_no_left_border():
+    """A6 — the note is a block under the band, not a column beside it.
+
+    Matched as a substring, deliberately: `.install .band__note` carries
+    `border-left-color`, and an exact property match would walk past it and leave
+    the inverted install band half-converted.
+    """
+    stale = [body for body in rules_for(".band__note") if "border-left" in body]
+    assert not stale, f"the note still carries a left border: {stale}"
+
+    inside_1080 = rules_for(".band__note", css=media_block("1080px"))
+    assert not inside_1080, (
+        "the 1080px block still restyles the note's borders; those rules existed "
+        f"only to fake the block layout on narrow screens: {inside_1080}"
+    )
