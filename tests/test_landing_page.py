@@ -293,3 +293,33 @@ def test_the_band_note_carries_no_left_border():
         "the 1080px block still restyles the note's borders; those rules existed "
         f"only to fake the block layout on narrow screens: {inside_1080}"
     )
+
+
+# ---------------------------------------------------------------------------
+# US3 — the hidden attribute takes effect (issue #28)
+#
+# The script that turns the card over is correct and does run; the changing
+# button label proves it. `.card` declares display: flex, which ties with
+# [hidden] at specificity (0,1,0) and wins on source order, so the user-agent
+# rule never applies and both cards stay on screen. !important is the fix rather
+# than a smell here: `hidden` states that an element is not relevant, which is
+# not a style preference to be outranked.
+# ---------------------------------------------------------------------------
+
+
+def test_the_hidden_attribute_outranks_any_display_a_class_sets():
+    """A7 — one rule, so the next element given `hidden` cannot fail the same way."""
+    rules = rules_for("[hidden]")
+    assert rules, (
+        "the page has no [hidden] rule at all, so the browser default is left to "
+        "lose to any class that declares display — which .card does"
+    )
+    effective = [
+        body
+        for body in rules
+        if "display" in body and "none" in body and "!important" in body
+    ]
+    assert effective, (
+        "a [hidden] rule without !important is a no-op here: [hidden] and .card "
+        f"both weigh (0,1,0) and .card is declared later, so it wins. Found: {rules}"
+    )
