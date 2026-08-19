@@ -353,6 +353,56 @@ def test_the_hidden_attribute_outranks_any_display_a_class_sets():
 EXTERNAL_SUBRESOURCES = {"https://fonts.googleapis.com/css2"}
 
 
+# ---------------------------------------------------------------------------
+# BUG-006 — reading text keeps the 15 px floor (issue #30)
+#
+# A9 is the one assertion in this module that is not half of a pair. A font size
+# is a declaration in the stylesheet, not a rendered dimension, so the assertion
+# reaches the whole requirement and no manual row stands behind it.
+#
+# The exemption is stated as a rule rather than as a list of selectors, and that
+# is the point: `docs/design.md` gives Jost labels and IBM Plex Mono literals
+# their own rows, and its floor sentence says *reading text*. So a small size is
+# allowed exactly where the rule that sets it also names one of those faces. A
+# list of selector names would go stale and would become somewhere to put the
+# next violation; this cannot, because adding a rule that sets 13 px of Archivo
+# fails it whatever the selector is called.
+# ---------------------------------------------------------------------------
+
+SCREEN_FLOOR = 15  # px — docs/design.md, constitution XVI
+FONT_SIZE_PX = re.compile(r"font-size:\s*([\d.]+)px")
+OTHER_FACE = re.compile(r"font-family:\s*var\(--(display|mono)\)")
+CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+
+
+def test_reading_text_is_never_below_the_screen_floor():
+    """A9 — no Archivo running prose under 15 px, in the stylesheet or inline.
+
+    Red on six declarations before the fix: `.band__note` (14), `.anatomy__item p`
+    (14), `.rule-item p` (13.5), `.print__cut p` (13), `.principle p` (14.5) and
+    an inline `style` on the "One file per topic" paragraph (14). Issue #30 named
+    four of the six; the other two were found by asking the question of the whole
+    stylesheet instead of of a list.
+    """
+    offenders = []
+    for selector, body in _innermost_rules(stylesheet()):
+        if OTHER_FACE.search(body):
+            continue  # a Jost label or a Plex Mono literal — not reading text
+        for size in FONT_SIZE_PX.findall(body):
+            if float(size) < SCREEN_FLOOR:
+                offenders.append(f"{CSS_COMMENT.sub('', selector).strip()} -> {size}px")
+
+    for style in re.findall(r'style="([^"]*)"', page_source()):
+        for size in FONT_SIZE_PX.findall(style.replace(" ", "").replace(":", ": ")):
+            if float(size) < SCREEN_FLOOR:
+                offenders.append(f"inline style -> {size}px")
+
+    assert not offenders, (
+        "reading text below the 15 px screen floor that docs/design.md and "
+        f"constitution XVI state: {offenders}"
+    )
+
+
 def test_the_page_stays_one_self_contained_file():
     """A8 — a regression guard, green from the start.
 
