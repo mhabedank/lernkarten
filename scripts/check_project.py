@@ -50,6 +50,17 @@ ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal):(
 # is prose for the reader, not part of the name.
 PARENTHETICAL = re.compile(r"\s*\([^)]*\)\s*$")
 LEADING_PARENTHETICAL = re.compile(r"^\([^)]*\)")
+# `front`/`back` are Typst markup, and two of its rules are ones a model trained
+# on markdown gets wrong (BUG-001). Both are *accepted* by the typesetter, so
+# `lernkarten check` cannot see them and this is the only gate that can.
+# `**bold**` is markdown: Typst reads it as two empty strong elements around
+# unemphasised text, and only warns — on the success path, where build_pdf.py
+# discards stderr.
+MARKDOWN_BOLD = re.compile(r"(?<!\\)\*\*")
+# A backslash is a line break only before whitespace. Before a markup character
+# it escapes that character, so `line\*bold*` loses the break, gains a literal
+# star and shifts every star after it.
+ESCAPED_MARKUP = re.compile(r"\\([*_#@<>$`])")
 # Front at most ~2 lines, back at most ~6 — the card is only 100 x 72 mm.
 MAX_FRONT = 120
 MAX_BACK = 400
@@ -573,6 +584,35 @@ def check_cards(project, subtopics, report, marked=None):
                 report.warn(where, f"card {i}: back is long ({len(back)} characters)")
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
+            check_markup(where, i, front, back, report)
+
+
+def check_markup(where, i, front, back, report):
+    """The two Typst rules a markdown habit gets wrong, on one card.
+
+    Both are errors of meaning rather than of syntax: the typesetter accepts
+    them and prints something else. So this is an error where the answer is
+    unambiguous (`**` is never right) and a warning where it is not — `\\*` is
+    also how you write a literal star, and refusing it would make escaping
+    impossible.
+    """
+    for side, text in (("front", front), ("back", back)):
+        if MARKDOWN_BOLD.search(text):
+            report.error(
+                where,
+                f"card {i}: '{side}' uses '**' — that is markdown. Typst bolds with a "
+                "single '*' ('*bold*', '_italic_'); '**...**' is two empty strong "
+                "elements and prints unemphasised",
+            )
+        found = ESCAPED_MARKUP.search(text)
+        if found:
+            report.warn(
+                where,
+                f"card {i}: '{side}' has a backslash directly before '{found.group(1)}'. "
+                "A backslash is a line break only before whitespace — here it escapes "
+                f"the '{found.group(1)}' instead. Write '\\ ' if you meant the break; "
+                "ignore this if you meant the literal character",
+            )
 
 
 def check(project, report):

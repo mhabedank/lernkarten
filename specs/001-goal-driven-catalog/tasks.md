@@ -486,21 +486,21 @@ the demo project exits 0.
 
 ### BUG-001 — the card markup contract
 
-- [ ] T125 🔴 [P] `tests/test_check_project.py`: a card whose `back` contains
+- [X] T125 🔴 [P] `tests/test_check_project.py`: a card whose `back` contains
       `**bold**` is reported, naming the card — red today, nothing looks at card
       markup at all (FR-043)
-- [ ] T126 🔴 `tests/test_check_project.py`: a card whose `back` contains a
+- [X] T126 🔴 `tests/test_check_project.py`: a card whose `back` contains a
       backslash directly followed by `*` is reported, naming the card — red.
       Same file as T125, so **not** parallel with it (FR-043)
-- [ ] T127 Implement both checks in `scripts/check_project.py`: `**...**` in
+- [X] T127 Implement both checks in `scripts/check_project.py`: `**...**` in
       `front` or `back`, and `\` immediately followed by `*`, `_`, `#`, `@`,
       `<`, `$` or a backtick. The message says what Typst will do, not just that
       it is wrong (FR-043)
-- [ ] T128 Write the rule into all three places that carry the contract —
+- [X] T128 Write the rule into all three places that carry the contract —
       `CLAUDE.md`, `skills/cards/SKILL.md`, `docs/workflow.md`: `*bold*`,
       `_italic_`, `**...**` is markdown and yields two empty strong elements,
       and `\` is a line break only before whitespace (FR-041, FR-042)
-- [ ] T129 Add a card exercising both to
+- [X] T129 Add a card exercising both to
       `tests/fixtures/demo-project/broken/`, with its row in that folder's
       `README.md` — the established home for a failure mode with a named culprit
 

@@ -107,6 +107,14 @@ Always write `language:` — it is the language of the source material, and
   syntax (`(a) / (b)`, `Omega`, `"Var"(X)`), a single `\` for a line break,
   `#list([a], [b])` for a bulleted back with at most 4 items. Escape `#`, `*`,
   `_`, `@`, `<`, `>` and backticks in running text; `%` and `&` need nothing.
+- **Emphasis**: `*bold*`, `_italic_` — one star, not two. `**bold**` is
+  markdown and Typst reads it as two empty strong elements: the build succeeds
+  and the card prints without emphasis, so nothing warns you.
+- **The line break has a precondition**: `\` is a break only when whitespace
+  follows it. Directly before `*`, `_`, `#`, `@`, `<`, `>`, `$` or a backtick it
+  escapes that character instead — `'line\*bold* rest'` loses the break, prints
+  a literal star and shifts every star after it. Use `'line\ *bold*'`, or put
+  the emphasis somewhere other than the start of the new line.
 - Write the strings in single quotes: then `"` needs no escaping and a
   backslash stays a line break. A literal apostrophe is doubled (`''`).
 - Atomic: one card tests exactly one fact/concept. Mix definitions, formulas,

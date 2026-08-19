@@ -183,6 +183,20 @@ def test_invalid_markup_names_the_offending_card():
     assert "invalid-markup-1" not in result.stderr, "the intact card must not be blamed"
 
 
+def test_a_backslash_before_a_star_names_the_offending_card():
+    """BUG-001: `\\` is a line break only before whitespace.
+
+    Directly before `*` it escapes the star, so the break is lost and the
+    remaining delimiter is unclosed. The build must fail and blame the card that
+    did it, not the one above it that uses the working `\\ *bold*` form.
+    """
+    result = run("check", str(DEMO / "broken" / "escaped-linebreak.yaml"))
+    assert result.returncode == 1
+    assert "The typesetter rejected the cards" in result.stderr
+    assert "escaped-linebreak-2" in result.stderr, "the broken card has to be named"
+    assert "escaped-linebreak-1" not in result.stderr, "the intact card must not be blamed"
+
+
 def test_an_overlong_card_warns_but_still_builds(tmp_path):
     target = tmp_path / "overflow.pdf"
     result = run("build", str(DEMO / "broken" / "overflowing.yaml"), "-o", str(target))

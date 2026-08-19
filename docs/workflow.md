@@ -237,6 +237,16 @@ cards:
 Card text is Typst markup: `$...$` for maths, a backslash for a line break,
 `#list([a], [b])` for bullets. Single quotes in YAML keep it readable.
 
+Two rules that markdown habits get wrong, because Typst accepts both and prints
+something else:
+
+- **Bold is one star**, `*bold*`, and italic is `_italic_`. `**bold**` is
+  markdown; Typst reads it as two empty strong elements and the card prints
+  unemphasised.
+- **The backslash is a line break only before whitespace.** Before a markup
+  character it escapes it, so `'line\*bold*'` gives a literal star and no
+  break. Write `'line\ *bold*'`.
+
 `language` is the language of your sources, written the way you would say it
 (`german`, `de`, `french`, …). It is the only thing printing needs to hyphenate
 correctly, and card files in different languages can share one PDF.

@@ -12,3 +12,4 @@ that swallows one of these errors breaks a test.
 | `missing-fields.yaml` | a card without `back` | `ERROR: … 'front' and 'back' are required`, exit 1 |
 | `not-a-mapping.yaml` | a top-level list instead of a mapping | `ERROR: expected a mapping with keys 'topic' and 'cards'` |
 | `malformed.yaml` | not readable as YAML | `ERROR: … line N`, exit 1 |
+| `escaped-linebreak.yaml` | a line-break `\` directly before a `*`, so the star is escaped rather than the line broken | typeset fails, stderr names the offending card |
