@@ -287,9 +287,13 @@ typesetter, card text or a file on a user's disk. What does apply:
   15 px, colour never carrying meaning alone.
 - **FR-016**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md), superseding
   FR-011)* Every declaration on the landing page that sets **Archivo running
-  prose** MUST be at least 15 px. That is four today — `.band__note`,
-  `.anatomy__item p`, `.print__cut p` and the inline `style` on the "One file
-  per topic" paragraph. Uppercase Jost `label` runs and IBM Plex Mono literals
+  prose** MUST be at least 15 px. That is **six** today — `.band__note`,
+  `.anatomy__item p`, `.rule-item p`, `.print__cut p`, `.principle p` and the
+  inline `style` on the "One file per topic" paragraph. Issue #30 and
+  [BUG-006](bugs/BUG-006.md) both name four; the other two turned up as soon as
+  the question was asked of the whole stylesheet rather than of a list, which is
+  why the requirement is written as a property of Archivo prose and not as an
+  enumeration. Uppercase Jost `label` runs and IBM Plex Mono literals
   are **not** covered: `docs/design.md` gives those faces their own rows and its
   floor sentence says *reading text*.
 - **FR-017**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md))* `docs/design.md`

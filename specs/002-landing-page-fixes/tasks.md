@@ -278,10 +278,12 @@ stylesheet, so the assertion reaches all of it.
 
 ### 🔴 Red
 
-- [ ] T040 🔴 Assertion A9 in `tests/test_landing_page.py`: no rule setting
+- [X] T040 🔴 Assertion A9 in `tests/test_landing_page.py`: no rule setting
       Archivo running prose declares a `font-size` below 15 px — red today on
-      four declarations (`.band__note` `:93`, `.anatomy__item p` `:226`,
-      `.print__cut p` `:257`, the inline `style` at `:624`). Exempt the Jost
+      **six** declarations, not the four issue #30 named — `.rule-item p`
+      (13.5 px) and `.principle p` (14.5 px) were found by asking the question of
+      the whole stylesheet instead of of a list, which is the argument for
+      writing the exemption as a rule. Exempt the Jost
       `label` runs and the IBM Plex Mono literals **by name**, and say in the
       test why each exemption is one — an exemption list nobody can read becomes
       a place to hide the next violation (FR-016)
@@ -290,35 +292,35 @@ stylesheet, so the assertion reaches all of it.
 
 ### 🟢 Green — `docs/index.html`
 
-- [ ] T041 Raise the four to 15 px. `.print__cut p` is 13 px and rises with the
+- [X] T041 Raise the four to 15 px. `.print__cut p` is 13 px and rises with the
       other three rather than to its own size — the anatomy and printing
       descriptions are the same kind of text and there is no reason for them to
       differ (FR-016)
-- [ ] T042 The inline `style` at `:624` is the only one of the four not in the
+- [X] T042 The inline `style` at `:624` is the only one of the four not in the
       stylesheet. Give it the class the paragraph beside it would have used, so
       A9 does not have to parse inline styles forever (FR-016)
 
 ### 🟢 Green — the rule
 
-- [ ] T043 [P] `docs/design.md`: the floor sentence at `:55` says which faces it
+- [X] T043 [P] `docs/design.md`: the floor sentence at `:55` says which faces it
       binds — Archivo reading prose yes, Jost `label` runs and Plex Mono literals
       no. It scopes the rule; it does not relax it (FR-017)
-- [ ] T044 [P] `.specify/memory/constitution.md`: the same scope on principle
+- [X] T044 [P] `.specify/memory/constitution.md`: the same scope on principle
       XVI, and a version bump with the amendment line the file's own governance
       section requires (FR-017)
 
 ### By hand
 
-- [ ] T045 Above 1080 px and at 360 px: the three section notes, the anatomy
+- [ ] T045 **Still open — the one thing here nobody has looked at.** Above 1080 px and at 360 px: the three section notes, the anatomy
       list and the printing descriptions still sit where T037 left them, and no
       band's heading row grew. This is the check that the coupling really is
       gone rather than merely believed to be
 
 ### Gates
 
-- [ ] T046 `pytest tests/test_landing_page.py` — nine assertions, A9 green
-- [ ] T047 `python3 scripts/check_docs.py` — T043 and T044 add links
-- [ ] T048 Evidence for SC-010: on the parent commit A9 fails naming four
+- [X] T046 `pytest tests/test_landing_page.py` — nine assertions, A9 green
+- [X] T047 `python3 scripts/check_docs.py` — T043 and T044 add links
+- [X] T048 Evidence for SC-010: on the parent commit A9 fails naming four
       declarations; on the merge commit it passes
 
 ### Dependencies

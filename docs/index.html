@@ -90,7 +90,7 @@
      two, so this takes a bottom border and never a top one. */
   .band__note {
     border-bottom: var(--rule); padding: 18px 24px; background: var(--sand);
-    font-size: 14px; line-height: 1.6; color: var(--muted);
+    font-size: 15px; line-height: 1.6; color: var(--muted);
   }
 
   /* Navigation */
@@ -223,7 +223,7 @@
   .anatomy__item { padding: 24px 30px; border-bottom: var(--rule); }
   .anatomy__item:last-child { border-bottom: 0; }
   .anatomy__item h3 { font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase; }
-  .anatomy__item p { margin-top: 8px; font-size: 14px; line-height: 1.6; color: var(--muted); }
+  .anatomy__item p { margin-top: 8px; font-size: 15px; line-height: 1.6; color: var(--muted); }
   .anatomy__key { font-family: var(--display); font-weight: 500; font-size: 11px; letter-spacing: 0.2em; color: var(--red); margin-right: 12px; }
 
   .yaml { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); background: var(--sand); border-top: var(--rule); }
@@ -231,6 +231,10 @@
   .yaml > div:first-child { border-right: var(--rule); }
   .yaml h3 { font-size: 26px; line-height: 1.15; text-transform: lowercase; }
   .yaml p { font-size: 16px; line-height: 1.65; max-width: 54ch; }
+  /* The caption under the sample file. It was an inline style at 14 px —
+     the one declaration on the page a stylesheet rule could not reach, and
+     therefore the easiest place for the floor to be broken again. */
+  .yaml__note { font-size: 15px; line-height: 1.6; color: var(--muted); }
 
   /* Printing */
   .print { display: flex; flex-wrap: wrap; align-items: stretch; background: var(--ground); }
@@ -252,16 +256,16 @@
     font-family: var(--display); font-weight: 500; font-size: 14px;
   }
   .rule-item h3 { font-size: 17px; line-height: 1.2; }
-  .rule-item p { margin-top: 6px; font-size: 13.5px; line-height: 1.6; color: var(--muted); }
+  .rule-item p { margin-top: 6px; font-size: 15px; line-height: 1.6; color: var(--muted); }
   .print__cut { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
-  .print__cut p { font-size: 13px; line-height: 1.6; color: var(--muted); }
+  .print__cut p { font-size: 15px; line-height: 1.6; color: var(--muted); }
 
   /* Three principles */
   .principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--sand); border-bottom: var(--rule); }
   .principle { border-right: var(--rule); padding: 32px 32px 36px; display: flex; flex-direction: column; gap: 14px; }
   .principle:last-child { border-right: 0; }
   .principle h3 { font-size: 22px; line-height: 1.15; text-transform: lowercase; }
-  .principle p { font-size: 14.5px; line-height: 1.65; color: var(--muted); }
+  .principle p { font-size: 15px; line-height: 1.65; color: var(--muted); }
   .glyph { width: 30px; height: 30px; flex: none; }
   .glyph--square { background: var(--red); }
   .glyph--circle { background: var(--yellow); border-radius: 50%; }
@@ -621,7 +625,7 @@
       <div>
         <h3>it is just yaml</h3>
         <div class="terminal">topic: 'Probability'<br>language: english<br>cards:<br>&nbsp;&nbsp;- subtopic: 'Bayes theorem'<br>&nbsp;&nbsp;&nbsp;&nbsp;front: 'How is Bayes theorem stated?'<br>&nbsp;&nbsp;&nbsp;&nbsp;back: '$P(A | B) = (P(B | A) P(A)) / P(B)$'<br>&nbsp;&nbsp;&nbsp;&nbsp;source: 'Lecture 3, slide 12'</div>
-        <p style="font-size:14px;color:var(--muted)">One file per topic. If a card is wrong, you fix a line and print again — nothing is a black box.</p>
+        <p class="yaml__note">One file per topic. If a card is wrong, you fix a line and print again — nothing is a black box.</p>
       </div>
     </div>
   </section>
