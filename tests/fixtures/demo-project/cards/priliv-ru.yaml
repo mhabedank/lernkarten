@@ -2,6 +2,7 @@
 # build must not silently fall back to boxes.
 topic: 'Kestrel Islands: Приливы (по-русски)'
 language: russian
+grid: a7
 cards:
   - subtopic: 'Range and the rule of twelfths'
     front: 'Назовите правило двенадцатых.'

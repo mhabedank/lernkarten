@@ -143,31 +143,31 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- parallel-group: 1 (max 3 concurrent) -->
 
-- [ ] T036 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a8.yaml` — **exactly 12 cards**, declaring `grid: a8`, invented content in the existing tides idiom (constitution VII), every label inside the ~22-character A8 budget so it doubles as the short-label sample the print gate needs. ⚠️ **`grids/`, not `cards/`** — `CARDS` in `tests/test_e2e.py:24` globs `cards/*.yaml`, so a declaring deck there would change or break every unflagged demo build *(review C2)*
-- [ ] T037 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a7.yaml` — declares `grid: a7`, so the FR-014 conflict has a partner. Add a `README.md` to `grids/` explaining the folder holds decks that declare a grid and is deliberately outside the globbed corpus
+- [x] T036 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a8.yaml` — **exactly 12 cards**, declaring `grid: a8`, invented content in the existing tides idiom (constitution VII), every label inside the ~22-character A8 budget so it doubles as the short-label sample the print gate needs. ⚠️ **`grids/`, not `cards/`** — `CARDS` in `tests/test_e2e.py:24` globs `cards/*.yaml`, so a declaring deck there would change or break every unflagged demo build *(review C2)*
+- [x] T037 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a7.yaml` — declares `grid: a7`, so the FR-014 conflict has a partner. Add a `README.md` to `grids/` explaining the folder holds decks that declare a grid and is deliberately outside the globbed corpus
 
 <!-- sequential -->
 
-- [ ] T038 [US2] Add `"grids"` to `SKIP` in `scripts/demo.py`. **Note the real mechanism**: `SKIP` is currently dead code (defined at `demo.py:33`, referenced nowhere), and `demo.copy()` is safe because it copies an explicit allowlist — `raw`, `goal.md`, `sources.yaml`, then `GENERATED = ("knowledge", "catalog", "cards")`. So `grids/` can never be copied whatever `SKIP` says; adding it is documentary, keeping the constant honest for whoever revives it. Confirm `test_the_demo_copy_is_a_valid_project`'s `== 6` card-file assertion (`tests/test_check_project.py:330`) still holds — it does, because nothing was added to `cards/` *(review C2)*
+- [x] T038 [US2] Add `"grids"` to `SKIP` in `scripts/demo.py`. **Note the real mechanism**: `SKIP` is currently dead code (defined at `demo.py:33`, referenced nowhere), and `demo.copy()` is safe because it copies an explicit allowlist — `raw`, `goal.md`, `sources.yaml`, then `GENERATED = ("knowledge", "catalog", "cards")`. So `grids/` can never be copied whatever `SKIP` says; adding it is documentary, keeping the constant honest for whoever revives it. Confirm `test_the_demo_copy_is_a_valid_project`'s `== 6` card-file assertion (`tests/test_check_project.py:330`) still holds — it does, because nothing was added to `cards/` *(review C2)*
 
 ### 🔴 Red
 
-- [ ] T039 🔴 [US2] `tests/test_build_pdf.py`: resolution precedence — flag beats deck, deck beats default, all-absent gives `(2, 4)`. Fails: `resolve_grid` does not exist *(assertion 6, FR-013)*
-- [ ] T040 🔴 [US2] `tests/test_build_pdf.py`: two decks declaring **different** grids with no flag raises naming both files and both values; with `--grid` it resolves silently *(assertion 7, FR-014)*
-- [ ] T041 🔴 [US2] `tests/test_build_pdf.py`: **mixed absent and declared** — one `grid: a8` deck plus decks declaring nothing is a **conflict**, and the message distinguishes a declared value from an absent one *(FR-014a, review C2)*
-- [ ] T042 🔴 [US2] `tests/test_e2e.py`: `grids/tides-a8.yaml` (12 cards) builds **2** pages with no flag and **4** with `--grid a7`. ⚠️ The counts follow `2 × ⌈n ÷ per-page⌉` and constrain the fixture size: at n ≤ 8 both grids give 2 pages and the test cannot distinguish them, so 12 is the smallest round size that works *(assertions 13–14)*
-- [ ] T043 🔴 [US2] `tests/test_check_project.py`: a 300-character back warns at A8 but **not** at A7; the A7 thresholds are unchanged *(assertion 16, SC-002)*
-- [ ] T044 🔴 [US2] `tests/test_check_project.py`: a 40-character `TOPIC / SUBTOPIC` warns for an **A8** deck and **not** for an A7 one, and is a warning rather than an error *(assertion 17, FR-023)*
-- [ ] T045 🔴 [US2] `tests/test_check_project.py`: under `--strict`, a deck with no `grid:` key warns; without `--strict` it does not *(FR-015a — the red artifact for the `/cards` prompt change)*
+- [x] T039 🔴 [US2] `tests/test_build_pdf.py`: resolution precedence — flag beats deck, deck beats default, all-absent gives `(2, 4)`. Fails: `resolve_grid` does not exist *(assertion 6, FR-013)*
+- [x] T040 🔴 [US2] `tests/test_build_pdf.py`: two decks declaring **different** grids with no flag raises naming both files and both values; with `--grid` it resolves silently *(assertion 7, FR-014)*
+- [x] T041 🔴 [US2] `tests/test_build_pdf.py`: **mixed absent and declared** — one `grid: a8` deck plus decks declaring nothing is a **conflict**, and the message distinguishes a declared value from an absent one *(FR-014a, review C2)*
+- [x] T042 🔴 [US2] `tests/test_e2e.py`: `grids/tides-a8.yaml` (12 cards) builds **2** pages with no flag and **4** with `--grid a7`. ⚠️ The counts follow `2 × ⌈n ÷ per-page⌉` and constrain the fixture size: at n ≤ 8 both grids give 2 pages and the test cannot distinguish them, so 12 is the smallest round size that works *(assertions 13–14)*
+- [x] T043 🔴 [US2] `tests/test_check_project.py`: a 300-character back warns at A8 but **not** at A7; the A7 thresholds are unchanged *(assertion 16, SC-002)*
+- [x] T044 🔴 [US2] `tests/test_check_project.py`: a 40-character `TOPIC / SUBTOPIC` warns for an **A8** deck and **not** for an A7 one, and is a warning rather than an error *(assertion 17, FR-023)*
+- [x] T045 🔴 [US2] `tests/test_check_project.py`: under `--strict`, a deck with no `grid:` key warns; without `--strict` it does not *(FR-015a — the red artifact for the `/cards` prompt change)*
 
 ### 🟢 Green
 
-- [ ] T046 [US2] Implement `resolve_grid()` in `scripts/build_pdf.py` until T039–T042 pass, and extend `load_cards()` to surface each file's declared grid — it discards top-level keys today, so FR-014's per-file error has nothing to name *(review W2)*
-- [ ] T047 [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
-- [ ] T048 [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
-- [ ] T049 [US2] Add the `--strict`-only missing-`grid:` warning to `scripts/check_project.py` until T045 passes. It must **not** fire outside `--strict` *(FR-015a)*
-- [ ] T050 [US2] Add `grid: a7` to all six decks in `tests/fixtures/demo-project/cards/` so `check_project.py … --strict` — which CI runs at `.github/workflows/ci.yml:120` and gate T070 repeats — stays green *(FR-015b, review C3)*
-- [ ] T051 [US2] Update `skills/cards/SKILL.md` until **both** T044's label check and T045's `--strict` check pass against what it produces — write the `grid:` key, size card text to the declared grid. Keep the frontmatter valid
+- [x] T046 [US2] Implement `resolve_grid()` in `scripts/build_pdf.py` until T039–T042 pass, and extend `load_cards()` to surface each file's declared grid — it discards top-level keys today, so FR-014's per-file error has nothing to name *(review W2)*
+- [x] T047 [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
+- [x] T048 [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
+- [x] T049 [US2] Add the `--strict`-only missing-`grid:` warning to `scripts/check_project.py` until T045 passes. It must **not** fire outside `--strict` *(FR-015a)*
+- [x] T050 [US2] Add `grid: a7` to all six decks in `tests/fixtures/demo-project/cards/` so `check_project.py … --strict` — which CI runs at `.github/workflows/ci.yml:120` and gate T070 repeats — stays green *(FR-015b, review C3)*
+- [x] T051 [US2] Update `skills/cards/SKILL.md` until **both** T044's label check and T045's `--strict` check pass against what it produces — write the `grid:` key, size card text to the declared grid. Keep the frontmatter valid
 
 **Checkpoint**: the seam works both ways, and this repo's own `--strict` gate is still green.
 

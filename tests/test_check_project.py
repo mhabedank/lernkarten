@@ -326,6 +326,65 @@ def test_a_grid_on_an_individual_card_is_reported(tmp_path):
     assert any("grid" in e and "card 1" in e for e in report.errors), messages(report)
 
 
+# --- the card-style limits follow the grid (US2) ---------------------------
+
+
+def second(tmp_path):
+    """A second scratch project beside the first, for the same-input-both-grids tests."""
+    other = tmp_path / "at-a7"
+    other.mkdir()
+    return other
+
+
+def test_a_back_that_fits_a7_is_reported_as_long_at_a8(tmp_path):
+    """SC-002: A7 keeps 120/400; A8 halves them, so 300 characters only warn there."""
+    long_back = "Far too much text for a card half this wide. " * 7  # ~308 characters
+    assert 160 < len(long_back) < 400
+    at_a8 = GOOD_CARDS.replace("24 h 50 min.", long_back)
+    at_a8 = at_a8.replace("language: english", "language: english\ngrid: a8")
+    report = check(project(tmp_path, cards=at_a8))
+    assert any("back is long" in w for w in report.warnings), report.warnings
+
+    at_a7 = GOOD_CARDS.replace("24 h 50 min.", long_back)
+    at_a7 = at_a7.replace("language: english", "language: english\ngrid: a7")
+    report = check(project(second(tmp_path), cards=at_a7))
+    assert not any("back is long" in w for w in report.warnings), (
+        f"400 characters is still the A7 budget: {report.warnings}"
+    )
+
+
+def test_a_long_head_band_label_warns_at_a8_only(tmp_path):
+    """FR-023: 'TIDES / ...' is 40 characters, over the ~22 the A8 band holds."""
+    subtopic = "Rhythm of the tide and its cause"
+    assert len("Tides") + 3 + len(subtopic) == 40
+    at_a8 = GOOD_CARDS.replace("Rhythm of the tide", subtopic)
+    at_a8 = at_a8.replace("language: english", "language: english\ngrid: a8")
+    report = check(project(tmp_path, cards=at_a8))
+    assert any("label" in w and "40" in w for w in report.warnings), report.warnings
+    assert not any("label" in e for e in report.errors), (
+        f"an over-long label is a warning, not an error: {messages(report)}"
+    )
+
+    at_a7 = GOOD_CARDS.replace("Rhythm of the tide", subtopic)
+    at_a7 = at_a7.replace("language: english", "language: english\ngrid: a7")
+    report = check(project(second(tmp_path), cards=at_a7))
+    assert not any("label" in w for w in report.warnings), (
+        f"the A7 band holds about 53 characters: {report.warnings}"
+    )
+
+
+def test_a_missing_grid_key_warns_only_under_strict(tmp_path):
+    """FR-015a: /cards should write the key, but no project on disk has to."""
+    silent = project(tmp_path, cards=GOOD_CARDS)
+    report = check_project.check(Path(silent), check_project.Report(), strict=True)
+    assert any("grid" in w for w in report.warnings), report.warnings
+
+    report = check_project.check(Path(silent), check_project.Report())
+    assert not any("grid" in w for w in report.warnings), (
+        f"outside --strict a deck without the key is simply an A7 deck: {report.warnings}"
+    )
+
+
 def test_an_overlong_card_warns(tmp_path):
     cards = GOOD_CARDS.replace("24 h 50 min.", "Far too much text. " * 40)
     report = check(project(tmp_path, cards=cards))

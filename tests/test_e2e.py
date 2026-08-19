@@ -433,3 +433,52 @@ def test_no_demo_card_overflows_at_either_grid():
         result = run("check", *CARDS, *flag)
         assert result.returncode == 0, result.stderr
         assert "does not fit" not in result.stderr, f"unexpected overflow with {flag or 'default'}"
+
+
+# --- a deck that declares its own grid (US2) -------------------------------
+
+GRIDS = DEMO / "grids"
+
+
+def test_a_deck_that_declares_a8_prints_at_a8_without_a_flag(tmp_path):
+    """FR-012/FR-013: 12 cards at 16 up is one sheet — a front page and a back."""
+    target = tmp_path / "declared.pdf"
+    result = run("build", str(GRIDS / "tides-a8.yaml"), "-o", str(target))
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(target) == 2, "12 cards at 4 x 4 fit on one sheet"
+    assert "2 pages, duplex" in result.stdout
+
+
+def test_the_flag_overrides_what_the_deck_declares(tmp_path):
+    """FR-013: --grid a7 prints the same 12 cards 8 up, so two sheets."""
+    target = tmp_path / "overridden.pdf"
+    result = run("build", str(GRIDS / "tides-a8.yaml"), "--grid", "a7", "-o", str(target))
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(target) == 4, "12 cards at 2 x 4 need two sheets"
+    assert "4 pages, duplex" in result.stdout
+
+
+def test_two_decks_that_disagree_about_the_grid_are_refused(tmp_path):
+    """FR-014: no flag, two declared grids — the build names both files."""
+    target = tmp_path / "conflict.pdf"
+    result = run(
+        "build", str(GRIDS / "tides-a8.yaml"), str(GRIDS / "tides-a7.yaml"), "-o", str(target)
+    )
+    assert result.returncode != 0
+    assert "tides-a8.yaml" in result.stderr and "tides-a7.yaml" in result.stderr, result.stderr
+    assert not target.exists(), "a refused build writes no PDF"
+
+
+def test_the_flag_settles_a_disagreement(tmp_path):
+    target = tmp_path / "settled.pdf"
+    result = run(
+        "build",
+        str(GRIDS / "tides-a8.yaml"),
+        str(GRIDS / "tides-a7.yaml"),
+        "--grid",
+        "a8",
+        "-o",
+        str(target),
+    )
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(target) == 2, "14 cards at 4 x 4 still fit on one sheet"

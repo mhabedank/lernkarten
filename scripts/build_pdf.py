@@ -130,10 +130,50 @@ def pages(count, grid):
     return 2 * ((count + per_page - 1) // per_page)
 
 
+def resolve_grid(declared, flag=None):
+    """The grid this build prints at: the flag, else the decks, else A7.
+
+    `declared` is what load_cards() saw — one (file, value) pair per deck that
+    contributes cards, the value None where the deck says nothing.
+
+    An absent key is not an absent opinion: it means A7 (FR-012). So a deck
+    asking for A8 beside a deck that says nothing is a real disagreement, and
+    is refused rather than guessed at — picking a winner would silently print
+    half the cards at a size they were not written for. A7 declared beside
+    nothing declared is no disagreement at all: both mean 2 x 4.
+    """
+    if flag is not None:
+        return parse_grid(flag)
+    resolved = {}
+    for name, value in declared:
+        grid = DEFAULT_GRID if value is None else parse_grid(value)
+        resolved.setdefault(grid, []).append((name, value))
+    if len(resolved) <= 1:
+        return next(iter(resolved), DEFAULT_GRID)
+    lines = [
+        f"  {name}: {f'declares {value}' if value is not None else 'declares no grid'} "
+        f"({grid_name(grid)})"
+        for grid, decks in resolved.items()
+        for name, value in decks
+    ]
+    raise ValueError(
+        "the card files disagree about the grid, and no --grid was given:\n"
+        + "\n".join(lines)
+        + "\npass --grid to settle it, or make the files agree"
+    )
+
+
 def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_LANGUAGE):
-    """Reads the card files and returns a flat, filtered list of cards."""
+    """Reads the card files and returns the cards, the errors, and the grids.
+
+    The third value is one (file, grid) pair per deck that survives the topic
+    filter, the grid None where the deck declares none. resolve_grid() needs
+    the file name to be able to name it in a conflict, and these top-level keys
+    used to be dropped here.
+    """
     cards = []
     errors = []
+    declared = []
     for name in files:
         path = Path(name)
         try:
@@ -147,6 +187,7 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
         topic = str(data.get("topic") or path.stem)
         if topic_filters and not any(f.lower() in topic.lower() for f in topic_filters):
             continue
+        declared.append((str(path), None if data.get("grid") is None else str(data["grid"])))
         try:
             language = resolve_language(data.get("language") or default_language)
         except ValueError as e:
@@ -172,7 +213,7 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
                     "language": language,
                 }
             )
-    return cards, errors
+    return cards, errors, declared
 
 
 def main_language(cards, override=None):
@@ -333,10 +374,11 @@ def main():
     )
     p.add_argument(
         "--grid",
-        default="2x4",
+        default=None,
         metavar="COLSxROWS",
-        help="cards per A4 sheet: 2x4 (A7, 8 up, default) or 4x4 (A8, 16 up); "
-        "the aliases a7 and a8 work too",
+        help="cards per A4 sheet: 2x4 (A7, 8 up) or 4x4 (A8, 16 up); the aliases a7 and a8 "
+        "work too. Overrides the 'grid' key in the card files "
+        "(default: what they say, else 2x4)",
     )
     p.add_argument(
         "--language",
@@ -356,12 +398,18 @@ def main():
         except ValueError as e:
             p.error(str(e))
 
-    try:
-        grid = parse_grid(args.grid)
-    except ValueError as e:
-        p.error(str(e))
+    # A bad --grid is a usage error and exits 2; a bad or contradictory grid in
+    # the files is a content error and exits 1, so validate the flag on its own
+    # before the files get a say.
+    if args.grid is not None:
+        try:
+            parse_grid(args.grid)
+        except ValueError as e:
+            p.error(str(e))
 
-    cards, errors = load_cards(args.files, args.topic, args.subtopic, override or DEFAULT_LANGUAGE)
+    cards, errors, declared = load_cards(
+        args.files, args.topic, args.subtopic, override or DEFAULT_LANGUAGE
+    )
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)
     if errors and args.check:
@@ -369,6 +417,11 @@ def main():
     if not cards:
         print("No cards left after filtering — nothing to do.", file=sys.stderr)
         sys.exit(1)
+
+    try:
+        grid = resolve_grid(declared, args.grid)
+    except ValueError as e:
+        sys.exit(f"ERROR: {e}")
     if override:
         for c in cards:
             c["language"] = override

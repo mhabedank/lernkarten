@@ -1,0 +1,12 @@
+topic: 'Kestrel Islands: Tides'
+language: english
+grid: a7
+cards:
+  - subtopic: 'Chart datum and the Ovray rule'
+    front: 'Why is Ovray Cove unreachable at low water springs?'
+    back: 'The cove dries out below $1.2 "m"$ above chart datum, and low water springs is $0.3 "m"$. \ At neaps low water is $1.6 "m"$, so the cove stays usable.'
+    source: 'Field notes 2, "The Ovray rule"'
+  - subtopic: 'Range and the rule of twelfths'
+    front: 'How much of the range has run three hours after low water?'
+    back: 'Half of it. \ The twelfths $1, 2, 3$ of the first three hours add to $6/12$, and hours three and four are the fastest.'
+    source: 'Field notes 2, "The rule of twelfths"'

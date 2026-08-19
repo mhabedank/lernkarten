@@ -1,5 +1,6 @@
 topic: 'Kestrel Islands: Tides'
 language: english
+grid: a7
 cards:
   - subtopic: 'Rhythm of the tide'
     front: 'What does it mean that the Ashwind tide is semidiurnal?'

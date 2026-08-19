@@ -66,9 +66,21 @@ MARKDOWN_BOLD = re.compile(r"(?<!\\)\*\*")
 # it escapes that character, so `line\*bold*` loses the break, gains a literal
 # star and shifts every star after it.
 ESCAPED_MARKUP = re.compile(r"\\([*_#@<>$`])")
-# Front at most ~2 lines, back at most ~6 — the card is only 100 x 72 mm.
-MAX_FRONT = 120
-MAX_BACK = 400
+# Front at most ~2 lines, back at most ~6 — but "a line" depends on how wide
+# the card is, and an A8 line holds 46 % of an A7 one. The numbers below are
+# measured warning thresholds, well under the point where the text actually
+# runs off the card (front/back 291/455 at A7, 145/185 at A8 — research.md R3),
+# so there is room to tune them anywhere in that range.
+LIMITS = {
+    (2, 4): {"front": 120, "back": 400},
+    (4, 4): {"front": 60, "back": 160},
+}
+# The head band clips its TOPIC / SUBTOPIC label rather than wrapping it. A7
+# holds about 53 characters and A8 about 22, and only A8 is checked: --strict
+# makes warnings fatal, and 11 of the 38 cards shipped in this repo are already
+# over the A7 budget (research.md R4), so checking A7 would fail this repo's
+# own gate on cards this feature never touched.
+LABEL_BUDGET = {(4, 4): 22}
 
 
 class Report:
@@ -577,8 +589,13 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
     return subtopics, marked
 
 
-def check_cards(project, subtopics, report, marked=None):
-    """cards/*.yaml: the schema /print reads, plus the card-style limits."""
+def check_cards(project, subtopics, report, marked=None, strict=False):
+    """cards/*.yaml: the schema /print reads, plus the card-style limits.
+
+    The limits follow the grid the deck declares, because "too long" is a
+    question about a card of a particular width. `strict` only adds the nudge
+    to declare one at all — a deck without the key is a valid A7 deck.
+    """
     root = project / "cards"
     if not root.is_dir():
         return
@@ -602,11 +619,22 @@ def check_cards(project, subtopics, report, marked=None):
         # The grid is optional and absent means A7, so only a value that is
         # there and wrong is worth reporting. One deck is one size, which is
         # why the key belongs at the top level and nowhere else.
+        grid = build_pdf.DEFAULT_GRID
         if data.get("grid") is not None:
             try:
-                build_pdf.parse_grid(data["grid"])
+                grid = build_pdf.parse_grid(data["grid"])
             except ValueError as e:
                 report.error(where, str(e))
+        elif strict:
+            report.warn(
+                where,
+                "no 'grid' key — the deck prints at A7 (2x4), which is the right default "
+                "but not a statement. /cards writes the size the deck was written for; "
+                "add 'grid: a7' to say so",
+            )
+        limits = LIMITS[grid]
+        budget = LABEL_BUDGET.get(grid)
+        topic = str(data.get("topic") or path.stem)
 
         fronts = {}
         for i, card in enumerate(data["cards"] or [], start=1):
@@ -632,10 +660,20 @@ def check_cards(project, subtopics, report, marked=None):
                     f"card {i}: subtopic '{card['subtopic']}' is marked "
                     f"'Status: {status}' in the catalog",
                 )
-            if len(front) > MAX_FRONT:
+            if len(front) > limits["front"]:
                 report.warn(where, f"card {i}: front is long ({len(front)} characters)")
-            if len(back) > MAX_BACK:
+            if len(back) > limits["back"]:
                 report.warn(where, f"card {i}: back is long ({len(back)} characters)")
+            if budget:
+                # What the head band actually renders: TOPIC / SUBTOPIC, or the
+                # topic alone when there is no subtopic (templates/card.typ).
+                label = f"{topic} / {card['subtopic']}" if card.get("subtopic") else topic
+                if len(label) > budget:
+                    report.warn(
+                        where,
+                        f"card {i}: the head band label '{label.upper()}' is {len(label)} "
+                        f"characters — an A8 band holds about {budget} and clips the rest",
+                    )
             if "grid" in card:
                 report.error(
                     where,
@@ -675,12 +713,12 @@ def check_markup(where, i, front, back, report):
             )
 
 
-def check(project, report):
+def check(project, report, strict=False):
     required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
     sparse = check_knowledge(project, source_ids, report)
     subtopics, marked = check_catalog(project, report, required, areas, sparse)
-    check_cards(project, subtopics, report, marked)
+    check_cards(project, subtopics, report, marked, strict=strict)
     return report
 
 
@@ -696,7 +734,7 @@ def main():
     if not project.is_dir():
         sys.exit(f"ERROR: {project} is not a folder")
 
-    report = check(project, Report())
+    report = check(project, Report(), strict=args.strict)
     for w in report.warnings:
         print(f"WARNING: {w}", file=sys.stderr)
     for e in report.errors:
