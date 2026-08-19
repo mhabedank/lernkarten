@@ -179,7 +179,7 @@ is not run.
 - [X] T032 [P] `python3 scripts/check_docs.py`
 - [X] T033 Evidence for SC-008: check out the parent commit, run `pytest tests/test_landing_page.py -q`, confirm **seven** assertions fail on their assertions (A8 is the guard and passes), and paste the output into the pull request
 - [X] T034 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
-- [ ] T035 Push the branch and open a pull request against **`main`** — feature 001 landed there as PR #32, so the stacking this task originally described no longer applies. Confirm commit subjects use the `fix:`, `test:` and `docs:` prefixes
+- [X] T035 Push the branch and open a pull request against **`main`** — [PR #35](https://github.com/mhabedank/lernkarten/pull/35). Feature 001 landed in main as PR #32, so the stacking this task originally described no longer applies. Confirm commit subjects use the `fix:`, `test:` and `docs:` prefixes
 
 **Deliberately skipped, with the reason stated rather than silently dropped**:
 `make_testdata.py`, the `LERNKARTEN_E2E=1` suites, `check_project.py --strict`,
