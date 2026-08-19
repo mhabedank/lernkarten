@@ -256,6 +256,53 @@ def test_a_second_run_skips_what_is_already_there(library, tmp_path):
     assert "0 new" in again.stdout and "4 skipped" in again.stdout, again.stdout
 
 
+def test_two_items_with_the_same_title_both_land(library, tmp_path):
+    """BUG-002: the file name came from the title alone, so the second item lost.
+
+    Worse than losing it: the file the run had just written was newer than the
+    PDF, so the skip branch took it and reported it as `skipped` — a word that
+    means "already ingested, unchanged". A first run against an empty directory
+    reported 14 skipped and had thrown 14 documents away.
+    """
+    result = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates"
+    )
+    assert result.returncode == 0, result.stderr
+    files = documents(tmp_path)
+    assert len(files) == 2, files
+    keys = {"zotero_key: ITEM09", "zotero_key: ITEM10"}
+    assert keys <= {line for text in files.values() for line in text.splitlines()}, files
+    assert "0 skipped" in result.stdout, result.stdout
+    assert "1 collision" in result.stdout, result.stdout
+
+
+def test_a_same_title_collision_still_skips_on_the_second_run(library, tmp_path):
+    """The fix must not cost the incremental path, which is why it reads identity.
+
+    Deciding "already there" by timestamp is what conflated the two cases. The
+    second run has to recognise both files as the items that wrote them.
+    """
+    ingest(library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates")
+    again = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates"
+    )
+    assert "0 new" in again.stdout and "2 skipped" in again.stdout, again.stdout
+    assert len(documents(tmp_path)) == 2, documents(tmp_path)
+
+
+def test_the_summary_names_the_directory_it_wrote_into(library, tmp_path):
+    """BUG-003: every destination looked alike in the summary, so a wrong one was invisible.
+
+    This is the check that would have made the original `ROOT`-relative bug
+    obvious instead of silent, and it is the half of #11 that was never done.
+    """
+    result = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates"
+    )
+    target = Path(tmp_path) / "knowledge" / "kestrel-zotero"
+    assert str(target.resolve()) in result.stdout, result.stdout
+
+
 def test_the_collection_filter_leaves_the_other_collection_alone(library, tmp_path):
     ingest(library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Kestrel Islands")
     assert not any("ferry" in name for name in documents(tmp_path))
