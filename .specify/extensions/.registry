@@ -17,6 +17,21 @@
       },
       "registered_skills": [],
       "installed_at": "2026-08-17T10:52:59.349616+00:00"
+    },
+    "fleet": {
+      "version": "1.1.0",
+      "source": "local",
+      "manifest_hash": "sha256:329033853690a066ec7c0c2c88ca13a9e4bd971d17270e1a51e0bc49d59f2852",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "claude": [
+          "speckit.fleet.run",
+          "speckit.fleet.review"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-08-18T10:29:43.081010+00:00"
     }
   }
 }

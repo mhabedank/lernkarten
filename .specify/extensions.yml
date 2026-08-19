@@ -1,5 +1,6 @@
 installed:
 - brownfield
+- fleet
 settings:
   auto_execute_hooks: true
 hooks:
@@ -11,4 +12,13 @@ hooks:
     priority: 10
     prompt: Scan this existing project to customize spec-kit configuration?
     description: Auto-scan project after spec-kit init to detect tech stack and conventions
+    condition: null
+  after_tasks:
+  - extension: fleet
+    command: speckit.fleet.review
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Run cross-model review to evaluate plan and tasks before implementation?
+    description: Pre-implementation review gate
     condition: null
