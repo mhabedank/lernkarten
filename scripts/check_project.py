@@ -46,6 +46,10 @@ DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 # The attribute lines a catalog entry may carry, as `Key: value` in its body.
 ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal):(.*)$")
+# `Also covers: Access control (cards in cards/security.yaml)` — the parenthetical
+# is prose for the reader, not part of the name.
+PARENTHETICAL = re.compile(r"\s*\([^)]*\)\s*$")
+LEADING_PARENTHETICAL = re.compile(r"^\([^)]*\)")
 # Front at most ~2 lines, back at most ~6 — the card is only 100 x 72 mm.
 MAX_FRONT = 120
 MAX_BACK = 400
@@ -318,20 +322,55 @@ def parse_catalog(text):
     return Catalog(entries=entries)
 
 
-def catalog_names(line):
-    """The comma-separated names on a `Parents:`, `Related:` or `Also covers:` line.
+def catalog_names(line, known=()):
+    """The names on a `Parents:`, `Related:` or `Also covers:` line.
+
+    The separator is a comma and a name may contain one — "Governance, risk &
+    compliance" is an ordinary thing to call a topic. So `known` is matched
+    first, longest name before shorter, and only what is left over is split.
+    Without it this splits on every comma, which tears such a name into pieces
+    that match nothing and makes all five graph checks fire at once (BUG-005).
+
+    Matching the known names rather than quoting them keeps the format
+    unchanged, so every catalog written before this stays valid. What remains
+    after the known names are taken out is still split and still reported as
+    dangling — that is what C-1 and C-5 are for, and a fix that stopped
+    splitting would silently retire them.
 
     An `Also covers:` entry carries `(cards in cards/x.yaml)` after the name so a
     reader knows where to look — that parenthetical is prose, and comparing names
     with it attached makes every reciprocity check fail on a catalog that follows
     the contract.
     """
+    text = (line or "").strip()
+    candidates = sorted({name for name in known if name}, key=len, reverse=True)
     names = []
-    for part in (line or "").split(","):
-        name = re.sub(r"\s*\([^)]*\)\s*$", "", part.strip()).strip()
+    while text:
+        name = next((c for c in candidates if _name_ends_here(text, c)), None)
+        if name is None:
+            head, _, text = text.partition(",")
+            name = head
+        else:
+            text = LEADING_PARENTHETICAL.sub("", text[len(name) :].lstrip()).lstrip()
+            text = text[1:] if text.startswith(",") else text
+        name = PARENTHETICAL.sub("", name.strip()).strip()
         if name:
             names.append(name)
+        text = text.strip()
     return names
+
+
+def _name_ends_here(text, candidate):
+    """Does `text` start with `candidate` as a whole name rather than a prefix?
+
+    "Tides" must not match inside "Tides, currents & winds", so the character
+    after the candidate has to end the name: nothing, the separator, or the
+    `(cards in ...)` parenthetical.
+    """
+    if not text.startswith(candidate):
+        return False
+    rest = text[len(candidate) :].lstrip()
+    return rest == "" or rest.startswith(",") or rest.startswith("(")
 
 
 def check_graph(catalog, subtopics, report):
@@ -348,11 +387,11 @@ def check_graph(catalog, subtopics, report):
 
     borrowed = {}
     for entry in catalog.topics:
-        for name in catalog_names(entry.attribute("also covers")):
+        for name in catalog_names(entry.attribute("also covers"), subtopics):
             borrowed.setdefault(entry.name, []).append(name)
 
     for entry in catalog.subtopics:
-        parents = catalog_names(entry.attribute("parents"))
+        parents = catalog_names(entry.attribute("parents"), topics)
         if parents:
             for parent in parents:  # C-1
                 if parent not in topics:
@@ -375,7 +414,7 @@ def check_graph(catalog, subtopics, report):
                         f"subtopic '{entry.name}': '{parent}' is listed as a parent "
                         f"but '## {parent}' carries no 'Also covers:' line naming it",
                     )
-        for name in catalog_names(entry.attribute("related")):  # C-5
+        for name in catalog_names(entry.attribute("related"), subtopics):  # C-5
             if name not in subtopics:
                 report.error(
                     where,
@@ -392,7 +431,7 @@ def check_graph(catalog, subtopics, report):
                     f"topic '{topic}': 'Also covers:' names '{name}', "
                     "which is not a subtopic of this catalog",
                 )
-            elif topic not in catalog_names(entry.attribute("parents")):
+            elif topic not in catalog_names(entry.attribute("parents"), topics):
                 report.error(
                     where,
                     f"topic '{topic}': 'Also covers:' claims '{name}', but that "

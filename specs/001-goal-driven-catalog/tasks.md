@@ -269,7 +269,7 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### 🟢 Green — deterministic half
 
-- [ ] ⚠️ **Reopened** T066 [US5] *(reopened — BUG-005)* Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`. It was marked done and the five invariants do work — for names without a comma. `catalog_names()` splits on every comma unconditionally, so a name that contains one is torn into pieces that match nothing and all five checks fire at once ([BUG-005](bugs/BUG-005.md)). T120–T124 finish it; this stays open until they are green
+- [X] ⚠️ **Reopened, now closed by T122** T066 [US5] *(reopened — BUG-005)* Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`. It was marked done and the five invariants do work — for names without a comma. `catalog_names()` splits on every comma unconditionally, so a name that contains one is torn into pieces that match nothing and all five checks fire at once ([BUG-005](bugs/BUG-005.md)). T120–T124 finish it; this stays open until they are green
 - [x] T119 [US5] For C-4, compare only the **name** on an `Also covers:` line: the contract writes `Also covers: Access control (cards in cards/security.yaml)` ([contracts/catalog-topics-md.md](contracts/catalog-topics-md.md)), so strip the trailing parenthetical before matching or every reciprocity check fails on a catalog that follows the contract
 - [x] T067 [US5] Implement C-9 — `Also covers:` must not be parsed as a subtopic heading, or the existing `###` scan double-counts and `check_cards()` sees a duplicate name
 
@@ -460,24 +460,24 @@ still per-bug and none of them may be reordered.
 
 ### BUG-005 — a comma in a name (finishes the reopened T066)
 
-- [ ] T120 🔴 [US5] `tests/test_check_project.py`: a catalog with a topic named
+- [X] T120 🔴 [US5] `tests/test_check_project.py`: a catalog with a topic named
       `Tides, currents & winds`, a subtopic naming it in `Parents:` (primary
       first) and the reciprocal `Also covers:`, validates **clean** — red today
       with five errors, none of which names the real cause (FR-049)
-- [ ] T121 🔴 [US5] `tests/test_check_project.py`: the same name reached through
+- [X] T121 🔴 [US5] `tests/test_check_project.py`: the same name reached through
       `Related:`, and a genuinely dangling name **after** a comma-bearing one on
       the same line, still reported — red. One test does not cover three call
       sites, and the second half guards against a fix that stops reporting
       dangling names at all (FR-049, FR-033, FR-034)
-- [ ] T122 [US5] Rewrite `catalog_names()` in `scripts/check_project.py` to take
+- [X] T122 [US5] Rewrite `catalog_names()` in `scripts/check_project.py` to take
       the set of declared names and match longest-first before splitting the
       remainder on commas. Every call site passes the names it validates
       against: topics for `Parents:`, subtopics for `Related:` and
       `Also covers:`. **This closes the reopened T066**
-- [ ] T123 [US5] Give one topic in `tests/fixtures/demo-project/catalog/topics.md`
+- [X] T123 [US5] Give one topic in `tests/fixtures/demo-project/catalog/topics.md`
       a comma in its name, referenced from all three attribute lines — the repo
       rule is that a new failure mode belongs in the demo project
-- [ ] T124 [US5] State it where the name is written, not only where it is read:
+- [X] T124 [US5] State it where the name is written, not only where it is read:
       `skills/catalog/SKILL.md` and the catalog contract under `contracts/` say
       a name may contain a comma and does not need escaping
 

@@ -91,6 +91,12 @@ absent:
 
 And on a topic: `Also covers: <subtopic> (cards in cards/<slug>.yaml)`.
 
+A name may contain a comma — *Governance, risk & compliance* is an ordinary
+topic. Write it as it is: the three lines above are read by matching the names
+the catalog declares before what is left over is split, so nothing needs
+escaping and nothing needs quoting. Do not rename a topic to get around the
+separator.
+
 Drop the `Goal:` field when there is no `goal.md`.
 
 ## A subtopic under more than one topic

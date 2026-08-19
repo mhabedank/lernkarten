@@ -689,6 +689,19 @@ def test_a_comma_bearing_name_is_reached_through_related_and_also_covers(tmp_pat
     assert not report.errors, messages(report)
 
 
+def test_a_name_before_its_parenthetical_does_not_swallow_the_next_one():
+    """An `Also covers:` name carries `(cards in ...)` and may not be the last one.
+
+    The parenthetical sits between a name and the comma after it, so consuming
+    it has to happen where it is rather than at the end of the line.
+    """
+    names = check_project.catalog_names(
+        "Access control (cards in cards/security.yaml), Rhythm of the tide",
+        {"Access control", "Rhythm of the tide"},
+    )
+    assert names == ["Access control", "Rhythm of the tide"], names
+
+
 def test_a_dangling_name_after_a_comma_bearing_one_is_still_reported(tmp_path):
     """FR-049 must not buy silence: what is left over is still split and checked.
 

@@ -63,7 +63,7 @@ References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 Spring- und Nipptidenhub in Torvig Harbour und die Zwölftelregel.
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
-## Signals
+## Signals, flags and the radio
 The flag code of the harbours, for the days the radio is down.
 
 ### The six flags
@@ -79,5 +79,5 @@ References: [signal-code](../knowledge/field-notes/signal-code.md)
 Who holds course and who gives way in the channel, and what the black cylinder
 with flag Kell means. Closed by `/research-gaps` — the field notes never
 covered it.
-Parents: Signals, Tides
+Parents: Signals, flags and the radio, Tides
 References: [right-of-way](../knowledge/right-of-way-research/right-of-way.md)

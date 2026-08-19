@@ -48,6 +48,7 @@ References: [paper-a](../knowledge/lc/paper-a.md)
 | `Goal:` | header | link to `goal.md`; presence marks a goal-driven catalog |
 | `Status:` | subtopic | `gap` or `out of scope`. Absent ⇒ in scope and covered |
 | `Parents:` | subtopic | every topic it belongs under, **primary first**. Absent ⇒ the containing heading is the only parent |
+| *(all three of the above)* | — | comma-separated, and **a name may itself contain a comma**. The reader matches the names the catalog declares, longest first, and splits only the remainder — so no quoting and no escaping (FR-049, [BUG-005](../bugs/BUG-005.md)) |
 | `Related:` | subtopic | undirected associations to other subtopics |
 | `Also covers:` | topic | subtopics parented here but written elsewhere, naming where their cards live |
 | `References: none` | subtopic | valid **only** with `Status: gap` |
