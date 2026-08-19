@@ -33,6 +33,8 @@ ALLOWED = {
 LANDING_URL = "https://mhabedank.github.io/lernkarten/"
 BADGE_ANCHOR = "Claude_Code-plugin"
 SCREENSHOT_ANCHOR = "assets/example-cards.png"
+# The same page as a file rather than a URL — what a contributor edits.
+LANDING_SOURCE = "docs/index.html"
 
 
 def versioned_files():
@@ -255,4 +257,21 @@ def test_the_readme_points_a_newcomer_at_the_landing_page():
     )
     assert opening.index(LANDING_URL) < opening.index(SCREENSHOT_ANCHOR), (
         f"README.md links {LANDING_URL} after the {SCREENSHOT_ANCHOR} screenshot"
+    )
+
+
+def test_the_readme_still_names_the_landing_page_source():
+    """The contributor's half of the same page, and it must survive the newcomer's.
+
+    This passes on `main` on purpose. It guards behaviour that already exists:
+    the design section points at the file somebody edits, which is a different
+    thing from the URL the opening block now points at. Deduplicating the two
+    would cost a reader who is looking for the source. Proved load-bearing by
+    deleting the link and watching this fail — see FR-005b.
+    """
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = re.search(r"^## The design\n(.*?)(?=^## )", text, re.MULTILINE | re.DOTALL)
+    assert section, "README.md has no '## The design' section to hold the source reference"
+    assert f"]({LANDING_SOURCE})" in section.group(1), (
+        f"README.md: '## The design' no longer links {LANDING_SOURCE}"
     )

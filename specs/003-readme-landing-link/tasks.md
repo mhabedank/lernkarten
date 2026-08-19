@@ -112,17 +112,17 @@ branch and fails on `main`.
 
 ### 🔴 Red — the test, before the README is touched
 
-- [ ] T004 🔴 [US1] Add `test_the_readme_points_a_newcomer_at_the_landing_page` to `tests/test_repo_hygiene.py`, asserting invariants 1–3 of [data-model.md](./data-model.md): bound the opening block with `re.search(r"^## ", text, re.M)` on `README.md`; assert `https://mhabedank.github.io/lernkarten/` appears inside it, after `Claude_Code-plugin` and before `assets/example-cards.png`. Add the URL as a module-level constant beside `BLOCKED`/`ALLOWED`. Give the case a docstring saying why the anchors are a badge URL and a file path rather than prose (see [research.md](./research.md) R2), and make the failure message name `README.md`. **Do not touch `README.md` in this task.**
-- [ ] T005 🔴 [US1] Run `python3 -m pytest tests/test_repo_hygiene.py -k points_a_newcomer -q` and confirm it fails **on the assertion** — not on an `ImportError`, a `FileNotFoundError` or an `AttributeError` from `re.search` returning `None`. Paste the failure into the pull request description; it cannot be reproduced once T006 lands.
+- [X] T004 🔴 [US1] Add `test_the_readme_points_a_newcomer_at_the_landing_page` to `tests/test_repo_hygiene.py`, asserting invariants 1–3 of [data-model.md](./data-model.md): bound the opening block with `re.search(r"^## ", text, re.M)` on `README.md`; assert `https://mhabedank.github.io/lernkarten/` appears inside it, after `Claude_Code-plugin` and before `assets/example-cards.png`. Add the URL as a module-level constant beside `BLOCKED`/`ALLOWED`. Give the case a docstring saying why the anchors are a badge URL and a file path rather than prose (see [research.md](./research.md) R2), and make the failure message name `README.md`. **Do not touch `README.md` in this task.**
+- [X] T005 🔴 [US1] Run `python3 -m pytest tests/test_repo_hygiene.py -k points_a_newcomer -q` and confirm it fails **on the assertion** — not on an `ImportError`, a `FileNotFoundError` or an `AttributeError` from `re.search` returning `None`. Paste the failure into the pull request description; it cannot be reproduced once T006 lands.
 
 **Checkpoint**: commit here, red. This commit is the artifact constitution XI
 asks for.
 
 ### 🟢 Green — the README
 
-- [ ] T006 [US1] Insert the link into the opening block of `README.md`, between the introductory paragraph (ends line 11) and the `assets/example-cards.png` screenshot (line 13), in the shape issue #26 offers: `**[See it →](https://mhabedank.github.io/lernkarten/)**`. FR-003 leaves the exact wording free — it must read as an invitation to *look*, not to read further. Change nothing else in the file.
-- [ ] T007 [US1] Run `python3 -m pytest tests/test_repo_hygiene.py -q` and confirm the whole module is green, `test_the_repo_does_not_still_promise_five_commands` included — it reads the same file and must not have been disturbed.
-- [ ] T008 [US1] Refactor `tests/test_repo_hygiene.py`: if the opening-block slice is worth naming, lift it to a small helper beside `versioned_files()` so US2's case can reuse it. Red-green-**refactor** — the third step is not optional either.
+- [X] T006 [US1] Insert the link into the opening block of `README.md`, between the introductory paragraph (ends line 11) and the `assets/example-cards.png` screenshot (line 13), in the shape issue #26 offers: `**[See it →](https://mhabedank.github.io/lernkarten/)**`. FR-003 leaves the exact wording free — it must read as an invitation to *look*, not to read further. Change nothing else in the file.
+- [X] T007 [US1] Run `python3 -m pytest tests/test_repo_hygiene.py -q` and confirm the whole module is green, `test_the_repo_does_not_still_promise_five_commands` included — it reads the same file and must not have been disturbed.
+- [X] T008 [US1] Refactor `tests/test_repo_hygiene.py`: if the opening-block slice is worth naming, lift it to a small helper beside `versioned_files()` so US2's case can reuse it. Red-green-**refactor** — the third step is not optional either.
 
 **Checkpoint**: US1 stands alone. The link is in the file, the assertion covering
 it was seen failing first, and nothing else in the suite moved.
@@ -144,9 +144,9 @@ behaviour that exists today, so a guard for it has nothing to fail against.
 T010 replaces the red step with a mutation check, which is the only way to
 learn whether a green-from-birth assertion is load-bearing or decorative.
 
-- [ ] T009 [US2] Add `test_the_readme_still_names_the_landing_page_source` to `tests/test_repo_hygiene.py`, asserting invariant 4: `README.md` still contains a relative link to `docs/index.html`. Docstring must state that this passes on `main` on purpose, and name FR-004 as what it guards. Sequential after T008 — same file.
-- [ ] T010 [US2] Mutation-check T009: temporarily delete the `docs/index.html` link from `## The design` in `README.md`, run `python3 -m pytest tests/test_repo_hygiene.py -k landing_page_source -q`, confirm it **fails**, then restore the link with `git checkout -- README.md` (or by hand if T006 is uncommitted — check `git status` first, restoring the wrong way loses T006's edit). Record in the pull request that the check was done.
-- [ ] T011 [US2] Run `python3 scripts/check_docs.py` and confirm it prints `OK: …` — the relative `docs/index.html` link still resolves, and the new absolute URL from T006 is skipped by design at `scripts/check_docs.py:174`, so no gate change is needed.
+- [X] T009 [US2] Add `test_the_readme_still_names_the_landing_page_source` to `tests/test_repo_hygiene.py`, asserting invariant 4: `README.md` still contains a relative link to `docs/index.html`. Docstring must state that this passes on `main` on purpose, and name FR-004 as what it guards. Sequential after T008 — same file.
+- [X] T010 [US2] Mutation-check T009: temporarily delete the `docs/index.html` link from `## The design` in `README.md`, run `python3 -m pytest tests/test_repo_hygiene.py -k landing_page_source -q`, confirm it **fails**, then restore the link with `git checkout -- README.md` (or by hand if T006 is uncommitted — check `git status` first, restoring the wrong way loses T006's edit). Record in the pull request that the check was done.
+- [X] T011 [US2] Run `python3 scripts/check_docs.py` and confirm it prints `OK: …` — the relative `docs/index.html` link still resolves, and the new absolute URL from T006 is skipped by design at `scripts/check_docs.py:174`, so no gate change is needed.
 
 **Checkpoint**: both stories stand on their own, and each has a command that
 proves it without the other.
