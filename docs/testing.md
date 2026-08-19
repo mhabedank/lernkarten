@@ -104,7 +104,7 @@ Windows was advisory for exactly as long as it took to fix what it found — git
 quoting paths it should not have, and nobody stating the encoding of extracted
 PDF text — and it counts like the others now. A Windows failure is a failure.
 
-`pytest` covers seven levels:
+`pytest` covers eight levels:
 
 | Module | Level | What it does |
 |---|---|---|
@@ -115,6 +115,7 @@ PDF text — and it counts like the others now. A Windows failure is a failure.
 | `tests/test_e2e.py` | end-to-end | runs `bin/lernkarten` as a subprocess and takes the PDF apart |
 | `tests/test_check_project.py` | contract | the artifacts of the four Claude-driven steps |
 | `tests/test_repo_hygiene.py` | repo | no user content, no committed binaries |
+| `tests/test_landing_page.py` | page | the structure of `docs/index.html` — never its geometry |
 
 `tests/test_e2e.py` and `tests/test_testdata.py` need the typesetting engine.
 Without one they skip, so a fresh checkout never downloads 30 MB unasked:
@@ -227,6 +228,43 @@ python3 scripts/zotero_stub.py
 Steps 1–14 need a Claude session in the demo folder; 15–19 only need the
 command. If a printer is not at hand, 16–18 can be judged from the PDF: hold
 page 1 and page 2 against each other in a viewer at 100 %.
+
+### The landing page
+
+`tests/test_landing_page.py` reads `docs/index.html`; it never renders it. So it
+can tell you a control exists and cannot tell you anybody would find it, and it
+can tell you the note is no longer a child of the band and cannot tell you the
+heading row got shorter. These three rows are the other half of that pair, and
+they are named here rather than left to a reviewer's eye because that is the
+condition constitution XI attaches to splitting a layout requirement.
+
+Open `docs/index.html` straight off disk. No server, no build.
+
+| # | At | Do this | Expect |
+|---|---|---|---|
+| 20 | 360 px wide | look at the bar, then open the menu | one line at rest; the control reads as a word, not a glyph; all four links behind it; `install` among them |
+| 21 | 360 px wide | tap `install` | you land on the install section |
+| 22 | 360 px wide | keyboard only: tab to the control, press Enter | it opens; the links take focus in order |
+| 23 | 360 px, **JavaScript off** | repeat rows 20 and 21 | unchanged — the disclosure is CSS and markup, and nothing here needs script |
+| 24 | above 760 px | widen | the bar is one line: wordmark, four inline links, github. No control, no menu |
+| 25 | above 1080 px | sections `01`, `03`, `04` | the three heading rows are the same height, none taller than its heading needs; each note is a full-width block under its band |
+| 26 | above 1080 px | the rules around each note | single everywhere — no doubled 4 px rule where band meets note, none missing |
+| 27 | above 1080 px | section `04 install` | the note is still light on ink, and the rule under it is `--sand`, not the default dark |
+| 28 | below 1080 px | all four sections | reading order unchanged: number, heading, note, content. Section `02` still has its toggle in the band |
+| 29 | any width | `02 one card, one idea`: click **show the back**, then again | exactly one card at a time, and the label follows it |
+| 30 | any width, **JavaScript off** | reload and look at `02` | both cards side by side, no button — the fallback the script's own comment describes |
+| 31 | Chromium, Firefox, Safari | repeat rows 20, 23 and 25 in each | the same in all three. CI has no browser leg, so this is the only place the claim is checked |
+
+Row 31 is the one that cannot be delegated to a machine here. The `<details>`
+disclosure needs two user-agent behaviours overridden at once — older engines
+hid the closed panel with `display: none`, current Chrome wraps it in
+`::details-content` and hides that — and overriding only the panel's own
+`display` renders nothing while reporting `flex` to devtools.
+
+Three things are known and are not regressions: the card toggle still does not
+explain itself (the open half of the issue that produced it), the notes are
+still 14 px against the 15 px floor in [design.md](design.md), and the readme
+still buries the landing page.
 
 ### When the engine is the suspect
 

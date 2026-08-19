@@ -38,6 +38,12 @@
 
   *, *::before, *::after { box-sizing: border-box; }
 
+  /* !important, and on purpose: `hidden` says the element is not relevant, which
+     is not a preference for a class to outrank. Without it this loses to any
+     rule that declares display — [hidden] and .card both weigh (0,1,0), and
+     .card comes later, which is why the card toggle did nothing for so long. */
+  [hidden] { display: none !important; }
+
   body {
     margin: 0;
     background: var(--ground);
@@ -70,7 +76,7 @@
 
   .mono { font-family: var(--mono); }
 
-  /* Header rule: the number chip, the title, the note beside it. */
+  /* Header rule: the number chip and the title. The note goes underneath. */
   .band { display: flex; align-items: stretch; border-bottom: var(--rule); background: var(--sand); }
   .band__no {
     width: 72px; flex: none; border-right: var(--rule);
@@ -78,8 +84,12 @@
     font-family: var(--display); font-weight: 500; font-size: 20px;
   }
   .band h2 { flex: 1; padding: 18px 28px; font-size: clamp(26px, 4vw, 38px); line-height: 1; text-transform: lowercase; }
+  /* Under the band, never inside it. As a flex child the note set the row
+     height whenever it ran taller than the heading — which every one of them
+     does, by 52, 29 and 7 px. The band's own bottom rule already divides the
+     two, so this takes a bottom border and never a top one. */
   .band__note {
-    width: 400px; flex: none; border-left: var(--rule); padding: 18px 24px;
+    border-bottom: var(--rule); padding: 18px 24px; background: var(--sand);
     font-size: 14px; line-height: 1.6; color: var(--muted);
   }
 
@@ -94,13 +104,20 @@
     border-right: var(--rule); border-bottom: 0;
   }
   .nav__home span { font-family: var(--display); font-size: 22px; text-transform: lowercase; }
-  /* The links scroll sideways rather than wrapping: a wrapped row makes the
-     sticky bar two lines tall on a phone and eats the top of every section. */
-  .nav__links {
-    flex: 1; display: flex; align-items: center; gap: 26px; padding: 0 22px;
-    min-width: 0; overflow-x: auto; scrollbar-width: none;
+  /* The bar never wraps: a wrapped row of links makes the sticky bar two lines
+     tall on a phone and eats the top of every section. It used to scroll
+     sideways instead, with the scrollbar hidden — which meant links existed
+     that nobody could see. So the links now collapse behind a control below the
+     breakpoint, and the bar is still one line at rest. */
+  .nav__menu { min-width: 0; }
+  .nav__menu > summary {
+    display: flex; align-items: center; padding: 0 22px;
+    list-style: none; cursor: pointer;
   }
-  .nav__links::-webkit-scrollbar { display: none; }
+  .nav__menu > summary::-webkit-details-marker { display: none; }
+  .nav__links {
+    display: flex; align-items: center; gap: 26px; padding: 0 22px; min-width: 0;
+  }
   .nav__links a { border-bottom: 0; white-space: nowrap; }
   .nav__links a:hover { border-bottom: 2px solid var(--red); }
   .nav__gh {
@@ -254,7 +271,7 @@
   .install { background: var(--ink); color: var(--sand); }
   .install .band { background: var(--ink); border-bottom-color: var(--sand); }
   .install .band__no { border-right-color: var(--sand); }
-  .install .band__note { border-left-color: var(--sand); color: #c9c4b8; }
+  .install .band__note { background: var(--ink); border-bottom-color: var(--sand); color: #c9c4b8; }
   .install__grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
   .install__main { border-right: 2px solid var(--sand); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
   /* The longer of the two commands is 44 characters — at a fixed 15 px it
@@ -288,12 +305,11 @@
   .toggle:hover { background: var(--ink); color: var(--sand); }
 
   @media (max-width: 1080px) {
-    /* The note goes full width, so the band has to wrap in the same breath —
-       a 100 % item in a non-wrapping row just pushes the page sideways. */
+    /* The toggle goes full width, so the band has to wrap in the same breath —
+       a 100 % item in a non-wrapping row just pushes the page sideways. Only
+       section 02 still has a child that needs this; the notes left the band. */
     .band { flex-wrap: wrap; }
     .band h2 { flex-basis: calc(100% - 72px); }
-    .band__note { width: 100%; border-left: 0; border-top: var(--rule); }
-    .install .band__note { border-top-color: var(--sand); }
     .toggle { border-left: 0; border-top: var(--rule); width: 100%; padding: 14px; }
     .print__rules { width: 100%; }
     .hero__grid, .anatomy, .yaml, .install__grid { grid-template-columns: minmax(0, 1fr); }
@@ -313,12 +329,36 @@
     .print__sheets { border-right: 0; border-bottom: var(--rule); }
   }
 
+  /* Above the breakpoint there is no menu: the summary goes away and the panel
+     is shown whether the disclosure is open or not, so the bar is the row it has
+     always been. Both user-agent behaviours have to be overridden to do that —
+     older engines hid the closed panel with display:none, current Chrome wraps
+     it in ::details-content and hides that instead. Overriding only the panel's
+     own display looks like it works (the computed value even reads `flex`) and
+     lays the panel out at zero width. An engine that has never heard of the
+     pseudo-element just drops that line, so no feature query is needed. */
+  @media (min-width: 761px) {
+    .nav__menu { flex: 1; min-width: 0; }
+    .nav__menu > summary { display: none; }
+    .nav__menu::details-content { content-visibility: visible !important; }
+  }
+
   @media (max-width: 760px) {
     /* Pull the gutter in. Forty pixels a side on a 360 px screen leaves a
        measure too narrow to set text in — the rules stay, the air goes. */
     .nav__home { padding: 12px 16px; gap: 10px; }
-    .nav__links { gap: 18px; padding: 0 16px; }
     .nav__gh { padding: 0 18px; }
+    /* The panel drops out of the bar rather than growing it, so the bar stays
+       one line whether the menu is open or shut. `.nav` is sticky, which makes
+       it the containing block this positions against. */
+    .nav__menu > summary { padding: 0 16px; }
+    .nav__links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch;
+      gap: 0; padding: 0;
+      background: var(--sand); border-bottom: var(--rule);
+    }
+    .nav__links a { padding: 14px 16px; border-top: var(--rule); }
     .hero__text, .hero__side, .anatomy__cards, .install__main, .install__side,
     .yaml > div, .principle { padding: 28px 20px; }
     .hero__facts { gap: 18px; }
@@ -351,12 +391,15 @@
       </svg>
       <span>lernkarten</span>
     </a>
-    <div class="nav__links label">
-      <a href="#how">how it works</a>
-      <a href="#cards">the card</a>
-      <a href="#print">printing</a>
-      <a href="#install">install</a>
-    </div>
+    <details class="nav__menu">
+      <summary class="label">menu</summary>
+      <div class="nav__links label">
+        <a href="#how">how it works</a>
+        <a href="#cards">the card</a>
+        <a href="#print">printing</a>
+        <a href="#install">install</a>
+      </div>
+    </details>
     <a class="nav__gh label" href="https://github.com/mhabedank/lernkarten">github</a>
   </nav>
 
@@ -417,8 +460,8 @@
     <div class="band">
       <div class="band__no" style="background:var(--blue);color:var(--sand)">01</div>
       <h2>the pipeline</h2>
-      <p class="band__note">Seven steps, two of them optional. Every step writes a plain text file you can read and edit, and every step is repeatable: add a source next month, run it again, and you only pay for what is new.</p>
     </div>
+    <p class="band__note">Seven steps, two of them optional. Every step writes a plain text file you can read and edit, and every step is repeatable: add a source next month, run it again, and you only pay for what is new.</p>
     <div class="steps">
       <article class="step">
         <div class="step__shape" style="background:var(--blue)">
@@ -587,8 +630,8 @@
     <div class="band">
       <div class="band__no" style="background:var(--yellow)">03</div>
       <h2>print it, cut it</h2>
-      <p class="band__note">Eight cards to an A4 page, fronts and backs on consecutive pages with the backs mirrored so duplex lines them up.</p>
     </div>
+    <p class="band__note">Eight cards to an A4 page, fronts and backs on consecutive pages with the backs mirrored so duplex lines them up.</p>
     <div class="print">
       <div class="print__sheets">
         <div class="sheet">
@@ -666,8 +709,8 @@
     <div class="band">
       <div class="band__no" style="background:var(--red);color:var(--sand)">04</div>
       <h2>install</h2>
-      <p class="band__note">Two lines in Claude Code. That is the whole installation.</p>
     </div>
+    <p class="band__note">Two lines in Claude Code. That is the whole installation.</p>
     <div class="install__grid">
       <div class="install__main">
         <div>
