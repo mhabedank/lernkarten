@@ -30,8 +30,24 @@ PAGE = ROOT / "docs" / "index.html"
 # but `path` and friends are listed anyway: a hand-written `<path>` without the
 # slash would otherwise swallow the rest of the document into its subtree.
 VOID = {
-    "area", "base", "br", "circle", "col", "embed", "hr", "img", "input",
-    "link", "meta", "param", "path", "polygon", "rect", "source", "track", "wbr",
+    "area",
+    "base",
+    "br",
+    "circle",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "path",
+    "polygon",
+    "rect",
+    "source",
+    "track",
+    "wbr",
 }
 
 
@@ -119,8 +135,9 @@ def one(root, tag=None, cls=None):
 def stylesheet():
     """The contents of every <style> block, concatenated.
 
-    The page has no external stylesheet — A8 is what keeps that true — so this is
-    the whole of the CSS.
+    Every rule the page defines lives here. It does link one external stylesheet
+    — the Google Fonts one, which delivers faces and no rules — and A8 is what
+    keeps that list from growing.
     """
     return "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", page_source(), re.S))
 
@@ -264,7 +281,9 @@ def test_no_band_note_is_a_child_of_its_band():
 def test_every_band_note_follows_its_band():
     """A5 — the reading order stays number, heading, note, content."""
     notes = find(tree(), "p", "band__note")
-    assert len(notes) == 3, f"expected three band notes (pipeline, printing, install), found {len(notes)}"
+    assert len(notes) == 3, (
+        f"expected three band notes (pipeline, printing, install), found {len(notes)}"
+    )
     for note in notes:
         previous = [
             sibling
@@ -320,4 +339,43 @@ def test_the_hidden_attribute_outranks_any_display_a_class_sets():
     assert effective, (
         "a [hidden] rule without !important is a no-op here: [hidden] and .card "
         f"both weigh (0,1,0) and .card is declared later, so it wins. Found: {rules}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cross-cutting — the page stays what docs/design.md says it is
+# ---------------------------------------------------------------------------
+
+# What the page loads from elsewhere today. FR-014 forbids *new* entries, not
+# these: the fonts are how the three faces reach a reader, and dropping them is
+# a separate decision. The canonical link and og:image are metadata rather than
+# sub-resources, and the icon is a data: URI, so none of the three appear here.
+EXTERNAL_SUBRESOURCES = {"https://fonts.googleapis.com/css2"}
+
+
+def test_the_page_stays_one_self_contained_file():
+    """A8 — a regression guard, green from the start.
+
+    Unlike the seven assertions above this one was never red, and it could not
+    be without breaking the page on purpose. It is here because "one
+    self-contained file with almost no script" is a design rule
+    (`docs/design.md`, *The screen surfaces*) that no other check defends.
+    """
+    source = page_source()
+
+    scripts = re.findall(r"<script\b[^>]*>", source)
+    assert len(scripts) == 1, (
+        f"expected exactly one <script> block, found {len(scripts)}: {scripts}"
+    )
+    assert "src=" not in scripts[0], f"the script must stay inline: {scripts[0]}"
+
+    loaded = {
+        url.split("?")[0]
+        for url in re.findall(r'<link[^>]+rel="stylesheet"[^>]*href="([^"]+)"', source)
+        + re.findall(r'<link[^>]+href="([^"]+)"[^>]*rel="stylesheet"', source)
+        + re.findall(r'<img[^>]+src="([^"]+)"', source)
+        if url.startswith("http")
+    }
+    assert loaded == EXTERNAL_SUBRESOURCES, (
+        f"the page's external sub-resources changed: {loaded ^ EXTERNAL_SUBRESOURCES}"
     )
