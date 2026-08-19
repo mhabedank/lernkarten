@@ -1,6 +1,7 @@
 installed:
 - brownfield
 - fleet
+- bugfix
 settings:
   auto_execute_hooks: true
 hooks:
@@ -21,4 +22,13 @@ hooks:
     priority: 10
     prompt: Run cross-model review to evaluate plan and tasks before implementation?
     description: Pre-implementation review gate
+    condition: null
+  after_implement:
+  - extension: bugfix
+    command: speckit.bugfix.verify
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Run bugfix consistency check after implementation?
+    description: Verify spec artifact consistency after implementation completes
     condition: null
