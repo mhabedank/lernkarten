@@ -269,7 +269,7 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ### 🟢 Green — deterministic half
 
-- [x] T066 [US5] Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`
+- [ ] ⚠️ **Reopened** T066 [US5] *(reopened — BUG-005)* Implement invariants C-1 to C-5 in `parse_catalog()` / `check_catalog()` in `scripts/check_project.py`. It was marked done and the five invariants do work — for names without a comma. `catalog_names()` splits on every comma unconditionally, so a name that contains one is torn into pieces that match nothing and all five checks fire at once ([BUG-005](bugs/BUG-005.md)). T120–T124 finish it; this stays open until they are green
 - [x] T119 [US5] For C-4, compare only the **name** on an `Also covers:` line: the contract writes `Also covers: Access control (cards in cards/security.yaml)` ([contracts/catalog-topics-md.md](contracts/catalog-topics-md.md)), so strip the trailing parenthetical before matching or every reciprocity check fails on a catalog that follows the contract
 - [x] T067 [US5] Implement C-9 — `Also covers:` must not be parsed as a subtopic heading, or the existing `###` scan double-counts and `check_cards()` sees a duplicate name
 
@@ -440,3 +440,147 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 - Never hand-edit a rendered PNG — edit the Typst source and re-render
 - Extend the demo project; never start a second corpus
 - Commit at every 🔴 checkpoint, with the failure output in the message where it is not obvious
+
+---
+
+## Phase 12: Bugfix (BUG-001 to BUG-005)
+
+**Bugfix**: 2026-08-19 — [BUG-001](bugs/BUG-001.md) to [BUG-005](bugs/BUG-005.md)
+Updated from bugfix patch.
+
+**Purpose**: the five defects reported against this feature's artifacts after it
+merged. Every one of them is on the *accepted* path — nothing fails a build, so
+every red artifact here is a check rather than a crash, exactly as constitution
+XI's model-driven clause prescribes.
+
+**Why one phase and not five.** Four of the five change
+`scripts/check_project.py`, `skills/`, or `tests/fixtures/demo-project`, which
+serializes most of the work whatever order it is written in. The 🔴/🟢 pairs are
+still per-bug and none of them may be reordered.
+
+### BUG-005 — a comma in a name (finishes the reopened T066)
+
+- [ ] T120 🔴 [US5] `tests/test_check_project.py`: a catalog with a topic named
+      `Tides, currents & winds`, a subtopic naming it in `Parents:` (primary
+      first) and the reciprocal `Also covers:`, validates **clean** — red today
+      with five errors, none of which names the real cause (FR-049)
+- [ ] T121 🔴 [US5] `tests/test_check_project.py`: the same name reached through
+      `Related:`, and a genuinely dangling name **after** a comma-bearing one on
+      the same line, still reported — red. One test does not cover three call
+      sites, and the second half guards against a fix that stops reporting
+      dangling names at all (FR-049, FR-033, FR-034)
+- [ ] T122 [US5] Rewrite `catalog_names()` in `scripts/check_project.py` to take
+      the set of declared names and match longest-first before splitting the
+      remainder on commas. Every call site passes the names it validates
+      against: topics for `Parents:`, subtopics for `Related:` and
+      `Also covers:`. **This closes the reopened T066**
+- [ ] T123 [US5] Give one topic in `tests/fixtures/demo-project/catalog/topics.md`
+      a comma in its name, referenced from all three attribute lines — the repo
+      rule is that a new failure mode belongs in the demo project
+- [ ] T124 [US5] State it where the name is written, not only where it is read:
+      `skills/catalog/SKILL.md` and the catalog contract under `contracts/` say
+      a name may contain a comma and does not need escaping
+
+**Checkpoint**: T120 and T121 green, T066 closes, `check_project.py --strict` on
+the demo project exits 0.
+
+### BUG-001 — the card markup contract
+
+- [ ] T125 🔴 [P] `tests/test_check_project.py`: a card whose `back` contains
+      `**bold**` is reported, naming the card — red today, nothing looks at card
+      markup at all (FR-043)
+- [ ] T126 🔴 `tests/test_check_project.py`: a card whose `back` contains a
+      backslash directly followed by `*` is reported, naming the card — red.
+      Same file as T125, so **not** parallel with it (FR-043)
+- [ ] T127 Implement both checks in `scripts/check_project.py`: `**...**` in
+      `front` or `back`, and `\` immediately followed by `*`, `_`, `#`, `@`,
+      `<`, `$` or a backtick. The message says what Typst will do, not just that
+      it is wrong (FR-043)
+- [ ] T128 Write the rule into all three places that carry the contract —
+      `CLAUDE.md`, `skills/cards/SKILL.md`, `docs/workflow.md`: `*bold*`,
+      `_italic_`, `**...**` is markdown and yields two empty strong elements,
+      and `\` is a line break only before whitespace (FR-041, FR-042)
+- [ ] T129 Add a card exercising both to
+      `tests/fixtures/demo-project/broken/`, with its row in that folder's
+      `README.md` — the established home for a failure mode with a named culprit
+
+**Checkpoint**: T125 and T126 green; the three prose files agree with each other
+and with the check.
+
+### BUG-002 and BUG-003 — the Zotero writer
+
+- [ ] T130 🔴 `tests/test_ingest_sources.py`: two items in
+      `tests/fixtures/zotero/library.json` sharing one title produce **two**
+      documents, each carrying its own `zotero_key`, and the run reports `0
+      skipped` against an empty knowledge directory — red today: one file, one
+      "skipped" (FR-044, FR-045)
+- [ ] T131 🔴 `tests/test_ingest_sources.py`: a second run over the same library
+      reports both as skipped and writes nothing new — the incremental path must
+      survive the fix. Same file as T130, so serialize (FR-045)
+- [ ] T132 🔴 `tests/test_ingest_sources.py`: the summary contains the absolute
+      path of the target directory (FR-046)
+- [ ] T133 In `scripts/zotero_ingest.py`: fall back to `<slug>-<zotero_key>.md`
+      on a collision; decide "skipped" by reading the frontmatter `zotero_key`
+      rather than by comparing mtimes; keep a set of paths written this run so a
+      same-run collision can never take the skip branch; add `collisions` to the
+      summary (FR-044, FR-045)
+- [ ] T134 In `scripts/zotero_ingest.py`: print the resolved absolute target
+      directory in the summary. In `skills/ingest/SKILL.md:40`: pass `--project`
+      explicitly and say in the prose that the working directory is not what
+      decides (FR-046)
+- [ ] T135 [P] Add the two same-title items to
+      `tests/fixtures/zotero/library.json` with their generator PDFs, and note
+      in `tests/fixtures/zotero/README.md` what they are for
+
+### BUG-004 — thin document versus failed extraction
+
+- [ ] T136 🔴 `tests/test_ingest_sources.py`: an item whose PDF yields a short
+      but non-empty text is written **with that text** and a yield marker, and
+      **without** `pending:` — red today, it is written as `pending:` with the
+      text thrown away (FR-047)
+- [ ] T137 Split the two signals in `extract()`
+      (`scripts/zotero_ingest.py:92-116`): no text at all → a scan → `pending:`;
+      short text → return it with its length. The `len(text) < 200` threshold
+      currently answers both questions and can only answer one (FR-047)
+- [ ] T138 Write the marker into the knowledge frontmatter contract at
+      `skills/ingest/SKILL.md:76-90`, and teach `skills/catalog/SKILL.md` what a
+      marked document may be used as evidence for — referenced yes, coverage of
+      a required topic no (FR-047, FR-048)
+- [ ] T139 🔴 `tests/test_check_project.py`: the marker is accepted in knowledge
+      frontmatter and a required topic whose only reference is a marked document
+      is reported — the model-driven half's red artifact for FR-048, per
+      constitution XI (FR-048)
+- [ ] T140 Implement that check in `scripts/check_project.py` (FR-048)
+- [ ] T141 [P] Add one marked document to
+      `tests/fixtures/demo-project/knowledge/`, generated from a deliberately
+      thin Typst source under `generators/`
+
+### Gates
+
+- [ ] T142 [P] `ruff check . && ruff format --check .`
+- [ ] T143 `pytest`
+- [ ] T144 [P] `bin/lernkarten check cards/example.yaml`
+- [ ] T145 [P] `python3 scripts/check_docs.py`
+- [ ] T146 `python3 scripts/make_testdata.py` then
+      `python3 scripts/check_project.py tests/fixtures/demo-project --strict` and
+      `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` — this batch touches the
+      pipeline and the fixture corpus, so the once-before-the-PR set in
+      constitution XII is **not** skippable here the way it was for feature 002
+- [ ] T147 Run `/speckit.bugfix.verify` and confirm every report reads
+      `Status: Patched` with its tasks closed
+
+### Dependencies
+
+- T120–T121 before T122; T122 closes T066
+- T125–T126 before T127; T128 may run alongside T127 (different files), T129 after both
+- T130–T132 before T133–T134; T135 before T130 can pass, since the test needs the fixture items
+- T136 before T137; T139 before T140
+- All of T142–T146 last
+
+### Not parallel
+
+- Everything writing `tests/test_check_project.py` (T120, T121, T125, T126,
+  T139) — one file, the same [P] trap feature 002 named
+- Everything writing `tests/test_ingest_sources.py` (T130, T131, T132, T136)
+- Everything writing `scripts/zotero_ingest.py` (T133, T134, T137)
+- Everything writing `scripts/check_project.py` (T122, T127, T140)

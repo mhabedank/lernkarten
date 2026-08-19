@@ -259,3 +259,70 @@ no exception (constitution XI).
 - **T022 asserts `!important`.** Without it the rule is a no-op — the whole point of [research.md R4](research.md#r4--how-is-the-hidden-attribute-made-effective-without-setting-a-new-trap)
 - **The PR targets `main`** (T035). It was stacked on `feat/goal-driven-catalog` until that landed as PR #32; the branch has since been rebased onto `main`
 - Commit after each task or logical group, and always at a 🔴 checkpoint
+
+---
+
+## Phase 9: Bugfix (BUG-006)
+
+**Bugfix**: 2026-08-19 — [BUG-006](bugs/BUG-006.md) Updated from bugfix patch.
+
+**Purpose**: the landing page sets Archivo running prose below the 15 px floor
+that `docs/design.md` and constitution XVI both state, in four places. This
+feature's own spec asserted the floor, exempted the note from it, and certified
+the page as compliant — three readings that do not survive being read together.
+FR-016 settles the page; FR-017 settles the rule.
+
+**No manual checklist row.** Unlike the three bugs this feature was written for,
+nothing here is about rendered geometry: a `font-size` is a declaration in the
+stylesheet, so the assertion reaches all of it.
+
+### 🔴 Red
+
+- [ ] T040 🔴 Assertion A9 in `tests/test_landing_page.py`: no rule setting
+      Archivo running prose declares a `font-size` below 15 px — red today on
+      four declarations (`.band__note` `:93`, `.anatomy__item p` `:226`,
+      `.print__cut p` `:257`, the inline `style` at `:624`). Exempt the Jost
+      `label` runs and the IBM Plex Mono literals **by name**, and say in the
+      test why each exemption is one — an exemption list nobody can read becomes
+      a place to hide the next violation (FR-016)
+
+**Checkpoint**: one assertion red on four declarations. Commit.
+
+### 🟢 Green — `docs/index.html`
+
+- [ ] T041 Raise the four to 15 px. `.print__cut p` is 13 px and rises with the
+      other three rather than to its own size — the anatomy and printing
+      descriptions are the same kind of text and there is no reason for them to
+      differ (FR-016)
+- [ ] T042 The inline `style` at `:624` is the only one of the four not in the
+      stylesheet. Give it the class the paragraph beside it would have used, so
+      A9 does not have to parse inline styles forever (FR-016)
+
+### 🟢 Green — the rule
+
+- [ ] T043 [P] `docs/design.md`: the floor sentence at `:55` says which faces it
+      binds — Archivo reading prose yes, Jost `label` runs and Plex Mono literals
+      no. It scopes the rule; it does not relax it (FR-017)
+- [ ] T044 [P] `.specify/memory/constitution.md`: the same scope on principle
+      XVI, and a version bump with the amendment line the file's own governance
+      section requires (FR-017)
+
+### By hand
+
+- [ ] T045 Above 1080 px and at 360 px: the three section notes, the anatomy
+      list and the printing descriptions still sit where T037 left them, and no
+      band's heading row grew. This is the check that the coupling really is
+      gone rather than merely believed to be
+
+### Gates
+
+- [ ] T046 `pytest tests/test_landing_page.py` — nine assertions, A9 green
+- [ ] T047 `python3 scripts/check_docs.py` — T043 and T044 add links
+- [ ] T048 Evidence for SC-010: on the parent commit A9 fails naming four
+      declarations; on the merge commit it passes
+
+### Dependencies
+
+- T040 before T041 and T042 — the one rule with no exception here
+- T043 and T044 are different files and may run together
+- T045 after T041 and T042

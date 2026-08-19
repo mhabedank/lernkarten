@@ -226,9 +226,12 @@ typesetter, card text or a file on a user's disk. What does apply:
   file and stays one file. No asset is added.
 - **Idempotence**: the page is static; there is nothing to re-run.
 - **Minimum type size**: 15 px on screen is a hard floor (constitution XVI). A
-  burger panel is a new surface that must respect it, and the existing note at
+  burger panel is a new surface that must respect it, and ~~the existing note at
   14 px is *not* reading text under that rule — it is a secondary annotation in
-  `--muted`, unchanged by this feature.
+  `--muted`, unchanged by this feature.~~ **Corrected 2026-08-19 by
+  [BUG-006](bugs/BUG-006.md)**: the note *is* reading text and this sentence
+  contradicted User Story 2, which called the same 14 px "itself below that
+  floor". FR-016 settles it at 15 px.
 - **Non-Latin text**: not applicable; no card text is involved.
 
 ## Requirements *(mandatory)*
@@ -262,9 +265,16 @@ typesetter, card text or a file on a user's disk. What does apply:
 - **FR-010**: The `install` section's note MUST keep its inverted colour
   treatment after the change: `--sand` on `--ink`, with the rule above it in
   `--sand`.
-- **FR-011**: Note type size MUST stay at its current 14 px. Raising it to the
+- **FR-011**: ~~Note type size MUST stay at its current 14 px. Raising it to the
   15 px floor is issue #30's decision, not this feature's, and changing it here
-  would confound the visual review of the move.
+  would confound the visual review of the move.~~ **Superseded 2026-08-19 by
+  [BUG-006](bugs/BUG-006.md).** The reason held while the note was a flex child
+  of `.band` — its height set the heading row's, so its type size was band
+  geometry and belonged with the geometry decision. T018–T021 moved every note
+  out of its band, and a full-width block below the band can grow a pixel
+  without touching a heading row. The confound this requirement protected
+  against no longer exists, and FR-011 as written now contradicts FR-015. See
+  FR-016.
 - **FR-012**: The stylesheet MUST make the `hidden` attribute effective against
   every element on the page, including those whose class sets `display`.
 - **FR-013**: The card toggle MUST show exactly one card at a time when
@@ -275,6 +285,19 @@ typesetter, card text or a file on a user's disk. What does apply:
 - **FR-015**: Every change MUST hold to the design rules — flat colour and type
   only, no gradients, no shadows, no rounded corners, reading text never below
   15 px, colour never carrying meaning alone.
+- **FR-016**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md), superseding
+  FR-011)* Every declaration on the landing page that sets **Archivo running
+  prose** MUST be at least 15 px. That is four today — `.band__note`,
+  `.anatomy__item p`, `.print__cut p` and the inline `style` on the "One file
+  per topic" paragraph. Uppercase Jost `label` runs and IBM Plex Mono literals
+  are **not** covered: `docs/design.md` gives those faces their own rows and its
+  floor sentence says *reading text*.
+- **FR-017**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md))* `docs/design.md`
+  and constitution XVI MUST say which faces the 15 px floor binds, so the rule
+  can be checked rather than argued. The floor is not relaxed — it is scoped, so
+  that the next contributor does not have to decide for themselves what "reading
+  text" means, which is what produced three incompatible readings inside this
+  one spec.
 
 ### Format Contracts *(mandatory — state "none" if untouched)*
 
@@ -293,9 +316,13 @@ a browser.
 - **Black-only laser print still readable**: N/A for the page itself, but
   FR-002 carries the same principle onto the screen — the reveal control is
   named in words, not by an icon alone.
-- **Minimum type size respected**: yes — 15 px on screen for reading text; the
-  burger panel's links are `label`-class uppercase like the existing nav links
-  and inherit that treatment.
+- **Minimum type size respected**: ~~yes~~ **not when this was written** —
+  corrected 2026-08-19 by [BUG-006](bugs/BUG-006.md). The burger panel's links
+  are `label`-class uppercase like the existing nav links and inherit that
+  treatment, which is what this line was actually checking. Four prose
+  declarations the feature did not add and did not touch were below the floor
+  the whole time, and certifying the page rather than the change is how they
+  passed. FR-016 raises them.
 - **Brand PNGs need re-rendering**: no. `assets/brand/*.typ` is untouched, and
   so is `pipeline.png` — the step strip's contents do not change, only what
   sits above it.
@@ -351,6 +378,9 @@ strip's own geometry.
 - **SC-008**: The three landing-page assertions fail on the parent commit and
   pass on the merge commit — the red-then-green evidence constitution XI
   requires.
+- **SC-010**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md))* No rule in
+  `docs/index.html` setting Archivo running prose declares a `font-size` below
+  15 px, and `tests/test_landing_page.py` fails if one is added.
 - **SC-009**: The four gates are green: `ruff check . && ruff format --check .`,
   `pytest`, `lernkarten check cards/example.yaml`,
   `python3 scripts/check_docs.py`.
