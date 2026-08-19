@@ -639,6 +639,57 @@ def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
     assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
 
 
+# --- the Typst markup contract (BUG-001 / issue #31) -----------------------
+
+MARKUP_CARDS = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+    source: 'Field notes'
+"""
+
+
+def markup_cards(back):
+    return MARKUP_CARDS.replace("back: '24 h 50 min.'", f"back: {back}")
+
+
+def test_a_markdown_double_star_is_reported(tmp_path):
+    """FR-043: Typst bolds with one star. `**bold**` is two empty strong elements.
+
+    It typesets, so `lernkarten check` passes it and the card prints
+    unemphasised — the only signal Typst gives is a warning on the success path,
+    which build_pdf.py discards. Nothing but this check can catch it.
+    """
+    report = check(project(tmp_path, cards=markup_cards("'This is **bold** in markdown.'")))
+    said = messages(report)
+    assert "card 1" in said, said
+    assert "*" in said, said
+
+
+def test_a_backslash_before_a_markup_character_is_reported(tmp_path):
+    """FR-043: `\\` is a line break only before whitespace; before `*` it escapes it.
+
+    A card is one line of YAML, so `'first\\*bold* rest'` yields a literal star,
+    no line break, and every star after it shifted by one.
+    """
+    report = check(project(tmp_path, cards=markup_cards("'First line\\*bold* rest of it.'")))
+    said = " | ".join(report.errors + report.warnings)
+    assert "card 1" in said, said
+    assert "line break" in said, said
+
+
+def test_the_working_line_break_form_is_not_reported(tmp_path):
+    """The documented form — backslash, space, markup — must stay silent.
+
+    Without this the fix could be "flag every backslash", which would make the
+    line break unusable and be a worse bug than the one it replaced.
+    """
+    report = check(project(tmp_path, cards=markup_cards("'First line\\ *bold* rest of it.'")))
+    assert not report.errors and not report.warnings, messages(report)
+
+
 # --- a comma inside a name (BUG-005 / issue #24) ---------------------------
 
 COMMA_CATALOG = """# Topics
