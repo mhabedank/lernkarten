@@ -639,6 +639,72 @@ def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
     assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
 
 
+# --- a comma inside a name (BUG-005 / issue #24) ---------------------------
+
+COMMA_CATALOG = """# Topics
+
+## Tides, currents & winds
+The water and the air that moves it.
+Also covers: Access control (cards in cards/security.yaml)
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+
+## Security
+Who may do what.
+
+### Access control
+Belongs under both.
+Parents: Security, Tides, currents & winds
+Related: Rhythm of the tide
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+
+def test_a_topic_name_containing_a_comma_validates_clean(tmp_path):
+    """FR-049: names are data, and 'Governance, risk & compliance' is an ordinary name.
+
+    `Parents:` is a comma-separated list, so a name with a comma in it used to be
+    torn into 'Tides' and 'currents & winds' — neither of which is a topic. One
+    name produced five errors, none of which named the real cause.
+    """
+    report = check(project(tmp_path, catalog=COMMA_CATALOG))
+    assert not report.errors, messages(report)
+
+
+def test_a_comma_bearing_name_is_reached_through_related_and_also_covers(tmp_path):
+    """FR-049 at the other two call sites — `Related:` and `Also covers:`.
+
+    The three attribute lines share one splitter, so fixing `Parents:` alone
+    would leave two of them broken.
+    """
+    catalog = COMMA_CATALOG.replace(
+        "Related: Rhythm of the tide", "Related: Rhythm of the tide"
+    ).replace(
+        "### Rhythm of the tide\nHow the tide moves.",
+        "### Rhythm of the tide\nHow the tide moves.\nRelated: Access control",
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    assert not report.errors, messages(report)
+
+
+def test_a_dangling_name_after_a_comma_bearing_one_is_still_reported(tmp_path):
+    """FR-049 must not buy silence: what is left over is still split and checked.
+
+    A fix that stops splitting altogether would make this catalog pass, and C-1
+    would stop being a check at all.
+    """
+    catalog = COMMA_CATALOG.replace(
+        "Parents: Security, Tides, currents & winds",
+        "Parents: Security, Tides, currents & winds, Weather",
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Weather" in said, said
+    assert "currents & winds" not in said, said
+
+
 def test_a_catalog_with_no_parents_or_related_is_unchanged(tmp_path):
     """Regression guard: absence means today's behaviour."""
     report = check(project(tmp_path, catalog=GOOD_CATALOG))
