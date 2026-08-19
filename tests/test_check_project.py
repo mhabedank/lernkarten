@@ -639,6 +639,56 @@ def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
     assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
 
 
+# --- thin, but complete (BUG-004 / issue #12) ------------------------------
+
+SPARSE_KNOWLEDGE = """---
+source: field-notes
+document: "A cover sheet"
+path: "raw/a.md"
+content: sparse
+characters: 68
+ingested: 2026-08-14
+---
+
+Tide office of Fenmouth. Annual report 2021. Cover sheet.
+"""
+
+
+def test_a_document_marked_sparse_is_not_read_as_a_failed_extraction(tmp_path):
+    """FR-047: 'barely any text — did the extraction work?' is the wrong question here.
+
+    It did work. The marker says so, and the warning has to say something the
+    reader can act on instead of sending them back to an ingest that is already
+    as complete as it will get.
+    """
+    report = check(project(tmp_path, knowledge=SPARSE_KNOWLEDGE))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "did the extraction work" not in said, said
+    assert "sparse" in said, said
+
+
+def test_an_unknown_content_value_is_reported(tmp_path):
+    """A marker nothing can act on is worse than no marker."""
+    knowledge = SPARSE_KNOWLEDGE.replace("content: sparse", "content: probably-fine")
+    report = check(project(tmp_path, knowledge=knowledge))
+    said = messages(report)
+    assert "probably-fine" in said, said
+
+
+def test_a_subtopic_backed_only_by_sparse_documents_is_reported(tmp_path):
+    """FR-048: a cover page is not evidence that a topic is covered.
+
+    Without this the coverage count is overstated in the one direction that
+    matters — the user is told a required topic is covered and gets cards built
+    out of form labels.
+    """
+    report = check(project(tmp_path, knowledge=SPARSE_KNOWLEDGE))
+    said = " | ".join(report.warnings)
+    assert "Rhythm of the tide" in said, said
+    assert "sparse" in said, said
+
+
 # --- the Typst markup contract (BUG-001 / issue #31) -----------------------
 
 MARKUP_CARDS = """topic: 'Tides'

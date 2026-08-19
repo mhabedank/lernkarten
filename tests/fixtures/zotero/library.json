@@ -19,6 +19,10 @@
     {
       "key": "KCOLL3",
       "name": "Ashwind duplicates"
+    },
+    {
+      "key": "KCOLL4",
+      "name": "Thin sources"
     }
   ],
   "items": [
@@ -239,6 +243,29 @@
           "contentType": "application/pdf",
           "path": "{STORAGE}/KESTREL03/ferry-statistics.pdf",
           "filename": "notes-on-the-ashwind-approach.pdf"
+        }
+      ]
+    },
+    {
+      "key": "ITEM11",
+      "itemType": "report",
+      "title": "Tide office of Fenmouth, annual report 2021",
+      "creators": [
+        {
+          "name": "Tide office of Fenmouth"
+        }
+      ],
+      "date": "2021",
+      "collections": [
+        "KCOLL4"
+      ],
+      "_note": "The attachment is a one-page cover sheet, not the report. The extraction succeeds and yields almost nothing — complete, but thin. Distinct from KESTREL02, which is a scan with no text layer at all (BUG-004 in specs/001-goal-driven-catalog/bugs/BUG-004.md).",
+      "attachments": [
+        {
+          "key": "KESTREL09",
+          "contentType": "application/pdf",
+          "path": "storage:tide-office-cover.pdf",
+          "filename": "tide-office-cover.pdf"
         }
       ]
     }

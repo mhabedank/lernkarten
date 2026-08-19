@@ -241,6 +241,29 @@ def test_a_scanned_attachment_is_left_for_the_read_tool(library, tmp_path):
     assert "read this PDF with the Read tool" in scan
 
 
+def test_a_thin_but_complete_document_is_kept_and_marked(library, tmp_path):
+    """BUG-004: extraction succeeded and yielded almost nothing — a third state.
+
+    A one-page cover sheet is not a broken extraction and there is nothing for
+    a second pass to find, so sending it to the Read tool as `pending:` wastes
+    the pass and throws away the text it does have. `len(text) < 200` was
+    answering "is this a scan?", which it cannot: a scan has no text layer, a
+    cover stub has one page and a little text.
+    """
+    if shutil.which("pdftotext") is None:
+        pytest.skip("without pdftotext everything is pending, which proves nothing")
+    result = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Thin sources"
+    )
+    assert result.returncode == 0, result.stderr
+    doc = documents(tmp_path)["tide-office-of-fenmouth-annual-report-2021"]
+    assert "pending:" not in doc, "the extraction worked — there is nothing to come back for"
+    assert "content: sparse" in doc, doc
+    assert re.search(r"^characters: \d+$", doc, re.M), doc
+    assert "Annual report 2021" in doc, "the little text there is must be kept"
+    assert "1 thin" in result.stdout, result.stdout
+
+
 def test_an_item_without_a_pdf_is_counted_but_not_written(library, tmp_path):
     result = ingest(
         library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Kestrel Islands"
