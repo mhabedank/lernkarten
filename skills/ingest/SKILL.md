@@ -38,11 +38,16 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
   layer is empty is a scan: the Read tool handles those, since it sees the
   pages as images.
 - **zotero (bulk)**: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/zotero_ingest.py --source-id <id>
-  [--collection "Name"]` — uses the local API, extracts PDF attachments
-  including metadata frontmatter, works incrementally. It writes into
-  `knowledge/<id>/` of the current folder; `--project` says otherwise. Without `pdftotext` it
+  --project <project root> [--collection "Name"]` — uses the local API, extracts
+  PDF attachments including metadata frontmatter, works incrementally. **Pass
+  `--project` explicitly**: the script itself lives in the plugin cache, and
+  leaving the destination to whatever the working directory happens to be is
+  how an ingest ends up somewhere the user never looks. The summary names the
+  absolute directory it wrote into — read it back. Without `pdftotext` it
   still writes one file per item with the metadata and `pending: <pdf path>`;
-  fill those in with the Read tool and drop the `pending:` line.
+  fill those in with the Read tool and drop the `pending:` line. Items sharing a
+  title get their Zotero key appended (`<slug>-<key>.md`) and are counted as
+  collisions in the summary, so none of them is lost.
 - **zotero** (Zotero 7 must be running):
   1. Resolve the collection key: `curl -s "http://localhost:23119/api/users/0/collections"`
      → the entry whose `data.name` matches the collection.

@@ -28,6 +28,7 @@ INGEST = ROOT / "scripts" / "zotero_ingest.py"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import make_testdata  # noqa: E402
+import zotero_ingest  # noqa: E402
 import zotero_stub  # noqa: E402
 
 HREF = re.compile(r'href="([^"]+)"')
@@ -254,6 +255,42 @@ def test_a_second_run_skips_what_is_already_there(library, tmp_path):
         library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Kestrel Islands"
     )
     assert "0 new" in again.stdout and "4 skipped" in again.stdout, again.stdout
+
+
+def test_a_document_records_which_item_wrote_it(tmp_path):
+    """The identity the skip test reads, on its own.
+
+    Read through the subprocess tests this is invisible: the same-run set
+    carries the collision case even when the key is never found. So it is
+    asserted here directly, where an accident cannot hide it.
+    """
+    md = tmp_path / "a.md"
+    md.write_text(
+        '---\nsource: s\ndocument: "A"\nzotero_key: ITEM09\ningested: 2026-08-19\n---\n\n'
+        "body text, and a --- line in it that is not the frontmatter fence\n"
+        "zotero_key: NOTTHISONE\n",
+        encoding="utf-8",
+    )
+    assert zotero_ingest.document_key(md) == "ITEM09"
+
+    plain = tmp_path / "b.md"
+    plain.write_text("---\nsource: s\n---\n\ntext\n", encoding="utf-8")
+    assert zotero_ingest.document_key(plain) is None
+    assert zotero_ingest.document_key(tmp_path / "missing.md") is None
+
+
+def test_an_item_gives_way_to_a_file_an_earlier_run_left(tmp_path):
+    """A collision across runs, where the same-run set is empty and cannot help."""
+    stats = {"collisions": 0}
+    (tmp_path / "notes.md").write_text("---\nzotero_key: ITEM09\n---\n\ntext\n", encoding="utf-8")
+    chosen = zotero_ingest.target_for(tmp_path, "Notes", "ITEM10", set(), stats)
+    assert chosen.name == "notes-item10.md", chosen
+    assert stats["collisions"] == 1
+
+    stats = {"collisions": 0}
+    same = zotero_ingest.target_for(tmp_path, "Notes", "ITEM09", set(), stats)
+    assert same.name == "notes.md", same
+    assert stats["collisions"] == 0, "its own file is not a collision"
 
 
 def test_two_items_with_the_same_title_both_land(library, tmp_path):

@@ -509,26 +509,26 @@ and with the check.
 
 ### BUG-002 and BUG-003 — the Zotero writer
 
-- [ ] T130 🔴 `tests/test_ingest_sources.py`: two items in
+- [X] T130 🔴 `tests/test_ingest_sources.py`: two items in
       `tests/fixtures/zotero/library.json` sharing one title produce **two**
       documents, each carrying its own `zotero_key`, and the run reports `0
       skipped` against an empty knowledge directory — red today: one file, one
       "skipped" (FR-044, FR-045)
-- [ ] T131 🔴 `tests/test_ingest_sources.py`: a second run over the same library
+- [X] T131 🔴 `tests/test_ingest_sources.py`: a second run over the same library
       reports both as skipped and writes nothing new — the incremental path must
       survive the fix. Same file as T130, so serialize (FR-045)
-- [ ] T132 🔴 `tests/test_ingest_sources.py`: the summary contains the absolute
+- [X] T132 🔴 `tests/test_ingest_sources.py`: the summary contains the absolute
       path of the target directory (FR-046)
-- [ ] T133 In `scripts/zotero_ingest.py`: fall back to `<slug>-<zotero_key>.md`
+- [X] T133 In `scripts/zotero_ingest.py`: fall back to `<slug>-<zotero_key>.md`
       on a collision; decide "skipped" by reading the frontmatter `zotero_key`
       rather than by comparing mtimes; keep a set of paths written this run so a
       same-run collision can never take the skip branch; add `collisions` to the
       summary (FR-044, FR-045)
-- [ ] T134 In `scripts/zotero_ingest.py`: print the resolved absolute target
+- [X] T134 In `scripts/zotero_ingest.py`: print the resolved absolute target
       directory in the summary. In `skills/ingest/SKILL.md:40`: pass `--project`
       explicitly and say in the prose that the working directory is not what
       decides (FR-046)
-- [ ] T135 [P] Add the two same-title items to
+- [X] T135 [P] Add the two same-title items to
       `tests/fixtures/zotero/library.json` with their generator PDFs, and note
       in `tests/fixtures/zotero/README.md` what they are for
 

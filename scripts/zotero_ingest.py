@@ -114,6 +114,46 @@ def extract(pdf):
     return text, False
 
 
+def document_key(md):
+    """The `zotero_key` a knowledge document records, or None if it has none.
+
+    This is what decides "already ingested" — not the modification time. A
+    timestamp cannot tell a re-run from two items that slugify to one name, and
+    reading it as a re-run is how documents were lost (BUG-002).
+    """
+    try:
+        with md.open(encoding="utf-8", errors="replace") as f:
+            for i, line in enumerate(f):
+                # Stop at the closing fence, and do not read a whole extracted
+                # PDF to find a key that is only ever in the frontmatter.
+                if i > 40 or (i and line.rstrip() == "---"):
+                    break
+                if line.startswith("zotero_key:"):
+                    return line.split(":", 1)[1].strip()
+    except OSError:
+        return None
+    return None
+
+
+def target_for(target, title, key, written, stats):
+    """Where this item goes, and whether it had to give way to another one.
+
+    Zotero libraries routinely hold several items with one title — duplicates,
+    two editions, a chapter beside its volume. They all slugify to the same
+    name, so the name alone cannot identify a document and the item key is
+    appended when it is already taken.
+    """
+    md = target / f"{slugify(title)}.md"
+    owner = document_key(md) if md.exists() else None
+    # `owner is None` on an existing file means it records no key at all — it
+    # was written by hand or by a version older than this rule. Treat it as ours
+    # rather than duplicating it; a file this run wrote is never in that state.
+    if md in written or (owner is not None and owner != key):
+        stats["collisions"] += 1
+        return target / f"{slugify(title)}-{key.lower()}.md"
+    return md
+
+
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -152,7 +192,9 @@ def main():
     target.mkdir(parents=True, exist_ok=True)
     today = datetime.date.today().isoformat()
 
-    stats = {"new": 0, "skipped": 0, "no_pdf": 0, "pending": 0}
+    stats = {"new": 0, "skipped": 0, "no_pdf": 0, "pending": 0, "collisions": 0}
+    written = set()  # what this run has already put on disk, so a same-run
+    # collision can never be mistaken for an incremental skip
     for it in items:
         d = it["data"]
         if d.get("itemType") == "note":
@@ -166,9 +208,10 @@ def main():
         if pdf is None:
             stats["no_pdf"] += 1
             continue
-        md = target / f"{slugify(title)}.md"
+        md = target_for(target, title, it["key"], written, stats)
         if md.exists() and md.stat().st_mtime >= pdf.stat().st_mtime:
             stats["skipped"] += 1
+            written.add(md)
             continue
 
         text, pending = extract(pdf)
@@ -198,13 +241,19 @@ def main():
         )
         body = text if text else "<!-- read this PDF with the Read tool and replace this line -->"
         md.write_text(f"{head}\n\n{body}\n", encoding="utf-8")
+        written.add(md)
         stats["pending" if pending else "new"] += 1
         print(f"OK: {title[:70]}")
 
     print(
         f"\nDone: {stats['new']} new, {stats['pending']} awaiting the Read tool, "
-        f"{stats['skipped']} skipped, {stats['no_pdf']} without a PDF"
+        f"{stats['skipped']} skipped, {stats['collisions']} collision(s) renamed, "
+        f"{stats['no_pdf']} without a PDF"
     )
+    # Name the destination. Every wrong one looked exactly like every right one
+    # until this line existed, which is how an ingest into the plugin cache went
+    # unnoticed (BUG-003).
+    print(f"Written to: {target.resolve()}")
 
 
 if __name__ == "__main__":
