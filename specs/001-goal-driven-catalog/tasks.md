@@ -344,15 +344,15 @@ Single flat module, no `src/`. Implementation in `scripts/<module>.py`, prompts 
 
 ## Phase 11: Gates
 
-- [ ] T095 `ruff check .`
-- [ ] T096 `ruff format --check .`
-- [ ] T097 `pytest`
-- [ ] T098 `lernkarten check cards/example.yaml` — the spelling constitution XII and `CLAUDE.md` use; `bin/lernkarten check …` is the same thing from a clean checkout
-- [ ] T099 `python3 scripts/check_docs.py`
-- [ ] T100 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
-- [ ] T101 `python3 scripts/make_testdata.py && LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — catches `DEMO_CARD_COUNT` if T035 changed it
-- [ ] T102 `git status` clean of user content — no real `goal.md`, `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
-- [ ] T103 `git grep -i "five commands"` returns nothing outside `specs/`
+- [x] T095 `ruff check .`
+- [x] T096 `ruff format --check .`
+- [x] T097 `pytest`
+- [x] T098 `lernkarten check cards/example.yaml` — the spelling constitution XII and `CLAUDE.md` use; `bin/lernkarten check …` is the same thing from a clean checkout
+- [x] T099 `python3 scripts/check_docs.py`
+- [x] T100 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
+- [x] T101 `python3 scripts/make_testdata.py && LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — catches `DEMO_CARD_COUNT` if T035 changed it
+- [x] T102 `git status` clean of user content — no real `goal.md`, `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
+- [x] T103 `git grep -i "five commands"` returns nothing outside `specs/`
 - [ ] T104 Push the branch and open a pull request — `main` rejects direct pushes
 - [ ] T105 PR description carries the **Principle VII note** (what user-content rule changed and why) and calls out the **constitution amendment** for a reviewer
 
