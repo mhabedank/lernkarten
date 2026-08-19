@@ -314,11 +314,9 @@ def test_the_hidden_attribute_outranks_any_display_a_class_sets():
         "the page has no [hidden] rule at all, so the browser default is left to "
         "lose to any class that declares display — which .card does"
     )
-    effective = [
-        body
-        for body in rules
-        if "display" in body and "none" in body and "!important" in body
-    ]
+    # Matched on the property, not the substring: `var(--display)` is the font
+    # custom property and appears in half the rules on this page.
+    effective = [body for body in rules if re.search(r"\bdisplay\s*:\s*none\s*!important", body)]
     assert effective, (
         "a [hidden] rule without !important is a no-op here: [hidden] and .card "
         f"both weigh (0,1,0) and .card is declared later, so it wins. Found: {rules}"

@@ -38,6 +38,12 @@
 
   *, *::before, *::after { box-sizing: border-box; }
 
+  /* !important, and on purpose: `hidden` says the element is not relevant, which
+     is not a preference for a class to outrank. Without it this loses to any
+     rule that declares display — [hidden] and .card both weigh (0,1,0), and
+     .card comes later, which is why the card toggle did nothing for so long. */
+  [hidden] { display: none !important; }
+
   body {
     margin: 0;
     background: var(--ground);
