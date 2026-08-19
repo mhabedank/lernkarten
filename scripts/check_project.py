@@ -599,6 +599,14 @@ def check_cards(project, subtopics, report, marked=None):
                 build_pdf.resolve_language(data["language"])
             except ValueError as e:
                 report.error(where, str(e))
+        # The grid is optional and absent means A7, so only a value that is
+        # there and wrong is worth reporting. One deck is one size, which is
+        # why the key belongs at the top level and nowhere else.
+        if data.get("grid") is not None:
+            try:
+                build_pdf.parse_grid(data["grid"])
+            except ValueError as e:
+                report.error(where, str(e))
 
         fronts = {}
         for i, card in enumerate(data["cards"] or [], start=1):
@@ -628,6 +636,12 @@ def check_cards(project, subtopics, report, marked=None):
                 report.warn(where, f"card {i}: front is long ({len(front)} characters)")
             if len(back) > MAX_BACK:
                 report.warn(where, f"card {i}: back is long ({len(back)} characters)")
+            if "grid" in card:
+                report.error(
+                    where,
+                    f"card {i}: 'grid' belongs at the top level, not on a card — "
+                    "one deck is one size",
+                )
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)

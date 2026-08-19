@@ -290,6 +290,42 @@ def test_a_subtopic_outside_the_catalog_warns(tmp_path):
     assert any("is not in the catalog" in w for w in report.warnings)
 
 
+# --- the grid key (feat/card-grid) -----------------------------------------
+
+
+@pytest.mark.parametrize("value", ["a7", "a8", "2x4", "4x4", "A8", "4X4"])
+def test_a_supported_grid_is_accepted(tmp_path, value):
+    cards = GOOD_CARDS.replace("language: english", f"language: english\ngrid: {value}")
+    report = check(project(tmp_path, cards=cards))
+    assert not report.errors, messages(report)
+
+
+@pytest.mark.parametrize("value", ["3x4", "2x6", "1x1"])
+def test_an_unsupported_grid_is_reported_with_the_supported_set(tmp_path, value):
+    cards = GOOD_CARDS.replace("language: english", f"language: english\ngrid: {value}")
+    report = check(project(tmp_path, cards=cards))
+    joined = messages(report)
+    assert any(value in e for e in report.errors), joined
+    assert any("2x4" in e and "4x4" in e for e in report.errors), joined
+    assert any(e.startswith("cards/") for e in report.errors), joined
+
+
+@pytest.mark.parametrize("value", ["eight", "3 x 4", "3,4", "0x4", "-1x4"])
+def test_a_malformed_grid_is_reported(tmp_path, value):
+    cards = GOOD_CARDS.replace("language: english", f"language: english\ngrid: '{value}'")
+    report = check(project(tmp_path, cards=cards))
+    assert any(value in e for e in report.errors), messages(report)
+
+
+def test_a_grid_on_an_individual_card_is_reported(tmp_path):
+    """FR-021: one deck is one size, so the key is top level only."""
+    cards = GOOD_CARDS.replace(
+        "    source: 'Field notes'", "    source: 'Field notes'\n    grid: a8"
+    )
+    report = check(project(tmp_path, cards=cards))
+    assert any("grid" in e and "card 1" in e for e in report.errors), messages(report)
+
+
 def test_an_overlong_card_warns(tmp_path):
     cards = GOOD_CARDS.replace("24 h 50 min.", "Far too much text. " * 40)
     report = check(project(tmp_path, cards=cards))

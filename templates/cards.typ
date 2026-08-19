@@ -1,11 +1,16 @@
 // The press sheet — the build writes cards.json next to this file and calls
-// typst. A4 with 2 x 4 cards; front pages and back pages alternate, and the
-// backs are column-mirrored so duplex printing with "flip on long edge"
-// lines them up.
+// typst. A4 with columns x rows cards; front pages and back pages alternate,
+// and the backs are column-mirrored so duplex printing with "flip on long
+// edge" lines them up.
+//
+// Two grids are supported, and they are the two that cut to a standard card:
+// 2 x 4 is DIN A7 (8 up, the default) and 4 x 4 is DIN A8 (16 up). Card size,
+// the mirroring, the crop marks and the pagination all derive from those two
+// numbers, so nothing below is written twice.
 //
 // The card design itself lives in card.typ. Parameters come in via --input:
-// margin (mm) and logo (true/false). Layout changes belong here or there,
-// never in the generated file.
+// margin (mm), logo (true/false), columns and rows. Layout changes belong here
+// or there, never in the generated file.
 
 #import "card.typ": faces, guide
 
@@ -13,8 +18,8 @@
 #let margin = float(sys.inputs.at("margin", default: "5")) * 1mm
 #let show-logo = sys.inputs.at("logo", default: "true") == "true"
 
-#let columns = 2
-#let rows = 4
+#let columns = int(sys.inputs.at("columns", default: "2"))
+#let rows = int(sys.inputs.at("rows", default: "4"))
 #let per-page = columns * rows
 #let cw = (210mm - 2 * margin) / columns
 #let ch = (297mm - 2 * margin) / rows
@@ -40,7 +45,8 @@
   }
 }
 
-// A sheet of up to 8 cards. `mirror` flips the columns for the back pages.
+// One sheet, up to columns x rows cards. `mirror` flips the columns for the
+// back pages, which is what makes duplex line up at any grid.
 #let sheet(block-of-cards, render, mirror) = {
   cropmarks
   for (position, one) in block-of-cards.enumerate() {

@@ -50,9 +50,8 @@ lernkarten build $DEMO/*.yaml -o /tmp/after.pdf
 cmp /tmp/before.pdf /tmp/after.pdf && echo "byte-identical"
 ```
 
-Expect `byte-identical`. This is SC-002 and it is a hard requirement — no flag,
-no deck key, no change. (If the engine embeds a timestamp, compare page count
-and rendered text instead; the assertion is behavioural, not literally bytes.)
+**Measured**: the engine embeds a `CreationDate`, so two *consecutive* builds of
+the same input already differ in bytes. Compare **page count, byte length and extracted text** instead — all three are identical, and that is what SC-002 means. `cmp` is the wrong tool here.
 
 ## 4. Exact A-series dimensions at zero margin
 

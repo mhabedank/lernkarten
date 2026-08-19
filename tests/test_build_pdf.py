@@ -203,7 +203,53 @@ def test_the_example_actually_typesets(tmp_path):
     binary, _ = engine.find(fetch_if_missing=False)
     cards, _ = build_pdf.load_cards([str(ROOT / "cards" / "example.yaml")], [], [])
     target = tmp_path / "out.pdf"
-    ok, message = build_pdf.typeset(cards, target, 5.0, True, binary, tmp_path)
+    grid = build_pdf.DEFAULT_GRID
+    ok, message = build_pdf.typeset(cards, target, 5.0, True, grid, binary, tmp_path)
     assert ok, message
     assert target.exists() and target.stat().st_size > 1000
-    assert build_pdf.overflowing(binary, tmp_path, 5.0, True) == [], "example cards must fit"
+    assert build_pdf.overflowing(binary, tmp_path, 5.0, True, grid) == [], "example cards must fit"
+
+
+# --- the press-sheet grid (feat/card-grid) --------------------------------
+
+
+def test_a_grid_is_read_as_columns_and_rows():
+    assert build_pdf.parse_grid("2x4") == (2, 4)
+    assert build_pdf.parse_grid("4x4") == (4, 4)
+
+
+def test_the_a_series_aliases_name_the_same_grids():
+    assert build_pdf.parse_grid("a7") == build_pdf.parse_grid("2x4") == (2, 4)
+    assert build_pdf.parse_grid("a8") == build_pdf.parse_grid("4x4") == (4, 4)
+
+
+def test_a_grid_is_read_case_insensitively():
+    assert build_pdf.parse_grid("A8") == build_pdf.parse_grid(" 4X4 ") == (4, 4)
+
+
+@pytest.mark.parametrize("value", ["3 x 4", "3,4", "eight", "0x4", "3x0", "-1x4", "", "4x"])
+def test_a_malformed_grid_names_the_value(value):
+    with pytest.raises(ValueError) as excinfo:
+        build_pdf.parse_grid(value)
+    assert repr(value) in str(excinfo.value) or value in str(excinfo.value)
+
+
+@pytest.mark.parametrize("value", ["3x4", "2x6", "1x1", "4x8"])
+def test_an_unsupported_grid_lists_what_is_supported(value):
+    with pytest.raises(ValueError) as excinfo:
+        build_pdf.parse_grid(value)
+    message = str(excinfo.value)
+    assert "2x4" in message and "4x4" in message, message
+    assert "a7" in message.lower() and "a8" in message.lower(), message
+
+
+def test_the_page_count_follows_the_grid():
+    assert build_pdf.pages(29, (2, 4)) == 8
+    assert build_pdf.pages(29, (4, 4)) == 4
+    assert build_pdf.pages(12, (4, 4)) == 2
+    assert build_pdf.pages(12, (2, 4)) == 4
+
+
+def test_one_card_still_needs_a_front_and_a_back_page():
+    assert build_pdf.pages(1, (2, 4)) == 2
+    assert build_pdf.pages(1, (4, 4)) == 2
