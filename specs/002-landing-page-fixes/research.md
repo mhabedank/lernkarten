@@ -139,10 +139,13 @@ selector. No feature query is needed.
 phone at load, which costs FR-004's one-line resting bar on exactly the viewport
 the feature exists to fix.
 
-**Verified in Chromium only.** Firefox is not installed on the machine this ran
-on and Safari could not be driven headless there, so Gecko and WebKit are
-unconfirmed. That is not a gap this repo can close in CI — there is no browser
-leg — which is why it stays a named manual step (T039) rather than an assumption.
+**Verified in Chromium and WebKit.** The numbers above are Chrome 151, headless.
+Safari was checked by hand afterwards and behaves the same: above the breakpoint
+the four links stand in the bar, below it the disclosure opens and every link is
+reachable, with JavaScript on and off. **Gecko is unverified** — Firefox is not
+installed on the machine this was built on, and the maintainer waived it rather
+than install one. CI has no browser leg and will not grow one for this, so row 31
+of the manual checklist stays the place this is checked.
 
 **Closing the panel after a tap** is deliberately *not* required. FR-003 asks
 that the links be reachable without JavaScript, and they are. Closing is an
