@@ -4,6 +4,7 @@ Only the tools are versioned — sources, ingested texts, the catalog and the
 generated cards belong to the user and stay local.
 """
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -24,6 +25,14 @@ ALLOWED = {
     "cards/.gitkeep",
     "cards/example.yaml",
 }
+
+# The landing page, and the two strings that pin where the README links it.
+# Neither anchor is prose: a badge URL and a committed file path move only when
+# somebody means to move them, while a sentence can be rewritten by any copy
+# edit. See specs/003-readme-landing-link/research.md R2.
+LANDING_URL = "https://mhabedank.github.io/lernkarten/"
+BADGE_ANCHOR = "Claude_Code-plugin"
+SCREENSHOT_ANCHOR = "assets/example-cards.png"
 
 
 def versioned_files():
@@ -217,3 +226,33 @@ def test_the_repo_does_not_still_promise_five_commands():
         if "five commands" in path.read_text(encoding="utf-8", errors="ignore").lower():
             offenders.append(name)
     assert not offenders, f"these still promise five commands: {offenders}"
+
+
+def test_the_readme_points_a_newcomer_at_the_landing_page():
+    """The live page has to be reachable from the top of the README.
+
+    It used to be named once, 168 lines down, inside the design section, which
+    is where a reader who wants to *see* the project before reading about it
+    never gets to. The opening block is everything above the first `## `
+    heading; within it the link sits between the last badge and the first
+    screenshot.
+    """
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    heading = re.search(r"^## ", text, re.MULTILINE)
+    assert heading, "README.md has no '## ' heading to bound its opening block"
+    opening = text[: heading.start()]
+
+    for anchor in (BADGE_ANCHOR, SCREENSHOT_ANCHOR):
+        assert anchor in opening, (
+            f"README.md: {anchor!r} is gone from the opening block — this test's anchors moved"
+        )
+
+    assert LANDING_URL in opening, (
+        f"README.md does not link {LANDING_URL} above its first '## ' heading"
+    )
+    assert opening.index(BADGE_ANCHOR) < opening.index(LANDING_URL), (
+        f"README.md links {LANDING_URL} above the badge row instead of below it"
+    )
+    assert opening.index(LANDING_URL) < opening.index(SCREENSHOT_ANCHOR), (
+        f"README.md links {LANDING_URL} after the {SCREENSHOT_ANCHOR} screenshot"
+    )
