@@ -8,12 +8,15 @@ Runs without arguments over the whole repo and is meant as a CI step:
 It verifies that:
   * every skill under skills/<name>/SKILL.md has YAML frontmatter with
     'name' (= folder name) and 'description' (mentioning its triggers),
+  * the three files carrying a version agree on it,
   * every relative markdown link in the docs points at an existing file,
   * the files an open-source repo is expected to ship are present.
 """
 
+import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 import yamlio
@@ -51,6 +54,12 @@ REQUIRED_FILES = [
     "tests/fixtures/zotero/library.json",
     ".github/workflows/ci.yml",
 ]
+# A release bumps a version in three places by hand. Nothing compared them
+# until now, so pyproject.toml sat at 0.2.0 from the initial commit through
+# v0.3.0 while both manifests moved on. plugin.json is the reference: it is
+# the manifest Claude Code actually reads when the plugin is installed.
+PLUGIN_MANIFEST = ".claude-plugin/plugin.json"
+PLUGIN_NAME = "lernkarten"
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 CODEBLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
 
@@ -106,6 +115,50 @@ def check_skills(errors):
             )
 
 
+def read_versions(errors):
+    """{path: version} for each of the three files, skipping any we cannot read."""
+    found = {}
+
+    path = ROOT / "pyproject.toml"
+    try:
+        found["pyproject.toml"] = tomllib.loads(path.read_text(encoding="utf-8"))["project"][
+            "version"
+        ]
+    except (OSError, tomllib.TOMLDecodeError, KeyError) as e:
+        errors.append(f"pyproject.toml: no [project] version to read ({e})")
+
+    path = ROOT / PLUGIN_MANIFEST
+    try:
+        found[PLUGIN_MANIFEST] = json.loads(path.read_text(encoding="utf-8"))["version"]
+    except (OSError, json.JSONDecodeError, KeyError) as e:
+        errors.append(f"{PLUGIN_MANIFEST}: no version to read ({e})")
+
+    name = ".claude-plugin/marketplace.json"
+    path = ROOT / name
+    try:
+        plugins = json.loads(path.read_text(encoding="utf-8"))["plugins"]
+        entry = next(p for p in plugins if p.get("name") == PLUGIN_NAME)
+        found[name] = entry["version"]
+    except (OSError, json.JSONDecodeError, KeyError, StopIteration) as e:
+        errors.append(f"{name}: no version for '{PLUGIN_NAME}' to read ({e})")
+
+    return found
+
+
+def check_versions(errors):
+    found = read_versions(errors)
+    expected = found.get(PLUGIN_MANIFEST)
+    if expected is None:
+        return
+
+    for name, version in found.items():
+        if name != PLUGIN_MANIFEST and version != expected:
+            errors.append(
+                f"{name}: version {version} does not match {PLUGIN_MANIFEST} "
+                f"({expected}) — a release bumps all three together"
+            )
+
+
 def markdown_files():
     files = sorted(ROOT.glob("*.md"))
     files += sorted((ROOT / "docs").glob("*.md"))
@@ -128,6 +181,7 @@ def check_links(errors):
 def main():
     errors = []
     check_required_files(errors)
+    check_versions(errors)
     check_skills(errors)
     check_links(errors)
 
@@ -137,7 +191,8 @@ def main():
         sys.exit(1)
 
     count = len(list(SKILLS.glob("*/SKILL.md")))
-    print(f"OK: {count} skills, docs links and required files are fine.")
+    version = read_versions([]).get(PLUGIN_MANIFEST, "?")
+    print(f"OK: {count} skills, version {version}, docs links and required files are fine.")
 
 
 if __name__ == "__main__":
