@@ -564,11 +564,11 @@ and with the check.
 
 ### Gates
 
-- [ ] T142 [P] `ruff check . && ruff format --check .`
-- [ ] T143 `pytest`
-- [ ] T144 [P] `bin/lernkarten check cards/example.yaml`
-- [ ] T145 [P] `python3 scripts/check_docs.py`
-- [ ] T146 `python3 scripts/make_testdata.py` then
+- [X] T142 [P] `ruff check . && ruff format --check .`
+- [X] T143 `pytest`
+- [X] T144 [P] `bin/lernkarten check cards/example.yaml`
+- [X] T145 [P] `python3 scripts/check_docs.py`
+- [X] T146 `python3 scripts/make_testdata.py` then
       `python3 scripts/check_project.py tests/fixtures/demo-project --strict` and
       `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` — this batch touches the
       pipeline and the fixture corpus, so the once-before-the-PR set in

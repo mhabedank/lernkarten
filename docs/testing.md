@@ -200,11 +200,15 @@ python3 scripts/zotero_stub.py
 | 8e | `/ingest` | `/ingest harbour-office` (server running) | three pages under `knowledge/harbour-office/`, nav bar and cookie banner dropped, `depth: 1` followed |
 | 8f | `/ingest` | `/ingest harbour-office-members` | the login page is *not* ingested and nothing behind it is invented; no credentials are typed anywhere |
 | 8g | `/ingest` | `/ingest kestrel-zotero` (stub running) | three documents, the scan among them flagged `pending:`; the Mainland item is left out |
+| 8g-i | `/ingest` | the same, over the whole stub library | the two items titled *Notes on the Ashwind approach* **both** land, the second as `<slug>-<key>.md`; the summary counts one collision and names the absolute directory it wrote into. Neither is called "skipped" |
+| 8g-ii | `/ingest` | the same run, the *Tide office of Fenmouth* item | the cover sheet keeps the little text it has and is marked `content: sparse` with a character count — **not** `pending:`, because there is nothing for the Read tool to come back for |
 | 8h | `/learning-goal` | `/learning-goal` with a short brief | `goal.md` with frontmatter, at least one area, at least one topic |
 | 8i | `/learning-goal` | run it again with a brief that only **adds** | merges without a single question, `updated` moves to today |
 | 8j | `/learning-goal` | run it again with a **contradictory** brief | every contradiction listed and put to you; nothing written until answered |
 | 8k | `/learning-goal` | make a required topic out-of-scope on a re-run | names the catalog subtopics and card files that would be affected |
 | 9 | `/catalog` | `/catalog` | `catalog/topics.md` with topics, subtopics and references that resolve |
+| 9-i | `/catalog` | a topic whose name contains a comma, named from `Parents:`, `Related:` and `Also covers:` | validates clean, and the name comes back as it was written — `/catalog` has been seen renaming the topic to get past the splitter and telling the user afterwards |
+| 9-ii | `/catalog` | a subtopic whose only reference is a `content: sparse` document | it is reported, and the honest outcome is `Status: gap` rather than coverage built on a cover sheet |
 | 9a | `/catalog` | `/catalog` with a `goal.md` present | the tree follows the goal's areas; uncovered topics are `Status: gap`, off-goal material `Status: out of scope` |
 | 9b | `/catalog` | delete `goal.md`, `/catalog` again | no `Status:` lines at all, plus one line saying the catalog covers the material rather than the topic |
 | 9c | `/catalog` | read the closing report | covered / gap / out-of-scope counts, and `/research-gaps` named when there is a gap |
@@ -216,11 +220,13 @@ python3 scripts/zotero_stub.py
 | 11b | `/cards` | `/cards` naming an out-of-scope subtopic | generated anyway — the mark is a default, not a lock |
 | 11c | `/cards` | `/cards` naming a **secondary** parent | generated once, and the file its cards went into is reported |
 | 12 | `/cards` | `/cards Tides` again | new cards appended, no duplicated fronts |
+| 12-i | `/cards` | ask for a card that emphasises a word | `*bold*`, never `**bold**` — the second typesets and prints flat, so only `check_project.py` can tell you |
+| 12-ii | `/cards` | ask for a card with a line break followed by emphasis | `'... \\ *bold* ...'` with the space. Without it the backslash escapes the star and the build fails on "unclosed delimiter", which does not say so |
 | 13 | `/cards` | ask for cards in another language | `language:` follows, umlauts and quotes come out right in the PDF |
 | 13b | `/print` | look at the Greek and Cyrillic cards in the PDF | letters, not empty boxes — the engine does not warn when a glyph is missing |
 | 14 | any | `python3 scripts/check_project.py .` | no errors |
 | 15 | `/print` | `/print` | `output/cards.pdf`, page count = 2 × ⌈cards ÷ 8⌉ |
-| 16 | `/print` | `/print only Signals` | only that topic in the PDF |
+| 16 | `/print` | `/print only Signals` | only that topic in the PDF. (In the demo project the catalog topic is now *Signals, flags and the radio* — the comma is deliberate, see row 9-i; the card file's `topic:` is unchanged) |
 | 17 | print | duplex, flip on long edge, 100 % scale | back of each card exactly behind its front |
 | 18 | print | cut along the grey lines | 100 × 72 mm cards, nothing clipped |
 | 19 | print | `lernkarten build … --margin 0` on a borderless printer | full A7 cards, no white edge |
@@ -254,6 +260,7 @@ Open `docs/index.html` straight off disk. No server, no build.
 | 29 | any width | `02 one card, one idea`: click **show the back**, then again | exactly one card at a time, and the label follows it |
 | 30 | any width, **JavaScript off** | reload and look at `02` | both cards side by side, no button — the fallback the script's own comment describes |
 | 31 | Chromium, Firefox, Safari | repeat rows 20, 23 and 25 in each | the same in all three. CI has no browser leg, so this is the only place the claim is checked |
+| 32 | above 1080 px and at 360 px | the section notes, the anatomy list, the printing descriptions, the rules list and the three principles, after the type floor was raised to 15 px | nothing reflows into a heading row, no column loses its measure, and the three heading rows of row 25 are still equal. The size itself is asserted by `test_reading_text_is_never_below_the_screen_floor`; what a test cannot see is whether the extra line a paragraph gained landed somewhere ugly |
 
 Row 31 is the one that cannot be delegated to a machine here. The `<details>`
 disclosure needs two user-agent behaviours overridden at once — older engines
@@ -261,9 +268,8 @@ hid the closed panel with `display: none`, current Chrome wraps it in
 `::details-content` and hides that — and overriding only the panel's own
 `display` renders nothing while reporting `flex` to devtools.
 
-Three things are known and are not regressions: the card toggle still does not
-explain itself (the open half of the issue that produced it), the notes are
-still 14 px against the 15 px floor in [design.md](design.md), and the readme
+Two things are known and are not regressions: the card toggle still does not
+explain itself (the open half of the issue that produced it), and the readme
 still buries the landing page.
 
 ### When the engine is the suspect
