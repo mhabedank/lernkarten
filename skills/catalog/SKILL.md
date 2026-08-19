@@ -91,6 +91,24 @@ absent:
 
 And on a topic: `Also covers: <subtopic> (cards in cards/<slug>.yaml)`.
 
+## A document marked `content: sparse`
+
+A knowledge document carrying `content: sparse` extracted correctly and is thin
+— a cover sheet, a form template, a title page. It is **not** a failed
+extraction, so do not send it back to `/ingest`.
+
+Reference it where it belongs, and do not let it decide coverage on its own. A
+required topic whose only evidence is a cover sheet is a **gap**: write
+`Status: gap` rather than pretending the branch is covered, because the cards
+built from it would be made of field labels. `check_project.py` reports a
+subtopic whose every reference is marked this way.
+
+A name may contain a comma — *Governance, risk & compliance* is an ordinary
+topic. Write it as it is: the three lines above are read by matching the names
+the catalog declares before what is left over is split, so nothing needs
+escaping and nothing needs quoting. Do not rename a topic to get around the
+separator.
+
 Drop the `Goal:` field when there is no `goal.md`.
 
 ## A subtopic under more than one topic

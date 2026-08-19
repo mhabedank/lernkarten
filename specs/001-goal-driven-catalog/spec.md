@@ -588,6 +588,78 @@ reproduces the committed PNGs byte-for-byte from the Typst sources.
 - **FR-040**: `docs/workflow.md` MUST explain what a gap is, what out-of-scope
   material is, and what a user does about each.
 
+**Bugfix requirements** *(added by `/speckit.bugfix.patch`, not by the original
+specification — each names the report it comes from)*
+
+**Bugfix**: 2026-08-19 — [BUG-001](bugs/BUG-001.md) the card markup contract had
+no emphasis rule and stated the backslash without its precondition; FR-041 to
+FR-043 close it.
+
+- **FR-041**: The card markup contract MUST state how to emphasise text —
+  `*bold*` and `_italic_`, and that `**...**` is markdown rather than Typst and
+  produces two empty strong elements around unemphasised text. It MUST say so in
+  all three places that carry the contract: `CLAUDE.md`, `skills/cards/SKILL.md`
+  and `docs/workflow.md`.
+- **FR-042**: The same three places MUST state the backslash's precondition: `\`
+  is a line break only when what follows it is not a markup character, and
+  before one it escapes that character instead. A card string is one line of
+  YAML, so this is reachable in ordinary use.
+- **FR-043**: `scripts/check_project.py` MUST report, naming the card,
+  `**...**` in a card's `front` or `back`, and a backslash immediately followed
+  by a markup character. Both are accepted by the typesetter — the first
+  silently, the second only when the remaining delimiters happen to balance — so
+  the build gate cannot catch either and the check is the only thing that can.
+
+**Bugfix**: 2026-08-19 — [BUG-002](bugs/BUG-002.md) the knowledge store had no
+uniqueness rule, so Zotero items sharing a title overwrote each other and were
+counted as skipped; FR-044 and FR-045 close it.
+
+- **FR-044**: File names under `knowledge/<id>/` MUST be unique per source
+  document. `/ingest` MUST NOT drop or overwrite a document because another
+  document produced the same name. For the Zotero path the identity is the
+  item key, which is already written to the frontmatter as `zotero_key`, and the
+  collision-free name is `<slug>-<zotero_key>.md`.
+- **FR-045**: A document MUST be counted as `skipped` only when the file already
+  on disk is *the same source document* — for Zotero, when its frontmatter
+  `zotero_key` matches the item in hand. A name collision MUST be counted
+  separately and named in the summary. A file written earlier in the same run
+  MUST NOT be able to satisfy the skip test at all, whatever its timestamp says.
+
+**Bugfix**: 2026-08-19 — [BUG-003](bugs/BUG-003.md) the reported `ROOT`-based
+output path is gone, but the destination is still implicit and never reported;
+FR-046 closes what survives.
+
+- **FR-046**: A pipeline step that writes files MUST name where it wrote them.
+  `scripts/zotero_ingest.py` MUST print the resolved **absolute** target
+  directory in its summary, and `skills/ingest/SKILL.md` MUST pass `--project`
+  explicitly rather than relying on the process's working directory being the
+  project.
+
+**Bugfix**: 2026-08-19 — [BUG-004](bugs/BUG-004.md) a thin-but-complete document
+and a failed extraction were written identically, so `/catalog` had to guess;
+FR-047 and FR-048 close it.
+
+- **FR-047**: `/ingest` MUST distinguish a document with **no text layer** from
+  one whose extraction **succeeded and yielded little**. The first keeps
+  `pending:` and goes to the Read tool. The second MUST be written with the text
+  it has, plus a frontmatter marker carrying the extracted character count, and
+  MUST NOT be marked `pending:` — there is nothing for a second pass to find.
+- **FR-048**: `/catalog` MUST treat a marked document as complete but low-yield:
+  it may be referenced, and it MUST NOT on its own make a required topic count
+  as covered. A cover page is not evidence, and FR-011's `Status: gap` is the
+  honest outcome when it is all there is.
+
+**Bugfix**: 2026-08-19 — [BUG-005](bugs/BUG-005.md) a comma inside a topic name
+was parsed as a list separator, so a valid catalog failed to validate against
+itself; FR-049 closes it, and FR-033 and FR-034 are read subject to it.
+
+- **FR-049**: A topic or subtopic name MUST be allowed to contain a comma.
+  `Parents:`, `Related:` and `Also covers:` MUST be resolved against the names
+  the catalog actually declares, **longest match first**, before what is left
+  over is split on commas and reported as dangling. This keeps the format
+  unchanged, so every catalog written against 0.3.1 stays valid, and keeps the
+  dangling-name diagnostics FR-033 and FR-034 exist for.
+
 ### Format Contracts *(mandatory — state "none" if untouched)*
 
 This feature adds a **fifth** file format to the four in constitution Principle I
@@ -598,8 +670,8 @@ written before this feature stays valid.
 |---|---|---|
 | `goal.md` *(new)* | **New format.** Frontmatter (`goal`, `kind`, `depth`, `updated`), `## Required topics` grouped into `### <Area>`, and `## Out of scope`. Project root, alongside `sources.yaml`. | `skills/learning-goal`, `skills/catalog`, `skills/research-gaps`, `scripts/check_project.py`, `.gitignore`, `.githooks/pre-commit`, `tests/test_repo_hygiene.py`, the demo project, `docs/workflow.md`, `README.md`, `CLAUDE.md`, the constitution's format table |
 | `sources.yaml` | New source type `research`, with a `gap` key and no `path`/`url` | `skills/sources`, `skills/research-gaps`, `scripts/check_project.py`, `sources.example.yaml`, the demo register |
-| `knowledge/<id>/<doc>.md` frontmatter | none — researched documents use the existing `source` / `url` / `ingested` contract | — |
-| `catalog/topics.md` structure | Optional `Status: gap` \| `Status: out of scope` per subtopic; optional `Parents:` naming every topic a subtopic belongs under, primary first; optional `Also covers:` on a topic listing borrowed subtopics; optional `Related:` naming associated subtopics; optional `Goal:` in the header; `References: none` permitted on a gap | `skills/catalog`, `skills/cards`, `skills/research-gaps`, `scripts/check_project.py`, the demo catalog |
+| `knowledge/<id>/<doc>.md` frontmatter | ~~none — researched documents use the existing `source` / `url` / `ingested` contract~~ **superseded 2026-08-19 by [BUG-004](bugs/BUG-004.md)**: an optional yield marker with the extracted character count (FR-047). Additive — a document without it reads exactly as before. The row was true of *researched* documents and was read as a claim about the whole format | `scripts/zotero_ingest.py`, `skills/ingest`, `skills/catalog`, `scripts/check_project.py`, the demo project |
+| `catalog/topics.md` structure | Optional `Status: gap` \| `Status: out of scope` per subtopic; optional `Parents:` naming every topic a subtopic belongs under, primary first; optional `Also covers:` on a topic listing borrowed subtopics; optional `Related:` naming associated subtopics; optional `Goal:` in the header; `References: none` permitted on a gap. **Amended 2026-08-19 by [BUG-005](bugs/BUG-005.md)**: a name may contain a comma, so these three lines are resolved against the declared names longest-first before the remainder is split (FR-049) | `skills/catalog`, `skills/cards`, `skills/research-gaps`, `scripts/check_project.py`, the demo catalog |
 | `cards/*.yaml` schema | none | — |
 
 **Why the catalog is a graph, and where the tree survives.** Containment in a
@@ -769,6 +841,24 @@ is touched (constitution XVI).
 - **SC-013**: The pipeline a new user has to understand grows from five steps to
   seven, of which two are marked optional, and the README command table and the
   landing page step strip both still fit on one screen at the desktop breakpoint.
+
+**Bugfix**: 2026-08-19 — [BUG-001](bugs/BUG-001.md) to [BUG-005](bugs/BUG-005.md)
+added SC-014 to SC-018.
+
+- **SC-014**: A card file whose `back` contains `**bold**`, or a backslash
+  directly followed by `*`, is reported by `scripts/check_project.py` with the
+  card named — neither reaches a PDF unremarked.
+- **SC-015**: Two Zotero items sharing one title produce **two** knowledge
+  documents, each carrying its own `zotero_key`, and the run reports no `skipped`
+  against an empty knowledge directory.
+- **SC-016**: The `/ingest` summary names the absolute directory it wrote into,
+  so a wrong destination is visible without listing the file system.
+- **SC-017**: A PDF whose extraction yields a short but non-empty text is written
+  with that text and its character count, and is not marked `pending:`; a PDF
+  with no text layer still is.
+- **SC-018**: A catalog whose topic name contains a comma, referenced from
+  `Parents:`, `Related:` and `Also covers:`, validates clean —
+  `python3 scripts/check_project.py <project> --strict` exits 0.
 
 ## Assumptions
 

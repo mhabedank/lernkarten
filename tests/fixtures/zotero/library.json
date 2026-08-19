@@ -15,6 +15,14 @@
     {
       "key": "KCOLL2",
       "name": "Mainland"
+    },
+    {
+      "key": "KCOLL3",
+      "name": "Ashwind duplicates"
+    },
+    {
+      "key": "KCOLL4",
+      "name": "Thin sources"
     }
   ],
   "items": [
@@ -187,6 +195,77 @@
           "contentType": "application/pdf",
           "path": "{STORAGE}/KESTREL01/ashwind-currents.pdf",
           "filename": "fog-over-the-kestrel-deep.pdf"
+        }
+      ]
+    },
+    {
+      "key": "ITEM09",
+      "itemType": "journalArticle",
+      "title": "Notes on the Ashwind approach",
+      "creators": [
+        {
+          "firstName": "Marek",
+          "lastName": "Ovray"
+        }
+      ],
+      "date": "2020-01",
+      "collections": [
+        "KCOLL3"
+      ],
+      "_note": "Same title as ITEM10 and a different document — a Zotero library routinely holds two of these. Both must land (BUG-001 in specs/001-goal-driven-catalog/bugs/BUG-002.md); before the fix the second was counted as 'skipped' and thrown away.",
+      "attachments": [
+        {
+          "key": "KESTREL07",
+          "contentType": "application/pdf",
+          "path": "{STORAGE}/KESTREL01/ashwind-currents.pdf",
+          "filename": "notes-on-the-ashwind-approach.pdf"
+        }
+      ]
+    },
+    {
+      "key": "ITEM10",
+      "itemType": "journalArticle",
+      "title": "Notes on the Ashwind approach",
+      "creators": [
+        {
+          "firstName": "Sanne",
+          "lastName": "Torvig"
+        }
+      ],
+      "date": "2021-11",
+      "collections": [
+        "KCOLL3"
+      ],
+      "_note": "The other half of the title collision; a different PDF behind it.",
+      "attachments": [
+        {
+          "key": "KESTREL08",
+          "contentType": "application/pdf",
+          "path": "{STORAGE}/KESTREL03/ferry-statistics.pdf",
+          "filename": "notes-on-the-ashwind-approach.pdf"
+        }
+      ]
+    },
+    {
+      "key": "ITEM11",
+      "itemType": "report",
+      "title": "Tide office of Fenmouth, annual report 2021",
+      "creators": [
+        {
+          "name": "Tide office of Fenmouth"
+        }
+      ],
+      "date": "2021",
+      "collections": [
+        "KCOLL4"
+      ],
+      "_note": "The attachment is a one-page cover sheet, not the report. The extraction succeeds and yields almost nothing — complete, but thin. Distinct from KESTREL02, which is a scan with no text layer at all (BUG-004 in specs/001-goal-driven-catalog/bugs/BUG-004.md).",
+      "attachments": [
+        {
+          "key": "KESTREL09",
+          "contentType": "application/pdf",
+          "path": "storage:tide-office-cover.pdf",
+          "filename": "tide-office-cover.pdf"
         }
       ]
     }

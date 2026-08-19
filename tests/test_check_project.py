@@ -639,6 +639,189 @@ def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
     assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
 
 
+# --- thin, but complete (BUG-004 / issue #12) ------------------------------
+
+SPARSE_KNOWLEDGE = """---
+source: field-notes
+document: "A cover sheet"
+path: "raw/a.md"
+content: sparse
+characters: 68
+ingested: 2026-08-14
+---
+
+Tide office of Fenmouth. Annual report 2021. Cover sheet.
+"""
+
+
+def test_a_document_marked_sparse_is_not_read_as_a_failed_extraction(tmp_path):
+    """FR-047: 'barely any text — did the extraction work?' is the wrong question here.
+
+    It did work. The marker says so, and the warning has to say something the
+    reader can act on instead of sending them back to an ingest that is already
+    as complete as it will get.
+    """
+    report = check(project(tmp_path, knowledge=SPARSE_KNOWLEDGE))
+    assert not report.errors, messages(report)
+    said = " | ".join(report.warnings)
+    assert "did the extraction work" not in said, said
+    assert "knowledge/field-notes/a.md" not in said, (
+        "a correctly marked document is not a finding — warning about it every "
+        "run trades a false alarm for a permanent true one"
+    )
+
+
+def test_an_unknown_content_value_is_reported(tmp_path):
+    """A marker nothing can act on is worse than no marker."""
+    knowledge = SPARSE_KNOWLEDGE.replace("content: sparse", "content: probably-fine")
+    report = check(project(tmp_path, knowledge=knowledge))
+    said = messages(report)
+    assert "probably-fine" in said, said
+
+
+def test_a_subtopic_backed_only_by_sparse_documents_is_reported(tmp_path):
+    """FR-048: a cover page is not evidence that a topic is covered.
+
+    Without this the coverage count is overstated in the one direction that
+    matters — the user is told a required topic is covered and gets cards built
+    out of form labels.
+    """
+    report = check(project(tmp_path, knowledge=SPARSE_KNOWLEDGE))
+    said = " | ".join(report.warnings)
+    assert "Rhythm of the tide" in said, said
+    assert "sparse" in said, said
+
+
+# --- the Typst markup contract (BUG-001 / issue #31) -----------------------
+
+MARKUP_CARDS = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+    source: 'Field notes'
+"""
+
+
+def markup_cards(back):
+    return MARKUP_CARDS.replace("back: '24 h 50 min.'", f"back: {back}")
+
+
+def test_a_markdown_double_star_is_reported(tmp_path):
+    """FR-043: Typst bolds with one star. `**bold**` is two empty strong elements.
+
+    It typesets, so `lernkarten check` passes it and the card prints
+    unemphasised — the only signal Typst gives is a warning on the success path,
+    which build_pdf.py discards. Nothing but this check can catch it.
+    """
+    report = check(project(tmp_path, cards=markup_cards("'This is **bold** in markdown.'")))
+    said = messages(report)
+    assert "card 1" in said, said
+    assert "*" in said, said
+
+
+def test_a_backslash_before_a_markup_character_is_reported(tmp_path):
+    """FR-043: `\\` is a line break only before whitespace; before `*` it escapes it.
+
+    A card is one line of YAML, so `'first\\*bold* rest'` yields a literal star,
+    no line break, and every star after it shifted by one.
+    """
+    report = check(project(tmp_path, cards=markup_cards("'First line\\*bold* rest of it.'")))
+    said = " | ".join(report.errors + report.warnings)
+    assert "card 1" in said, said
+    assert "line break" in said, said
+
+
+def test_the_working_line_break_form_is_not_reported(tmp_path):
+    """The documented form — backslash, space, markup — must stay silent.
+
+    Without this the fix could be "flag every backslash", which would make the
+    line break unusable and be a worse bug than the one it replaced.
+    """
+    report = check(project(tmp_path, cards=markup_cards("'First line\\ *bold* rest of it.'")))
+    assert not report.errors and not report.warnings, messages(report)
+
+
+# --- a comma inside a name (BUG-005 / issue #24) ---------------------------
+
+COMMA_CATALOG = """# Topics
+
+## Tides, currents & winds
+The water and the air that moves it.
+Also covers: Access control (cards in cards/security.yaml)
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+
+## Security
+Who may do what.
+
+### Access control
+Belongs under both.
+Parents: Security, Tides, currents & winds
+Related: Rhythm of the tide
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+
+def test_a_topic_name_containing_a_comma_validates_clean(tmp_path):
+    """FR-049: names are data, and 'Governance, risk & compliance' is an ordinary name.
+
+    `Parents:` is a comma-separated list, so a name with a comma in it used to be
+    torn into 'Tides' and 'currents & winds' — neither of which is a topic. One
+    name produced five errors, none of which named the real cause.
+    """
+    report = check(project(tmp_path, catalog=COMMA_CATALOG))
+    assert not report.errors, messages(report)
+
+
+def test_a_comma_bearing_name_is_reached_through_related_and_also_covers(tmp_path):
+    """FR-049 at the other two call sites — `Related:` and `Also covers:`.
+
+    The three attribute lines share one splitter, so fixing `Parents:` alone
+    would leave two of them broken.
+    """
+    catalog = COMMA_CATALOG.replace(
+        "Related: Rhythm of the tide", "Related: Rhythm of the tide"
+    ).replace(
+        "### Rhythm of the tide\nHow the tide moves.",
+        "### Rhythm of the tide\nHow the tide moves.\nRelated: Access control",
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    assert not report.errors, messages(report)
+
+
+def test_a_name_before_its_parenthetical_does_not_swallow_the_next_one():
+    """An `Also covers:` name carries `(cards in ...)` and may not be the last one.
+
+    The parenthetical sits between a name and the comma after it, so consuming
+    it has to happen where it is rather than at the end of the line.
+    """
+    names = check_project.catalog_names(
+        "Access control (cards in cards/security.yaml), Rhythm of the tide",
+        {"Access control", "Rhythm of the tide"},
+    )
+    assert names == ["Access control", "Rhythm of the tide"], names
+
+
+def test_a_dangling_name_after_a_comma_bearing_one_is_still_reported(tmp_path):
+    """FR-049 must not buy silence: what is left over is still split and checked.
+
+    A fix that stops splitting altogether would make this catalog pass, and C-1
+    would stop being a check at all.
+    """
+    catalog = COMMA_CATALOG.replace(
+        "Parents: Security, Tides, currents & winds",
+        "Parents: Security, Tides, currents & winds, Weather",
+    )
+    report = check(project(tmp_path, catalog=catalog))
+    said = messages(report)
+    assert "Weather" in said, said
+    assert "currents & winds" not in said, said
+
+
 def test_a_catalog_with_no_parents_or_related_is_unchanged(tmp_path):
     """Regression guard: absence means today's behaviour."""
     report = check(project(tmp_path, catalog=GOOD_CATALOG))

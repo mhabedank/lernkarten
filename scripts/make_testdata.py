@@ -284,6 +284,11 @@ JOBS = [
         GENERATORS / "zotero-offprint.typ",
         build_pdf_with_text,
     ),
+    (
+        ZOTERO_STORAGE / "KESTREL09" / "tide-office-cover.pdf",
+        GENERATORS / "zotero-cover.typ",
+        build_pdf_with_text,
+    ),
 ]
 
 

@@ -240,6 +240,28 @@ that is issue #26.
 Every link added to `docs/testing.md` must resolve, or `scripts/check_docs.py`
 fails. That gate runs as part of the four.
 
+**Bugfix**: 2026-08-19 — [BUG-006](bugs/BUG-006.md) Updated from bugfix patch.
+
+The plan's US2 section reasoned about the note's type size as *band geometry* —
+correct while `.band` was `display: flex` with `align-items: stretch`, because
+the note's height set the heading row's and its font size was therefore a lever
+on the row. **T018–T021 removed that coupling.** Every note is now a full-width
+block below its band, so its type size reaches nothing but itself.
+
+That has one consequence the plan should carry forward, because it changes a
+decision rather than a detail: the cost that made FR-011 freeze the note at
+14 px — "raising it makes every section band taller" — was paid off by the fix
+that shipped in the same feature. Raising the four sub-floor declarations is now
+a local change with no geometric consequence, which is why
+[BUG-006](bugs/BUG-006.md) supersedes FR-011 with FR-016 rather than leaving the
+choice open. FR-017 adds the scoping sentence to `docs/design.md` and
+constitution XVI so the floor states which faces it binds.
+
+The test plan gains one assertion, at the level the rest of this feature already
+uses: source-text structure, not rendered geometry. Type size is declared in the
+stylesheet, so unlike a row height it is fully assertable and needs no manual
+checklist row.
+
 ## Complexity Tracking
 
 | Violation | Gate | Why Needed | Simpler Alternative Rejected Because |

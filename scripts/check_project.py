@@ -39,6 +39,11 @@ GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
 GOAL_DEPTHS = ("awareness", "working", "expert")
 # A subtopic is either covered, wanted-but-uncovered, or unwanted. Absent means
 # covered, so a catalog written before the goal-driven step stays valid.
+# `content:` in a knowledge document says how much the extraction yielded. Only
+# `sparse` is defined: it means the extraction succeeded and there is little
+# there — a cover sheet, a form template — which is a different thing from a
+# scan with no text layer, and the two used to be written identically (BUG-004).
+CONTENT_STATES = ("sparse",)
 CATALOG_STATUS = ("gap", "out of scope")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
@@ -46,6 +51,21 @@ DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 # The attribute lines a catalog entry may carry, as `Key: value` in its body.
 ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal):(.*)$")
+# `Also covers: Access control (cards in cards/security.yaml)` — the parenthetical
+# is prose for the reader, not part of the name.
+PARENTHETICAL = re.compile(r"\s*\([^)]*\)\s*$")
+LEADING_PARENTHETICAL = re.compile(r"^\([^)]*\)")
+# `front`/`back` are Typst markup, and two of its rules are ones a model trained
+# on markdown gets wrong (BUG-001). Both are *accepted* by the typesetter, so
+# `lernkarten check` cannot see them and this is the only gate that can.
+# `**bold**` is markdown: Typst reads it as two empty strong elements around
+# unemphasised text, and only warns — on the success path, where build_pdf.py
+# discards stderr.
+MARKDOWN_BOLD = re.compile(r"(?<!\\)\*\*")
+# A backslash is a line break only before whitespace. Before a markup character
+# it escapes that character, so `line\*bold*` loses the break, gains a literal
+# star and shifts every star after it.
+ESCAPED_MARKUP = re.compile(r"\\([*_#@<>$`])")
 # Front at most ~2 lines, back at most ~6 — the card is only 100 x 72 mm.
 MAX_FRONT = 120
 MAX_BACK = 400
@@ -226,10 +246,16 @@ def check_sources(project, report):
 
 
 def check_knowledge(project, source_ids, report):
-    """knowledge/<source-id>/*.md: one document per file, frontmatter intact."""
+    """knowledge/<source-id>/*.md: one document per file, frontmatter intact.
+
+    Returns the paths of the documents marked `content: sparse`, relative to the
+    project — the catalog check needs them to see a subtopic that rests on
+    nothing but cover sheets.
+    """
     root = project / "knowledge"
+    sparse = set()
     if not root.is_dir():
-        return
+        return sparse
     for folder in sorted(p for p in root.iterdir() if p.is_dir()):
         if source_ids and folder.name not in source_ids:
             report.error(
@@ -253,10 +279,28 @@ def check_knowledge(project, source_ids, report):
             if not DATE.match(ingested):
                 shown = ingested or "missing"
                 report.error(where, f"'ingested' is not a date (YYYY-MM-DD): {shown}")
+            content = head.get("content")
+            if content is not None and str(content) not in CONTENT_STATES:
+                report.error(
+                    where,
+                    f"'content: {content}' is not one of {', '.join(CONTENT_STATES)}",
+                )
+                content = None
             if head.get("pending"):
                 report.warn(where, "still marked 'pending' — the text was never filled in")
+            elif content == "sparse":
+                # Silence, deliberately. The marker's whole job is to answer
+                # "did the extraction work?" with yes, and warning about a
+                # correctly marked document every run would replace a false
+                # alarm with a permanent true one. Where thinness has a
+                # consequence — a subtopic resting on nothing else — check_catalog
+                # says so, because that is where the user can act on it.
+                pass
             elif len(body.strip()) < 200:
                 report.warn(where, "barely any text — did the extraction work?")
+            if content == "sparse":
+                sparse.add(path.resolve())
+    return sparse
 
 
 @dataclasses.dataclass
@@ -318,20 +362,55 @@ def parse_catalog(text):
     return Catalog(entries=entries)
 
 
-def catalog_names(line):
-    """The comma-separated names on a `Parents:`, `Related:` or `Also covers:` line.
+def catalog_names(line, known=()):
+    """The names on a `Parents:`, `Related:` or `Also covers:` line.
+
+    The separator is a comma and a name may contain one — "Governance, risk &
+    compliance" is an ordinary thing to call a topic. So `known` is matched
+    first, longest name before shorter, and only what is left over is split.
+    Without it this splits on every comma, which tears such a name into pieces
+    that match nothing and makes all five graph checks fire at once (BUG-005).
+
+    Matching the known names rather than quoting them keeps the format
+    unchanged, so every catalog written before this stays valid. What remains
+    after the known names are taken out is still split and still reported as
+    dangling — that is what C-1 and C-5 are for, and a fix that stopped
+    splitting would silently retire them.
 
     An `Also covers:` entry carries `(cards in cards/x.yaml)` after the name so a
     reader knows where to look — that parenthetical is prose, and comparing names
     with it attached makes every reciprocity check fail on a catalog that follows
     the contract.
     """
+    text = (line or "").strip()
+    candidates = sorted({name for name in known if name}, key=len, reverse=True)
     names = []
-    for part in (line or "").split(","):
-        name = re.sub(r"\s*\([^)]*\)\s*$", "", part.strip()).strip()
+    while text:
+        name = next((c for c in candidates if _name_ends_here(text, c)), None)
+        if name is None:
+            head, _, text = text.partition(",")
+            name = head
+        else:
+            text = LEADING_PARENTHETICAL.sub("", text[len(name) :].lstrip()).lstrip()
+            text = text[1:] if text.startswith(",") else text
+        name = PARENTHETICAL.sub("", name.strip()).strip()
         if name:
             names.append(name)
+        text = text.strip()
     return names
+
+
+def _name_ends_here(text, candidate):
+    """Does `text` start with `candidate` as a whole name rather than a prefix?
+
+    "Tides" must not match inside "Tides, currents & winds", so the character
+    after the candidate has to end the name: nothing, the separator, or the
+    `(cards in ...)` parenthetical.
+    """
+    if not text.startswith(candidate):
+        return False
+    rest = text[len(candidate) :].lstrip()
+    return rest == "" or rest.startswith(",") or rest.startswith("(")
 
 
 def check_graph(catalog, subtopics, report):
@@ -348,11 +427,11 @@ def check_graph(catalog, subtopics, report):
 
     borrowed = {}
     for entry in catalog.topics:
-        for name in catalog_names(entry.attribute("also covers")):
+        for name in catalog_names(entry.attribute("also covers"), subtopics):
             borrowed.setdefault(entry.name, []).append(name)
 
     for entry in catalog.subtopics:
-        parents = catalog_names(entry.attribute("parents"))
+        parents = catalog_names(entry.attribute("parents"), topics)
         if parents:
             for parent in parents:  # C-1
                 if parent not in topics:
@@ -375,7 +454,7 @@ def check_graph(catalog, subtopics, report):
                         f"subtopic '{entry.name}': '{parent}' is listed as a parent "
                         f"but '## {parent}' carries no 'Also covers:' line naming it",
                     )
-        for name in catalog_names(entry.attribute("related")):  # C-5
+        for name in catalog_names(entry.attribute("related"), subtopics):  # C-5
             if name not in subtopics:
                 report.error(
                     where,
@@ -392,7 +471,7 @@ def check_graph(catalog, subtopics, report):
                     f"topic '{topic}': 'Also covers:' names '{name}', "
                     "which is not a subtopic of this catalog",
                 )
-            elif topic not in catalog_names(entry.attribute("parents")):
+            elif topic not in catalog_names(entry.attribute("parents"), topics):
                 report.error(
                     where,
                     f"topic '{topic}': 'Also covers:' claims '{name}', but that "
@@ -400,7 +479,7 @@ def check_graph(catalog, subtopics, report):
                 )
 
 
-def check_catalog(project, report, required=(), areas=()):
+def check_catalog(project, report, required=(), areas=(), sparse=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
@@ -448,6 +527,23 @@ def check_catalog(project, report, required=(), areas=()):
                 "'Status: gap' — a branch with nothing behind it is either a gap "
                 "or a mistake",
             )
+        if sparse and status is None:
+            resolved = [
+                (path.parent / target.split("#", 1)[0]).resolve()
+                for target in LINK.findall(references)
+                if not target.startswith(("http://", "https://", "mailto:", "#"))
+            ]
+            if resolved and all(document in sparse for document in resolved):
+                # A warning rather than an error: it is a real subtopic backed by
+                # real documents, and the user may know the cover sheet is all
+                # there is. What they may not do is find out by accident.
+                report.warn(
+                    "catalog/topics.md",
+                    f"subtopic '{entry.name}': every reference is marked "
+                    "'content: sparse' — a cover sheet or a form template is not "
+                    "enough to build cards from. Treat this as a gap, or ingest "
+                    "the document itself",
+                )
 
     check_graph(catalog, subtopics, report)
 
@@ -534,13 +630,42 @@ def check_cards(project, subtopics, report, marked=None):
                 report.warn(where, f"card {i}: back is long ({len(back)} characters)")
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
+            check_markup(where, i, front, back, report)
+
+
+def check_markup(where, i, front, back, report):
+    """The two Typst rules a markdown habit gets wrong, on one card.
+
+    Both are errors of meaning rather than of syntax: the typesetter accepts
+    them and prints something else. So this is an error where the answer is
+    unambiguous (`**` is never right) and a warning where it is not — `\\*` is
+    also how you write a literal star, and refusing it would make escaping
+    impossible.
+    """
+    for side, text in (("front", front), ("back", back)):
+        if MARKDOWN_BOLD.search(text):
+            report.error(
+                where,
+                f"card {i}: '{side}' uses '**' — that is markdown. Typst bolds with a "
+                "single '*' ('*bold*', '_italic_'); '**...**' is two empty strong "
+                "elements and prints unemphasised",
+            )
+        found = ESCAPED_MARKUP.search(text)
+        if found:
+            report.warn(
+                where,
+                f"card {i}: '{side}' has a backslash directly before '{found.group(1)}'. "
+                "A backslash is a line break only before whitespace — here it escapes "
+                f"the '{found.group(1)}' instead. Write '\\ ' if you meant the break; "
+                "ignore this if you meant the literal character",
+            )
 
 
 def check(project, report):
     required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
-    check_knowledge(project, source_ids, report)
-    subtopics, marked = check_catalog(project, report, required, areas)
+    sparse = check_knowledge(project, source_ids, report)
+    subtopics, marked = check_catalog(project, report, required, areas, sparse)
     check_cards(project, subtopics, report, marked)
     return report
 

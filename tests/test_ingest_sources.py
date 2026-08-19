@@ -28,6 +28,7 @@ INGEST = ROOT / "scripts" / "zotero_ingest.py"
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import make_testdata  # noqa: E402
+import zotero_ingest  # noqa: E402
 import zotero_stub  # noqa: E402
 
 HREF = re.compile(r'href="([^"]+)"')
@@ -240,6 +241,29 @@ def test_a_scanned_attachment_is_left_for_the_read_tool(library, tmp_path):
     assert "read this PDF with the Read tool" in scan
 
 
+def test_a_thin_but_complete_document_is_kept_and_marked(library, tmp_path):
+    """BUG-004: extraction succeeded and yielded almost nothing — a third state.
+
+    A one-page cover sheet is not a broken extraction and there is nothing for
+    a second pass to find, so sending it to the Read tool as `pending:` wastes
+    the pass and throws away the text it does have. `len(text) < 200` was
+    answering "is this a scan?", which it cannot: a scan has no text layer, a
+    cover stub has one page and a little text.
+    """
+    if shutil.which("pdftotext") is None:
+        pytest.skip("without pdftotext everything is pending, which proves nothing")
+    result = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Thin sources"
+    )
+    assert result.returncode == 0, result.stderr
+    doc = documents(tmp_path)["tide-office-of-fenmouth-annual-report-2021"]
+    assert "pending:" not in doc, "the extraction worked — there is nothing to come back for"
+    assert "content: sparse" in doc, doc
+    assert re.search(r"^characters: \d+$", doc, re.M), doc
+    assert "Annual report 2021" in doc, "the little text there is must be kept"
+    assert "1 thin" in result.stdout, result.stdout
+
+
 def test_an_item_without_a_pdf_is_counted_but_not_written(library, tmp_path):
     result = ingest(
         library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Kestrel Islands"
@@ -254,6 +278,89 @@ def test_a_second_run_skips_what_is_already_there(library, tmp_path):
         library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Kestrel Islands"
     )
     assert "0 new" in again.stdout and "4 skipped" in again.stdout, again.stdout
+
+
+def test_a_document_records_which_item_wrote_it(tmp_path):
+    """The identity the skip test reads, on its own.
+
+    Read through the subprocess tests this is invisible: the same-run set
+    carries the collision case even when the key is never found. So it is
+    asserted here directly, where an accident cannot hide it.
+    """
+    md = tmp_path / "a.md"
+    md.write_text(
+        '---\nsource: s\ndocument: "A"\nzotero_key: ITEM09\ningested: 2026-08-19\n---\n\n'
+        "body text, and a --- line in it that is not the frontmatter fence\n"
+        "zotero_key: NOTTHISONE\n",
+        encoding="utf-8",
+    )
+    assert zotero_ingest.document_key(md) == "ITEM09"
+
+    plain = tmp_path / "b.md"
+    plain.write_text("---\nsource: s\n---\n\ntext\n", encoding="utf-8")
+    assert zotero_ingest.document_key(plain) is None
+    assert zotero_ingest.document_key(tmp_path / "missing.md") is None
+
+
+def test_an_item_gives_way_to_a_file_an_earlier_run_left(tmp_path):
+    """A collision across runs, where the same-run set is empty and cannot help."""
+    stats = {"collisions": 0}
+    (tmp_path / "notes.md").write_text("---\nzotero_key: ITEM09\n---\n\ntext\n", encoding="utf-8")
+    chosen = zotero_ingest.target_for(tmp_path, "Notes", "ITEM10", set(), stats)
+    assert chosen.name == "notes-item10.md", chosen
+    assert stats["collisions"] == 1
+
+    stats = {"collisions": 0}
+    same = zotero_ingest.target_for(tmp_path, "Notes", "ITEM09", set(), stats)
+    assert same.name == "notes.md", same
+    assert stats["collisions"] == 0, "its own file is not a collision"
+
+
+def test_two_items_with_the_same_title_both_land(library, tmp_path):
+    """BUG-002: the file name came from the title alone, so the second item lost.
+
+    Worse than losing it: the file the run had just written was newer than the
+    PDF, so the skip branch took it and reported it as `skipped` — a word that
+    means "already ingested, unchanged". A first run against an empty directory
+    reported 14 skipped and had thrown 14 documents away.
+    """
+    result = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates"
+    )
+    assert result.returncode == 0, result.stderr
+    files = documents(tmp_path)
+    assert len(files) == 2, files
+    keys = {"zotero_key: ITEM09", "zotero_key: ITEM10"}
+    assert keys <= {line for text in files.values() for line in text.splitlines()}, files
+    assert "0 skipped" in result.stdout, result.stdout
+    assert "1 collision" in result.stdout, result.stdout
+
+
+def test_a_same_title_collision_still_skips_on_the_second_run(library, tmp_path):
+    """The fix must not cost the incremental path, which is why it reads identity.
+
+    Deciding "already there" by timestamp is what conflated the two cases. The
+    second run has to recognise both files as the items that wrote them.
+    """
+    ingest(library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates")
+    again = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates"
+    )
+    assert "0 new" in again.stdout and "2 skipped" in again.stdout, again.stdout
+    assert len(documents(tmp_path)) == 2, documents(tmp_path)
+
+
+def test_the_summary_names_the_directory_it_wrote_into(library, tmp_path):
+    """BUG-003: every destination looked alike in the summary, so a wrong one was invisible.
+
+    This is the check that would have made the original `ROOT`-relative bug
+    obvious instead of silent, and it is the half of #11 that was never done.
+    """
+    result = ingest(
+        library, tmp_path, "--source-id", "kestrel-zotero", "--collection", "Ashwind duplicates"
+    )
+    target = Path(tmp_path) / "knowledge" / "kestrel-zotero"
+    assert str(target.resolve()) in result.stdout, result.stdout
 
 
 def test_the_collection_filter_leaves_the_other_collection_alone(library, tmp_path):

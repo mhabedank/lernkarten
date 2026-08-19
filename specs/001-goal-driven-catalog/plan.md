@@ -239,6 +239,33 @@ contract file under `contracts/`. `knowledge/*.md` frontmatter and `cards/*.yaml
 are untouched, which is what keeps `build_pdf.py` and the card template out of
 this feature entirely.
 
+**Bugfix**: 2026-08-19 — [BUG-001](bugs/BUG-001.md) to [BUG-005](bugs/BUG-005.md)
+updated this section from bugfix patches. Five reports landed on this seam, and
+they change what the last paragraph claims:
+
+- **`knowledge/*.md` frontmatter is no longer untouched.** BUG-004 adds an
+  optional yield marker (FR-047), written by the deterministic half and read by
+  `skills/catalog`. It is additive, so nothing already on disk breaks, but it is
+  a format change and carries the usual list of files with it.
+- **`cards/*.yaml` is untouched as a *schema* and was never untouched as a
+  *contract*.** BUG-001 is the difference: `front`/`back` are Typst markup
+  evaluated at `templates/card.typ:153` and `:165`, and that markup contract is
+  as load-bearing as the schema and was stated in prose in three places, all
+  incomplete. FR-041 to FR-043 give it an owner on each side — the rule in the
+  prompts, the check in `check_project.py`.
+- **The seam has a third failure mode**, distinct from the two the plan
+  anticipated. It is neither "the prompt writes something the script rejects"
+  nor "the script needs a format the prompt does not write". It is **the script
+  accepts something and means the wrong thing by it**: `**bold**` typesets,
+  `catalog_names()` parses a comma-bearing name into two, `skipped` counts a
+  discarded document, `len(text) < 200` answers a question it was not asked.
+  Four of the six reports are that shape, and none of them could fail a build.
+  A check that only asks *does it parse* cannot see any of them.
+- **What that implies for the deterministic half**: `check_project.py` is not
+  only a schema validator, it is where the accepted-but-wrong cases have to be
+  caught, because nothing downstream of it will. FR-043 and FR-049 are both
+  written that way.
+
 ## Phase 0: Research
 
 Four questions had to be answered before design. Full reasoning in

@@ -1,0 +1,17 @@
+# The second card puts the line break `\` directly before a `*`. In Typst a
+# backslash is a line break only before whitespace; before a markup character it
+# escapes it. So the break is gone, the star is literal, the remaining `*` is
+# unclosed, and the build has to fail and name exactly this card. Written
+# `'... \ *bold* ...'` — backslash, space, star — it typesets and both the break
+# and the emphasis survive.
+topic: 'Broken: the backslash ate the star'
+language: english
+cards:
+  - subtopic: 'Fine'
+    front: 'How is a line break written with emphasis after it?'
+    back: 'Backslash, space, star:\ *like this*.'
+    source: 'Demo'
+  - subtopic: 'Broken'
+    front: 'What does a backslash directly before a star do?'
+    back: 'It escapes the star:\*bold* — no break, a literal star, and this card cannot be typeset.'
+    source: 'Demo'

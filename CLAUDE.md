@@ -50,6 +50,17 @@ code, comments, docs and commit messages are written in English.
   `(a) / (b)` for fractions, `Omega`, `sigma`, `>=`, `"Var"(X)` for upright
   text, `#list([a], [b])` for a bulleted back. `#`, `*`, `_`, `@`, `<`, `>`
   and backtick need a backslash in running text; `%` and `&` do not.
+
+  **Emphasis is a single star**: `*bold*` and `_italic_`. `**bold**` is
+  markdown — Typst reads it as two *empty* strong elements around plain text,
+  so the card prints unemphasised. It typesets, so nothing fails; only
+  `check_project.py` reports it.
+
+  **A backslash is a line break only before whitespace.** Before a markup
+  character it escapes that character, which is what it is for. A card is one
+  line of YAML, so `'first\*bold* rest'` gives a literal `*`, no line break,
+  and every following `*` shifted by one. Write `'first\ *bold* rest'`, or
+  reorder so no markup character follows the break.
 - **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
   goes to `output/`. The typesetting engine downloads itself on first use.
   Never hand-edit anything in `output/` — always go through the YAML files.

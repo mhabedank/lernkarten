@@ -55,6 +55,19 @@ set correctly.
 Reading text is never smaller than 11 pt printed or 15 px on screen. Uppercase
 labels are letterspaced between 0.1 em and 0.24 em; the wordmark never is.
 
+**Reading text means Archivo**, and the table above is what says so: Jost 500
+carries uppercase labels and IBM Plex Mono carries literals, and neither is
+prose. So the floor binds every Archivo paragraph — including a note beside a
+heading, a caption under a code sample and a description in a list, all of which
+are prose in a muted colour rather than a different category of text — and it
+does not bind a letterspaced label at 11 px or a card id at 8.5 px.
+
+The rule is scoped here rather than left to judgement because it had been read
+three incompatible ways in one specification, and the landing page sat below it
+in six places while a document in this repository certified that it did not.
+`tests/test_landing_page.py` now asserts it: a size under 15 px is allowed only
+where the rule that sets it also names one of the other two faces.
+
 ## The mark
 
 A card holding the three solids: the triangle is the corner you turn, the

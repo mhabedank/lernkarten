@@ -479,6 +479,11 @@ across all of them:
 - Colour never carries meaning on its own; every colour is doubled by a shape
   or a position. A black-only laser print has to work.
 - Reading text is never smaller than 11 pt printed or 15 px on screen.
+  *Reading text* is Archivo — the type table in `docs/design.md` gives Jost
+  labels and IBM Plex Mono literals their own rows, and those are not prose.
+  A note beside a heading and a caption under a sample are prose and are
+  bound by the floor; a letterspaced label is not. The floor is scoped, not
+  relaxed.
 - The layout never shrinks type to fit — a card whose text does not fit is
   *reported*, not silently squeezed.
 
@@ -561,7 +566,21 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.3.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-18
+**Version**: 2.4.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-19
+
+*2.4.0 — principle XVI's type floor now says what it binds. "Reading text is
+never smaller than 11 pt printed or 15 px on screen" was written about the card,
+where every word is reading text; on a screen there is a register between prose
+and a label that the sentence had no vocabulary for, and each contributor
+decided for themselves. Feature 002's specification shows one of them deciding
+three incompatible ways in a single document — exempting the band note,
+recording it as below the floor, and certifying the page as compliant — while
+`docs/index.html` sat under the floor in six places. The floor is **scoped, not
+relaxed**: it binds Archivo prose, and the type table in `docs/design.md` is
+what makes Jost labels and Plex Mono literals a different thing rather than an
+exception. Scoping it also made it assertable, which is why it is now a test
+(`tests/test_landing_page.py`) rather than a sentence. See
+[BUG-006](../../specs/002-landing-page-fixes/bugs/BUG-006.md).*
 
 *2.3.0 — the goal-driven catalog. Principle I's contract is now **five**
 formats, not four: `goal.md` joins it, `sources.yaml` gains the `research`
