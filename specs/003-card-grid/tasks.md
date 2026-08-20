@@ -238,7 +238,7 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- sequential -->
 
-- [ ] T072 Build the gate sheet: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml tests/fixtures/demo-project/grids/tides-a8.yaml -o /tmp/gate.pdf --grid a8`. ⚠️ Include the short-label deck from T036 — **all 38 cards previously shipped in this repo exceed the ~22-character A8 label budget**, so without a short-label card the legibility check is vacuous
+- [x] T072 Build the gate sheet: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml tests/fixtures/demo-project/grids/tides-a8.yaml -o /tmp/gate.pdf --grid a8`. ⚠️ Include the short-label deck from T036 — **all 38 cards previously shipped in this repo exceed the ~22-character A8 label budget**, so without a short-label card the legibility check is vacuous
 - [ ] T073 Print `/tmp/gate.pdf` duplex, flip on long edge, **100 % scale**, on real card stock
 - [ ] T074 Check registration — every back sits behind its front. A8 has 5 vertical cut lines to A7's 3, and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a 100 mm one
 - [ ] T075 Cut on the crop marks — confirm **5 vertical and 5 horizontal** cut lines at A8 (3 and 5 at A7), and that cards measure 50 × 71.75 mm with nothing clipped that should not be. Deliberately manual: counting stroke objects in a PDF is brittle across engine bumps, and the property that matters is whether the cuts land right *(FR-008, analysis E2)*
