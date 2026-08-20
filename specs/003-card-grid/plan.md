@@ -17,6 +17,16 @@ half learns to write for a declared size.
 The A8 card is exactly the next standard size down, so cards still fit a
 box you can buy — which is why the ticket's suggested 3 × 4 was dropped.
 
+**Bugfix**: 2026-08-20 — [BUG-007](./bugs/BUG-007.md). Two constants are not
+enough. The A4 sheet was treated as a fixed 210 × 297, which makes 4 × 4 a
+*portrait* card — every A-series halving flips the orientation, so A8 landscape
+is 74 × 52, not 52 × 74. The sheet's **orientation** is therefore a third thing
+the grid decides (FR-024), and the card is typeset at a **uniform scale** off the
+A7 reference (FR-025) rather than holding 11 pt on a card two thirds the height.
+The compensating simplification: at uniform scale the two grids are
+proportionally identical, so the grid-dependent overflow limits and the
+head-band budget are not needed at all (FR-027) and come back out.
+
 ## Technical Context
 
 Unchanged from the project baseline. This feature adds no language, no runtime
@@ -296,7 +306,9 @@ it blocks the merge; it is not a footnote.
 | Violation | Gate | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|---|
 | Amending constitution XVI and XVII | XVI, XVII | Both quote A7 as *the* card size; the feature makes it one of two | Leaving them would make the constitution contradict `docs/design.md` and `CLAUDE.md` in the same PR that changes those. Governance already provides for amendment by PR |
-| A third card-style check in `check_project.py` (head-band label budget) | V, XI | It is the only red artifact available for the `/cards` prompt change, and it turns an existing silent truncation into a named warning | Shipping the prompt change with no check fails XI outright. Putting the check in a new module fails V — it belongs beside `MAX_FRONT`/`MAX_BACK` |
+| ~~A third card-style check in `check_project.py` (head-band label budget)~~ | ~~V, XI~~ | ~~It turns an existing silent truncation into a named warning~~ | **Withdrawn by BUG-007.** There is no silent truncation: the label wraps and stays readable to ~200 characters. And under FR-025 the label box is proportionally identical at both grids, so the check has no A8-specific subject. The `/cards` prompt change keeps its red artifact in the `--strict` missing-`grid:` warning (FR-015a) |
+| Sheet orientation follows the grid | XVI | FR-024 — a card must be landscape, and each A-series halving flips it, so `a8` needs a landscape A4 | Keeping a portrait sheet gives a portrait card, which is what BUG-007 reports. Rotating the *card* inside a portrait cell does not tile: a 74.25 × 52.5 card needs 2.83 columns of a 210 mm sheet |
+| Uniform scale below the 11 pt type floor | XVI | FR-025 — measured, holding 11 pt on the corrected 50 mm-tall card breaks the layout: labels wrap out of the band, backs overflow, note rules vanish | Scaling only the bands keeps 11 pt but still leaves A8 at ~160 characters against A7's 400, so an existing deck cannot be reprinted — which is what SC-001 promised. The floor needs **scoping** rather than lowering, as it was scoped once already in constitution 2.4.0 |
 | A new `grids/` directory plus one `broken/` fixture | XI, V | FR-014's conflict needs two decks that disagree, and the FR-010 trap needs a card that fits A7 and overflows A8 | Keeping the declaring decks in `cards/` was rejected after cross-model review: `tests/test_e2e.py:24` globs that directory, so a deck declaring a grid there changes or breaks every unflagged demo build. `grids/` sits inside the demo project, so `CLAUDE.md`'s rule still holds |
 
 Principle XI has no row here. It is not waivable, and this plan meets it.

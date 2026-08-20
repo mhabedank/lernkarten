@@ -8,6 +8,8 @@ description: "Task list for feat/card-grid — configurable press-sheet grid"
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md), [contracts/cards-yaml-grid.md](./contracts/cards-yaml-grid.md)
 
+**Bugfix**: 2026-08-20 — BUG-007: 9 tasks reopened, Phase 11 added (T080–T094).
+
 **Tests**: **Test-first is mandatory and not waivable** (constitution XI). Every story opens with a test task committed *failing on its assertion* before the implementation task starts.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -143,7 +145,7 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- parallel-group: 1 (max 3 concurrent) -->
 
-- [x] T036 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a8.yaml` — **exactly 12 cards**, declaring `grid: a8`, invented content in the existing tides idiom (constitution VII), every label inside the ~22-character A8 budget so it doubles as the short-label sample the print gate needs. ⚠️ **`grids/`, not `cards/`** — `CARDS` in `tests/test_e2e.py:24` globs `cards/*.yaml`, so a declaring deck there would change or break every unflagged demo build *(review C2)*
+- [ ] T036 ⚠️ **Reopened (BUG-007)** — the twelve cards were written to a ~22-character label budget that FR-023 retires. Original: [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a8.yaml` — **exactly 12 cards**, declaring `grid: a8`, invented content in the existing tides idiom (constitution VII), every label inside the ~22-character A8 budget so it doubles as the short-label sample the print gate needs. ⚠️ **`grids/`, not `cards/`** — `CARDS` in `tests/test_e2e.py:24` globs `cards/*.yaml`, so a declaring deck there would change or break every unflagged demo build *(review C2)*
 - [x] T037 [P] [US2] Add `tests/fixtures/demo-project/grids/tides-a7.yaml` — declares `grid: a7`, so the FR-014 conflict has a partner. Add a `README.md` to `grids/` explaining the folder holds decks that declare a grid and is deliberately outside the globbed corpus
 
 <!-- sequential -->
@@ -163,10 +165,10 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 ### 🟢 Green
 
 - [x] T046 [US2] Implement `resolve_grid()` in `scripts/build_pdf.py` until T039–T042 pass, and extend `load_cards()` to surface each file's declared grid — it discards top-level keys today, so FR-014's per-file error has nothing to name *(review W2)*
-- [x] T047 [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
-- [x] T048 [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
+- [ ] T047 ⚠️ **Reopened (BUG-007)** — `LIMITS` was split per grid; FR-027 makes one set cover both. Original: [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
+- [ ] T048 ⚠️ **Reopened (BUG-007)** — the head-band budget has no subject once the label box scales (FR-023 retired). Original: [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
 - [x] T049 [US2] Add the `--strict`-only missing-`grid:` warning to `scripts/check_project.py` until T045 passes. It must **not** fire outside `--strict` *(FR-015a)*
-- [x] T050 [US2] Add `grid: a7` to all six decks in `tests/fixtures/demo-project/cards/` so `check_project.py … --strict` — which CI runs at `.github/workflows/ci.yml:120` and gate T070 repeats — stays green *(FR-015b, review C3)*
+- [ ] T050 ⚠️ **Reopened (BUG-007)** — `grid: a7` is still right, but re-check once FR-015b's `--strict` collision dissolves. Original: [US2] Add `grid: a7` to all six decks in `tests/fixtures/demo-project/cards/` so `check_project.py … --strict` — which CI runs at `.github/workflows/ci.yml:120` and gate T070 repeats — stays green *(FR-015b, review C3)*
 - [x] T051 [US2] Update `skills/cards/SKILL.md` until **both** T044's label check and T045's `--strict` check pass against what it produces — write the `grid:` key, size card text to the declared grid. Keep the frontmatter valid
 
 **Checkpoint**: the seam works both ways, and this repo's own `--strict` gate is still green.
@@ -196,15 +198,15 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- parallel-group: 2 (max 3 concurrent) -->
 
-- [x] T056 [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
-- [x] T057 [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
+- [ ] T056 ⚠️ **Reopened (BUG-007)** — `docs/design.md` states the A8 card as 52.5 × 74.25 portrait. Original: [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
+- [ ] T057 ⚠️ **Reopened (BUG-007)** — `docs/testing.md` states the cut size and the per-grid walk from the portrait card. Original: [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
 - [x] T058 [P] Update `skills/print/SKILL.md` — document `--grid` beside `--margin` and `--no-logo`, naming both grids and their A-series equivalents *(FR-018)*
 
 <!-- parallel-group: 3 (max 3 concurrent) -->
 
-- [x] T059 [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
+- [ ] T059 ⚠️ **Reopened (BUG-007)** — `CLAUDE.md` carries the per-grid budget table FR-027 removes. Original: [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
 - [x] T060 [P] Update `cards/example.yaml` — add `grid: a7` explicitly, with a comment saying the key is optional and that A7 is the default. **`a7`, not `a8`**: the example is built by gate T067 and by every user's first run, so declaring A8 would silently switch the shipped example to a different card size *(review W5)*
-- [x] T061 [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
+- [ ] T061 ⚠️ **Reopened (BUG-007)** — constitution XVI is **wrong as ratified in 2.5.0** — it states the portrait dimension. Original: [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
 
 <!-- sequential -->
 
@@ -226,7 +228,51 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 - [x] T068 `python3 scripts/check_docs.py`
 - [x] T069 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v`
 - [x] T070 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
-- [x] T071 `bin/lernkarten build cards/example.yaml --grid a8 --margin 0 --no-logo -o output/a8-borderless.pdf` — the flag composes with the existing options
+- [ ] T071 ⚠️ **Reopened (BUG-007)** — the A8 example build must be re-run against the corrected geometry. Original: `bin/lernkarten build cards/example.yaml --grid a8 --margin 0 --no-logo -o output/a8-borderless.pdf` — the flag composes with the existing options
+
+---
+
+---
+
+## Phase 11: BUG-007 — the card is landscape, and scales (Blocking)
+
+**Bugfix**: 2026-08-20 — [BUG-007](./bugs/BUG-007.md). A8 shipped portrait in
+v0.4.0 and v0.4.1. Every A-series halving flips the orientation, so the sheet
+turns and the card is typeset at a uniform scale off the A7 reference. This
+phase blocks the next release.
+
+**Goal**: `--grid a8` gives a landscape 74.25 × 52.5 mm card, and an A7-legal
+deck reprints at A8 without rewriting a card.
+
+<!-- sequential -->
+
+- [ ] T080 🔴 [BUG-007] `tests/test_build_pdf.py`: a `sheet(grid)` helper returns `(210, 297)` for `2x4` and `(297, 210)` for `4x4`, and the derived card is **wider than tall** at both. Fails: the sheet is a constant *(FR-024, SC-010)*
+- [ ] T081 🔴 [BUG-007] `tests/test_build_pdf.py`: `card_scale(grid)` returns 1.0 at `2x4` and `min(cw/100, ch/71.75)` = 0.6969 at `4x4` *(FR-025)*
+- [ ] T082 [BUG-007] Make `templates/cards.typ` take the sheet size and the scale as `--input`, add both to `engine_inputs()` so the compile *and* the overflow query receive them (the FR-010 seam), and implement `sheet()`/`card_scale()` in `scripts/build_pdf.py` until T080–T081 pass
+- [ ] T083 🔴 [BUG-007] `tests/test_e2e.py`: at `--grid a8 --margin 0` a built page measures 297 × 210 mm and a cut card 74.25 × 52.5 mm — read from the PDF's own MediaBox, not assumed *(SC-010)*
+- [ ] T084 🔴 [BUG-007] `tests/test_e2e.py`: a deck at A7's limits (398-character back, 116-character front) builds at `--grid a8` with **no** overflow warning. This is SC-011, and it is what "half the sheets for the same deck" requires
+- [ ] T085 [BUG-007] Make T083–T084 pass
+
+### Undo what the portrait card justified
+
+<!-- sequential -->
+
+- [ ] T086 [BUG-007] Revert `LIMITS` in `scripts/check_project.py` to one set — front 120, back 400 at every grid *(FR-027)*. Measured: first overflow at 500 characters at `a7` and 520 at the scaled `a8`
+- [ ] T087 [BUG-007] Remove `LABEL_BUDGET` and the head-band check *(FR-023 retired)*. Its premise was false twice over: the label wraps rather than truncating, and the box is proportionally identical at both grids
+- [ ] T088 [BUG-007] Update `tests/test_check_project.py` — the per-grid overflow case and the label-budget case go with them; keep the `--strict` missing-`grid:` case, which is unaffected
+- [ ] T089 [BUG-007] Retire research.md R3 and R4. R3 measured the portrait card; R4's "11 of 38 cards clip silently" is wrong — measured, a label wraps and first loses text near 200 characters, not 53
+
+### The record
+
+<!-- sequential -->
+
+- [ ] T090 [BUG-007] Amend the constitution again. XVI states the portrait dimension and is **wrong as ratified in 2.5.0**. The 11 pt floor needs **scoping, not lowering**: it binds the card at its reference size, and a grid may render that card at an A-series scale. Same move as 2.4.0
+- [ ] T091 [BUG-007] Re-sweep `docs/design.md`, `docs/testing.md`, `CLAUDE.md`, `skills/print/SKILL.md`, `cards/example.yaml` and the README for the portrait dimension and the per-grid budget table
+- [ ] T092 [BUG-007] Rewrite `tests/fixtures/demo-project/grids/tides-a8.yaml`. Its twelve cards were written to a 22-character label budget that no longer exists; it should now carry cards that are *hard* at A8, not easy
+- [ ] T093 [BUG-007] Correct the v0.4.0 and v0.4.1 release notes, which state 52.5 × 74.25 mm to anyone reading them now
+- [ ] T094 🚧 [BUG-007] **Walk SC-007 on paper before the next release.** It has failed once by being deferred: a portrait card would not have survived one printed sheet. The open question is now legibility of 7.67 pt reading text on cheap paper, Greek and Cyrillic included
+
+**Checkpoint**: a cut A8 card is landscape, an A7-legal deck reprints at A8 untouched, and nothing in the repo still states the portrait dimension.
 
 ---
 
