@@ -142,12 +142,22 @@ def resolve_grid(declared, flag=None):
     half the cards at a size they were not written for. A7 declared beside
     nothing declared is no disagreement at all: both mean 2 x 4.
     """
-    if flag is not None:
-        return parse_grid(flag)
     resolved = {}
     for name, value in declared:
-        grid = DEFAULT_GRID if value is None else parse_grid(value)
+        if value is None:
+            grid = DEFAULT_GRID
+        else:
+            # Read every declared value even when the flag is going to win.
+            # The flag decides the size; it does not excuse a broken key, and
+            # a typo that only surfaces the day someone drops the flag is a
+            # bad trade for one dict lookup per deck.
+            try:
+                grid = parse_grid(value)
+            except ValueError as e:
+                raise ValueError(f"{name}: {e}") from e
         resolved.setdefault(grid, []).append((name, value))
+    if flag is not None:
+        return parse_grid(flag)
     if len(resolved) <= 1:
         return next(iter(resolved), DEFAULT_GRID)
     lines = [

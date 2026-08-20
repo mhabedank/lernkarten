@@ -309,3 +309,27 @@ def test_a_declared_grid_conflicts_with_a_deck_that_declares_nothing(tmp_path):
     # A7 declared beside nothing declared is not a disagreement — both mean 2x4.
     agreeing = declared(deck(tmp_path, "seven.yaml", "a7"), deck(tmp_path, "quiet.yaml"))
     assert build_pdf.resolve_grid(agreeing, None) == (2, 4)
+
+
+def test_a_deck_declaring_a_bad_grid_is_refused_even_when_the_flag_overrides(tmp_path):
+    """The flag decides the size; it does not excuse a broken key (G1).
+
+    --grid wins over the deck (FR-013), but a deck whose own `grid:` is
+    unsupported or malformed is still wrong, and the contract calls it an
+    error unconditionally. Overriding used to skip the check entirely.
+    """
+    bad = declared(deck(tmp_path, "typo.yaml", "3x4"))
+    with pytest.raises(ValueError) as excinfo:
+        build_pdf.resolve_grid(bad, "a8")
+    message = str(excinfo.value)
+    assert "3x4" in message, message
+    assert "typo.yaml" in message, f"the file has to be named, or which of six is it: {message}"
+
+    # And the same value with no flag names the file too, which it did not before.
+    with pytest.raises(ValueError) as excinfo:
+        build_pdf.resolve_grid(bad, None)
+    assert "typo.yaml" in str(excinfo.value), str(excinfo.value)
+
+    # A good deck still bends to the flag.
+    good = declared(deck(tmp_path, "fine.yaml", "a7"))
+    assert build_pdf.resolve_grid(good, "a8") == (4, 4)
