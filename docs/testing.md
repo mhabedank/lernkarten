@@ -234,12 +234,14 @@ python3 scripts/zotero_stub.py
 | 19 | print | `lernkarten build … --margin 0` on a borderless printer | full-bleed cards, no white edge |
 
 **Steps 17–19 are per grid, and both grids have to be walked.** Registration is
-the thing that breaks when the column count changes, and A8 has three interior
-vertical cut lines where A7 has one. Run each of them twice:
+the thing that breaks when the column count changes: A8 has five vertical cut
+lines to A7's three (counting the two outer trim lines, which the crop marks
+also draw), and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a
+100 mm one. Run each of them twice:
 
 | | `--grid a7` (the default) | `--grid a8` |
 |---|---|---|
-| 17 registration | 1 vertical, 3 horizontal cut lines | 3 vertical, 3 horizontal cut lines |
+| 17 registration | 3 vertical, 5 horizontal cut lines | 5 vertical, 5 horizontal cut lines |
 | 18 cut card | 100 × 71.75 mm (105 × 74.25 at `--margin 0`) | 50 × 71.75 mm (52.5 × 74.25 at `--margin 0`) |
 | 19 borderless | drops into a DIN A7 box | drops into a DIN A8 box |
 

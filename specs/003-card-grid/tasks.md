@@ -220,13 +220,13 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- sequential -->
 
-- [ ] T065 `ruff check . && ruff format --check .`
-- [ ] T066 `pytest`
-- [ ] T067 `bin/lernkarten check cards/example.yaml`
-- [ ] T068 `python3 scripts/check_docs.py`
-- [ ] T069 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v`
-- [ ] T070 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
-- [ ] T071 `bin/lernkarten build cards/example.yaml --grid a8 --margin 0 --no-logo -o output/a8-borderless.pdf` — the flag composes with the existing options
+- [x] T065 `ruff check . && ruff format --check .`
+- [x] T066 `pytest`
+- [x] T067 `bin/lernkarten check cards/example.yaml`
+- [x] T068 `python3 scripts/check_docs.py`
+- [x] T069 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v`
+- [x] T070 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
+- [x] T071 `bin/lernkarten build cards/example.yaml --grid a8 --margin 0 --no-logo -o output/a8-borderless.pdf` — the flag composes with the existing options
 
 ---
 

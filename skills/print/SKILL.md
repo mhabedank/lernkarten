@@ -47,9 +47,11 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 5. Check the result: the page count must be even (front/back pairs), and is
    2 × ⌈cards ÷ (columns × rows)⌉. Send the PDF to the user with SendUserFile
    and state the printing instructions: **duplex, flip on long edge, 100 %
-   scale (not "fit to page")**, then cut the vertical lines first and the
-   three horizontal ones after — one vertical cut at `a7`, three at `a8`. The
-   card frames and the crop marks in the margin show where.
+   scale (not "fit to page")**, then trim the sheet and cut the vertical lines
+   before the horizontal ones — one interior vertical cut at `a7` and three at
+   `a8`, three interior horizontal cuts at both. Counting the outer trim that
+   is five vertical by five horizontal at `a8`, three by five at `a7`. The card
+   frames and the crop marks in the margin show where.
 
 ## Notes
 
