@@ -1,10 +1,12 @@
 """Guards the structure of the landing page, `docs/index.html`.
 
-Separate from `test_repo_hygiene.py` on purpose. That module guards what the
-repository must not contain — user content, committed binaries — and its one
-landing-page check ("still promises five commands") belongs there because it
-guards a release from shipping a stale promise. The assertions here are about
-how the page is *built*, which is a different question.
+Separate from `test_repo_hygiene.py` on purpose. That module guards what a
+release must and must not ship — no user content, no committed binaries, and
+what the versioned documentation says. Its landing-page checks ("still promises
+five commands", and that the README points a reader at the live page) belong
+there because they guard a release from shipping a stale promise or burying the
+page entirely. The assertions here are about how the page is *built*, which is
+a different question.
 
 What this module can and cannot reach is the shape of everything below. It reads
 the file; it never renders it. So it can assert that a selector exists, that an
