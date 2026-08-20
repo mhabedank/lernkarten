@@ -114,18 +114,18 @@ This phase is a **refactor under existing green coverage**, not new behaviour �
 
 ### 🔴 Red
 
-- [ ] T026 🔴 [P] [US2] `tests/test_build_pdf.py`: `print_order_note(8, "duplex") == "duplex, flip on long edge"` — the exact string five existing e2e assertions depend on. Red with `AttributeError`
-- [ ] T027 🔴 [P] [US2] `tests/test_build_pdf.py`: `print_order_note(8, "simplex")` names `pages 1-4` and `pages 5-8`, and contains `100 %` and `long edge` (FR-006)
-- [ ] T028 🔴 [P] [US2] `tests/test_build_pdf.py`: `print_order_note(2, "simplex")` says `page 1` and `page 2` — **never** `pages 1-1`. A one-sheet deck is the first thing anyone tries the flag on
-- [ ] T029 🔴 [US2] `tests/test_e2e.py`: the real closing line reports `8 pages, simplex`, `pages 1-4` and `pages 5-8`, and the two ranges add up to the reported page count (SC-004)
+- [X] T026 🔴 [P] [US2] `tests/test_build_pdf.py`: `print_order_note(8, "duplex") == "duplex, flip on long edge"` — the exact string five existing e2e assertions depend on. Red with `AttributeError`
+- [X] T027 🔴 [P] [US2] `tests/test_build_pdf.py`: `print_order_note(8, "simplex")` names `pages 1-4` and `pages 5-8`, and contains `100 %` and `long edge` (FR-006)
+- [X] T028 🔴 [P] [US2] `tests/test_build_pdf.py`: `print_order_note(2, "simplex")` says `page 1` and `page 2` — **never** `pages 1-1`. A one-sheet deck is the first thing anyone tries the flag on
+- [X] T029 🔴 [US2] `tests/test_e2e.py`: the real closing line reports `8 pages, simplex`, `pages 1-4` and `pages 5-8`, and the two ranges add up to the reported page count (SC-004)
 
 **Checkpoint**: red on four assertions about a function that does not exist. Commit.
 
 ### 🟢 Green
 
-- [ ] T030 [US2] `scripts/build_pdf.py`: implement `print_order_note(page_count, sides)` to the strings fixed in [contracts/cli.md](contracts/cli.md), including the single-page range form
-- [ ] T031 [US2] `scripts/build_pdf.py`: use it in the success line. Leave the `--check` line **verbatim** — it writes no PDF, so it has no page order to describe (FR-007)
-- [ ] T032 [US2] `git diff origin/main -- tests/test_e2e.py | grep '^-' | grep 'pages, duplex'` must print nothing. SC-003 is "no existing assertion was rewritten"; rewriting one is the failure, not the fix
+- [X] T030 [US2] `scripts/build_pdf.py`: implement `print_order_note(page_count, sides)` to the strings fixed in [contracts/cli.md](contracts/cli.md), including the single-page range form
+- [X] T031 [US2] `scripts/build_pdf.py`: use it in the success line. Leave the `--check` line **verbatim** — it writes no PDF, so it has no page order to describe (FR-007)
+- [X] T032 [US2] `git diff origin/main -- tests/test_e2e.py | grep '^-' | grep 'pages, duplex'` must print nothing. SC-003 is "no existing assertion was rewritten"; rewriting one is the failure, not the fix
 
 **Checkpoint**: both orders report themselves correctly and the duplex wording has not moved.
 

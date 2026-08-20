@@ -191,6 +191,31 @@ def pages(count, grid):
     return 2 * ((count + per_page - 1) // per_page)
 
 
+def page_range(first, last):
+    """`page 3` for one page, `pages 3-6` for several."""
+    return f"page {first}" if first == last else f"pages {first}-{last}"
+
+
+def print_order_note(page_count, sides):
+    """How to print what was just written, for the closing line.
+
+    The duplex sentence is the one this command has always printed and is
+    asserted verbatim in several places; it does not get to drift. The simplex
+    one has to carry more, because the two page ranges are the two print jobs
+    the user is about to start and nothing else on screen will tell them: get
+    the ranges wrong and you have printed a stack of fronts on the back of a
+    stack of fronts.
+    """
+    if sides == "duplex":
+        return "duplex, flip on long edge"
+    sheets = page_count // 2
+    return (
+        f"simplex: print {page_range(1, sheets)} at 100 % scale, "
+        "turn the stack over on the long edge, then print "
+        f"{page_range(sheets + 1, page_count)}"
+    )
+
+
 def resolve_grid(declared, flag=None):
     """The grid this build prints at: the flag, else the decks, else A7.
 
@@ -552,7 +577,7 @@ def main():
     else:
         print(
             f"OK: {len(cards)} cards ({languages}) -> {target} "
-            f"({page_count} pages, duplex, flip on long edge)."
+            f"({page_count} pages, {print_order_note(page_count, args.sides)})."
         )
 
 

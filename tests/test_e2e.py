@@ -793,3 +793,18 @@ def test_check_takes_the_print_order_flag_too(tmp_path):
     assert with_flag.returncode == 0, with_flag.stderr
     assert f"{DEMO_CARD_COUNT} cards valid" in with_flag.stdout
     assert with_flag.stdout == plain.stdout, "the flag must not change what check reports"
+
+
+def test_the_simplex_build_says_which_pages_to_print(tmp_path):
+    """SC-004: the ranges are computed from the sheets, and add up to the count."""
+    result = run("build", *CARDS, "-o", str(tmp_path / "s.pdf"), "--sides", "simplex")
+    assert result.returncode == 0, result.stderr
+    assert "8 pages, simplex" in result.stdout, result.stdout
+    assert "pages 1-4" in result.stdout and "pages 5-8" in result.stdout, result.stdout
+
+
+def test_the_duplex_build_still_says_flip_on_long_edge(tmp_path):
+    """FR-008: the default path's wording is what existing projects rely on."""
+    result = run("build", *CARDS, "-o", str(tmp_path / "d.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert "8 pages, duplex, flip on long edge" in result.stdout, result.stdout

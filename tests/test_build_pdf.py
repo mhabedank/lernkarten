@@ -406,3 +406,24 @@ def test_the_engine_is_told_the_print_order():
         pairs = build_pdf.engine_inputs(5.0, True, grid, sides)
         assert f"sides={sides}" in pairs, pairs
         assert pairs[pairs.index(f"sides={sides}") - 1] == "--input"
+
+
+def test_the_duplex_note_is_the_sentence_it_has_always_been():
+    """Five end-to-end assertions read this string. It does not get to move."""
+    assert build_pdf.print_order_note(8, "duplex") == "duplex, flip on long edge"
+
+
+def test_the_simplex_note_names_both_page_ranges():
+    """FR-006/SC-004: the two print jobs, and the scale that ruins them."""
+    note = build_pdf.print_order_note(8, "simplex")
+    assert note.startswith("simplex:")
+    assert "pages 1-4" in note and "pages 5-8" in note, note
+    assert "100 %" in note and "long edge" in note, note
+
+
+def test_a_one_page_range_is_written_as_one_page():
+    """'pages 1-1' reads like a bug, and a single sheet is the first thing
+    anyone tries the flag on."""
+    note = build_pdf.print_order_note(2, "simplex")
+    assert "page 1" in note and "page 2" in note, note
+    assert "1-1" not in note and "2-2" not in note, note
