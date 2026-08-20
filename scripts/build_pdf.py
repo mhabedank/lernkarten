@@ -4,8 +4,10 @@
 A4 with 8 cards per page by default (2 x 4, 105 x 74.25 mm — DIN A7), or 16
 with --grid a8 (4 x 4, 74.25 x 52.5 mm — DIN A8, on a landscape sheet). The
 card is landscape at both, and a8 renders the whole card at a uniform scale.
-Fronts and backs sit on consecutive pages, backs column-mirrored, so a duplex
-print whose flip swaps left and right puts each back behind its front.
+Backs are column-mirrored, so turning a sheet on its long edge puts each back
+behind its front. --sides decides the page order: duplex (the default) pairs
+each sheet's faces on consecutive pages and the printer turns the paper;
+simplex prints every front first and you turn the stack between two jobs.
 
 The typesetting engine is fetched once on the first build; nothing else has to
 be installed. See scripts/engine.py.
@@ -13,6 +15,7 @@ be installed. See scripts/engine.py.
 Examples:
     python3 scripts/build_pdf.py cards/*.yaml -o output/cards.pdf
     python3 scripts/build_pdf.py cards/*.yaml --topic "Statistics" --subtopic "Bayes"
+    python3 scripts/build_pdf.py cards/*.yaml --sides simplex   # one-sided printer
     python3 scripts/build_pdf.py --check cards/*.yaml
 """
 
@@ -45,6 +48,16 @@ GRIDS = {
 }
 GRID_ALIASES = {"a7": "2x4", "a8": "4x4"}
 DEFAULT_GRID = GRIDS["2x4"]
+
+# How the two faces of a sheet are sequenced. `duplex` interleaves them and the
+# printer turns the paper; `simplex` puts every front first and the user turns
+# the stack between two print jobs. The mirroring is the same either way — a
+# stack turned on its long edge is the flip a duplex printer makes — so this
+# decides the page sequence and nothing else. It is a property of the print
+# run, never of a deck: no `sides:` key exists in a card file, because the
+# printer someone owns is not a fact about the cards they wrote.
+SIDES = ("duplex", "simplex")
+DEFAULT_SIDES = "duplex"
 
 # The engine's own fonts plus ours, and nothing the machine happens to have
 # installed — so a card looks the same wherever it is printed.
@@ -287,7 +300,7 @@ def payload(cards):
     return [dict(c, lang=LANGUAGES[c["language"]]) for c in cards]
 
 
-def engine_inputs(margin, logo, grid):
+def engine_inputs(margin, logo, grid, sides=DEFAULT_SIDES):
     """The --input pairs every engine call needs.
 
     Both the compile and the `typst query` below take these. They are built
@@ -297,6 +310,12 @@ def engine_inputs(margin, logo, grid):
     correct PDF, with nothing to catch it. The sheet orientation and the scale
     join the list for the same reason: they change what fits on a card, so the
     overflow query has to see exactly what the compile saw.
+
+    `sides` is the one input that does not join them under that rule, because
+    it cannot: it picks the order of finished pages and changes nothing about
+    what fits on a card. So the overflow query and the culprit hunt take the
+    default and only the compile is told, which is also why the parameter has
+    a default at all — the two calls that ignore it should not have to say so.
     """
     sheet_w, sheet_h = sheet(grid)
     return [
@@ -314,11 +333,17 @@ def engine_inputs(margin, logo, grid):
         f"sheet-h={sheet_h:g}",
         "--input",
         f"scale={card_scale(grid, margin):.6f}",
+        "--input",
+        f"sides={sides}",
     ]
 
 
-def typeset(cards, target, margin, logo, grid, binary, workdir):
-    """Runs the engine over `cards`. Returns (ok, message)."""
+def typeset(cards, target, margin, logo, grid, binary, workdir, sides=DEFAULT_SIDES):
+    """Runs the engine over `cards`. Returns (ok, message).
+
+    `sides` defaults because offending_card() typesets one card at a time to
+    find a culprit, and the order of a one-card document is not a question.
+    """
     for template in TEMPLATES.glob("*.typ"):
         shutil.copy(template, workdir / template.name)
     (workdir / "cards.json").write_text(json.dumps(payload(cards)), encoding="utf-8")
@@ -328,7 +353,7 @@ def typeset(cards, target, margin, logo, grid, binary, workdir):
             str(binary),
             "compile",
             *FONT_ARGS,
-            *engine_inputs(margin, logo, grid),
+            *engine_inputs(margin, logo, grid, sides),
             str(workdir / TEMPLATE.name),
             str(output),
         ],
@@ -448,6 +473,14 @@ def main():
         "(default: what they say, else 2x4)",
     )
     p.add_argument(
+        "--sides",
+        choices=SIDES,
+        default=DEFAULT_SIDES,
+        help="how the two faces of a sheet are sequenced: duplex interleaves them for a "
+        "printer that turns the paper; simplex puts every front first, then every back, "
+        f"for one that cannot (default: {DEFAULT_SIDES})",
+    )
+    p.add_argument(
         "--language",
         metavar="NAME",
         help="language of the cards, e.g. german or de — overrides what the card files say "
@@ -501,7 +534,9 @@ def main():
     target = None if args.check else Path(args.output)
     with tempfile.TemporaryDirectory() as td:
         workdir = Path(td)
-        ok, message = typeset(cards, target, args.margin, not args.no_logo, grid, binary, workdir)
+        ok, message = typeset(
+            cards, target, args.margin, not args.no_logo, grid, binary, workdir, args.sides
+        )
         if not ok:
             report_failure(cards, message, args.margin, grid, binary, workdir)
             sys.exit(1)

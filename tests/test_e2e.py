@@ -754,9 +754,10 @@ def test_the_print_order_never_changes_the_page_count(tmp_path, grid):
     duplex = tmp_path / f"duplex-{grid}.pdf"
     simplex = tmp_path / f"simplex-{grid}.pdf"
     assert run("build", *CARDS, "-o", str(duplex), "--grid", grid).returncode == 0
-    assert run(
-        "build", *CARDS, "-o", str(simplex), "--grid", grid, "--sides", "simplex"
-    ).returncode == 0
+    assert (
+        run("build", *CARDS, "-o", str(simplex), "--grid", grid, "--sides", "simplex").returncode
+        == 0
+    )
     assert pdf_pages(duplex) == pdf_pages(simplex)
 
 

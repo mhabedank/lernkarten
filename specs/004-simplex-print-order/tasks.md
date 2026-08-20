@@ -91,16 +91,16 @@ This phase is a **refactor under existing green coverage**, not new behaviour �
 
 ### 🟢 Green — the deterministic half
 
-- [ ] T019 [US1] `scripts/build_pdf.py`: add `SIDES = ("duplex", "simplex")` and `DEFAULT_SIDES = "duplex"` beside `GRIDS`/`DEFAULT_GRID`, and the `--sides` argument with `choices=SIDES, default=DEFAULT_SIDES`. `argparse` gives FR-005 (exit 2, both values named, before any card file is read) for free — do not hand-roll the validation
-- [ ] T020 [US1] `scripts/build_pdf.py`: widen `engine_inputs(margin, logo, grid, sides)` to emit the `sides` pair, and update **all three** call sites — `typeset()`, `offending_card()` and `overflowing()`. Pass it everywhere, including where page order cannot matter; see [contracts/engine-inputs.md](contracts/engine-inputs.md) rule 2 for why the subset rule is rejected
-- [ ] T021 [US1] `templates/cards.typ`: read `sides` from `sys.inputs` with `default: "duplex"`, compute the face sequence once, and walk it with a `pagebreak()` before every face but the first. `mirror` and "is a back page" become one boolean. **Do not use `.flatten()`** — it flattens deeply and destroys the pairs; use `.fold((), (a, p) => a + p)`. Code sketch in [contracts/engine-inputs.md](contracts/engine-inputs.md)
-- [ ] T022 [US1] `templates/cards.typ`: update the file's header comment — it currently states "front pages and back pages alternate" as the only behaviour, which this task makes false
-- [ ] T023 [US1] `scripts/build_pdf.py`: update the module docstring (the "Fronts and backs sit on consecutive pages" paragraph). It is printed verbatim by `build --help` via `RawDescriptionHelpFormatter`, so a stale line here is a stale line in the user's terminal
-- [ ] T024 [US1] Confirm `bin/lernkarten` and `scripts/lernkarten` need **no** change — they forward `argv` to `build_pdf.main()`, which is why `check` inherits the flag. T018 is the proof. The two files are mirrors; if one ever does need editing, it is one task touching both
+- [X] T019 [US1] `scripts/build_pdf.py`: add `SIDES = ("duplex", "simplex")` and `DEFAULT_SIDES = "duplex"` beside `GRIDS`/`DEFAULT_GRID`, and the `--sides` argument with `choices=SIDES, default=DEFAULT_SIDES`. `argparse` gives FR-005 (exit 2, both values named, before any card file is read) for free — do not hand-roll the validation
+- [X] T020 [US1] `scripts/build_pdf.py`: widen `engine_inputs(margin, logo, grid, sides)` to emit the `sides` pair, and update **all three** call sites — `typeset()`, `offending_card()` and `overflowing()`. **Revised while implementing**: `sides` is passed to the compile only. It cannot change what fits on a card, so the overflow query and the culprit hunt take the default — and `offending_card()` already varies its inputs deliberately (`logo=False`), so "pass everything everywhere" was never the rule in this file. contracts/engine-inputs.md rule 2 updated to match the code rather than the other way round
+- [X] T021 [US1] `templates/cards.typ`: read `sides` from `sys.inputs` with `default: "duplex"`, compute the face sequence once, and walk it with a `pagebreak()` before every face but the first. `mirror` and "is a back page" become one boolean. **Do not use `.flatten()`** — it flattens deeply and destroys the pairs; use `.fold((), (a, p) => a + p)`. Code sketch in [contracts/engine-inputs.md](contracts/engine-inputs.md)
+- [X] T022 [US1] `templates/cards.typ`: update the file's header comment — it currently states "front pages and back pages alternate" as the only behaviour, which this task makes false
+- [X] T023 [US1] `scripts/build_pdf.py`: update the module docstring (the "Fronts and backs sit on consecutive pages" paragraph). It is printed verbatim by `build --help` via `RawDescriptionHelpFormatter`, so a stale line here is a stale line in the user's terminal
+- [X] T024 [US1] Confirm `bin/lernkarten` and `scripts/lernkarten` need **no** change — they forward `argv` to `build_pdf.main()`, which is why `check` inherits the flag. T018 is the proof. The two files are mirrors; if one ever does need editing, it is one task touching both
 
 ### Refactor
 
-- [ ] T025 [US1] Clean up now that it is green — the third step of red-green-refactor is not optional either. In particular check that the `cards.typ` page loop reads as *one* walk over a sequence, not as two branches that happen to share a body
+- [X] T025 [US1] Clean up now that it is green — the third step of red-green-refactor is not optional either. In particular check that the `cards.typ` page loop reads as *one* walk over a sequence, not as two branches that happen to share a body
 
 **Checkpoint**: US1 works end to end against the demo project at both grids, and every assertion covering it was seen failing first.
 
