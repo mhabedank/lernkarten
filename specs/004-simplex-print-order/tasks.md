@@ -171,9 +171,9 @@ This phase is a **refactor under existing green coverage**, not new behaviour �
 
 ## Phase 6: Docs & Cross-Cutting
 
-- [ ] T045 [P] `bin/lernkarten build --help` — read it end to end as a user. The module docstring (T023) and the `--sides` help text must agree with [contracts/cli.md](contracts/cli.md); this is the one surface where a stale sentence reaches someone who read no docs
-- [ ] T046 [P] Confirm `CLAUDE.md` needs no change — no card convention and no file format moved, and FR-012 keeps `sides` out of the card schema on purpose. Say so in the PR rather than leaving it unexamined
-- [ ] T047 [P] English throughout: code, comments, docstrings, docs, commit messages (constitution XIII)
+- [X] T045 [P] `bin/lernkarten build --help` — read it end to end as a user. The module docstring (T023) and the `--sides` help text must agree with [contracts/cli.md](contracts/cli.md); this is the one surface where a stale sentence reaches someone who read no docs
+- [X] T046 [P] Confirm `CLAUDE.md` needs no change — no card convention and no file format moved, and FR-012 keeps `sides` out of the card schema on purpose. Say so in the PR rather than leaving it unexamined
+- [X] T047 [P] English throughout: code, comments, docstrings, docs, commit messages (constitution XIII)
 
 ---
 
@@ -181,25 +181,30 @@ This phase is a **refactor under existing green coverage**, not new behaviour �
 
 **Purpose**: exactly what CI checks. All green before the pull request.
 
-- [ ] T048 `ruff check .`
-- [ ] T049 `ruff format --check .`
-- [ ] T050 `pytest`
-- [ ] T051 `bin/lernkarten check cards/example.yaml`
-- [ ] T052 `python3 scripts/check_docs.py`
+- [X] T048 `ruff check .`
+- [X] T049 `ruff format --check .`
+- [X] T050 `pytest`
+- [X] T051 `bin/lernkarten check cards/example.yaml`
+- [X] T052 `python3 scripts/check_docs.py`
 
 Once, for a change to the print path:
 
-- [ ] T053 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — confirm the new order tests **ran** rather than skipped. A skip here proves nothing, and on a machine without poppler that is exactly what you get
-- [ ] T054 `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — no artifact changed, so this is a confirmation, not a fix
-- [ ] T055 [P] `bin/lernkarten build cards/example.yaml --sides simplex --margin 0 --no-logo -o output/borderless.pdf` — the flag combined with the two settings most likely to interact with page geometry
-- [ ] T056 [P] `bin/lernkarten build cards/example.yaml --sides simplex --language german -o output/other-language.pdf`
-- [ ] T057 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
-- [ ] T058 Push the branch and open a pull request against `main` (direct pushes are rejected by the server and by the `pre-push` hook)
-- [ ] T059 Confirm the branch is `feat/simplex-print-order` and every commit subject carries a prefix from the allowed set
+- [X] T053 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — confirm the new order tests **ran** rather than skipped. A skip here proves nothing, and on a machine without poppler that is exactly what you get
+- [X] T054 `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — no artifact changed, so this is a confirmation, not a fix
+- [X] T055 [P] `bin/lernkarten build cards/example.yaml --sides simplex --margin 0 --no-logo -o output/borderless.pdf` — the flag combined with the two settings most likely to interact with page geometry
+- [X] T056 [P] `bin/lernkarten build cards/example.yaml --sides simplex --language german -o output/other-language.pdf`
+- [X] T057 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
+- [ ] T058 **Not done — needs your go-ahead.** Push the branch and open a pull request against `main` (direct pushes are rejected by the server and by the `pre-push` hook)
+- [X] T059 Confirm the branch is `feat/simplex-print-order` and every commit subject carries a prefix from the allowed set
 
 ---
 
 ## Phase 8: By Hand
+
+**Status: not done.** T060–T065 need a physical printer and a live Claude
+session; none of them can be run from here. They are the only checks that can
+falsify SC-005 and SC-007, so the feature is verified up to, but not including,
+paper.
 
 **Purpose**: what no script can judge — whether the two halves of a sheet land on top of each other when a person, rather than a printer, turns the paper. The full checklist is in `docs/testing.md`.
 
