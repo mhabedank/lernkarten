@@ -181,15 +181,15 @@ the old bug.
 
 **Purpose**: exactly what CI checks. All green before the pull request.
 
-- [ ] T019 [P] `ruff check .` — the only Python touched is `tests/test_repo_hygiene.py` and `tests/test_landing_page.py`
-- [ ] T020 [P] `ruff format --check .`
-- [ ] T021 `python3 -m pytest` — all green, and **no test that ran before is now skipped** (SC-004). Run it once with networking off (or confirm by reading the diff) that the new assertions reach no socket — FR-006 forbids a network call, so the suite stays green offline and during a Pages outage
-- [ ] T022 [P] `bin/lernkarten check cards/example.yaml` — unaffected, it never reads `README.md`
-- [ ] T023 [P] `python3 scripts/check_docs.py` — expect `OK: … skills, version …, docs links and required files are fine.`
-- [ ] T024 `grep -rn "buries" . --exclude-dir=.git --exclude-dir=specs` returns nothing. Before T013 it returns `docs/testing.md:273`; `specs/` is excluded because it records what was true when each feature was specified
-- [ ] T025 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. The PR description carries the constitution VII note the gate asks for: the only content added is a URL to this project's own landing page, which is a link and not a subject-specific example
+- [X] T019 [P] `ruff check .` — the only Python touched is `tests/test_repo_hygiene.py` and `tests/test_landing_page.py`
+- [X] T020 [P] `ruff format --check .`
+- [X] T021 `python3 -m pytest` — all green, and **no test that ran before is now skipped** (SC-004). Run it once with networking off (or confirm by reading the diff) that the new assertions reach no socket — FR-006 forbids a network call, so the suite stays green offline and during a Pages outage
+- [X] T022 [P] `bin/lernkarten check cards/example.yaml` — unaffected, it never reads `README.md`
+- [X] T023 [P] `python3 scripts/check_docs.py` — expect `OK: … skills, version …, docs links and required files are fine.`
+- [X] T024 `grep -rn "buries" . --exclude-dir=.git --exclude-dir=specs` returns nothing. Before T013 it returns `docs/testing.md:273`; `specs/` is excluded because it records what was true when each feature was specified
+- [X] T025 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. The PR description carries the constitution VII note the gate asks for: the only content added is a URL to this project's own landing page, which is a link and not a subject-specific example
 - [ ] T026 Push the branch and open a pull request against `main` — direct pushes are rejected server-side and by `.githooks/pre-push`. Reference issue #26 so it closes on merge
-- [ ] T027 Confirm the branch is `docs/readme-landing-link` and every commit subject is prefixed (`test:`, `docs:`)
+- [X] T027 Confirm the branch is `docs/readme-landing-link` and every commit subject is prefixed (`test:`, `docs:`)
 
 **Deliberately absent**, because nothing in the pipeline or the test data
 changed: `python3 scripts/make_testdata.py`, the `LERNKARTEN_E2E=1` run,
