@@ -150,3 +150,49 @@ def test_the_shipped_versions_agree():
     check_docs.check_versions(errors)
 
     assert not errors, errors
+
+
+# --- the sheet capacity is not a fixed fact (SC-009) -----------------------
+
+
+def test_a_doc_claiming_a_fixed_sheet_capacity_is_reported(tmp_path, monkeypatch):
+    """SC-009 as a gate rather than as a grep somebody remembers to run."""
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    (tmp_path / "skills").mkdir()
+    (tmp_path / "README.md").write_text("The PDF puts 8 cards on an A4 page.\n", encoding="utf-8")
+
+    errors = []
+    check_docs.check_sheet_capacity(errors)
+
+    assert any("8 cards" in e for e in errors), errors
+    assert any("README.md" in e for e in errors), errors
+
+
+def test_a_doc_that_qualifies_the_capacity_passes(tmp_path, monkeypatch):
+    """The number is fine when it is tied to a grid rather than to the sheet."""
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    (tmp_path / "skills").mkdir()
+    (tmp_path / "README.md").write_text(
+        "The PDF puts 8 cards on an A4 page at --grid a7, or 16 at a8.\n", encoding="utf-8"
+    )
+
+    errors = []
+    check_docs.check_sheet_capacity(errors)
+
+    assert not errors, errors
+
+
+def test_no_shipped_doc_claims_a_fixed_sheet_capacity():
+    """Asserted against the repo itself.
+
+    The sweep for feat/card-grid was enforced by a hand-written grep, which
+    searched for 'eight cards' and '8 cards to' and so walked straight past
+    'A4, 8 cards per page' in the /print description and 'puts 8 cards on an
+    A4 page' in the README. Both shipped in v0.4.0.
+    """
+    errors = []
+    check_docs.check_sheet_capacity(errors)
+
+    assert not errors, errors
