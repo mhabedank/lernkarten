@@ -188,7 +188,7 @@ the old bug.
 - [X] T023 [P] `python3 scripts/check_docs.py` — expect `OK: … skills, version …, docs links and required files are fine.`
 - [X] T024 `grep -rn "buries" . --exclude-dir=.git --exclude-dir=specs` returns nothing. Before T013 it returns `docs/testing.md:273`; `specs/` is excluded because it records what was true when each feature was specified
 - [X] T025 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. The PR description carries the constitution VII note the gate asks for: the only content added is a URL to this project's own landing page, which is a link and not a subject-specific example
-- [ ] T026 Push the branch and open a pull request against `main` — direct pushes are rejected server-side and by `.githooks/pre-push`. Reference issue #26 so it closes on merge
+- [X] T026 Push the branch and open a pull request against `main` — direct pushes are rejected server-side and by `.githooks/pre-push`. Reference issue #26 so it closes on merge
 - [X] T027 Confirm the branch is `docs/readme-landing-link` and every commit subject is prefixed (`test:`, `docs:`)
 
 **Deliberately absent**, because nothing in the pipeline or the test data
