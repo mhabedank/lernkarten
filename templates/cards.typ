@@ -20,13 +20,22 @@
 
 #let columns = int(sys.inputs.at("columns", default: "2"))
 #let rows = int(sys.inputs.at("rows", default: "4"))
+// The sheet is A4 either way round. Which way follows the grid, because a
+// flashcard is landscape and every A-series halving flips the orientation:
+// 2 x 4 tiles a portrait A4, 4 x 4 a landscape one. scripts/build_pdf.py
+// decides and passes both numbers, so this file never has to know the rule.
+#let sheet-w = float(sys.inputs.at("sheet-w", default: "210")) * 1mm
+#let sheet-h = float(sys.inputs.at("sheet-h", default: "297")) * 1mm
+// One factor for the whole card, so every proportion is preserved at a denser
+// grid. 1.0 at 2 x 4, so the default sheet is untouched.
+#let card-scale = float(sys.inputs.at("scale", default: "1.0"))
 #let per-page = columns * rows
-#let cw = (210mm - 2 * margin) / columns
-#let ch = (297mm - 2 * margin) / rows
+#let cw = (sheet-w - 2 * margin) / columns
+#let ch = (sheet-h - 2 * margin) / rows
 
-#set page(width: 210mm, height: 297mm, margin: 0pt)
+#set page(width: sheet-w, height: sheet-h, margin: 0pt)
 
-#let card = faces(cw, ch, show-logo: show-logo)
+#let card = faces(cw, ch, show-logo: show-logo, scale: card-scale)
 
 // Crop marks reach into the free margin at every cut. With no margin the card
 // frames sit on the paper edge and there is nothing left to mark.

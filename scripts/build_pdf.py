@@ -37,6 +37,7 @@ FONTS = ROOT / "assets" / "fonts"
 # you can buy. Everything else — card size, the column mirroring that makes
 # duplex line up, the crop marks, the page count — derives from these two
 # numbers in templates/cards.typ.
+A4 = (210, 297)  # mm, portrait; sheet() turns it when the grid needs it
 GRIDS = {
     "2x4": (2, 4),
     "4x4": (4, 4),
@@ -122,6 +123,52 @@ def parse_grid(name):
             f"unrecognised grid {name!r} — write it as COLSxROWS, e.g. {supported_grids()}"
         )
     raise ValueError(f"unsupported grid {name!r} — supported: {supported_grids()}")
+
+
+def sheet(grid):
+    """The A4 sheet this grid needs, as (width, height) in mm.
+
+    A flashcard is landscape, and every A-series halving flips the orientation:
+    A7 landscape is 105 x 74, so A8 landscape is 74 x 52 and not 52 x 74. The
+    card cannot be turned — it has to tile the sheet — so the *sheet* turns
+    instead. 2 x 4 tiles a portrait A4 and 4 x 4 tiles a landscape one, both
+    exactly. A grid that is portrait either way never reaches here: the
+    allowlist is closed and both members are checked by the test suite.
+    """
+    for sheet_w, sheet_h in (A4, A4[::-1]):
+        if sheet_w / grid[0] > sheet_h / grid[1]:
+            return (sheet_w, sheet_h)
+    raise ValueError(
+        f"grid {grid_name(grid)} gives a portrait card at either sheet orientation, "
+        "and a flashcard is landscape"
+    )
+
+
+def card_size(grid, margin):
+    """The finished card in mm, which is the sheet divided by the grid."""
+    sheet_w, sheet_h = sheet(grid)
+    return ((sheet_w - 2 * margin) / grid[0], (sheet_h - 2 * margin) / grid[1])
+
+
+def card_scale(grid, margin):
+    """How much smaller this card is than the default one, as one factor.
+
+    The card design is drawn for A7 and every part of it — bands, insets, the
+    marker, the type — keeps its proportion at a denser grid. Holding 11 pt on
+    a card two thirds the height was measured and does not work: labels wrap
+    out of the band, backs run off the card, the note rules stop fitting.
+
+    Measured against the A7 card *at the same margin*, so the default grid is
+    exactly 1.0 at every margin. Against a fixed 100 x 71.75 — the A7 card at
+    the default margin only — `--margin 0` would scale A7 up by 3.5 % and
+    `--margin 10` down by 5 %, changing output nobody asked to change.
+
+    The tighter of the two ratios wins, so the card never gains room it was not
+    drawn with; the other axis simply keeps a little slack.
+    """
+    cw, ch = card_size(grid, margin)
+    ref_w, ref_h = card_size(DEFAULT_GRID, margin)
+    return min(cw / ref_w, ch / ref_h)
 
 
 def pages(count, grid):
@@ -246,8 +293,11 @@ def engine_inputs(margin, logo, grid):
     here rather than at each call site because the two used to be written out
     separately, and a grid that reached one but not the other would typeset at
     one size while reporting overflow against another — a wrong warning on a
-    correct PDF, with nothing to catch it.
+    correct PDF, with nothing to catch it. The sheet orientation and the scale
+    join the list for the same reason: they change what fits on a card, so the
+    overflow query has to see exactly what the compile saw.
     """
+    sheet_w, sheet_h = sheet(grid)
     return [
         "--input",
         f"margin={margin:g}",
@@ -257,6 +307,12 @@ def engine_inputs(margin, logo, grid):
         f"columns={grid[0]}",
         "--input",
         f"rows={grid[1]}",
+        "--input",
+        f"sheet-w={sheet_w:g}",
+        "--input",
+        f"sheet-h={sheet_h:g}",
+        "--input",
+        f"scale={card_scale(grid, margin):.6f}",
     ]
 
 

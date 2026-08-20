@@ -117,13 +117,13 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 **Goal**: a card that does not fit is reported at the grid actually typeset, never silently clipped.
 
-**Independent Test**: `broken/overflows-only-at-a8.yaml` is reported at `--grid a8` and silent at the default.
+**Independent Test**: ~~`broken/overflows-only-at-a8.yaml` is reported at `--grid a8` and silent at the default.~~ **Inverted by BUG-007** — `broken/overflows-only-at-a7.yaml` is reported at the default and silent at `--grid a8`.
 
 > **Reworked after cross-model review C1.** The original trap-catcher was an assertion of *absence* ("no demo card warns at A8"), which cannot detect the bug: if `overflowing()` misses the grid the query runs at A7, where the demo cards also do not overflow, so it returns an empty set on both paths. Confirmed by re-measurement. Only an assertion of *presence* works.
 
 <!-- sequential -->
 
-- [x] T029 [US3] Add `tests/fixtures/demo-project/broken/overflows-only-at-a8.yaml` — one card whose back **fits A7 and overflows A8**. Measured: a ~300-character back gives no warning at 2 × 4 and is reported at 4 × 4. Add a row to that folder's `README.md`
+- [ ] T029 ⚠️ **Reopened (BUG-007)** — the fixture it added no longer tells the grids apart: nothing fits A7 and overflows A8 once the card scales. Replaced by T096. Original: [US3] Add `tests/fixtures/demo-project/broken/overflows-only-at-a8.yaml` — one card whose back **fits A7 and overflows A8**. Measured: a ~300-character back gives no warning at 2 × 4 and is reported at 4 × 4. Add a row to that folder's `README.md`
 - [x] T030 🔴 [US3] `tests/test_e2e.py`: that fixture is reported at `--grid a8` and **not** at the default. ⚠️ **This is the only assertion that catches the FR-010 trap.** Do not merge it with T031 or T032 *(SC-005, FR-010)*
 - [x] T031 🔴 [US3] `tests/test_e2e.py`: `broken/overflowing.yaml` is reported at **both** grids *(assertion 9)*
 - [x] T032 🔴 [US3] `tests/test_e2e.py`: the 29 demo cards at `--grid a8` emit **no** `WARNING` — a regression guard. Measured: zero overflow at A8. It passes under the bug too, so it is **not** the trap-catcher *(assertion 10)*
@@ -251,12 +251,13 @@ reason. Read the file in phase order 1–9, **11**, 10.
 
 <!-- sequential -->
 
-- [ ] T080 🔴 [BUG-007] `tests/test_build_pdf.py`: a `sheet(grid)` helper returns `(210, 297)` for `2x4` and `(297, 210)` for `4x4`, and the derived card is **wider than tall** at both. Fails: the sheet is a constant *(FR-024, SC-010)*
-- [ ] T081 🔴 [BUG-007] `tests/test_build_pdf.py`: `card_scale(grid)` returns 1.0 at `2x4` and `min(cw/100, ch/71.75)` = 0.6969 at `4x4` *(FR-025)*
-- [ ] T082 [BUG-007] Make `templates/cards.typ` take the sheet size and the scale as `--input`, add both to `engine_inputs()` so the compile *and* the overflow query receive them (the FR-010 seam), and implement `sheet()`/`card_scale()` in `scripts/build_pdf.py` until T080–T081 pass
-- [ ] T083 🔴 [BUG-007] `tests/test_e2e.py`: at `--grid a8 --margin 0` a built page measures 297 × 210 mm and a cut card 74.25 × 52.5 mm — read from the PDF's own MediaBox, not assumed *(SC-010)*
-- [ ] T084 🔴 [BUG-007] `tests/test_e2e.py`: a deck at A7's limits (398-character back, 116-character front) builds at `--grid a8` with **no** overflow warning. This is SC-011, and it is what "half the sheets for the same deck" requires
-- [ ] T085 [BUG-007] Make T083–T084 pass
+- [x] T080 🔴 [BUG-007] `tests/test_build_pdf.py`: a `sheet(grid)` helper returns `(210, 297)` for `2x4` and `(297, 210)` for `4x4`, and the derived card is **wider than tall** at both. Fails: the sheet is a constant *(FR-024, SC-010)*
+- [x] T081 🔴 [BUG-007] `tests/test_build_pdf.py`: `card_scale(grid)` returns 1.0 at `2x4` and `min(cw/100, ch/71.75)` = 0.6969 at `4x4` *(FR-025)*
+- [x] T082 [BUG-007] Make `templates/cards.typ` take the sheet size and the scale as `--input`, add both to `engine_inputs()` so the compile *and* the overflow query receive them (the FR-010 seam), and implement `sheet()`/`card_scale()` in `scripts/build_pdf.py` until T080–T081 pass
+- [x] T083 🔴 [BUG-007] `tests/test_e2e.py`: at `--grid a8 --margin 0` a built page measures 297 × 210 mm and a cut card 74.25 × 52.5 mm — read from the PDF's own MediaBox, not assumed *(SC-010)*
+- [x] T084 🔴 [BUG-007] `tests/test_e2e.py`: a deck at A7's limits (398-character back, 116-character front) builds at `--grid a8` with **no** overflow warning. This is SC-011, and it is what "half the sheets for the same deck" requires
+- [x] T085 [BUG-007] Make T083–T084 pass
+- [x] T096 [BUG-007] Replace `broken/overflows-only-at-a8.yaml` with `overflows-only-at-a7.yaml` — a 507-character back, which overflows A7 and fits A8. Measured through the real command: first overflow at 500 characters at `a7` and 520 at `a8`, because the scale takes the tighter ratio and leaves ~3 % width slack. The FR-010 trap needs a card that differs *between* the grids, and the old direction cannot supply one any more. README row and `tests/test_e2e.py` updated with it
 - [ ] T095 [BUG-007] Confirm FR-026 still holds under FR-025: a card too long for its *own* card is still reported through `<overflow>` and split by the author, never shrunk to rescue it. FR-025 scales the card to its grid; it must not become a licence to scale text to fit. The existing overflow tests cover the behaviour — this task is the assertion that scaling did not quietly turn into squeezing
 
 ### Undo what the portrait card justified

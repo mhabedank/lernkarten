@@ -333,3 +333,53 @@ def test_a_deck_declaring_a_bad_grid_is_refused_even_when_the_flag_overrides(tmp
     # A good deck still bends to the flag.
     good = declared(deck(tmp_path, "fine.yaml", "a7"))
     assert build_pdf.resolve_grid(good, "a8") == (4, 4)
+
+
+# --- the sheet turns, and the card scales (BUG-007) ------------------------
+
+
+def test_the_sheet_turns_so_the_card_stays_landscape():
+    """FR-024/SC-010: each A-series halving flips the orientation.
+
+    A7 tiles a portrait A4 at 2 x 4. A8 landscape is 74 x 52, which does not
+    tile a portrait sheet at all (2.83 columns) — so the sheet turns instead,
+    and 4 x 4 on a landscape A4 is exact.
+    """
+    assert build_pdf.sheet((2, 4)) == (210, 297)
+    assert build_pdf.sheet((4, 4)) == (297, 210)
+
+
+def test_every_supported_grid_gives_a_landscape_card():
+    """FR-024 asserted over the whole allowlist, not just the two we know.
+
+    A flashcard is wider than it is tall. This was assumed everywhere and
+    written down nowhere, which is how a portrait A8 passed every gate.
+    """
+    for name, grid in build_pdf.GRIDS.items():
+        sheet_w, sheet_h = build_pdf.sheet(grid)
+        cw, ch = sheet_w / grid[0], sheet_h / grid[1]
+        assert cw > ch, f"{name} gives a {cw} x {ch} card, which is portrait"
+
+
+def test_the_card_scale_follows_the_grid():
+    """FR-025: one uniform scale, so every proportion is preserved."""
+    assert build_pdf.card_scale((2, 4), 5.0) == 1.0
+    assert round(build_pdf.card_scale((4, 4), 5.0), 4) == 0.6969
+    # At margin 0 the two cards are exactly similar, so the scale is 1/sqrt(2).
+    assert round(build_pdf.card_scale((4, 4), 0.0), 4) == 0.7071
+
+
+@pytest.mark.parametrize("margin", [0.0, 5.0, 10.0, 20.0])
+def test_a7_is_never_rescaled_at_any_margin(margin):
+    """SC-002: the default grid must render exactly as it does today.
+
+    The scale is taken against the A7 card *at the same margin*, not against a
+    fixed 100 x 71.75. Against the fixed pair, --margin 0 would scale A7 up by
+    3.5 % and --margin 10 down by 5 %, changing output nobody asked to change.
+    """
+    assert build_pdf.card_scale((2, 4), margin) == 1.0
+
+
+def test_the_denser_grid_is_never_scaled_up():
+    for margin in (0.0, 5.0, 10.0):
+        assert build_pdf.card_scale((4, 4), margin) < 1.0
