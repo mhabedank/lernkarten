@@ -66,21 +66,15 @@ MARKDOWN_BOLD = re.compile(r"(?<!\\)\*\*")
 # it escapes that character, so `line\*bold*` loses the break, gains a literal
 # star and shifts every star after it.
 ESCAPED_MARKUP = re.compile(r"\\([*_#@<>$`])")
-# Front at most ~2 lines, back at most ~6 — but "a line" depends on how wide
-# the card is, and an A8 line holds 46 % of an A7 one. The numbers below are
-# measured warning thresholds, well under the point where the text actually
-# runs off the card (front/back 291/455 at A7, 145/185 at A8 — research.md R3),
-# so there is room to tune them anywhere in that range.
-LIMITS = {
-    (2, 4): {"front": 120, "back": 400},
-    (4, 4): {"front": 60, "back": 160},
-}
-# The head band clips its TOPIC / SUBTOPIC label rather than wrapping it. A7
-# holds about 53 characters and A8 about 22, and only A8 is checked: --strict
-# makes warnings fatal, and 11 of the 38 cards shipped in this repo are already
-# over the A7 budget (research.md R4), so checking A7 would fail this repo's
-# own gate on cards this feature never touched.
-LABEL_BUDGET = {(4, 4): 22}
+# Front at most ~2 lines, back at most ~6. These do not depend on the grid: a
+# denser grid renders the same card at a uniform scale (build_pdf.card_scale),
+# so the two are proportionally identical and hold the same text. They were
+# split per grid until BUG-007, when the A8 card was believed to be the A7 card
+# with its width halved. Measured through the real command, a back first
+# overflows at 500 characters at a7 and 520 at the scaled a8, so 400 is the
+# conservative warning threshold for both.
+MAX_FRONT = 120
+MAX_BACK = 400
 
 
 class Report:
@@ -619,10 +613,9 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
         # The grid is optional and absent means A7, so only a value that is
         # there and wrong is worth reporting. One deck is one size, which is
         # why the key belongs at the top level and nowhere else.
-        grid = build_pdf.DEFAULT_GRID
         if data.get("grid") is not None:
             try:
-                grid = build_pdf.parse_grid(data["grid"])
+                build_pdf.parse_grid(data["grid"])
             except ValueError as e:
                 report.error(where, str(e))
         elif strict:
@@ -632,10 +625,6 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 "but not a statement. /cards writes the size the deck was written for; "
                 "add 'grid: a7' to say so",
             )
-        limits = LIMITS[grid]
-        budget = LABEL_BUDGET.get(grid)
-        topic = str(data.get("topic") or path.stem)
-
         fronts = {}
         for i, card in enumerate(data["cards"] or [], start=1):
             report.count("cards")
@@ -660,20 +649,10 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                     f"card {i}: subtopic '{card['subtopic']}' is marked "
                     f"'Status: {status}' in the catalog",
                 )
-            if len(front) > limits["front"]:
+            if len(front) > MAX_FRONT:
                 report.warn(where, f"card {i}: front is long ({len(front)} characters)")
-            if len(back) > limits["back"]:
+            if len(back) > MAX_BACK:
                 report.warn(where, f"card {i}: back is long ({len(back)} characters)")
-            if budget:
-                # What the head band actually renders: TOPIC / SUBTOPIC, or the
-                # topic alone when there is no subtopic (templates/card.typ).
-                label = f"{topic} / {card['subtopic']}" if card.get("subtopic") else topic
-                if len(label) > budget:
-                    report.warn(
-                        where,
-                        f"card {i}: the head band label '{label.upper()}' is {len(label)} "
-                        f"characters — an A8 band holds about {budget} and clips the rest",
-                    )
             if "grid" in card:
                 report.error(
                     where,

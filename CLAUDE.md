@@ -45,7 +45,8 @@ code, comments, docs and commit messages are written in English.
   different languages can go into one PDF.
 
   `grid` is the card size the deck is written for: `a7` (`2x4`, 8 to an A4
-  sheet, 105 × 74.25 mm) or `a8` (`4x4`, 16 up, 52.5 × 74.25 mm). It is
+  sheet, 105 × 74.25 mm) or `a8` (`4x4`, 16 up, 74.25 × 52.5 mm — landscape,
+  on a landscape A4 sheet). It is
   optional and absent means `a7`, so no existing file needs changing. One deck
   is one size — the key is top level only, never on a card, and two files in
   one build that declare different grids are refused unless `--grid` settles
@@ -81,20 +82,11 @@ code, comments, docs and commit messages are written in English.
 - One card = one fact/concept. No double questions.
 - Front short (max. ~2 lines), back max. ~6 lines. Two cards beat one
   overloaded card.
-- **How long a line is depends on the grid.** An A8 card is the A7 card cut
-  down the middle — same height, half the width — so its writing area is about
-  46 % of A7's. Write to the size the file declares:
-
-  | | `grid: a7` (100 × 71.75 mm) | `grid: a8` (50 × 71.75 mm) |
-  |---|---|---|
-  | `front` | up to ~120 characters | up to ~60 |
-  | `back` | up to ~400 characters | up to ~160 |
-  | `TOPIC / SUBTOPIC` in the head band | up to ~53 characters | up to ~22 |
-
-  `check_project.py` warns past these; the build only warns once the text
-  actually runs off the card, which is much later. At A8 the head band is the
-  binding constraint, not the body: it clips mid-word rather than wrapping, so
-  a long topic leaves nothing for the subtopic.
+- **The budget is the same at every grid.** A denser grid renders the same card
+  at a uniform scale, so an A8 card holds what an A7 card holds — a deck legal
+  at one grid is legal at all of them. Front up to ~120 characters, back up to
+  ~400. `check_project.py` warns past those; the build only warns once the text
+  actually runs off the card, which is much later.
 - Phrase an active recall prompt ("What …?", "Why …?", "Name …"), no yes/no
   questions.
 - Card language = language of the source, unless the user says otherwise.

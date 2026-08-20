@@ -43,7 +43,7 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
    | Flag | Alias | Per sheet | Card at `--margin 0` |
    |---|---|---|---|
    | `--grid 2x4` | `--grid a7` | 8 | 105 × 74.25 mm — DIN A7 |
-   | `--grid 4x4` | `--grid a8` | 16 | 52.5 × 74.25 mm — DIN A8 |
+   | `--grid 4x4` | `--grid a8` | 16 | 74.25 × 52.5 mm — DIN A8, on a landscape sheet |
 
    A card file may declare its own size with a top-level `grid:` key, and
    `/cards` writes one. So do **not** pass `--grid` routinely — the deck
@@ -73,13 +73,9 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 
 - Cards that are too long for the card area are reported by the build as a
   warning ("does not fit"); shorten or split such cards instead of shrinking
-  the font. The warning follows the grid: an A8 card is half the width, so text
-  that fits at A7 can overflow at A8. Rebuilding the same deck at `--grid a8`
-  is what surfaces it.
-- The head band clips rather than wraps, and holds about 22 characters of
-  `TOPIC / SUBTOPIC` at A8 against ~53 at A7. If the user asks for A8 on a deck
-  with long topic names, say so before printing — the labels will be cut off
-  mid-word, and no build warning fires unless the deck declares `grid: a8`.
+  the font. The threshold does not depend on the grid: A8 renders the same card
+  at a uniform scale, so a deck that fits at A7 fits at A8. Nobody has to
+  rewrite cards to print smaller.
 - The first build downloads the typesetting engine (about 15 MB) and caches it.
   Nothing else has to be installed. `lernkarten engine --check` says where it
   is; `LERNKARTEN_ENGINE` points the build at one of your own.

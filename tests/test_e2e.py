@@ -438,26 +438,35 @@ def test_an_unsupported_grid_is_refused(tmp_path):
         assert not target.exists(), f"{value}: no PDF may be written on a refusal"
 
 
-def test_a_card_that_fits_a7_and_not_a8_is_reported_only_at_a8(tmp_path):
+def test_a_card_that_fits_one_grid_and_not_the_other_is_reported_only_there(tmp_path):
     """FR-010, and the only assertion that catches the grid going missing.
 
     The overflow set comes from a second engine call that builds its own
-    --input list. If the grid reaches the compile call but not that query, the
-    PDF is right and every warning is wrong. An assertion of absence cannot see
-    it: the demo cards overflow at neither grid, so the query returns nothing
-    on the correct and the broken path alike. This card overflows at exactly
-    one of the two, which is what makes the difference visible.
+    --input list — now including the sheet orientation and the scale. If any of
+    them reaches the compile call but not that query, the PDF is right and every
+    warning is wrong. An assertion of absence cannot see it: the demo cards
+    overflow at neither grid, so the query returns nothing on the correct and
+    the broken path alike. This card overflows at exactly one of the two.
+
+    The direction inverted with BUG-007. A8 used to be the A7 card with its
+    width halved, holding 46 % of the area, so a card could fit A7 and overflow
+    A8. A8 is now a uniformly scaled A7 card that keeps about 3 % more width, so
+    it holds slightly *more* — measured, first overflow at 520 characters
+    against A7's 500. Nothing fits A7 and overflows A8 any more; the
+    discriminating card is the one that overflows A7 and fits A8.
     """
-    fixture = str(DEMO / "broken" / "overflows-only-at-a8.yaml")
+    fixture = str(DEMO / "broken" / "overflows-only-at-a7.yaml")
 
     default = run("check", fixture)
     assert default.returncode == 0, default.stderr
-    assert "does not fit" not in default.stderr, "the card fits A7 — nothing to report"
+    assert "overflows-only-at-a7-2" in default.stderr, (
+        f"the 507-character back does not fit A7 and must be reported by id: {default.stderr}"
+    )
 
     dense = run("check", fixture, "--grid", "a8")
     assert dense.returncode == 0, dense.stderr
-    assert "overflows-only-at-a8-2" in dense.stderr, (
-        "the card does not fit A8 and must be reported by id"
+    assert "does not fit" not in dense.stderr, (
+        f"the same card fits the scaled A8 card — nothing to report: {dense.stderr}"
     )
 
 
@@ -590,3 +599,72 @@ def test_a_refused_build_leaves_an_existing_pdf_untouched(tmp_path):
         assert target.read_bytes() == before, (
             f"--grid {value} rewrote or truncated the PDF that was already there"
         )
+
+
+# --- the sheet turns and the card scales (BUG-007) -------------------------
+
+
+def pdf_page_size_mm(path):
+    """The first MediaBox, in mm, as the PDF itself states it."""
+    box = re.search(
+        rb"/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]", path.read_bytes()
+    )
+    assert box, "no MediaBox in the PDF"
+    pts = [float(box.group(i)) for i in range(1, 5)]
+    return (round((pts[2] - pts[0]) * 25.4 / 72, 2), round((pts[3] - pts[1]) * 25.4 / 72, 2))
+
+
+def test_a7_still_prints_on_a_portrait_sheet(tmp_path):
+    """SC-002: the default grid must not move. Asserted before the A8 case."""
+    target = tmp_path / "a7.pdf"
+    assert run("build", *CARDS, "-o", str(target), "--margin", "0").returncode == 0
+    assert pdf_page_size_mm(target) == (210.0, 297.0)
+
+
+def test_a8_prints_a_landscape_card_on_a_landscape_sheet(tmp_path):
+    """FR-024/SC-010: 74.25 x 52.5 mm, wider than tall — not 52.5 x 74.25."""
+    target = tmp_path / "a8.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--grid", "a8", "--margin", "0")
+    assert result.returncode == 0, result.stderr
+    assert pdf_page_size_mm(target) == (297.0, 210.0), "the sheet turns for a8"
+
+    sheet_w, sheet_h = pdf_page_size_mm(target)
+    cw, ch = sheet_w / 4, sheet_h / 4
+    assert (round(cw, 2), round(ch, 2)) == (74.25, 52.5)
+    assert cw > ch, f"a flashcard is landscape; this one is {cw} x {ch}"
+
+
+def test_an_a7_legal_deck_reprints_at_a8_without_a_warning(tmp_path):
+    """SC-011: this is what "half the sheets for the same deck" requires.
+
+    A deck sitting on A7's own warning thresholds — 398-character back, 116-
+    character front — must build at a8 with nothing reported. Under the
+    portrait card it could not: A8 held roughly 160 characters.
+    """
+    back = (
+        "The tidal streams turn about an hour after high and low water, not at the "
+        "turn itself, so a passage planned on the height alone runs against the "
+        "stream for its first hour. Plan on the stream atlas rather than the tide "
+        "table, and add an hour of slack either side of the turn. Spring streams "
+        "run at twice the neap rate through the Ovray narrows, where the channel "
+        "is at its tightest on the ebb."
+    )
+    front = (
+        "Why does planning a passage on the tide table alone leave you punching "
+        "the stream for the first hour after the turn?"
+    )
+    assert 390 <= len(back) <= 400, len(back)
+    assert 110 <= len(front) <= 120, len(front)
+
+    deck = tmp_path / "limits.yaml"
+    deck.write_text(
+        "topic: 'Tides'\nlanguage: english\ngrid: a7\ncards:\n"
+        f"  - subtopic: 'Streams'\n    front: '{front}'\n    back: '{back}'\n"
+        "    source: 'Field notes 2'\n",
+        encoding="utf-8",
+    )
+    result = run("build", str(deck), "-o", str(tmp_path / "limits.pdf"), "--grid", "a8")
+    assert result.returncode == 0, result.stderr
+    assert "WARNING" not in result.stderr, (
+        f"an A7-legal card must survive a8 unchanged: {result.stderr}"
+    )

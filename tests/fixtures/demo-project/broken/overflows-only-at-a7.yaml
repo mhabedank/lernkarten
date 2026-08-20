@@ -1,0 +1,34 @@
+# The card that tells the two grids apart.
+#
+# Since BUG-007 the A8 card is a uniformly scaled A7 card, so the two grids are
+# proportionally identical and hold the same text. They are not *exactly* equal:
+# the scale is min(cw / ref_w, ch / ref_h) and the width ratio is the looser of
+# the two, so A8 keeps about 3 % of width slack. Measured through the real
+# command, a back first overflows at 500 characters at A7 and at 520 at A8.
+#
+# The back below is 507 characters, which lands in that window: it overflows at
+# the default grid and fits at `--grid a8`.
+#
+# That asymmetry is the whole point, and it is why this fixture exists at all.
+# The overflow set is computed by a second engine call (`typst query
+# <overflow>`) which takes its own copy of the --input values — now including
+# the sheet orientation and the scale. If any of them reaches the compile call
+# but not the query, the PDF is right and every warning is wrong. No assertion
+# of *absence* can catch that: the demo cards overflow at neither grid, so the
+# query comes back empty on the correct and the broken path alike. Only a card
+# that overflows at one grid and not the other does, which is this one.
+#
+# This replaces `overflows-only-at-a8.yaml`, whose back fit A7 and overflowed
+# the *portrait* A8. That direction no longer discriminates — nothing fits A7
+# and overflows A8 once the card scales.
+topic: 'Broken: fits A8, not A7'
+language: english
+cards:
+  - subtopic: 'Fits either grid'
+    front: 'How long is a tidal day?'
+    back: '$24 "h" 50 "min"$.'
+    source: 'Demo'
+  - subtopic: 'Fits A8 only'
+    front: 'Fits at one grid and not the other.'
+    back: 'The tidal stream turns about an hour after the height does, not at the turn itself, so a passage planned on the height alone runs against it. Plan on the stream atlas rather than the tide table, and add an hour of slack either side. The tidal stream turns about an hour after the height does, not at the turn itself, so a passage planned on the height alone runs against it. Plan on the stream atlas rather than the tide table, and add an hour of slack either side. The tidal stream turns about an hour afte'
+    source: 'Field notes 2'

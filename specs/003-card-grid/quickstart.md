@@ -63,7 +63,7 @@ lernkarten build $DEMO/*.yaml -o /tmp/a8-0.pdf --grid a8 --margin 0
 | Grid | Expected card | Standard |
 |---|---|---|
 | `a7` | 105 × 74.25 mm | DIN A7 |
-| `a8` | 52.5 × 74.25 mm | DIN A8 |
+| `a8` | ~~52.5 × 74.25 mm~~ **74.25 × 52.5 mm** | DIN A8 **landscape**, on a landscape A4 *(BUG-007)* |
 
 That is SC-003 — the reason these two grids were chosen and not the ticket's
 3 × 4. Both drop into a box you can buy.

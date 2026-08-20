@@ -12,5 +12,5 @@ that swallows one of these errors breaks a test.
 | `missing-fields.yaml` | a card without `back` | `ERROR: … 'front' and 'back' are required`, exit 1 |
 | `not-a-mapping.yaml` | a top-level list instead of a mapping | `ERROR: expected a mapping with keys 'topic' and 'cards'` |
 | `malformed.yaml` | not readable as YAML | `ERROR: … line N`, exit 1 |
-| `overflows-only-at-a8.yaml` | nothing — the back fits A7 and not A8 | silent by default, `WARNING: card … does not fit` at `--grid a8`. The only fixture that tells the two grids apart, so the only one that catches an overflow query left at the wrong geometry |
+| `overflows-only-at-a7.yaml` | nothing — the 507-character back fits A8 and not A7 | `WARNING: card … does not fit` by default, silent at `--grid a8`. The only fixture that tells the two grids apart, so the only one that catches an overflow query left at the wrong geometry. The direction inverted with BUG-007: the A8 card is now a scaled A7 card and keeps ~3 % more width, so it holds slightly *more* (first overflow at 520 characters against A7's 500) |
 | `escaped-linebreak.yaml` | a line-break `\` directly before a `*`, so the star is escaped rather than the line broken | typeset fails, stderr names the offending card |

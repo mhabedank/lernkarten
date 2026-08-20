@@ -29,11 +29,15 @@ deck is written for one size.
 | Value | Grid | Card at `--margin 5` | Card at `--margin 0` | Per sheet |
 |---|---|---|---|---|
 | `a7`, `2x4` | 2 columns × 4 rows | 100 × 71.75 mm | 105 × 74.25 mm (DIN A7) | 8 |
-| `a8`, `4x4` | 4 columns × 4 rows | 50 × 71.75 mm | 52.5 × 74.25 mm (DIN A8) | 16 |
+| `a8`, `4x4` | 4 columns × 4 rows, **on a landscape A4** | 71.75 × 50 mm | 74.25 × 52.5 mm (DIN A8 landscape) | 16 |
 | *(absent)* | 2 × 4 | as `a7` | as `a7` | 8 |
 
 Values are case-insensitive. `a7` and `2x4` are the same grid and must be
 indistinguishable in effect; the same for `a8` and `4x4`.
+
+> **Bugfix**: 2026-08-20 — [BUG-007](../bugs/BUG-007.md). The A8 row read
+> `52.5 × 74.25 mm`, which is *portrait*. Every A-series halving flips the
+> orientation, so the sheet turns for `a8` and the card stays landscape.
 
 ## Rules
 
@@ -61,9 +65,13 @@ at A7 just this once" possible without editing the deck.
 
 ## Interaction with the card-style limits
 
-The warning thresholds in `scripts/check_project.py` become grid-dependent,
-because a line at A8 holds 46 % of what a line at A7 holds. Measured hard limits
-and proposed warning thresholds (see [research.md](../research.md) R3):
+~~The warning thresholds in `scripts/check_project.py` become grid-dependent,
+because a line at A8 holds 46 % of what a line at A7 holds.~~ **Retired by
+BUG-007 (FR-027).** Under the uniform scale of FR-025 the two grids are
+proportionally identical, and the scaled A8 card measures slightly *roomier*
+than A7 — first overflow at 520 characters against 500. One set of thresholds
+covers both. The table below recorded the measurement against the portrait
+card and is kept for the record only (see [research.md](../research.md) R3):
 
 | | A7 | A8 |
 |---|---|---|
