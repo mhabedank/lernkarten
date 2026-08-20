@@ -475,9 +475,10 @@ Read [docs/design.md](../../docs/design.md) before changing anything visible —
 the card, the mark, the readme graphics, the landing page. The rules that hold
 across all of them:
 
-- The card is 105 × 74.25 mm landscape (A7), or 52.5 × 74.25 mm (A8) — the
-  same card cut down the middle, same height, half the width. Three bands
-  that never move, at either size: A8 takes its width out of the field.
+- **The card is landscape.** 105 × 74.25 mm at A7, 74.25 × 52.5 mm at A8 —
+  never taller than it is wide. Every A-series halving flips the orientation,
+  so the *sheet* turns to keep the card landscape, not the card. Three bands
+  that never move, at either size.
 - Colour never carries meaning on its own; every colour is doubled by a shape
   or a position. A black-only laser print has to work.
 - Reading text is never smaller than 11 pt printed or 15 px on screen.
@@ -486,8 +487,16 @@ across all of them:
   A note beside a heading and a caption under a sample are prose and are
   bound by the floor; a letterspaced label is not. The floor is scoped, not
   relaxed.
+  **The floor binds the card at its reference size**, which is A7. A grid may
+  render that whole card at an A-series scale — every dimension, band, inset
+  and type size by one factor — and 11 pt scales with it. What the floor
+  forbids is setting *this* card's text smaller than 11 pt to fit more on it.
+  Scaling the card is a choice about the card; shrinking its type is a choice
+  about the text, and only the second is a legibility question.
 - The layout never shrinks type to fit — a card whose text does not fit is
-  *reported*, not silently squeezed.
+  *reported*, not silently squeezed. This survives the scaling rule above
+  intact: a card that overflows its own card is split by the author. Scale is
+  a property of the grid, never a rescue for an overlong card.
 
 If a change makes the card prettier on screen and worse on a photocopier, it is
 the wrong change.
@@ -502,12 +511,12 @@ yes/no. `front`/`back` are **Typst** markup, not LaTeX, written in single
 quotes. Card language follows the source unless the user says otherwise, and
 always goes into the file's `language:` key.
 
-A *line* is a line of the size the deck declares. The A8 card has 46 % of A7's
-writing area, so ~2 lines and ~6 lines are roughly 60 and 160 characters there
-against 120 and 400 at A7. The card size goes into the file's `grid:` key for
-the same reason the language does — the deck states what it was written for
-rather than leaving it to whoever prints it. The head band clips rather than
-wraps, and holds about 22 characters at A8 against ~53 at A7.
+A *line* is a line of the A7 card, and it stays one at every grid: a denser
+grid renders the same card at a uniform scale, so ~2 lines and ~6 lines hold
+the same text — about 120 and 400 characters — whichever grid it prints at.
+A deck legal at one grid is legal at all of them. The card size still goes into
+the file's `grid:` key, for the same reason the language does: the deck states
+what it was written for rather than leaving it to whoever prints it.
 
 The full escaping and maths rules are in [CLAUDE.md](../../CLAUDE.md) and apply
 to contributions too.
@@ -575,7 +584,27 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.5.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-20
+**Version**: 2.6.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-20
+
+*2.6.0 — the card is landscape, and the type floor says what it binds. Amendment
+2.5.0, one day old, stated the A8 card as 52.5 × 74.25 mm and called it "the same
+card cut down the middle, same height, half the width". That is a portrait card,
+and halving a landscape card's width is exactly how you get one: every A-series
+halving flips the orientation, so A8 landscape is 74 × 52. It shipped in v0.4.0
+and v0.4.1. The sheet now turns instead of the card. XVI's dimension is corrected
+and the orientation is stated as a rule rather than left to be inferred, which is
+what let it through — nothing anywhere said a card is landscape.
+
+The floor is **scoped, not lowered**, the same move as 2.4.0: it binds the card
+at its reference size, and a grid may render that whole card at an A-series
+scale. Holding 11 pt on a card two thirds the height was measured and breaks the
+layout — labels wrap out of the band, backs run off the card, the note rules stop
+fitting — while scaling the card keeps every proportion and lets a deck written
+for A7 print at A8 untouched. "Never shrinks type to fit" survives verbatim and
+is now stated against the new rule: scale is a property of the grid, never a
+rescue for an overlong card. XVII loses the per-grid character budgets it gained
+in 2.5.0, because there is no longer a per-grid difference to describe. See
+[BUG-007](../../specs/003-card-grid/bugs/BUG-007.md).*
 
 *2.5.0 — the card has two sizes. Principles XVI and XVII each quoted A7 as
 *the* card size, which was true when the press sheet was a constant. It is now

@@ -242,10 +242,10 @@ also draw), and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a
 | | `--grid a7` (the default) | `--grid a8` |
 |---|---|---|
 | 17 registration | 3 vertical, 5 horizontal cut lines | 5 vertical, 5 horizontal cut lines |
-| 18 cut card | 100 × 71.75 mm (105 × 74.25 at `--margin 0`) | 50 × 71.75 mm (52.5 × 74.25 at `--margin 0`) |
+| 18 cut card | 100 × 71.75 mm (105 × 74.25 at `--margin 0`) | 71.75 × 50 mm (74.25 × 52.5 at `--margin 0`) |
 | 19 borderless | drops into a DIN A7 box | drops into a DIN A8 box |
 
-| 20 | print | at `--grid a8`, read the head band on every card | **the short-label caveat**: the A8 band holds about 22 characters of `TOPIC / SUBTOPIC` and clips the rest mid-word. The demo topics are deliberately long and *will* clip; `tests/fixtures/demo-project/grids/tides-a8.yaml` is the deck whose labels all fit, and is what step 20 should be judged on |
+| 20 | print | at `--grid a8`, read the card at arm's length | **the type-size question**: A8 renders the whole card at ~0.70, so reading text is 7.67 pt against A7's 11 pt. `docs/design.md` sets the floor because Archivo "survives 11 pt on cheap paper"; this asks whether it survives 7.67. Include the Greek and Cyrillic cards — they fall back to New Computer Modern, whose apertures differ, and will fail first |
 
 Steps 1–14 need a Claude session in the demo folder; 15–20 only need the
 command. If a printer is not at hand, 16–18 can be judged from the PDF: hold

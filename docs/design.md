@@ -88,9 +88,11 @@ of a photograph.
 
 ## The card
 
-105 × 74.25 mm, landscape — A7 — or 52.5 × 74.25 mm at A8, which is the same
-card cut down the middle: same height, half the width. Three bands that never
-move, at either size:
+105 × 74.25 mm at A7, or 74.25 × 52.5 mm at A8 — landscape either way, and the
+whole card rendered at one scale, so every proportion holds. It is *not* the A7
+card cut down the middle: that would be portrait, because every A-series halving
+flips the orientation. The sheet turns instead. Three bands that never move, at
+either size:
 
 | Band | Height | Holds |
 |---|---|---|
@@ -132,7 +134,7 @@ that cut to a card you can buy a box for:
 | `--grid` | Alias | Per A4 sheet | Card at `--margin 5` | Card at `--margin 0` |
 |---|---|---|---|---|
 | `2x4` | `a7` | 8, two columns by four rows | 100 × 71.75 mm | 105 × 74.25 mm (DIN A7) |
-| `4x4` | `a8` | 16, four columns by four rows | 50 × 71.75 mm | 52.5 × 74.25 mm (DIN A8) |
+| `4x4` | `a8` | 16, four columns by four rows **on a landscape A4** | 71.75 × 50 mm | 74.25 × 52.5 mm (DIN A8) |
 
 `2x4` is the default and stays the default: it is the size the cards in this
 repo are written for. A card file may name its own with a top-level `grid:`
@@ -146,11 +148,11 @@ Default margin 5 mm, which keeps clear of printers with a non-printable edge;
 crop marks reach into that margin at every cut. With `--margin 0` the card
 frames sit on the paper edge and there are no crop marks to draw.
 
-The one thing that does not scale is the header band. It clips its label rather
-than wrapping it, and the A8 band holds about 22 characters of
-`TOPIC / SUBTOPIC` against A7's ~53 — so a deck written for A8 needs short
-topic and subtopic names, and `scripts/check_project.py` warns when an A8 deck
-exceeds the budget.
+Everything scales together, the header band included, so a deck written for one
+grid prints at the other unchanged. The band holds about 53 characters of
+`TOPIC / SUBTOPIC` on one line at either size; past that the label wraps inside
+the band and stays readable, and text is only lost around 200 characters, where
+a fourth line no longer fits.
 
 ## The screen surfaces
 

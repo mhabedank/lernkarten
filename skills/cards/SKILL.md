@@ -131,21 +131,10 @@ is given an explicit `--grid`.
   backslash stays a line break. A literal apostrophe is doubled (`''`).
 - Atomic: one card tests exactly one fact/concept. Mix definitions, formulas,
   distinctions ("difference between X and Y") and application questions.
-- **Size the text to the declared grid.** A line at A8 holds 46 % of what a
-  line at A7 holds, so the budgets are not the same card twice:
-
-  | | `grid: a7` | `grid: a8` |
-  |---|---|---|
-  | `front` | up to ~120 characters | up to ~60 |
-  | `back` | up to ~400 characters | up to ~160 |
-  | `TOPIC / SUBTOPIC` in the head band | up to ~53 characters | up to ~22 |
-
-  Over the budget is a warning from `check_project.py`, not an error — but at
-  A8 it is a real one: two cards beat one that does not fit.
-- **The head band clips, it does not wrap.** The printed label is
-  `TOPIC / SUBTOPIC` in capitals, and anything past the band's width is cut off
-  mid-word. At `grid: a8` that budget is about 22 characters *for both
-  together*, so a long topic leaves nothing for the subtopic. Keep both short
-  — the card body is where the detail belongs.
+- **The budget does not depend on the grid.** A denser grid renders the same
+  card at a uniform scale, so `a7` and `a8` hold the same text: front up to
+  ~120 characters, back up to ~400. Over that is a warning from
+  `check_project.py`, not an error — two cards beat one that does not fit.
+  Write for the content, not for the size the deck happens to declare.
 - No card whose answer is exhaustively covered by the catalog bullet point but
   not backed by the reference — when in doubt, check the reference.

@@ -6,10 +6,10 @@
 topic: 'Example: Probability'
 language: english
 # The card size this deck is written for: a7 (2x4, 8 to an A4 sheet) or a8
-# (4x4, 16 up, half the width per card). The key is optional and leaving it out
+# (4x4, 16 up, on a landscape sheet). The key is optional and leaving it out
 # means a7, so this line only states what would happen anyway — state it, so
-# `/print` never has to guess and nobody has to remember a flag. An a8 deck
-# needs shorter text and much shorter topic names.
+# `/print` never has to guess and nobody has to remember a flag. Both grids hold
+# the same text: a8 renders the same card smaller, it does not hold less.
 grid: a7
 cards:
   - subtopic: 'Basics'

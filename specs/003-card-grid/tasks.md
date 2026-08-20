@@ -198,15 +198,15 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- parallel-group: 2 (max 3 concurrent) -->
 
-- [ ] T056 ⚠️ **Reopened (BUG-007)** — `docs/design.md` states the A8 card as 52.5 × 74.25 portrait. Original: [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
-- [ ] T057 ⚠️ **Reopened (BUG-007)** — `docs/testing.md` states the cut size and the per-grid walk from the portrait card. Original: [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
+- [x] T056 ✅ **Closed by T091**. ⚠️ **Reopened (BUG-007)** — `docs/design.md` states the A8 card as 52.5 × 74.25 portrait. Original: [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
+- [x] T057 ✅ **Closed by T091**. ⚠️ **Reopened (BUG-007)** — `docs/testing.md` states the cut size and the per-grid walk from the portrait card. Original: [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
 - [x] T058 [P] Update `skills/print/SKILL.md` — document `--grid` beside `--margin` and `--no-logo`, naming both grids and their A-series equivalents *(FR-018)*
 
 <!-- parallel-group: 3 (max 3 concurrent) -->
 
-- [ ] T059 ⚠️ **Reopened (BUG-007)** — `CLAUDE.md` carries the per-grid budget table FR-027 removes. Original: [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
+- [x] T059 ✅ **Closed by T091**. ⚠️ **Reopened (BUG-007)** — `CLAUDE.md` carries the per-grid budget table FR-027 removes. Original: [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
 - [x] T060 [P] Update `cards/example.yaml` — add `grid: a7` explicitly, with a comment saying the key is optional and that A7 is the default. **`a7`, not `a8`**: the example is built by gate T067 and by every user's first run, so declaring A8 would silently switch the shipped example to a different card size *(review W5)*
-- [ ] T061 ⚠️ **Reopened (BUG-007)** — constitution XVI is **wrong as ratified in 2.5.0** — it states the portrait dimension. Original: [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
+- [x] T061 ✅ **Closed by T090**. ⚠️ **Reopened (BUG-007)** — constitution XVI is **wrong as ratified in 2.5.0** — it states the portrait dimension. Original: [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
 
 <!-- sequential -->
 
@@ -273,8 +273,8 @@ reason. Read the file in phase order 1–9, **11**, 10.
 
 <!-- sequential -->
 
-- [ ] T090 [BUG-007] Amend the constitution again. XVI states the portrait dimension and is **wrong as ratified in 2.5.0**. The 11 pt floor needs **scoping, not lowering**: it binds the card at its reference size, and a grid may render that card at an A-series scale. Same move as 2.4.0
-- [ ] T091 [BUG-007] Re-sweep `docs/design.md`, `docs/testing.md`, `CLAUDE.md`, `skills/print/SKILL.md`, `cards/example.yaml` and the README for the portrait dimension and the per-grid budget table
+- [x] T090 [BUG-007] Amend the constitution again. XVI states the portrait dimension and is **wrong as ratified in 2.5.0**. The 11 pt floor needs **scoping, not lowering**: it binds the card at its reference size, and a grid may render that card at an A-series scale. Same move as 2.4.0
+- [x] T091 [BUG-007] Re-sweep `docs/design.md`, `docs/testing.md`, `CLAUDE.md`, `skills/print/SKILL.md`, `cards/example.yaml` and the README for the portrait dimension and the per-grid budget table
 - [ ] T092 [BUG-007] Rewrite `tests/fixtures/demo-project/grids/tides-a8.yaml`. Its twelve cards were written to a 22-character label budget that no longer exists; it should now carry cards that are *hard* at A8, not easy
 - [ ] T093 [BUG-007] Correct the v0.4.0 and v0.4.1 release notes, which state 52.5 × 74.25 mm to anyone reading them now
 - [ ] T094 🚧 [BUG-007] **Walk SC-007 on paper before the next release.** It has failed once by being deferred: a portrait card would not have survived one printed sheet. The open question is now legibility of 7.67 pt reading text on cheap paper, Greek and Cyrillic included
