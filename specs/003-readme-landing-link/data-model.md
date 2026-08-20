@@ -62,9 +62,13 @@ Let `opening` be the opening block as bounded above.
 3. `opening.index(LANDING_URL) < opening.index("assets/example-cards.png")`
 4. `"docs/index.html" in README.md` (the `## The design` reference survives)
 
-Invariants 1–3 are FR-001 and FR-002; invariant 4 is FR-004. All four fail
-against `main` today on invariant 1 — which is the red the constitution asks to
-see before anything is written.
+Invariants 1–3 are FR-001 and FR-002 and live in
+`test_the_readme_points_a_newcomer_at_the_landing_page`; invariant 4 is FR-004
+and lives in `test_the_readme_still_names_the_landing_page_source`. The first
+case fails against `main` today on invariant 1 — the red the constitution asks
+to see before anything is written. The second passes on `main` by construction,
+because it guards behaviour that already exists, so what proves it load-bearing
+is deleting the link and watching it fail (FR-005b).
 
 ## Entities
 

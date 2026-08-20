@@ -193,9 +193,9 @@ listed with the state it must be in when committed.
 
 | Order | Assertion | Where | State at commit |
 |---|---|---|---|
-| 1 | The landing page URL appears in the opening block of `README.md` — everything above the first `^## ` | `tests/test_repo_hygiene.py` | **RED**, on the assertion, naming `README.md` |
+| 1 | The landing page URL appears in the opening block of `README.md` — everything above the first `^## ` | `test_the_readme_points_a_newcomer_at_the_landing_page` | **RED**, on the assertion, naming `README.md` |
 | 2 | Within that block it sits after `Claude_Code-plugin` and before `assets/example-cards.png` | same case | RED with 1 (same case, so it goes green with it) |
-| 3 | `README.md` still contains a relative link to `docs/index.html` | same case | **GREEN from the start** — a regression guard for FR-004, which is the point of writing it now rather than after |
+| 3 | `## The design` still contains a relative link to `docs/index.html` | `test_the_readme_still_names_the_landing_page_source` | **GREEN from the start** — a regression guard for FR-004, proved load-bearing by a mutation check rather than by a red commit it cannot produce |
 | 4 | Manual row 33 | `docs/testing.md` | n/a — the half no test reaches, named per constitution XI |
 
 Assertion 3 being green on `main` is deliberate and worth stating so a reviewer
@@ -203,10 +203,13 @@ does not read it as a missed red step: FR-004 protects behaviour that already
 exists, and a guard for existing behaviour has nothing to fail against. The red
 that matters is assertion 1.
 
-One case, not three. All four invariants in [data-model.md](./data-model.md)
-concern the same file and the same question — does the README point a newcomer
-at the live page while keeping the contributor's file reference — and splitting
-them across cases would produce three failures for one edit.
+Two cases, not one. Invariants 1–3 answer the newcomer's question and belong
+together: they cover one edit, and splitting them would produce three failures
+for it. Invariant 4 answers the contributor's, which is a different question
+with a different reader and a different verification story — it cannot go red,
+so it is mutation-checked instead. Folding it into the first case would report a
+lost `docs/index.html` link as a failure of a test named for the newcomer, and
+would leave US2 with no command of its own to prove it.
 
 ### What the user sees
 
