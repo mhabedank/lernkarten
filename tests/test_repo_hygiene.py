@@ -1,7 +1,14 @@
-"""Guards that the repo stays subject-agnostic.
+"""Guards what a release must and must not ship.
 
-Only the tools are versioned — sources, ingested texts, the catalog and the
-generated cards belong to the user and stay local.
+Two kinds of claim live here. The first is that the repo stays
+subject-agnostic: only the tools are versioned, while sources, ingested texts,
+the catalog and the generated cards belong to the user and stay local. The
+second is about the text of the versioned documentation — that it does not
+still promise five commands, and that the README points a reader at the live
+landing page while keeping the contributor's reference to the file.
+
+The second kind is why this module is not called `test_no_user_content`. How a
+page is *built* is a different question and lives in `test_landing_page.py`.
 """
 
 import re
