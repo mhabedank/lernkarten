@@ -1,6 +1,6 @@
 [project]
 name = "lernkarten"
-version = "0.4.1"
+version = "0.4.2"
 description = "Claude Code plugin: turn any knowledge source into print-ready flashcards"
 readme = "README.md"
 license = { file = "LICENSE" }
