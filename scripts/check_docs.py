@@ -203,6 +203,30 @@ def check_sheet_capacity(errors):
                 )
 
 
+# 'duplex, flip on long edge' was the way to print until --sides existed; now
+# it is one of two, and a doc still giving it as *the* instruction sends a
+# reader with a one-sided printer to a stack of wasted paper. Same shape as
+# check_sheet_capacity above and there for the same reason: the --grid sweep
+# was enforced by a hand-written grep, missed two lines, and shipped them. The
+# word is fine wherever the sentence says which order it is talking about.
+PRINT_ORDER = re.compile(r"\bduplex\b|\bflip on (?:the )?long edge\b", re.I)
+NAMES_THE_ORDER = re.compile(r"simplex|one[- ]sided|--sides|two[- ]pass|both orders", re.I)
+
+
+def check_print_order(errors):
+    # Scoped to the paragraph, not the line: an instruction spans a paragraph,
+    # unlike a capacity claim, and a line-scoped rule would make the fix depend
+    # on where the text happens to wrap.
+    for path in markdown_files():
+        for block in re.split(r"\n\s*\n", path.read_text(encoding="utf-8")):
+            claim = PRINT_ORDER.search(block)
+            if claim and not NAMES_THE_ORDER.search(block):
+                errors.append(
+                    f"{path.relative_to(ROOT)}: '{claim.group().strip()}' gives one print "
+                    "order as the only instruction — it follows --sides, so name the order"
+                )
+
+
 def main():
     errors = []
     check_required_files(errors)
@@ -210,6 +234,7 @@ def main():
     check_skills(errors)
     check_links(errors)
     check_sheet_capacity(errors)
+    check_print_order(errors)
 
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)

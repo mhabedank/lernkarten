@@ -196,3 +196,86 @@ def test_no_shipped_doc_claims_a_fixed_sheet_capacity():
     check_docs.check_sheet_capacity(errors)
 
     assert not errors, errors
+
+
+# --- the printing instruction is not one instruction (SC-006) --------------
+
+
+def test_a_doc_giving_duplex_as_the_only_instruction_is_reported(tmp_path, monkeypatch):
+    """The same class of staleness as the sheet capacity, one release later.
+
+    'duplex, flip on long edge' was the way to print until --sides existed. A
+    doc that still states it as *the* way is wrong rather than merely dated,
+    and the last sweep of this kind was a hand-written grep that missed two
+    lines and shipped them.
+    """
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    (tmp_path / "skills").mkdir()
+    (tmp_path / "README.md").write_text(
+        "Then print: duplex, flip on long edge, 100 % scale.\n", encoding="utf-8"
+    )
+
+    errors = []
+    check_docs.check_print_order(errors)
+
+    assert any("README.md" in e for e in errors), errors
+    assert any("duplex" in e for e in errors), errors
+
+
+def test_a_doc_that_names_the_other_order_passes(tmp_path, monkeypatch):
+    """Naming the mode is the fix, not deleting the word.
+
+    Without this the gate would be satisfiable by removing 'duplex' from every
+    sentence, which loses the instruction the reader came for.
+    """
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    (tmp_path / "skills").mkdir()
+    (tmp_path / "README.md").write_text(
+        "Duplex printer: flip on long edge. One-sided printer: `--sides simplex`.\n",
+        encoding="utf-8",
+    )
+
+    errors = []
+    check_docs.check_print_order(errors)
+
+    assert not errors, errors
+
+
+def test_no_shipped_doc_gives_duplex_as_the_only_instruction():
+    """Asserted against the repo itself — this is the sweep, enforced.
+
+    Red until every printing instruction names the order it belongs to. The
+    failure output is the work list.
+    """
+    errors = []
+    check_docs.check_print_order(errors)
+
+    assert not errors, errors
+
+
+def test_the_order_may_be_named_anywhere_in_the_same_paragraph(tmp_path, monkeypatch):
+    """Prose wraps, and the gate must not fight the wrapping.
+
+    An instruction spans a paragraph, unlike a sheet-capacity claim, which is
+    one short clause. Scoping this check to the physical line would force the
+    qualifying word onto the same line as 'duplex' and make the fix depend on
+    where the text happens to break.
+    """
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    (tmp_path / "skills").mkdir()
+    (tmp_path / "README.md").write_text(
+        "1. Choose **duplex, flip on long edge** — short edge puts the back\n"
+        "   upside down. On a one-sided printer use `--sides simplex` instead.\n"
+        "\n"
+        "A later paragraph that says duplex on its own is still reported.\n",
+        encoding="utf-8",
+    )
+
+    errors = []
+    check_docs.check_print_order(errors)
+
+    assert len(errors) == 1, errors
+    assert "later paragraph" not in " ".join(errors)

@@ -282,13 +282,16 @@ def test_the_build_help_documents_the_options():
 # --- the press-sheet grid (feat/card-grid) --------------------------------
 
 
-def card_grid_per_page(path):
-    """The card ids laid out as a grid, page by page: [[row], [row], ...].
+def bbox_pages(path):
+    """Every word with its coordinates, page by page: [[(x, y, word), ...], ...].
 
-    Read from the footer ids with their coordinates rather than from reading
-    order — `pdftotext -layout` silently drops ids once the columns get narrow,
-    which at A8 is most of them. `-bbox-layout` gives every word an x and a y,
-    so the rows and columns can be recovered exactly.
+    Read with coordinates rather than in reading order — `pdftotext -layout`
+    silently drops words once the columns get narrow, which at A8 is most of
+    them. `-bbox-layout` gives every word an x and a y, so rows and columns can
+    be recovered exactly.
+
+    Both readers below are built on this one, so the two guards that decide
+    "this tool cannot answer" live in a single place.
     """
     if shutil.which("pdftotext") is None:
         pytest.skip("pdftotext is not installed")
@@ -305,7 +308,7 @@ def card_grid_per_page(path):
     # before trusting the output — an empty parse used to travel three frames
     # and arrive as "expected at least a front and a back page", which blames
     # the build for a limitation of the reader. A tool that cannot answer is a
-    # skip; a tool that answers and finds no ids is still a failure below.
+    # skip; a tool that answers and finds nothing is still a failure below.
     xml = result.stdout
     if result.returncode != 0 or "<page " not in xml:
         pytest.skip(
@@ -315,9 +318,18 @@ def card_grid_per_page(path):
     pages = []
     for chunk in xml.split("<page ")[1:]:
         words = re.findall(r'<word xMin="([\d.]+)" yMin="([\d.]+)"[^>]*>([^<]+)</word>', chunk)
-        found = [(float(x), float(y), w) for x, y, w in words if re.fullmatch(r"[\w-]+-\d+", w)]
+        pages.append([(float(x), float(y), w) for x, y, w in words])
+    return pages
+
+
+def card_grid_per_page(path):
+    """The card ids laid out as a grid, page by page: [[row], [row], ...]."""
+    pages = []
+    for words in bbox_pages(path):
         rows = {}
-        for x, y, w in found:
+        for x, y, w in words:
+            if not re.fullmatch(r"[\w-]+-\d+", w):
+                continue
             # One row of cards shares a y to well under a millimetre; round so
             # the grouping survives the typesetter's sub-point placement.
             rows.setdefault(round(y), []).append((x, w))
@@ -668,3 +680,131 @@ def test_an_a7_legal_deck_reprints_at_a8_without_a_warning(tmp_path):
     assert "WARNING" not in result.stderr, (
         f"an A7-legal card must survive a8 unchanged: {result.stderr}"
     )
+
+
+# --- the print order (feat/simplex-print-order) ----------------------------
+
+
+def face_marks_per_page(path):
+    """Which face each page carries: a set of "1/2" / "2/2" per page.
+
+    Every card footer prints `<id> · 1/2` on the front and `· 2/2` on the back
+    (templates/card.typ), so the face is in the text layer and does not have to
+    be inferred from the geometry. A front page is one whose every mark reads
+    1/2.
+    """
+    return [{w for _, _, w in words if re.fullmatch(r"[12]/2", w)} for words in bbox_pages(path)]
+
+
+def test_simplex_puts_every_front_before_any_back(tmp_path):
+    """SC-001, read off the artifact rather than inferred.
+
+    29 cards at 8 up is 4 sheets. Simplex means pages 1-4 are the four fronts
+    and pages 5-8 the four backs — not front, back, front, back.
+    """
+    target = tmp_path / "simplex.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--sides", "simplex")
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(target) == 8
+
+    marks = face_marks_per_page(target)
+    assert marks[:4] == [{"1/2"}] * 4, f"pages 1-4 must be fronts only: {marks}"
+    assert marks[4:] == [{"2/2"}] * 4, f"pages 5-8 must be backs only: {marks}"
+
+
+def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
+    """SC-002/FR-003: sheet n's back is page N+n, still column-mirrored.
+
+    Turning a printed stack over on the long edge is the same flip a duplex
+    printer makes, so the mirroring that lines duplex up lines simplex up too.
+    """
+    target = tmp_path / "mirror.pdf"
+    assert run("build", *CARDS, "-o", str(target), "--sides", "simplex").returncode == 0
+    pages = card_grid_per_page(target)
+    sheets = len(pages) // 2
+    assert sheets == 4, f"expected 4 sheets, got {len(pages)} pages"
+    for n in range(sheets):
+        front, back = pages[n], pages[sheets + n]
+        assert front, f"no ids read off front page {n}"
+        assert back == [list(reversed(row)) for row in front], (
+            f"sheet {n}: the back on page {sheets + n} is not mirrored behind its front"
+        )
+
+
+def test_simplex_groups_the_faces_at_the_denser_grid_too(tmp_path):
+    """The split is by sheet, so it follows the grid — 16 up gives 2 sheets."""
+    target = tmp_path / "a8.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--sides", "simplex", "--grid", "a8")
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(target) == 4
+    assert face_marks_per_page(target) == [{"1/2"}, {"1/2"}, {"2/2"}, {"2/2"}]
+
+    pages = card_grid_per_page(target)
+    for n in range(2):
+        front, back = pages[n], pages[2 + n]
+        assert all(len(row) <= 4 for row in front), f"a row holds more than 4 cards: {front}"
+        assert back == [list(reversed(row)) for row in front], (
+            f"sheet {n}: a8 backs are not mirrored across four columns"
+        )
+
+
+@pytest.mark.parametrize("grid", ["a7", "a8"])
+def test_the_print_order_never_changes_the_page_count(tmp_path, grid):
+    """FR-004: the same sheets either way, so 2 x ceil(cards / per sheet)."""
+    duplex = tmp_path / f"duplex-{grid}.pdf"
+    simplex = tmp_path / f"simplex-{grid}.pdf"
+    assert run("build", *CARDS, "-o", str(duplex), "--grid", grid).returncode == 0
+    assert (
+        run("build", *CARDS, "-o", str(simplex), "--grid", grid, "--sides", "simplex").returncode
+        == 0
+    )
+    assert pdf_pages(duplex) == pdf_pages(simplex)
+
+
+def test_a_single_sheet_deck_looks_the_same_in_both_orders(tmp_path):
+    """At one sheet the two orders are the same sequence, front then back.
+
+    Worth pinning: it is the deck someone tries the flag on first, and a build
+    that reordered anything here would be reordering a two-page document.
+    """
+    one_deck = str(DEMO / "cards" / "tides.yaml")  # 8 cards, exactly one a7 sheet
+    duplex, simplex = tmp_path / "one-d.pdf", tmp_path / "one-s.pdf"
+    assert run("build", one_deck, "-o", str(duplex)).returncode == 0
+    assert run("build", one_deck, "-o", str(simplex), "--sides", "simplex").returncode == 0
+    assert pdf_pages(duplex) == pdf_pages(simplex) == 2
+    assert face_marks_per_page(simplex) == [{"1/2"}, {"2/2"}]
+    assert card_grid_per_page(duplex) == card_grid_per_page(simplex)
+
+
+def test_an_unknown_print_order_is_refused(tmp_path):
+    """FR-005: a usage error, before any card file is read, naming both values."""
+    target = tmp_path / "never.pdf"
+    for value in ("both", "single", "flip", ""):
+        result = run("build", *CARDS, "-o", str(target), "--sides", value)
+        assert result.returncode == 2, f"{value!r} should be a usage error: {result.stderr}"
+        assert not target.exists(), f"{value!r}: no PDF may be written on a refusal"
+        assert "duplex" in result.stderr and "simplex" in result.stderr, result.stderr
+
+
+def test_check_takes_the_print_order_flag_too(tmp_path):
+    """FR-007: both subcommands accept it, and it changes nothing about check."""
+    plain = run("check", *CARDS)
+    with_flag = run("check", *CARDS, "--sides", "simplex")
+    assert with_flag.returncode == 0, with_flag.stderr
+    assert f"{DEMO_CARD_COUNT} cards valid" in with_flag.stdout
+    assert with_flag.stdout == plain.stdout, "the flag must not change what check reports"
+
+
+def test_the_simplex_build_says_which_pages_to_print(tmp_path):
+    """SC-004: the ranges are computed from the sheets, and add up to the count."""
+    result = run("build", *CARDS, "-o", str(tmp_path / "s.pdf"), "--sides", "simplex")
+    assert result.returncode == 0, result.stderr
+    assert "8 pages, simplex" in result.stdout, result.stdout
+    assert "pages 1-4" in result.stdout and "pages 5-8" in result.stdout, result.stdout
+
+
+def test_the_duplex_build_still_says_flip_on_long_edge(tmp_path):
+    """FR-008: the default path's wording is what existing projects rely on."""
+    result = run("build", *CARDS, "-o", str(tmp_path / "d.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert "8 pages, duplex, flip on long edge" in result.stdout, result.stdout
