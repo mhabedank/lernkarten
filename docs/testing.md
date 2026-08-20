@@ -114,7 +114,7 @@ PDF text — and it counts like the others now. A Windows failure is a failure.
 | `tests/test_ingest_sources.py` | ingest | the web source over a local server, the zotero source over the stub |
 | `tests/test_e2e.py` | end-to-end | runs `bin/lernkarten` as a subprocess and takes the PDF apart |
 | `tests/test_check_project.py` | contract | the artifacts of the four Claude-driven steps |
-| `tests/test_repo_hygiene.py` | repo | no user content, no committed binaries |
+| `tests/test_repo_hygiene.py` | repo | no user content, no committed binaries, and what a release must and must not say in its docs |
 | `tests/test_landing_page.py` | page | the structure of `docs/index.html` — never its geometry |
 
 `tests/test_e2e.py` and `tests/test_testdata.py` need the typesetting engine.
@@ -261,6 +261,11 @@ Open `docs/index.html` straight off disk. No server, no build.
 | 30 | any width, **JavaScript off** | reload and look at `02` | both cards side by side, no button — the fallback the script's own comment describes |
 | 31 | Chromium, Firefox, Safari | repeat rows 20, 23 and 25 in each | the same in all three. CI has no browser leg, so this is the only place the claim is checked |
 | 32 | above 1080 px and at 360 px | the section notes, the anatomy list, the printing descriptions, the rules list and the three principles, after the type floor was raised to 15 px | nothing reflows into a heading row, no column loses its measure, and the three heading rows of row 25 are still equal. The size itself is asserted by `test_reading_text_is_never_below_the_screen_floor`; what a test cannot see is whether the extra line a paragraph gained landed somewhere ugly |
+| 33 | github.com, an ordinary laptop window | the `README.md` opening block, rendered — then follow the link | the link to the live page is visible without scrolling past the intro paragraph; it reads as an invitation to *look*, not one more thing to read; and `https://mhabedank.github.io/lernkarten/` loads. `test_the_readme_points_a_newcomer_at_the_landing_page` asserts that the link is in the opening block and where in it — it cannot tell you whether anybody sees it, whether the wording invites, or whether the page is still there |
+
+Row 33 is the odd one out. It is read on github.com rather than off disk, and
+its subject is `README.md`, not the page. It sits here because what it checks
+is whether a reader ever reaches the landing page at all.
 
 Row 31 is the one that cannot be delegated to a machine here. The `<details>`
 disclosure needs two user-agent behaviours overridden at once — older engines
@@ -268,9 +273,8 @@ hid the closed panel with `display: none`, current Chrome wraps it in
 `::details-content` and hides that — and overriding only the panel's own
 `display` renders nothing while reporting `flex` to devtools.
 
-Two things are known and are not regressions: the card toggle still does not
-explain itself (the open half of the issue that produced it), and the readme
-still buries the landing page.
+One thing is known and is not a regression: the card toggle still does not
+explain itself (the open half of the issue that produced it).
 
 ### When the engine is the suspect
 

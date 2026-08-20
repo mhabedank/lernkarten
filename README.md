@@ -10,6 +10,8 @@ PDF: print it double-sided, cut along the lines, and you are holding a stack of
 paper flashcards — covering the topic you named, not whatever the material
 happened to contain.
 
+**[See it →](https://mhabedank.github.io/lernkarten/)**
+
 ![A finished card, front and back: the front asks how Bayes' theorem is stated, the back answers it with the formula and names the source](assets/example-cards.png)
 
 ## Install
