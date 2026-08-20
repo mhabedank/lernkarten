@@ -1,7 +1,7 @@
 ---
 name: print
 description: >-
-  Compile flashcard YAML into a print-ready PDF via the card template (A4, 8 cards per page, fronts/backs for duplex printing). Triggers: /print, "build the PDF", "print my cards".
+  Compile flashcard YAML into a print-ready PDF via the card template (A4, 8 or 16 cards per sheet depending on the grid, fronts/backs for duplex printing). Triggers: /print, "build the PDF", "print my cards", "print at A8", "print smaller cards".
 ---
 
 # /print — build the PDF
@@ -13,6 +13,22 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 1. `cards/` empty → point at `/cards`, done.
 2. Determine the selection: arguments name topics (files) or subtopics;
    without arguments, use all of `cards/*.yaml`.
+2b. **Check the arguments for a card size before treating them as a filter.**
+   `a7`, `a8`, `2x4`, `4x4`, "A8", "small", "smaller", "dense", "half the
+   paper", "16 up", "fit more on a page" all name a *grid*, not a topic — pass
+   the matching `--grid` and do not use the word as a topic filter. `/print a8`
+   means the whole deck at A8, not the cards whose topic contains "a8".
+
+   ```
+   /print a8                 → lernkarten build cards/*.yaml --grid a8 -o output/cards.pdf
+   /print Tides at A8        → lernkarten build cards/*.yaml --topic "Tides" --grid a8 -o output/cards.pdf
+   /print smaller cards      → ask which: a7 (8 per sheet) or a8 (16)
+   /print                    → no --grid; each deck's own grid: key decides
+   ```
+
+   When a size and a topic are both named, apply both. When the request is
+   vague ("smaller"), name the two options and ask rather than guessing — a
+   deck written for A7 will overflow at A8.
 3. Run the build:
 
    ```bash

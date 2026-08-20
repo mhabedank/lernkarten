@@ -124,7 +124,7 @@ lernkarten check cards/*.yaml
 
 ## Printing and cutting
 
-The PDF puts 8 cards on an A4 page. Fronts and backs are on consecutive pages,
+The PDF puts 8 cards on an A4 page at the default `a7` grid, or 16 at `a8`. Fronts and backs are on consecutive pages,
 with the backs column-mirrored so they line up after duplex printing.
 
 1. Choose **duplex, flip on long edge** — short edge puts every back upside down

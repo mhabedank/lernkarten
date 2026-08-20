@@ -178,12 +178,38 @@ def check_links(errors):
                 errors.append(f"{path.relative_to(ROOT)}: dead link -> {target}")
 
 
+# The A4 sheet held eight cards until --grid made the number a setting. A doc
+# still stating it as a fixed property of the sheet is wrong rather than merely
+# stale, so it is a gate and not a habit: the sweep that introduced --grid was
+# enforced by a hand-written grep, which missed "A4, 8 cards per page" in the
+# /print description and "puts 8 cards on an A4 page" in the README, and both
+# shipped. The number is fine when something nearby ties it to a grid.
+SHEET_CAPACITY = re.compile(
+    r"\b(?:8|eight|16|sixteen)\s+cards?\s+(?:per|on|to|a)\s+(?:an?\s+)?"
+    r"(?:A4\s+)?(?:sheet|page|A4)\b",
+    re.I,
+)
+QUALIFIED = re.compile(r"grid|a7|a8|2\s*[x\u00d7]\s*4|4\s*[x\u00d7]\s*4", re.I)
+
+
+def check_sheet_capacity(errors):
+    for path in markdown_files():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            claim = SHEET_CAPACITY.search(line)
+            if claim and not QUALIFIED.search(line):
+                errors.append(
+                    f"{path.relative_to(ROOT)}: '{claim.group().strip()}' states the sheet "
+                    "capacity as a fixed fact — it follows --grid, so name the grid"
+                )
+
+
 def main():
     errors = []
     check_required_files(errors)
     check_versions(errors)
     check_skills(errors)
     check_links(errors)
+    check_sheet_capacity(errors)
 
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)
