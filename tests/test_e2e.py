@@ -75,7 +75,8 @@ def test_build_writes_a_pdf_with_one_sheet_per_eight_cards(tmp_path):
     result = run("build", *CARDS, "-o", str(target))
     assert result.returncode == 0, result.stderr
     assert target.exists()
-    # 31 cards -> 4 sheets, each with a front and a back page
+    # 29 cards at 8 up -> 4 sheets, each with a front and a back page.
+    # The count is DEMO_CARD_COUNT; issue #23 inherited '31' from this comment.
     assert pdf_pages(target) == 8
     assert "8 pages, duplex" in result.stdout
 
@@ -227,7 +228,7 @@ def test_a_broken_file_does_not_take_the_healthy_ones_down(tmp_path):
     result = run("build", *CARDS, str(DEMO / "broken" / "missing-fields.yaml"), "-o", str(target))
     assert result.returncode == 0, result.stderr
     assert "ERROR" in result.stderr
-    assert pdf_pages(target) == 8, "31 demo cards + the one intact card of the broken file"
+    assert pdf_pages(target) == 8, "29 demo cards + the one intact card of the broken file"
 
 
 def test_an_impossible_margin_is_refused(tmp_path):
@@ -482,3 +483,66 @@ def test_the_flag_settles_a_disagreement(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     assert pdf_pages(target) == 2, "14 cards at 4 x 4 still fit on one sheet"
+
+
+# --- a grid the build cannot honour (US4) ----------------------------------
+
+UNSUPPORTED = ["2x6", "3x4", "1x1", "4x8"]
+# A value starting with a dash has to be written --grid=VALUE: argparse claims
+# `--grid -1x4` as an option of its own and reports a missing argument before
+# parse_grid ever sees it. Both spellings are refused and neither writes a PDF;
+# only the message differs, so both are asserted below.
+MALFORMED = ["3 x 4", "3,4", "eight", "0x4", "3x0"]
+MALFORMED_NEEDING_EQUALS = ["-1x4", "-2x-4"]
+
+
+@pytest.mark.parametrize("value", UNSUPPORTED)
+def test_an_unsupported_grid_is_refused_and_lists_the_supported_set(tmp_path, value):
+    """FR-003: a well-formed grid nobody can cut to says which ones are cuttable."""
+    target = tmp_path / "never.pdf"
+    result = run("build", *CARDS, "--grid", value, "-o", str(target))
+    assert result.returncode != 0
+    assert "2x4 (A7)" in result.stderr and "4x4 (A8)" in result.stderr, result.stderr
+    assert value in result.stderr, result.stderr
+    assert not target.exists(), "a refused build writes no PDF"
+
+
+@pytest.mark.parametrize("value", MALFORMED)
+def test_a_malformed_grid_is_refused_end_to_end(tmp_path, value):
+    """T009's unit rejections, through the real command line."""
+    target = tmp_path / "never.pdf"
+    result = run("build", *CARDS, "--grid", value, "-o", str(target))
+    assert result.returncode != 0
+    assert value in result.stderr, result.stderr
+    assert not target.exists(), "a refused build writes no PDF"
+
+
+@pytest.mark.parametrize("value", MALFORMED_NEEDING_EQUALS)
+def test_a_negative_grid_is_refused_in_both_spellings(tmp_path, value):
+    """The dash-leading half of T009, which argparse gets to first."""
+    target = tmp_path / "never.pdf"
+
+    equals = run("build", *CARDS, f"--grid={value}", "-o", str(target))
+    assert equals.returncode != 0
+    assert value in equals.stderr, equals.stderr
+    assert not target.exists(), "a refused build writes no PDF"
+
+    separate = run("build", *CARDS, "--grid", value, "-o", str(target))
+    assert separate.returncode != 0, "argparse must not let a dash-leading value through"
+    assert "--grid" in separate.stderr, separate.stderr
+    assert not target.exists(), "a refused build writes no PDF"
+
+
+def test_a_refused_build_leaves_an_existing_pdf_untouched(tmp_path):
+    """FR-022: the grid is judged before the output path is opened."""
+    target = tmp_path / "cards.pdf"
+    assert run("build", *CARDS, "-o", str(target)).returncode == 0
+    before = target.read_bytes()
+    assert before.startswith(b"%PDF-")
+
+    for value in ("2x6", "3 x 4"):
+        result = run("build", *CARDS, "--grid", value, "-o", str(target))
+        assert result.returncode != 0, f"--grid {value} should be refused"
+        assert target.read_bytes() == before, (
+            f"--grid {value} rewrote or truncated the PDF that was already there"
+        )

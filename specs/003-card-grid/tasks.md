@@ -181,10 +181,10 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- sequential -->
 
-- [ ] T052 🔴 [US4] `tests/test_e2e.py`: `--grid 2x6` and `--grid 3x4` exit non-zero, the message lists `2x4 (A7)` and `4x4 (A8)`, and no PDF is written *(assertion 12, FR-003)*
-- [ ] T053 🔴 [US4] `tests/test_e2e.py`: with a PDF **already present** at the output path, a refused build leaves it byte-identical *(FR-022)*
-- [ ] T054 [US4] Make T052–T053 pass — validate the grid before the engine is invoked and before the output path is opened
-- [ ] T055 [US4] Confirm the malformed cases from T009 behave identically end to end, not just at unit level
+- [x] T052 🔴 [US4] `tests/test_e2e.py`: `--grid 2x6` and `--grid 3x4` exit non-zero, the message lists `2x4 (A7)` and `4x4 (A8)`, and no PDF is written *(assertion 12, FR-003)*
+- [x] T053 🔴 [US4] `tests/test_e2e.py`: with a PDF **already present** at the output path, a refused build leaves it byte-identical *(FR-022)*
+- [x] T054 [US4] Make T052–T053 pass — validate the grid before the engine is invoked and before the output path is opened
+- [x] T055 [US4] Confirm the malformed cases from T009 behave identically end to end, not just at unit level
 
 **Checkpoint**: every rejection path is loud, informative and non-destructive.
 
@@ -196,21 +196,21 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 <!-- parallel-group: 2 (max 3 concurrent) -->
 
-- [ ] T056 [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
-- [ ] T057 [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
-- [ ] T058 [P] Update `skills/print/SKILL.md` — document `--grid` beside `--margin` and `--no-logo`, naming both grids and their A-series equivalents *(FR-018)*
+- [x] T056 [P] Update `docs/design.md` — the press sheet is a configurable grid, A7 (2 × 4) default and A8 (4 × 4) dense, with both exact card sizes. Read it before editing (constitution XVI) *(FR-019)*
+- [x] T057 [P] Update `docs/testing.md` — step 15's page count becomes `2 × ⌈cards ÷ (columns × rows)⌉`; steps 17 and 18 become repeatable **per grid**; add the A8 print gate and the short-label caveat *(FR-020)*
+- [x] T058 [P] Update `skills/print/SKILL.md` — document `--grid` beside `--margin` and `--no-logo`, naming both grids and their A-series equivalents *(FR-018)*
 
 <!-- parallel-group: 3 (max 3 concurrent) -->
 
-- [ ] T059 [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
-- [ ] T060 [P] Update `cards/example.yaml` — add `grid: a7` explicitly, with a comment saying the key is optional and that A7 is the default. **`a7`, not `a8`**: the example is built by gate T067 and by every user's first run, so declaring A8 would silently switch the shipped example to a different card size *(review W5)*
-- [ ] T061 [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
+- [x] T059 [P] Update `CLAUDE.md` — card style per grid; stop asserting one size. State the A8 writing area is 46 % of A7's and give the per-grid line guidance *(FR-017)*
+- [x] T060 [P] Update `cards/example.yaml` — add `grid: a7` explicitly, with a comment saying the key is optional and that A7 is the default. **`a7`, not `a8`**: the example is built by gate T067 and by every user's first run, so declaring A8 would silently switch the shipped example to a different card size *(review W5)*
+- [x] T061 [P] Amend `.specify/memory/constitution.md` — principles XVI and XVII both quote A7 as *the* card size. Change **only** the quoted dimension; every rule they state (bands that never move, colour doubled by shape, type never shrunk to fit, a card that does not fit is reported) survives verbatim
 
 <!-- sequential -->
 
-- [ ] T062 Fix the stale comments in `tests/test_e2e.py` at lines 78 and 230 — they say "31 cards"; `DEMO_CARD_COUNT` is 29. Issue #23 inherited the wrong figure from them
-- [ ] T063 Confirm every relative markdown link added in T056–T061 resolves — `scripts/check_docs.py` fails on a dead one
-- [ ] T064 English throughout — code, comments, docstrings, docs, commit messages (constitution XIII)
+- [x] T062 Fix the stale comments in `tests/test_e2e.py` at lines 78 and 230 — they say "31 cards"; `DEMO_CARD_COUNT` is 29. Issue #23 inherited the wrong figure from them
+- [x] T063 Confirm every relative markdown link added in T056–T061 resolves — `scripts/check_docs.py` fails on a dead one
+- [x] T064 English throughout — code, comments, docstrings, docs, commit messages (constitution XIII)
 
 ---
 
