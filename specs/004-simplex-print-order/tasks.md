@@ -57,8 +57,8 @@ Single flat module — there is no `src/`.
 
 This phase is a **refactor under existing green coverage**, not new behaviour — so it carries no 🔴 task. The two tests that assert the guards *skip* are the safety net, and T008 is where you watch them still pass.
 
-- [ ] T007 Extract `bbox_pages(path)` in `tests/test_e2e.py` — the `pdftotext -bbox-layout` invocation plus its two skip guards (non-zero exit / no `<page ` element), returning `[(x, y, word), …]` per page. Rewrite `card_grid_per_page` to call it and keep its id regex `[\w-]+-\d+`
-- [ ] T008 `pytest tests/test_e2e.py -q` — `test_a_pdftotext_without_bbox_support_skips_instead_of_blaming_the_pdf` and `test_a_pdftotext_that_returns_bbox_xml_without_pages_also_skips` must still pass, now monkeypatching through `bbox_pages`. Green before Phase 3 starts
+- [X] T007 Extract `bbox_pages(path)` in `tests/test_e2e.py` — the `pdftotext -bbox-layout` invocation plus its two skip guards (non-zero exit / no `<page ` element), returning `[(x, y, word), …]` per page. Rewrite `card_grid_per_page` to call it and keep its id regex `[\w-]+-\d+`
+- [X] T008 `pytest tests/test_e2e.py -q` — `test_a_pdftotext_without_bbox_support_skips_instead_of_blaming_the_pdf` and `test_a_pdftotext_that_returns_bbox_xml_without_pages_also_skips` must still pass, now monkeypatching through `bbox_pages`. Green before Phase 3 starts
 
 **Checkpoint**: the reader is shared, the existing suite is unchanged in behaviour. Commit.
 
@@ -76,16 +76,16 @@ This phase is a **refactor under existing green coverage**, not new behaviour �
 
 > Each must fail **on its assertion**, not on an `ImportError` or a missing file. T010–T015 fail today with `error: unrecognized arguments: --sides` (exit 2) — that is the right red for a flag that does not exist yet.
 
-- [ ] T009 🔴 [P] [US1] `tests/test_build_pdf.py`: assert `build_pdf.SIDES == ("duplex", "simplex")` and `build_pdf.DEFAULT_SIDES == "duplex"` — red with `AttributeError`
-- [ ] T010 🔴 [P] [US1] `tests/test_build_pdf.py`: `engine_inputs(5, True, DEFAULT_GRID, "simplex")` contains `--input sides=simplex`, and the `"duplex"` call contains `sides=duplex` — the default is *stated*, never implied by absence. Red with `TypeError: engine_inputs() takes 3 positional arguments but 4 were given`
-- [ ] T011 [US1] `tests/test_e2e.py`: add `face_marks_per_page(path)` on top of `bbox_pages` (T007) — the set of `1/2` / `2/2` footer marks per page. A helper, not a test; no 🔴
-- [ ] T012 🔴 [US1] `tests/test_e2e.py`: `--sides simplex` at `a7` → 8 pages, `face_marks_per_page` gives `{"1/2"}` for pages 1–4 and `{"2/2"}` for pages 5–8. This is SC-001 read literally off the artifact
-- [ ] T013 🔴 [US1] `tests/test_e2e.py`: in the same build, `pages[4 + i]` equals `pages[i]` row-reversed for every `i` — every back sheet behind its own front (SC-002, FR-003)
-- [ ] T014 🔴 [P] [US1] `tests/test_e2e.py`: `--sides simplex --grid a8` → 4 pages, `1/2` on 1–2, `2/2` on 3–4, mirrored across **four** columns
-- [ ] T015 🔴 [P] [US1] `tests/test_e2e.py`: simplex and duplex builds of the same cards have the same page count, at both grids (SC-001, FR-004)
-- [ ] T016 🔴 [P] [US1] `tests/test_e2e.py`: a single-sheet deck (`--topic` filtered) has an identical id-grid layout in both orders — the degenerate case where the two orders coincide (spec scenario 3)
-- [ ] T017 🔴 [P] [US1] `tests/test_e2e.py`: `--sides both` exits 2, writes no PDF, and the message names both `duplex` and `simplex` (FR-005). Write this **after** T012 so it is red on the rejected *choice*, not merely on an unknown flag
-- [ ] T018 🔴 [P] [US1] `tests/test_e2e.py`: `bin/lernkarten check … --sides simplex` exits 0 with `29 cards valid`, and the check line is unchanged by the flag (FR-007, spec scenario 6)
+- [X] T009 🔴 [P] [US1] `tests/test_build_pdf.py`: assert `build_pdf.SIDES == ("duplex", "simplex")` and `build_pdf.DEFAULT_SIDES == "duplex"` — red with `AttributeError`
+- [X] T010 🔴 [P] [US1] `tests/test_build_pdf.py`: `engine_inputs(5, True, DEFAULT_GRID, "simplex")` contains `--input sides=simplex`, and the `"duplex"` call contains `sides=duplex` — the default is *stated*, never implied by absence. Red with `TypeError: engine_inputs() takes 3 positional arguments but 4 were given`
+- [X] T011 [US1] `tests/test_e2e.py`: add `face_marks_per_page(path)` on top of `bbox_pages` (T007) — the set of `1/2` / `2/2` footer marks per page. A helper, not a test; no 🔴
+- [X] T012 🔴 [US1] `tests/test_e2e.py`: `--sides simplex` at `a7` → 8 pages, `face_marks_per_page` gives `{"1/2"}` for pages 1–4 and `{"2/2"}` for pages 5–8. This is SC-001 read literally off the artifact
+- [X] T013 🔴 [US1] `tests/test_e2e.py`: in the same build, `pages[4 + i]` equals `pages[i]` row-reversed for every `i` — every back sheet behind its own front (SC-002, FR-003)
+- [X] T014 🔴 [P] [US1] `tests/test_e2e.py`: `--sides simplex --grid a8` → 4 pages, `1/2` on 1–2, `2/2` on 3–4, mirrored across **four** columns
+- [X] T015 🔴 [P] [US1] `tests/test_e2e.py`: simplex and duplex builds of the same cards have the same page count, at both grids (SC-001, FR-004)
+- [X] T016 🔴 [P] [US1] `tests/test_e2e.py`: a single-sheet deck (`--topic` filtered) has an identical id-grid layout in both orders — the degenerate case where the two orders coincide (spec scenario 3)
+- [X] T017 🔴 [P] [US1] `tests/test_e2e.py`: `--sides both` exits 2, writes no PDF, and the message names both `duplex` and `simplex` (FR-005). Write this **after** T012 so it is red on the rejected *choice*, not merely on an unknown flag
+- [X] T018 🔴 [P] [US1] `tests/test_e2e.py`: `bin/lernkarten check … --sides simplex` exits 0 with `29 cards valid`, and the check line is unchanged by the flag (FR-007, spec scenario 6)
 
 **Checkpoint**: `pytest` is red for exactly the reasons this story exists, and for no others. Commit here.
 

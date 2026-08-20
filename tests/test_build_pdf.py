@@ -383,3 +383,26 @@ def test_a7_is_never_rescaled_at_any_margin(margin):
 def test_the_denser_grid_is_never_scaled_up():
     for margin in (0.0, 5.0, 10.0):
         assert build_pdf.card_scale((4, 4), margin) < 1.0
+
+
+# --- the print order (feat/simplex-print-order) ----------------------------
+
+
+def test_the_two_print_orders_are_named_and_duplex_is_the_default():
+    """FR-001. The default is a value, not the absence of one."""
+    assert build_pdf.SIDES == ("duplex", "simplex")
+    assert build_pdf.DEFAULT_SIDES == "duplex"
+
+
+def test_the_engine_is_told_the_print_order():
+    """The compile and the overflow query must see the same page order.
+
+    engine_inputs() exists because the two used to build their arguments
+    separately; `sides` joins the list under the same rule rather than being
+    passed at one call site.
+    """
+    grid = build_pdf.DEFAULT_GRID
+    for sides in build_pdf.SIDES:
+        pairs = build_pdf.engine_inputs(5.0, True, grid, sides)
+        assert f"sides={sides}" in pairs, pairs
+        assert pairs[pairs.index(f"sides={sides}") - 1] == "--input"
