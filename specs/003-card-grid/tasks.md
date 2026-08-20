@@ -236,6 +236,17 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 
 **Owner**: the repository maintainer, who has confirmed a duplex printer and card stock. Procedure: [quickstart.md](./quickstart.md) §9.
 
+> **DEFERRED 2026-08-20, by the maintainer's decision.** T073–T079 need a physical
+> print run, and the next one happens when the cards are next published rather than
+> on this branch's schedule. They are **not** done and are deliberately left
+> unticked. What this costs: SC-007 is the one success criterion no automated phase
+> can reach, so until the gate is walked, A8 registration, cutting tolerance, box
+> fit and head-band legibility are *unverified on paper* — reasoned from the PDF
+> only. The build sheet is reproducible at any time with T072's command, and
+> `/tmp/gate.pdf` was generated from it. Treat a print-quality surprise at A8 as
+> this gate reporting late rather than as a new bug.
+
+
 <!-- sequential -->
 
 - [x] T072 Build the gate sheet: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml tests/fixtures/demo-project/grids/tides-a8.yaml -o /tmp/gate.pdf --grid a8`. ⚠️ Include the short-label deck from T036 — **all 38 cards previously shipped in this repo exceed the ~22-character A8 label budget**, so without a short-label card the legibility check is vacuous
