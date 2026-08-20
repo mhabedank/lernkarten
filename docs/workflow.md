@@ -270,10 +270,12 @@ Calls the build script and sends you the PDF:
 lernkarten build cards/*.yaml -o output/cards.pdf
 ```
 
-Then print: **duplex, "flip on long edge", 100 % scale**. Cut the long line
-down the middle first, then the three across — the card frames and the crop
-marks in the margin show you where. Front and back end up exactly on top of
-each other.
+Then print at **100 % scale**. On a printer that does both sides: **duplex,
+"flip on long edge"**. On a one-sided one, build it again with `--sides
+simplex` and print the two page ranges the build names, turning the stack over
+on the long edge in between. Either way, cut the long line down the middle
+first, then the three across — the card frames and the crop marks in the margin
+show you where. Front and back end up exactly on top of each other.
 
 What comes out is described band by band in [design.md](design.md): topic and
 subtopic in the header, one prompt in the field, the card id and `1/2` or `2/2`
@@ -318,7 +320,8 @@ lernkarten deps --check
 | `The typesetter rejected the cards … Offending card: bayes-4` | the markup in that card is not valid Typst | fix the named card — usually an unescaped `#`, `_` or `*`, or LaTeX-style maths that needs Typst syntax |
 | `WARNING: card … does not fit` | the text is too long for the card | shorten it or split it across two cards — do not shrink the font |
 | `No cards left after filtering` | `--topic`/`--subtopic` matches nothing | check the spelling against the YAML file; the filter matches substrings |
-| Front and back are offset | wrong duplex setting | "flip on long edge", 100 % scale, not "fit to page" |
+| Front and back are offset | wrong duplex setting, or the stack turned the wrong way between two simplex passes | "flip on long edge", 100 % scale, not "fit to page" — and turn a simplex stack on its long edge, not its short one |
+| Every back is on the wrong sheet | a `--sides simplex` PDF sent to a duplex printer, or the reverse | the build's closing line says which order it wrote; match the printer to it |
 | Hyphenation looks wrong | the card file has no `language:` key | add it (`language: german`), or build once with `--language german` |
 | Zotero ingest aborts | the local API does not answer | start Zotero 7 and enable the local API under Settings → Advanced |
 | `could not download the typesetting engine` | no network on the first build | retry when online, or install typst yourself and set `LERNKARTEN_ENGINE` |

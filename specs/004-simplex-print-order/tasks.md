@@ -141,29 +141,29 @@ This phase is a **refactor under existing green coverage**, not new behaviour �
 
 > The red artifact for this prompt change is a docs gate, not a `check_project.py` check: this prompt writes no file, so what goes stale is its *claim*. Same shape and same file as `check_sheet_capacity`, which exists because the last hand-run sweep let two claims ship (research.md, Decision 6).
 
-- [ ] T033 🔴 [P] [US3] `tests/test_check_docs.py`: a temp `README.md` reading "print duplex, flip on long edge" is reported by `check_print_order`, naming the file and the phrase. Mirror the `test_a_doc_claiming_a_fixed_sheet_capacity_is_reported` monkeypatch pattern exactly. Red with `AttributeError`
-- [ ] T034 🔴 [P] [US3] `tests/test_check_docs.py`: a temp doc reading "duplex, flip on long edge — or `--sides simplex` for a one-sided printer" **passes**. Without this the gate is satisfiable by deleting the word `duplex`, which is not what is wanted
-- [ ] T035 🔴 [US3] `tests/test_check_docs.py`: `check_print_order` over the repository itself produces no errors. **This is the sweep, enforced** — it fails today on `README.md:128` and `:130`, `docs/workflow.md:273` and `:321`, `docs/design.md:145`, `docs/testing.md:232`, and `skills/print/SKILL.md:4` and `:65`
+- [X] T033 🔴 [P] [US3] `tests/test_check_docs.py`: a temp `README.md` reading "print duplex, flip on long edge" is reported by `check_print_order`, naming the file and the phrase. Mirror the `test_a_doc_claiming_a_fixed_sheet_capacity_is_reported` monkeypatch pattern exactly. Red with `AttributeError`
+- [X] T034 🔴 [P] [US3] `tests/test_check_docs.py`: a temp doc reading "duplex, flip on long edge — or `--sides simplex` for a one-sided printer" **passes**. Without this the gate is satisfiable by deleting the word `duplex`, which is not what is wanted
+- [X] T035 🔴 [US3] `tests/test_check_docs.py`: `check_print_order` over the repository itself produces no errors. **This is the sweep, enforced** — it fails today on `README.md:128` and `:130`, `docs/workflow.md:273` and `:321`, `docs/design.md:145`, `docs/testing.md:232`, and `skills/print/SKILL.md:4` and `:65`
 
 **Checkpoint**: eight named lines, red. Commit before touching a single doc — the list in the failure output *is* the work list for T037–T041.
 
 ### 🟢 Green — the gate
 
-- [ ] T036 [US3] `scripts/check_docs.py`: add `check_print_order(errors)` beside `check_sheet_capacity` and call it from `main()`. Claim = a line naming `duplex` or a flip on the long edge; qualified = the same line also names `simplex`, `one-sided`, `--sides`, `two-pass` or `both orders`. Report file + phrase, same message shape as its neighbour
+- [X] T036 [US3] `scripts/check_docs.py`: add `check_print_order(errors)` beside `check_sheet_capacity` and call it from `main()`. Claim = a line naming `duplex` or a flip on the long edge; qualified = the same line also names `simplex`, `one-sided`, `--sides`, `two-pass` or `both orders`. Report file + phrase, same message shape as its neighbour
 
 ### 🟢 Green — the sweep
 
-- [ ] T037 [P] [US3] `README.md` — the "Printing and cutting" section: both paths, the simplex two-pass procedure, and the note that a face-up stacker prints the back range in reverse from the print dialog
-- [ ] T038 [P] [US3] `docs/workflow.md` — the print step (line ~273) and the troubleshooting row (line ~321): "front and back are offset" now has a second cause, the stack turned the wrong way between passes
-- [ ] T039 [P] [US3] `docs/design.md` — the "Fronts and backs on consecutive pages" paragraph (line ~145): consecutive pages is the duplex order, one of two
-- [ ] T040 [P] [US3] `docs/testing.md` — manual check 17 splits into **17a duplex** and **17b simplex**, both per grid, and the note that steps 17–19 are per grid still applies to both
-- [ ] T041 [US3] `skills/print/SKILL.md` — the `--sides` row in the flags table, step 5's instructions made conditional on the mode built, and the rule for *when* to pass it (the user says their printer prints one side only). Cutting instructions are identical in both modes and must not be duplicated
+- [X] T037 [P] [US3] `README.md` — the "Printing and cutting" section: both paths, the simplex two-pass procedure, and the note that a face-up stacker prints the back range in reverse from the print dialog
+- [X] T038 [P] [US3] `docs/workflow.md` — the print step (line ~273) and the troubleshooting row (line ~321): "front and back are offset" now has a second cause, the stack turned the wrong way between passes
+- [X] T039 [P] [US3] `docs/design.md` — the "Fronts and backs on consecutive pages" paragraph (line ~145): consecutive pages is the duplex order, one of two
+- [X] T040 [P] [US3] `docs/testing.md` — manual check 17 splits into **17a duplex** and **17b simplex**, both per grid, and the note that steps 17–19 are per grid still applies to both
+- [X] T041 [US3] `skills/print/SKILL.md` — the `--sides` row in the flags table, step 5's instructions made conditional on the mode built, and the rule for *when* to pass it (the user says their printer prints one side only). Cutting instructions are identical in both modes and must not be duplicated
 
 ### 🟢 Green — outside the gate
 
-- [ ] T042 [US3] `skills/print/SKILL.md` frontmatter: add the simplex triggers ("one-sided printer", "print all fronts then all backs"). `name: print` is unchanged and the description must still carry the domain word `flashcard`, or `check_docs.check_skills` fails
-- [ ] T043 [US3] `docs/index.html` — the duplex paragraph in the print band. **Not covered by the gate**: `markdown_files()` reads `*.md`, `docs/*.md` and `skills/*/SKILL.md` only, and `tests/test_landing_page.py` guards this file's structure, not its prose. Hand work, listed here so it is not forgotten
-- [ ] T044 [US3] `python3 scripts/check_docs.py` → exit 0, and `pytest tests/test_check_docs.py tests/test_landing_page.py -q` → green
+- [X] T042 [US3] `skills/print/SKILL.md` frontmatter: add the simplex triggers ("one-sided printer", "print all fronts then all backs"). `name: print` is unchanged and the description must still carry the domain word `flashcard`, or `check_docs.check_skills` fails
+- [X] T043 [US3] `docs/index.html` — the duplex paragraph in the print band. **Not covered by the gate**: `markdown_files()` reads `*.md`, `docs/*.md` and `skills/*/SKILL.md` only, and `tests/test_landing_page.py` guards this file's structure, not its prose. Hand work, listed here so it is not forgotten
+- [X] T044 [US3] `python3 scripts/check_docs.py` → exit 0, and `pytest tests/test_check_docs.py tests/test_landing_page.py -q` → green
 
 **Checkpoint**: all three stories stand on their own, and the sweep is enforced rather than remembered.
 

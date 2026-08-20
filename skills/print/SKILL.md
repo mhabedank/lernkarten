@@ -1,7 +1,7 @@
 ---
 name: print
 description: >-
-  Compile flashcard YAML into a print-ready PDF via the card template (A4, 8 or 16 cards per sheet depending on the grid, fronts/backs for duplex printing). Triggers: /print, "build the PDF", "print my cards", "print at A8", "print smaller cards".
+  Compile flashcard YAML into a print-ready PDF via the card template (A4, 8 or 16 cards per sheet depending on the grid, fronts and backs ordered for a duplex or a simplex printer). Triggers: /print, "build the PDF", "print my cards", "print at A8", "print smaller cards", "my printer only prints one side", "print all fronts then all backs".
 ---
 
 # /print — build the PDF
@@ -54,6 +54,18 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
    both; an explicit `--grid` settles it.
    `--no-logo` prints the cards without the mark and the wordmark in the
    footer; the card id stays.
+   `--sides <duplex|simplex>` — the order the pages come in:
+
+   | Flag | Page order | For a printer that |
+   |---|---|---|
+   | `--sides duplex` (default) | front, back, front, back | prints both sides in one pass |
+   | `--sides simplex` | every front, then every back | prints one side, so the user turns the stack |
+
+   Pass `--sides simplex` when the user says their printer prints one side
+   only, or asks for all the fronts first. Otherwise pass nothing — the
+   default is what a duplex printer wants, and the cards are identical either
+   way. It is a property of the print run, not of the deck: no card file
+   declares it.
    The language comes from each card file's `language:` key — do NOT pass
    `--language` routinely. Use it only to override, e.g. when a file is
    missing the key (`--language german`, `--language de`).
@@ -61,9 +73,19 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
    Fix the problem in the YAML file (usually an unescaped special character)
    and rebuild.
 5. Check the result: the page count must be even (front/back pairs), and is
-   2 × ⌈cards ÷ (columns × rows)⌉. Send the PDF to the user with SendUserFile
-   and state the printing instructions: **duplex, flip on long edge, 100 %
-   scale (not "fit to page")**, then trim the sheet and cut the vertical lines
+   2 × ⌈cards ÷ (columns × rows)⌉ at either `--sides` value. Send the PDF to
+   the user with SendUserFile and state the printing instructions **for the
+   order you built** — the build's closing line spells them out, so repeat what
+   it says rather than reciting a default:
+
+   - duplex: **flip on long edge, 100 % scale (not "fit to page")**
+   - simplex: **print the first page range, turn the stack over on the long
+     edge, re-feed it, print the second range — 100 % scale both times.** The
+     closing line names both ranges. If their printer stacks face-up, the
+     second range goes through in reverse page order, which the print dialog
+     offers.
+
+   Then, in both cases: trim the sheet and cut the vertical lines
    before the horizontal ones — one interior vertical cut at `a7` and three at
    `a8`, three interior horizontal cuts at both. Counting the outer trim that
    is five vertical by five horizontal at `a8`, three by five at `a7`. The card

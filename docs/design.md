@@ -142,8 +142,12 @@ key, and `--grid` on the command line overrides it. A4 halves into A7 and
 halves again into A8, so both grids fill the sheet exactly and every cut line
 is shared between two cards.
 
-Fronts and backs on consecutive pages, the backs mirrored column-wise so duplex
-printing with "flip on long edge" lines them up — at four columns as at two.
+The backs are mirrored column-wise, so turning a sheet on its long edge lines
+them up — at four columns as at two. Whoever does the turning is what `--sides`
+picks: at `duplex` each sheet's faces sit on consecutive pages and the printer
+turns the paper; at `simplex` every front comes first and the reader turns the
+stack between two print jobs. The mirroring is the same either way, because a
+stack turned on its long edge is the flip a duplex printer makes.
 Default margin 5 mm, which keeps clear of printers with a non-printable edge;
 crop marks reach into that margin at every cut. With `--margin 0` the card
 frames sit on the paper edge and there are no crop marks to draw.

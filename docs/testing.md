@@ -229,7 +229,8 @@ python3 scripts/zotero_stub.py
 | 15b | `/print` | `/print` on a deck declaring `grid: a8` | the same count at 16 up, with no flag given — the deck was believed |
 | 15c | `/print` | `/print` over two decks declaring *different* grids | refused, naming both files and both values; no PDF written |
 | 16 | `/print` | `/print only Signals` | only that topic in the PDF. (In the demo project the catalog topic is now *Signals, flags and the radio* — the comma is deliberate, see row 9-i; the card file's `topic:` is unchanged) |
-| 17 | print | duplex, flip on long edge, 100 % scale | back of each card exactly behind its front |
+| 17a | print | duplex, flip on long edge, 100 % scale | back of each card exactly behind its front |
+| 17b | print | `--sides simplex`: print the first page range, turn the stack over on the long edge, re-feed, print the second — 100 % scale both times | back of each card exactly behind its front. Note whether your printer stacks face-up: if it does, the second range needs reverse page order from the print dialog |
 | 18 | print | cut along the crop marks | cards of the size the grid promises, nothing clipped |
 | 19 | print | `lernkarten build … --margin 0` on a borderless printer | full-bleed cards, no white edge |
 

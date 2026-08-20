@@ -124,12 +124,29 @@ lernkarten check cards/*.yaml
 
 ## Printing and cutting
 
-The PDF puts 8 cards on an A4 page at the default `a7` grid, or 16 at `a8`. Fronts and backs are on consecutive pages,
-with the backs column-mirrored so they line up after duplex printing.
+The PDF puts 8 cards on an A4 page at the default `a7` grid, or 16 at `a8`. The
+backs are column-mirrored, so turning a sheet on its long edge puts each back
+exactly behind its front.
 
-1. Choose **duplex, flip on long edge** — short edge puts every back upside down
+**On a printer that prints both sides**, the default is what you want — each
+sheet's front and back sit on consecutive pages:
+
+1. Choose **duplex, flip on long edge** — short edge puts every back upside
+   down. A one-sided printer wants `--sides simplex` instead, below
 2. **100 % scale** — not "fit to page", which shifts fronts off their backs
 3. Cut the long line down the middle first, then the three across
+
+**On a one-sided printer**, ask for the other order and print it in two passes:
+
+```bash
+lernkarten build cards/*.yaml --sides simplex
+```
+
+That puts every front first and every back after, and the build tells you the
+two page ranges. Print the first range, take the stack out, turn it over on the
+long edge, put it back in the tray and print the second — at 100 % scale both
+times. If your printer stacks pages face-up, print the second range in reverse
+page order; every print dialog offers it.
 
 By default a 5 mm page margin is left free (cards: 100 × 71.75 mm) so printers
 with a non-printable edge do not clip anything, and crop marks in that margin
