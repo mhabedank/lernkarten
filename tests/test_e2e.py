@@ -282,13 +282,16 @@ def test_the_build_help_documents_the_options():
 # --- the press-sheet grid (feat/card-grid) --------------------------------
 
 
-def card_grid_per_page(path):
-    """The card ids laid out as a grid, page by page: [[row], [row], ...].
+def bbox_pages(path):
+    """Every word with its coordinates, page by page: [[(x, y, word), ...], ...].
 
-    Read from the footer ids with their coordinates rather than from reading
-    order — `pdftotext -layout` silently drops ids once the columns get narrow,
-    which at A8 is most of them. `-bbox-layout` gives every word an x and a y,
-    so the rows and columns can be recovered exactly.
+    Read with coordinates rather than in reading order — `pdftotext -layout`
+    silently drops words once the columns get narrow, which at A8 is most of
+    them. `-bbox-layout` gives every word an x and a y, so rows and columns can
+    be recovered exactly.
+
+    Both readers below are built on this one, so the two guards that decide
+    "this tool cannot answer" live in a single place.
     """
     if shutil.which("pdftotext") is None:
         pytest.skip("pdftotext is not installed")
@@ -305,7 +308,7 @@ def card_grid_per_page(path):
     # before trusting the output — an empty parse used to travel three frames
     # and arrive as "expected at least a front and a back page", which blames
     # the build for a limitation of the reader. A tool that cannot answer is a
-    # skip; a tool that answers and finds no ids is still a failure below.
+    # skip; a tool that answers and finds nothing is still a failure below.
     xml = result.stdout
     if result.returncode != 0 or "<page " not in xml:
         pytest.skip(
@@ -315,9 +318,18 @@ def card_grid_per_page(path):
     pages = []
     for chunk in xml.split("<page ")[1:]:
         words = re.findall(r'<word xMin="([\d.]+)" yMin="([\d.]+)"[^>]*>([^<]+)</word>', chunk)
-        found = [(float(x), float(y), w) for x, y, w in words if re.fullmatch(r"[\w-]+-\d+", w)]
+        pages.append([(float(x), float(y), w) for x, y, w in words])
+    return pages
+
+
+def card_grid_per_page(path):
+    """The card ids laid out as a grid, page by page: [[row], [row], ...]."""
+    pages = []
+    for words in bbox_pages(path):
         rows = {}
-        for x, y, w in found:
+        for x, y, w in words:
+            if not re.fullmatch(r"[\w-]+-\d+", w):
+                continue
             # One row of cards shares a y to well under a millimetre; round so
             # the grouping survives the typesetter's sub-point placement.
             rows.setdefault(round(y), []).append((x, w))
