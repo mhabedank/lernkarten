@@ -292,13 +292,26 @@ def card_grid_per_page(path):
     """
     if shutil.which("pdftotext") is None:
         pytest.skip("pdftotext is not installed")
-    xml = subprocess.run(
+    result = subprocess.run(
         ["pdftotext", "-bbox-layout", str(path), "-"],
         capture_output=True,
         text=True,
         encoding="utf-8",
         errors="replace",
-    ).stdout
+    )
+    # Not every pdftotext on PATH is poppler's, and -bbox-layout is not
+    # universal: GitHub's windows-latest image carries one that takes the call
+    # and returns no page elements. Read the exit code and look for a page
+    # before trusting the output — an empty parse used to travel three frames
+    # and arrive as "expected at least a front and a back page", which blames
+    # the build for a limitation of the reader. A tool that cannot answer is a
+    # skip; a tool that answers and finds no ids is still a failure below.
+    xml = result.stdout
+    if result.returncode != 0 or "<page " not in xml:
+        pytest.skip(
+            "the pdftotext on PATH produced no -bbox-layout page elements "
+            f"(exit {result.returncode}): {result.stderr.strip()[:200] or 'no stderr'}"
+        )
     pages = []
     for chunk in xml.split("<page ")[1:]:
         words = re.findall(r'<word xMin="([\d.]+)" yMin="([\d.]+)"[^>]*>([^<]+)</word>', chunk)
@@ -310,6 +323,37 @@ def card_grid_per_page(path):
             rows.setdefault(round(y), []).append((x, w))
         pages.append([[w for _, w in sorted(r)] for _, r in sorted(rows.items())])
     return pages
+
+
+def test_a_pdftotext_without_bbox_support_skips_instead_of_blaming_the_pdf(monkeypatch):
+    """Not every `pdftotext` on PATH is poppler's.
+
+    GitHub's windows-latest image carries one that takes the call and returns
+    no bbox XML. That used to come back as an empty page list and surface as
+    "expected at least a front and a back page" — a reader limitation reported
+    as a broken build. It has to skip, and say which tool let it down.
+    """
+    monkeypatch.setattr(shutil, "which", lambda _name: "pdftotext")
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0], 99, "", "unknown option '-bbox-layout'"),
+    )
+    with pytest.raises(pytest.skip.Exception) as excinfo:
+        card_grid_per_page(Path("irrelevant.pdf"))
+    assert "bbox" in str(excinfo.value).lower(), excinfo.value
+
+
+def test_a_pdftotext_that_returns_bbox_xml_without_pages_also_skips(monkeypatch):
+    """Exit 0 but nothing usable is the same class of problem."""
+    monkeypatch.setattr(shutil, "which", lambda _name: "pdftotext")
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0], 0, "<html><body></body></html>", ""),
+    )
+    with pytest.raises(pytest.skip.Exception):
+        card_grid_per_page(Path("irrelevant.pdf"))
 
 
 def test_a8_puts_sixteen_cards_on_a_sheet(tmp_path):
