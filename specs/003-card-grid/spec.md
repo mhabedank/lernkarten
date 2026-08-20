@@ -76,7 +76,7 @@ and get 16 cards to a sheet at 50 × 71.75 mm — half the sheets for the same d
 3. **Given** the same project, **When** the user runs the build with no `--grid` and no deck declaring a size, **Then** the output is exactly today's behaviour: 2 × 4, 8 per sheet, 8 pages. The default is not merely equal to `2x4` — omitting the flag must change nothing for every project on disk.
 4. **Given** `--grid a8`, **When** the sheet is inspected, **Then** front page *n* and back page *n* carry the same 16 cards, the backs column-mirrored across 4 columns (position 0 ↔ 3, 1 ↔ 2, 2 ↔ 1, 3 ↔ 0), so duplex "flip on long edge" lines each back up behind its front.
 5. **Given** `--grid a8` at the default 5 mm margin, **When** the sheet is inspected, **Then** crop marks are drawn at 5 vertical and 5 horizontal cut lines — `columns + 1` and `rows + 1` — reaching into the margin at every one.
-6. **Given** `--grid a8 --margin 0`, **When** the build runs, **Then** cards are exactly 52.5 × 74.25 mm — DIN A8 — and no crop marks are drawn, matching the existing `--margin 0` rule.
+6. **Given** `--grid a8 --margin 0`, **When** the build runs, **Then** cards are exactly ~~52.5 × 74.25 mm~~ **74.25 × 52.5 mm — DIN A8 landscape, on a landscape A4 sheet (BUG-007)** — and no crop marks are drawn, matching the existing `--margin 0` rule.
 7. **Given** `--grid a8`, **When** a card is inspected, **Then** reading text is still 11 pt and the front prompt still 14 pt. The card holds less; it is not set smaller. `scale` stays 1.0.
 
 ---

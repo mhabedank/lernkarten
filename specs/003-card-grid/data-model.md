@@ -26,13 +26,22 @@ would be new structure for nothing.
 Everything else follows and must not be cached anywhere:
 
 ```
-cw        = (210mm - 2 * margin) / columns
-ch        = (297mm - 2 * margin) / rows
+sheet_w, sheet_h = sheet(grid)          # 210 x 297 at a7, 297 x 210 at a8
+cw        = (sheet_w - 2 * margin) / columns
+ch        = (sheet_h - 2 * margin) / rows
+scale     = min(cw / 100mm, ch / 71.75mm)   # 1.0 at a7, 0.6969 at a8
 per_page  = columns * rows
 pages     = 2 * ceil(len(cards) / per_page)
 crop marks: columns + 1 vertical, rows + 1 horizontal
 mirroring : column -> columns - 1 - column
 ```
+
+> **Bugfix**: 2026-08-20 — [BUG-007](./bugs/BUG-007.md). ~~`cw = (210mm - …)`,
+> `ch = (297mm - …)`~~ — the sheet was a literal 210 × 297, which makes 4 × 4 a
+> *portrait* card. Every A-series halving flips the orientation, so the sheet
+> turns with the grid (FR-024) and `scale` is derived rather than fixed
+> (FR-025). Everything below still follows from `columns` and `rows`; there are
+> simply two more inputs.
 
 This is already how `templates/cards.typ` works. The only change there is that
 `columns` and `rows` stop being literals and come in through `--input`.
@@ -44,7 +53,7 @@ A closed allowlist of two, with aliases:
 | Canonical | Aliases | A-series |
 |---|---|---|
 | `(2, 4)` | `2x4`, `a7` | DIN A7 landscape |
-| `(4, 4)` | `4x4`, `a8` | DIN A8 portrait |
+| `(4, 4)` | `4x4`, `a8` | ~~DIN A8 portrait~~ **DIN A8 landscape**, on a landscape A4 sheet |
 
 Anything else — well-formed or not — is refused. The allowlist exists because
 every offered grid has to have been printed and looked at (spec Clarifications,
@@ -106,12 +115,21 @@ that a card which *fits A7 and overflows A8* is reported only at A8
 
 - `faces(cw, ch, show-logo:, scale:)` in `templates/card.typ` — signature and
   body untouched. It already takes the card size as arguments.
-- `scale` stays `1.0`. Never passed anything else. The 11 pt floor in
-  `docs/design.md` depends on it.
-- `head-h` (8.6 mm) and `foot-h` (6.2 mm) stay absolute. Both supported grids
+- ~~`scale` stays `1.0`. Never passed anything else. The 11 pt floor in
+  `docs/design.md` depends on it.~~ **Wrong (BUG-007, FR-025).** `scale` is
+  `min(cw / 100mm, ch / 71.75mm)` — 1.0 at `a7`, 0.6969 at `a8`. The floor does
+  depend on it, which is why the floor needs **scoping** rather than lowering:
+  it binds the card at its reference size, and a grid may render that card at an
+  A-series scale.
+- ~~`head-h` (8.6 mm) and `foot-h` (6.2 mm) stay absolute. Both supported grids
   keep `rows = 4`, so the bands remain 20.6 % of card height at either size —
   the vertical proportion worry from the ticket does not arise in the shipped
-  set.
+  set.~~ **This is the sentence BUG-007 turns on.** The worry it dismissed is
+  the one that bites: on the corrected landscape card, absolute bands would take
+  **29.6 %** of card height, not 20.6 %. Under FR-025 the bands scale with the
+  card — 6.0 / 4.3 mm at `a8` — so the proportion is identical at both grids and
+  the concern genuinely does not arise, for a different reason than the one
+  given here.
 - The `<overflow>` mechanism, the crop-mark rule at `--margin 0`, the duplex
   mirroring rule — all unchanged in behaviour, only re-derived from two
   variables instead of two literals.
