@@ -91,6 +91,7 @@ tested on.
 ```yaml
 topic: 'Display name'
 language: german               # language of these cards, plain name or ISO code
+grid: a7                       # the card size these cards are written for
 cards:
   - subtopic: 'Subtopic'
     front: 'Question/term'
@@ -100,6 +101,17 @@ cards:
 
 Always write `language:` — it is the language of the source material, and
 `/print` reads it from there so the user never has to think about it.
+
+Always write `grid:` too, for the same reason: it records the card size the
+text was sized for, and `/print` reads it so nobody has to remember a flag.
+`a7` (2 x 4 per sheet, 105 x 74 mm) unless the user asks for A8; `a8` (4 x 4,
+52.5 x 74 mm) halves the paper and halves the width every line has. Omitting
+the key still prints at A7, so nothing breaks — but say it rather than imply
+it, and `check_project.py --strict` will ask for it.
+
+**One deck is one size.** The key is top level only, never on a card, and two
+files in one build that declare different grids are refused unless `/print`
+is given an explicit `--grid`.
 
 ## Style rules (in addition to CLAUDE.md)
 
@@ -119,5 +131,21 @@ Always write `language:` — it is the language of the source material, and
   backslash stays a line break. A literal apostrophe is doubled (`''`).
 - Atomic: one card tests exactly one fact/concept. Mix definitions, formulas,
   distinctions ("difference between X and Y") and application questions.
+- **Size the text to the declared grid.** A line at A8 holds 46 % of what a
+  line at A7 holds, so the budgets are not the same card twice:
+
+  | | `grid: a7` | `grid: a8` |
+  |---|---|---|
+  | `front` | up to ~120 characters | up to ~60 |
+  | `back` | up to ~400 characters | up to ~160 |
+  | `TOPIC / SUBTOPIC` in the head band | up to ~53 characters | up to ~22 |
+
+  Over the budget is a warning from `check_project.py`, not an error — but at
+  A8 it is a real one: two cards beat one that does not fit.
+- **The head band clips, it does not wrap.** The printed label is
+  `TOPIC / SUBTOPIC` in capitals, and anything past the band's width is cut off
+  mid-word. At `grid: a8` that budget is about 22 characters *for both
+  together*, so a long topic leaves nothing for the subtopic. Keep both short
+  — the card body is where the detail belongs.
 - No card whose answer is exhaustively covered by the catalog bullet point but
   not backed by the reference — when in doubt, check the reference.

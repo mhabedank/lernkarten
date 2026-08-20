@@ -2,6 +2,7 @@
 # Greek, and the subtopics stay the English ones from the catalog.
 topic: 'Kestrel Islands: Παλίρροια (ελληνικά)'
 language: greek
+grid: a7
 cards:
   - subtopic: 'Rhythm of the tide'
     front: 'Τι σημαίνει ημιημερήσια παλίρροια;'

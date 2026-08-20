@@ -44,6 +44,13 @@ code, comments, docs and commit messages are written in English.
   defaults to English and decides hyphenation and quotation marks. Files in
   different languages can go into one PDF.
 
+  `grid` is the card size the deck is written for: `a7` (`2x4`, 8 to an A4
+  sheet, 105 × 74.25 mm) or `a8` (`4x4`, 16 up, 52.5 × 74.25 mm). It is
+  optional and absent means `a7`, so no existing file needs changing. One deck
+  is one size — the key is top level only, never on a card, and two files in
+  one build that declare different grids are refused unless `--grid` settles
+  it. `--grid` on the command line always overrides the file.
+
   `front`/`back` are **Typst markup**. Write them in single quotes, so a
   backslash is a line break and `"` needs no escaping; double the apostrophe
   (`''`) for a literal one. Maths goes in `$...$` — Typst syntax, not LaTeX:
@@ -72,8 +79,22 @@ code, comments, docs and commit messages are written in English.
 ## Card style
 
 - One card = one fact/concept. No double questions.
-- Front short (max. ~2 lines), back max. ~6 lines — the card is only about
-  100 × 72 mm. Two cards beat one overloaded card.
+- Front short (max. ~2 lines), back max. ~6 lines. Two cards beat one
+  overloaded card.
+- **How long a line is depends on the grid.** An A8 card is the A7 card cut
+  down the middle — same height, half the width — so its writing area is about
+  46 % of A7's. Write to the size the file declares:
+
+  | | `grid: a7` (100 × 71.75 mm) | `grid: a8` (50 × 71.75 mm) |
+  |---|---|---|
+  | `front` | up to ~120 characters | up to ~60 |
+  | `back` | up to ~400 characters | up to ~160 |
+  | `TOPIC / SUBTOPIC` in the head band | up to ~53 characters | up to ~22 |
+
+  `check_project.py` warns past these; the build only warns once the text
+  actually runs off the card, which is much later. At A8 the head band is the
+  binding constraint, not the body: it clips mid-word rather than wrapping, so
+  a long topic leaves nothing for the subtopic.
 - Phrase an active recall prompt ("What …?", "Why …?", "Name …"), no yes/no
   questions.
 - Card language = language of the source, unless the user says otherwise.

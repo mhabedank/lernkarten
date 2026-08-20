@@ -1,0 +1,11 @@
+verified: 2026-08-20
+findings: 4 (0 critical, 1 high, 1 medium, 2 low)
+high: A1 — 7 of 79 tasks incomplete (T073–T079, the manual print gate).
+  DEFERRED 2026-08-20 by the maintainer to the next physical print run.
+  SC-007 remains unverified on paper; still open, not closed.
+medium: G1 — RESOLVED after verification: declared grids are now validated
+  before the flag overrides them, and the message names the file on both paths
+low: D1 — argparse intercepts --grid -1x4 before parse_grid (covered by test)
+low: F1 — checklists/implementation.md is 0/54, a reviewer walk due before merge
+requirements: 26/26 with implementation evidence
+tests: 279 passed, 1 skipped; e2e 50 passed under LERNKARTEN_E2E=1

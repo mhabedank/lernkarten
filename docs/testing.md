@@ -225,15 +225,33 @@ python3 scripts/zotero_stub.py
 | 13 | `/cards` | ask for cards in another language | `language:` follows, umlauts and quotes come out right in the PDF |
 | 13b | `/print` | look at the Greek and Cyrillic cards in the PDF | letters, not empty boxes — the engine does not warn when a glyph is missing |
 | 14 | any | `python3 scripts/check_project.py .` | no errors |
-| 15 | `/print` | `/print` | `output/cards.pdf`, page count = 2 × ⌈cards ÷ 8⌉ |
+| 15 | `/print` | `/print` | `output/cards.pdf`, page count = 2 × ⌈cards ÷ (columns × rows)⌉ — so ⌈cards ÷ 8⌉ sheets at `a7` and ⌈cards ÷ 16⌉ at `a8` |
+| 15b | `/print` | `/print` on a deck declaring `grid: a8` | the same count at 16 up, with no flag given — the deck was believed |
+| 15c | `/print` | `/print` over two decks declaring *different* grids | refused, naming both files and both values; no PDF written |
 | 16 | `/print` | `/print only Signals` | only that topic in the PDF. (In the demo project the catalog topic is now *Signals, flags and the radio* — the comma is deliberate, see row 9-i; the card file's `topic:` is unchanged) |
 | 17 | print | duplex, flip on long edge, 100 % scale | back of each card exactly behind its front |
-| 18 | print | cut along the grey lines | 100 × 72 mm cards, nothing clipped |
-| 19 | print | `lernkarten build … --margin 0` on a borderless printer | full A7 cards, no white edge |
+| 18 | print | cut along the crop marks | cards of the size the grid promises, nothing clipped |
+| 19 | print | `lernkarten build … --margin 0` on a borderless printer | full-bleed cards, no white edge |
 
-Steps 1–14 need a Claude session in the demo folder; 15–19 only need the
+**Steps 17–19 are per grid, and both grids have to be walked.** Registration is
+the thing that breaks when the column count changes: A8 has five vertical cut
+lines to A7's three (counting the two outer trim lines, which the crop marks
+also draw), and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a
+100 mm one. Run each of them twice:
+
+| | `--grid a7` (the default) | `--grid a8` |
+|---|---|---|
+| 17 registration | 3 vertical, 5 horizontal cut lines | 5 vertical, 5 horizontal cut lines |
+| 18 cut card | 100 × 71.75 mm (105 × 74.25 at `--margin 0`) | 50 × 71.75 mm (52.5 × 74.25 at `--margin 0`) |
+| 19 borderless | drops into a DIN A7 box | drops into a DIN A8 box |
+
+| 20 | print | at `--grid a8`, read the head band on every card | **the short-label caveat**: the A8 band holds about 22 characters of `TOPIC / SUBTOPIC` and clips the rest mid-word. The demo topics are deliberately long and *will* clip; `tests/fixtures/demo-project/grids/tides-a8.yaml` is the deck whose labels all fit, and is what step 20 should be judged on |
+
+Steps 1–14 need a Claude session in the demo folder; 15–20 only need the
 command. If a printer is not at hand, 16–18 can be judged from the PDF: hold
-page 1 and page 2 against each other in a viewer at 100 %.
+page 1 and page 2 against each other in a viewer at 100 %. Step 20 can be read
+off the PDF too — clipping is visible on screen. Steps 17–19 at A8 cannot: the
+cut is the point.
 
 ### The landing page
 

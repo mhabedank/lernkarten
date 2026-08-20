@@ -2,6 +2,7 @@
 # here and English in the other files, in one and the same PDF.
 topic: 'Kestrel-Inseln: Gezeiten (deutsch)'
 language: german
+grid: a7
 cards:
   - subtopic: 'Tidenrhythmus'
     front: 'Was heißt halbtägige (semidiurnale) Tide?'

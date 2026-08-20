@@ -475,7 +475,9 @@ Read [docs/design.md](../../docs/design.md) before changing anything visible —
 the card, the mark, the readme graphics, the landing page. The rules that hold
 across all of them:
 
-- The card is 105 × 74.25 mm landscape (A7), three bands that never move.
+- The card is 105 × 74.25 mm landscape (A7), or 52.5 × 74.25 mm (A8) — the
+  same card cut down the middle, same height, half the width. Three bands
+  that never move, at either size: A8 takes its width out of the field.
 - Colour never carries meaning on its own; every colour is doubled by a shape
   or a position. A black-only laser print has to work.
 - Reading text is never smaller than 11 pt printed or 15 px on screen.
@@ -499,6 +501,13 @@ one overloaded card. Active recall prompts ("What…?", "Why…?", "Name…"), n
 yes/no. `front`/`back` are **Typst** markup, not LaTeX, written in single
 quotes. Card language follows the source unless the user says otherwise, and
 always goes into the file's `language:` key.
+
+A *line* is a line of the size the deck declares. The A8 card has 46 % of A7's
+writing area, so ~2 lines and ~6 lines are roughly 60 and 160 characters there
+against 120 and 400 at A7. The card size goes into the file's `grid:` key for
+the same reason the language does — the deck states what it was written for
+rather than leaving it to whoever prints it. The head band clips rather than
+wraps, and holds about 22 characters at A8 against ~53 at A7.
 
 The full escaping and maths rules are in [CLAUDE.md](../../CLAUDE.md) and apply
 to contributions too.
@@ -566,7 +575,20 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.4.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-19
+**Version**: 2.5.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-20
+
+*2.5.0 — the card has two sizes. Principles XVI and XVII each quoted A7 as
+*the* card size, which was true when the press sheet was a constant. It is now
+a `--grid` flag with two settings, A7 (2 × 4 to an A4 sheet) and A8 (4 × 4),
+and a deck may declare its own with a top-level `grid:` key. **Only the quoted
+dimension changed.** Every rule either principle states survives verbatim: the
+three bands still never move, colour is still doubled by shape or position,
+type is still never shrunk to fit, a card that does not fit is still reported
+rather than squeezed, and one card is still one fact. What XVII gains is a unit
+— "~2 lines" is a line of the size the deck declares, and A8's line is 46 % of
+A7's — plus the `grid:` key beside `language:`, on the same reasoning: the file
+states what it was written for. See
+[specs/003-card-grid/spec.md](../../specs/003-card-grid/spec.md).*
 
 *2.4.0 — principle XVI's type floor now says what it binds. "Reading text is
 never smaller than 11 pt printed or 15 px on screen" was written about the card,

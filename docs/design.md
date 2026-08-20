@@ -88,7 +88,9 @@ of a photograph.
 
 ## The card
 
-105 × 74.25 mm, landscape — A7. Three bands that never move:
+105 × 74.25 mm, landscape — A7 — or 52.5 × 74.25 mm at A8, which is the same
+card cut down the middle: same height, half the width. Three bands that never
+move, at either size:
 
 | Band | Height | Holds |
 |---|---|---|
@@ -113,18 +115,42 @@ Two things the layout deliberately does *not* do:
   through the `<overflow>` label, the build turns that into a warning, and the
   card gets split in two.
 
+Everything above holds at both sizes, and the third rule is why: the bands are
+fixed, so A8 takes its width out of the *field*, not out of the header or the
+footer. What changes with the size is how much text fits, not where anything
+sits.
+
 The layout lives in [`templates/card.typ`](../templates/card.typ) and nowhere
-else. The sheet that arranges eight of them is
+else. The sheet that arranges them is
 [`templates/cards.typ`](../templates/cards.typ).
 
 ## The press sheet
 
-Eight cards to an A4 page, two columns by four rows. Fronts and backs on
-consecutive pages, the backs mirrored column-wise so duplex printing with
-"flip on long edge" lines them up. Default margin 5 mm, which leaves the cards
-at 100 × 71.75 mm and keeps clear of printers with a non-printable edge; crop
-marks reach into that margin at every cut. With `--margin 0` the card frames
-sit on the paper edge and there are no crop marks to draw.
+A configurable grid, `--grid`, with two settings — because those are the two
+that cut to a card you can buy a box for:
+
+| `--grid` | Alias | Per A4 sheet | Card at `--margin 5` | Card at `--margin 0` |
+|---|---|---|---|---|
+| `2x4` | `a7` | 8, two columns by four rows | 100 × 71.75 mm | 105 × 74.25 mm (DIN A7) |
+| `4x4` | `a8` | 16, four columns by four rows | 50 × 71.75 mm | 52.5 × 74.25 mm (DIN A8) |
+
+`2x4` is the default and stays the default: it is the size the cards in this
+repo are written for. A card file may name its own with a top-level `grid:`
+key, and `--grid` on the command line overrides it. A4 halves into A7 and
+halves again into A8, so both grids fill the sheet exactly and every cut line
+is shared between two cards.
+
+Fronts and backs on consecutive pages, the backs mirrored column-wise so duplex
+printing with "flip on long edge" lines them up — at four columns as at two.
+Default margin 5 mm, which keeps clear of printers with a non-printable edge;
+crop marks reach into that margin at every cut. With `--margin 0` the card
+frames sit on the paper edge and there are no crop marks to draw.
+
+The one thing that does not scale is the header band. It clips its label rather
+than wrapping it, and the A8 band holds about 22 characters of
+`TOPIC / SUBTOPIC` against A7's ~53 — so a deck written for A8 needs short
+topic and subtopic names, and `scripts/check_project.py` warns when an A8 deck
+exceeds the budget.
 
 ## The screen surfaces
 

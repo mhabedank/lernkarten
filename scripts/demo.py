@@ -30,7 +30,12 @@ import make_testdata
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "tests" / "fixtures" / "demo-project"
 GENERATED = ("knowledge", "catalog", "cards")
-SKIP = {"broken", "README.md"}
+# Parts of the fixture that are test material rather than project content:
+# `broken/` holds deliberately invalid files, `grids/` decks that declare a
+# `grid:` key and must stay out of the globbed corpus. Nothing below reads this
+# set — copy() works from the explicit allowlist above — but a scratch project
+# should never gain either folder, so the constant records which they are.
+SKIP = {"broken", "grids", "README.md"}
 
 
 def absolute_sources(text, raw_dir):
