@@ -2,9 +2,10 @@
 """Flashcard build: YAML card files -> print-ready PDF.
 
 A4 with 8 cards per page by default (2 x 4, 105 x 74.25 mm — DIN A7), or 16
-with --grid a8 (4 x 4, 52.5 x 74.25 mm — DIN A8). Fronts and backs sit on
-consecutive pages, backs column-mirrored — duplex print with
-"flip on long edge".
+with --grid a8 (4 x 4, 74.25 x 52.5 mm — DIN A8, on a landscape sheet). The
+card is landscape at both, and a8 renders the whole card at a uniform scale.
+Fronts and backs sit on consecutive pages, backs column-mirrored, so a duplex
+print whose flip swaps left and right puts each back behind its front.
 
 The typesetting engine is fetched once on the first build; nothing else has to
 be installed. See scripts/engine.py.
