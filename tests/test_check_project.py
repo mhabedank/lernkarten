@@ -336,41 +336,61 @@ def second(tmp_path):
     return other
 
 
-def test_a_back_that_fits_a7_is_reported_as_long_at_a8(tmp_path):
-    """SC-002: A7 keeps 120/400; A8 halves them, so 300 characters only warn there."""
+def test_the_card_style_limits_are_the_same_at_both_grids(tmp_path):
+    """FR-027: the A8 card is a scaled A7 card, so it holds the same text.
+
+    This asserted the opposite until BUG-007 — 120/400 at A7 against 60/160 at
+    A8 — because the A8 card was believed to be the A7 card with its width
+    halved. It is a uniform scale, so the two grids are proportionally
+    identical and one set of limits covers both. Measured through the real
+    command, the scaled A8 card overflows slightly *later* than A7.
+    """
     long_back = "Far too much text for a card half this wide. " * 7  # ~308 characters
-    assert 160 < len(long_back) < 400
-    at_a8 = GOOD_CARDS.replace("24 h 50 min.", long_back)
-    at_a8 = at_a8.replace("language: english", "language: english\ngrid: a8")
-    report = check(project(tmp_path, cards=at_a8))
-    assert any("back is long" in w for w in report.warnings), report.warnings
+    assert 160 < len(long_back) < 400, len(long_back)
 
-    at_a7 = GOOD_CARDS.replace("24 h 50 min.", long_back)
-    at_a7 = at_a7.replace("language: english", "language: english\ngrid: a7")
-    report = check(project(second(tmp_path), cards=at_a7))
-    assert not any("back is long" in w for w in report.warnings), (
-        f"400 characters is still the A7 budget: {report.warnings}"
-    )
+    for grid, where in (("a8", tmp_path), ("a7", second(tmp_path))):
+        cards = GOOD_CARDS.replace("24 h 50 min.", long_back)
+        cards = cards.replace("language: english", f"language: english\ngrid: {grid}")
+        report = check(project(where, cards=cards))
+        assert not any("back is long" in w for w in report.warnings), (
+            f"400 characters is the budget at {grid} as at a7: {report.warnings}"
+        )
 
 
-def test_a_long_head_band_label_warns_at_a8_only(tmp_path):
-    """FR-023: 'TIDES / ...' is 40 characters, over the ~22 the A8 band holds."""
+def test_a_back_over_the_shared_limit_warns_at_both_grids(tmp_path):
+    """The limit still exists — it just does not depend on the grid."""
+    too_long = "Far too much text for any card at all. " * 12  # ~456 characters
+    assert len(too_long) > 400, len(too_long)
+
+    for grid, where in (("a8", tmp_path), ("a7", second(tmp_path))):
+        cards = GOOD_CARDS.replace("24 h 50 min.", too_long)
+        cards = cards.replace("language: english", f"language: english\ngrid: {grid}")
+        report = check(project(where, cards=cards))
+        assert any("back is long" in w for w in report.warnings), (
+            f"{grid}: over 400 characters should warn: {report.warnings}"
+        )
+
+
+def test_a_long_head_band_label_is_not_reported(tmp_path):
+    """FR-023 retired by BUG-007, on two counts.
+
+    It fired only for A8 decks, on the grounds that the band held ~22
+    characters there against ~53 at A7 — but the box scales with the card now,
+    so the budget is the same at both. And its premise was wrong anyway: the
+    label *wraps* inside the band rather than losing its tail, staying readable
+    to roughly 200 characters. A label check may still be worth having, but it
+    belongs to the card design at every size, not to this feature.
+    """
     subtopic = "Rhythm of the tide and its cause"
     assert len("Tides") + 3 + len(subtopic) == 40
-    at_a8 = GOOD_CARDS.replace("Rhythm of the tide", subtopic)
-    at_a8 = at_a8.replace("language: english", "language: english\ngrid: a8")
-    report = check(project(tmp_path, cards=at_a8))
-    assert any("label" in w and "40" in w for w in report.warnings), report.warnings
-    assert not any("label" in e for e in report.errors), (
-        f"an over-long label is a warning, not an error: {messages(report)}"
-    )
 
-    at_a7 = GOOD_CARDS.replace("Rhythm of the tide", subtopic)
-    at_a7 = at_a7.replace("language: english", "language: english\ngrid: a7")
-    report = check(project(second(tmp_path), cards=at_a7))
-    assert not any("label" in w for w in report.warnings), (
-        f"the A7 band holds about 53 characters: {report.warnings}"
-    )
+    for grid, where in (("a8", tmp_path), ("a7", second(tmp_path))):
+        cards = GOOD_CARDS.replace("Rhythm of the tide", subtopic)
+        cards = cards.replace("language: english", f"language: english\ngrid: {grid}")
+        report = check(project(where, cards=cards))
+        assert not any("label" in w for w in report.warnings), (
+            f"{grid}: the head-band check is retired: {report.warnings}"
+        )
 
 
 def test_a_missing_grid_key_warns_only_under_strict(tmp_path):

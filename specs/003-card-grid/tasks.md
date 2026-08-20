@@ -165,8 +165,8 @@ Spec priority is US1 (P1), then US2 and US3 (both P2), then US4 (P3). **US3 is s
 ### 🟢 Green
 
 - [x] T046 [US2] Implement `resolve_grid()` in `scripts/build_pdf.py` until T039–T042 pass, and extend `load_cards()` to surface each file's declared grid — it discards top-level keys today, so FR-014's per-file error has nothing to name *(review W2)*
-- [ ] T047 ⚠️ **Reopened (BUG-007)** — `LIMITS` was split per grid; FR-027 makes one set cover both. Original: [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
-- [ ] T048 ⚠️ **Reopened (BUG-007)** — the head-band budget has no subject once the label box scales (FR-023 retired). Original: [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
+- [x] T047 ✅ **Closed by T086** — reverted rather than re-measured. ⚠️ **Reopened (BUG-007)** — `LIMITS` was split per grid; FR-027 makes one set cover both. Original: [US2] Make `MAX_FRONT` / `MAX_BACK` grid-dependent in `scripts/check_project.py` until T043 passes. A7 stays 120 / 400; A8 becomes 60 / 160. Comment that these are measured (hard limits 291 / 145 and 455 / 185) and tunable in that range
+- [x] T048 ✅ **Closed by T087** — reverted rather than re-measured. ⚠️ **Reopened (BUG-007)** — the head-band budget has no subject once the label box scales (FR-023 retired). Original: [US2] Add the head-band label-budget check to `scripts/check_project.py` until T044 passes — **A8 decks only** (~22 characters), a warning. Scoped to A8 because `--strict` makes warnings fatal and 11 shipped cards already exceed the A7 budget *(FR-023, review C3)*
 - [x] T049 [US2] Add the `--strict`-only missing-`grid:` warning to `scripts/check_project.py` until T045 passes. It must **not** fire outside `--strict` *(FR-015a)*
 - [ ] T050 ⚠️ **Reopened (BUG-007)** — `grid: a7` is still right, but re-check once FR-015b's `--strict` collision dissolves. Original: [US2] Add `grid: a7` to all six decks in `tests/fixtures/demo-project/cards/` so `check_project.py … --strict` — which CI runs at `.github/workflows/ci.yml:120` and gate T070 repeats — stays green *(FR-015b, review C3)*
 - [x] T051 [US2] Update `skills/cards/SKILL.md` until **both** T044's label check and T045's `--strict` check pass against what it produces — write the `grid:` key, size card text to the declared grid. Keep the frontmatter valid
@@ -264,10 +264,10 @@ reason. Read the file in phase order 1–9, **11**, 10.
 
 <!-- sequential -->
 
-- [ ] T086 [BUG-007] Revert `LIMITS` in `scripts/check_project.py` to one set — front 120, back 400 at every grid *(FR-027)*. Measured: first overflow at 500 characters at `a7` and 520 at the scaled `a8`
-- [ ] T087 [BUG-007] Remove `LABEL_BUDGET` and the head-band check *(FR-023 retired)*. Its premise was false twice over: the label wraps rather than truncating, and the box is proportionally identical at both grids
-- [ ] T088 [BUG-007] Update `tests/test_check_project.py` — the per-grid overflow case and the label-budget case go with them; keep the `--strict` missing-`grid:` case, which is unaffected
-- [ ] T089 [BUG-007] Retire research.md R3 and R4. R3 measured the portrait card; R4's "11 of 38 cards clip silently" is wrong — measured, a label wraps and first loses text near 200 characters, not 53
+- [x] T086 [BUG-007] Revert `LIMITS` in `scripts/check_project.py` to one set — front 120, back 400 at every grid *(FR-027)*. Measured: first overflow at 500 characters at `a7` and 520 at the scaled `a8`
+- [x] T087 [BUG-007] Remove `LABEL_BUDGET` and the head-band check *(FR-023 retired)*. Its premise was false twice over: the label wraps rather than truncating, and the box is proportionally identical at both grids
+- [x] T088 [BUG-007] Update `tests/test_check_project.py` — the per-grid overflow case and the label-budget case go with them; keep the `--strict` missing-`grid:` case, which is unaffected
+- [x] T089 [BUG-007] Retire research.md R3 and R4. R3 measured the portrait card; R4's "11 of 38 cards clip silently" is wrong — measured, a label wraps and first loses text near 200 characters, not 53
 
 ### The record
 

@@ -65,6 +65,17 @@ the "measure then encode a golden set" step the plan was going to need.
 
 ## R3. What is the real text capacity at each grid?
 
+> **Retired 2026-08-20 — [BUG-007](./bugs/BUG-007.md).** Everything below was
+> measured against a **portrait** A8 card, 52.5 × 74.25 mm. The corrected card
+> is landscape and rendered at a uniform scale, so the two grids are
+> proportionally identical. Re-measured through the real command, a back first
+> overflows at **500 characters at A7 and 520 at the scaled A8** — the denser
+> grid holds marginally *more*, because the scale takes the tighter of the two
+> ratios and leaves about 3 % of width slack. The per-grid thresholds this
+> section justified are gone (FR-027); `MAX_FRONT = 120` and `MAX_BACK = 400`
+> now apply at both. Kept for the record.
+
+
 **Decision**: measured by bisection on a single probe card, at the default 5 mm
 margin.
 
@@ -109,6 +120,20 @@ grid-dependent.
 ---
 
 ## R4. The head band clips, and it already clips today
+
+> **Retired 2026-08-20 — [BUG-007](./bugs/BUG-007.md), and wrong on its own
+> terms.** Two errors. The measurements are against the portrait card, whose
+> label box was 41.4 mm; the corrected card scales, so the box is
+> proportionally the same at both grids and there is no A8-specific budget.
+> And the premise is false: the band **wraps** its label rather than losing the
+> tail. Rendered at A7, a 55-character label is one line, 75 is two, 170 is
+> three, and text is first lost at 221 characters where a fourth line is cut
+> top and bottom. So loss begins near **200** characters, not 53, and the "11
+> of 38 cards clip silently" claim below is not happening — those labels wrap
+> and read fine. A label check may still be worth having for crowding, but it
+> belongs to the card design at every size (constitution XVI), not to this
+> feature. Kept for the record.
+
 
 **Decision**: this is the real constraint on A8, and it is **pre-existing, not
 introduced by this feature**.
