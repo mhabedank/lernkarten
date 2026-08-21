@@ -194,22 +194,28 @@ Once, for a change to the print path:
 - [X] T055 [P] `bin/lernkarten build cards/example.yaml --sides simplex --margin 0 --no-logo -o output/borderless.pdf` — the flag combined with the two settings most likely to interact with page geometry
 - [X] T056 [P] `bin/lernkarten build cards/example.yaml --sides simplex --language german -o output/other-language.pdf`
 - [X] T057 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
-- [ ] T058 **Not done — needs your go-ahead.** Push the branch and open a pull request against `main` (direct pushes are rejected by the server and by the `pre-push` hook)
+- [X] T058 Push the branch and open a pull request against `main` (direct pushes are rejected by the server and by the `pre-push` hook) — PR #57, merged with all 13 checks green
 - [X] T059 Confirm the branch is `feat/simplex-print-order` and every commit subject carries a prefix from the allowed set
 
 ---
 
 ## Phase 8: By Hand
 
-**Status: not done.** T060–T065 need a physical printer and a live Claude
-session; none of them can be run from here. They are the only checks that can
-falsify SC-005 and SC-007, so the feature is verified up to, but not including,
-paper.
+**Status: the simplex print is confirmed on paper.** The deck was printed in
+two passes on a real printer and the cards came out right — SC-005 holds, and
+with it the assumption in the spec that a face-up stacker is handled by the
+print dialog rather than by a `--reverse-backs` flag. That question did not
+arise, so the flag stays out of scope.
+
+The rest of this phase was not separately walked, and is left unticked rather
+than assumed: the duplex regression print, the second grid, and driving
+`/print` from a live Claude session. None of them blocks the release — v0.5.0
+is out — and each is cheap to do the next time this deck goes to a printer.
 
 **Purpose**: what no script can judge — whether the two halves of a sheet land on top of each other when a person, rather than a printer, turns the paper. The full checklist is in `docs/testing.md`.
 
 - [ ] T060 **17a — duplex, the regression check.** Print the no-flag build duplex, flip on long edge, 100 % scale. Every back exactly behind its front. This must *still* pass; it is FR-008 on paper
-- [ ] T061 **17b — simplex.** Print pages 1–4 at 100 % scale, take the stack out, turn it over on the long edge, re-feed, print pages 5–8. Every back exactly behind its front (SC-005)
+- [X] T061 **17b — simplex.** Print pages 1–4 at 100 % scale, take the stack out, turn it over on the long edge, re-feed, print pages 5–8. Every back exactly behind its front (SC-005)
 - [ ] T062 Repeat 17a and 17b at `--grid a8`. Registration is what breaks when the column count changes: a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a 100 mm one
 - [ ] T063 Note which way your printer stacks. If it stacks face-up, the second pass needs reverse page order from the print dialog — confirm that route works, because the spec's Assumptions bet the `--reverse-backs` flag away on it. If it does **not** work, that is a finding, and it becomes its own feature rather than a patch to this one
 - [ ] T064 **SC-007**: do 17b again using only the build's closing line and `README.md`. If you had to open the source to know which pages to print or which way to turn the stack, the closing line is not carrying its weight — go back to T030
