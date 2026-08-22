@@ -5,6 +5,8 @@
     lernkarten check cards/*.yaml
     lernkarten engine --check
     lernkarten deps --check
+    lernkarten id --backfill cards/*.yaml
+    lernkarten id --backfill cards/*.yaml
 
 `build` and `check` take the same options; see `lernkarten build --help`.
 """
@@ -14,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-COMMANDS = {"build", "check", "engine", "deps"}
+COMMANDS = {"build", "check", "engine", "deps", "id"}
 
 
 def main():
@@ -37,6 +39,30 @@ def main():
         sys.argv = ["lernkarten deps", *argv[1:]]
         deps.main()
         return
+
+    if command == "id":
+        import deps
+
+        try:
+            deps.activate()
+        except deps.DependencyError as e:
+            sys.exit(f"ERROR: {e}")
+        import cardid
+
+        sys.argv = ["lernkarten id", *argv[1:]]
+        sys.exit(cardid.main())
+
+    if command == "id":
+        import deps
+
+        try:
+            deps.activate()
+        except deps.DependencyError as e:
+            sys.exit(f"ERROR: {e}")
+        import cardid
+
+        sys.argv = ["lernkarten id", *argv[1:]]
+        sys.exit(cardid.main())
 
     # Anything that actually does work gets its dependencies first. There are
     # none today, so this returns immediately; when the first one arrives it is

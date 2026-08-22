@@ -42,7 +42,11 @@ def test_load_cards_reads_the_fields(tmp_path):
     assert errors == []
     assert cards == [
         {
-            "id": "a-1",
+            # Was "a-1", the file stem and the card's position. MINIMAL declares
+            # no id, and an absent id is now the empty string — while `ref`
+            # keeps the positional label so diagnostics can still name the card.
+            "id": "",
+            "ref": "a-1",
             "topic": "Statistics",
             "subtopic": "Bayes",
             "front": "Question",
@@ -51,6 +55,116 @@ def test_load_cards_reads_the_fields(tmp_path):
             "language": "english",
         }
     ]
+
+
+# --- the card id comes from the file, not from the card's position ----------
+#
+# It used to be f"{path.stem}-{i}", which meant inserting a card, deleting one
+# or renaming the file silently renamed every id after it — the defect this
+# feature exists to remove.
+
+WITH_IDS = """
+topic: 'Statistics'
+cards:
+  - id: A45DK
+    subtopic: 'Bayes'
+    front: 'First'
+    back: 'a'
+  - id: QT8M2
+    subtopic: 'Bayes'
+    front: 'Second'
+    back: 'b'
+"""
+
+MIXED = """
+topic: 'Statistics'
+cards:
+  - id: A45DK
+    subtopic: 'Bayes'
+    front: 'Has one'
+    back: 'a'
+  - subtopic: 'Bayes'
+    front: 'Has none'
+    back: 'b'
+"""
+
+
+def test_load_cards_takes_the_id_from_the_file(tmp_path):
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
+    assert errors == []
+    assert [c["id"] for c in cards] == ["A45DK", "QT8M2"]
+
+
+def test_a_card_without_an_id_gets_the_empty_string(tmp_path):
+    """Never a missing key: the template reads `card.id` unconditionally."""
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert errors == []
+    assert cards[0]["id"] == ""
+
+
+def test_the_id_is_never_derived_from_the_file_name(tmp_path):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert "a-1" not in [c["id"] for c in cards]
+
+
+def test_a_deck_can_mix_cards_with_and_without_ids(tmp_path):
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", MIXED)], [], [])
+    assert errors == []
+    assert [c["id"] for c in cards] == ["A45DK", ""]
+
+
+def test_renaming_the_file_does_not_change_any_id(tmp_path):
+    """The defect in one assertion: the stem was the id's prefix."""
+    before, _, _ = build_pdf.load_cards([write(tmp_path, "topic-a.yaml", WITH_IDS)], [], [])
+    after, _, _ = build_pdf.load_cards([write(tmp_path, "topic-b.yaml", WITH_IDS)], [], [])
+    assert [c["id"] for c in before] == [c["id"] for c in after]
+
+
+def test_inserting_a_card_before_another_does_not_move_its_id(tmp_path):
+    inserted = WITH_IDS.replace(
+        "cards:\n",
+        "cards:\n  - id: V9WXY\n    subtopic: 'New'\n    front: 'Inserted'\n    back: 'x'\n",
+        1,
+    )
+    original, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    grown, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", inserted)], [], [])
+    by_front = {c["front"]: c["id"] for c in grown}
+    for card in original:
+        assert by_front[card["front"]] == card["id"], card["front"]
+
+
+def test_filtering_by_subtopic_does_not_change_an_id(tmp_path):
+    path = write(tmp_path, "a.yaml", WITH_IDS)
+    everything, _, _ = build_pdf.load_cards([path], [], [])
+    filtered, _, _ = build_pdf.load_cards([path], [], ["Bayes"])
+    assert [c["id"] for c in filtered] == [c["id"] for c in everything]
+
+
+# --- `ref`: how a diagnostic names a card, which is not the same job ---------
+#
+# The id is the name a person quotes, so it must not move when the deck is
+# edited. A warning only has to *locate* the card in the file, and position is
+# perfectly good for that. Keeping them separate is what stops a legacy deck
+# with no ids from emitting "WARNING: card  does not fit" with nothing in it.
+
+
+def test_ref_is_the_id_when_the_card_has_one(tmp_path):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
+    assert [c["ref"] for c in cards] == ["A45DK", "QT8M2"]
+
+
+def test_ref_falls_back_to_the_position_when_there_is_no_id(tmp_path):
+    """A blind warning is worse than a positional one."""
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "overflowing.yaml", MINIMAL)], [], [])
+    assert cards[0]["ref"] == "overflowing-1"
+    assert cards[0]["id"] == "", "the printed id stays empty; only the diagnostic falls back"
+
+
+def test_every_card_in_a_mixed_deck_still_gets_a_usable_ref(tmp_path):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", MIXED)], [], [])
+    refs = [c["ref"] for c in cards]
+    assert refs == ["A45DK", "deck-2"]
+    assert all(refs), "no card may end up with an empty diagnostic label"
 
 
 def test_load_cards_reports_broken_files(tmp_path):
@@ -427,3 +541,176 @@ def test_a_one_page_range_is_written_as_one_page():
     note = build_pdf.print_order_note(2, "simplex")
     assert "page 1" in note and "page 2" in note, note
     assert "1-1" not in note and "2-2" not in note, note
+
+
+# --- the five operations that used to move an id (SC-002) --------------------
+#
+# Each of these silently renamed cards under the old scheme. Together they are
+# the reason the feature exists: an id quoted in a conversation has to still
+# name the same card after the conversation causes an edit.
+
+PARTIAL = Path(__file__).resolve().parent / "fixtures" / "demo-project" / "partial"
+
+
+def _ids_by_front(cards):
+    return {c["front"]: c["id"] for c in cards}
+
+
+def test_a_deck_part_way_through_migration_still_builds(tmp_path):
+    """Some cards with ids, some without — the state a real project sits in."""
+    cards, errors, _ = build_pdf.load_cards([str(PARTIAL / "partial-ids.yaml")], [], [])
+    assert errors == []
+    assert len(cards) == 4
+    assert [c["id"] for c in cards] == ["7QH3W", "", "MJ0K8", ""]
+    assert all(c["ref"] for c in cards), "every card still needs a diagnostic label"
+
+
+def test_deleting_a_card_before_another_does_not_move_its_id(tmp_path):
+    shortened = WITH_IDS.replace(
+        "  - id: A45DK\n    subtopic: 'Bayes'\n    front: 'First'\n    back: 'a'\n", "", 1
+    )
+    full, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    fewer, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", shortened)], [], [])
+    assert _ids_by_front(fewer)["Second"] == _ids_by_front(full)["Second"] == "QT8M2"
+
+
+def test_editing_a_card_does_not_change_its_id(tmp_path):
+    """The case that rules out deriving the id from the card's content.
+
+    Editing is exactly the moment a conversation about a card leads to — so an
+    id that changed here would break at the one point it is most needed.
+    """
+    edited = WITH_IDS.replace("front: 'First'", "front: 'First, corrected'").replace(
+        "back: 'a'", "back: 'a much better answer'"
+    )
+    before, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    after, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", edited)], [], [])
+    assert after[0]["id"] == before[0]["id"] == "A45DK"
+    assert after[0]["front"] != before[0]["front"], "the edit has to have happened"
+
+
+def test_reordering_the_cards_does_not_change_any_id(tmp_path):
+    lines = WITH_IDS.strip().splitlines()
+    head, first, second = lines[:2], lines[2:6], lines[6:]
+    reordered = "\n".join(head + second + first) + "\n"
+    before, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    after, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", reordered)], [], [])
+    assert _ids_by_front(after) == _ids_by_front(before)
+
+
+def test_the_five_operations_together_leave_every_id_where_it_was(tmp_path):
+    """SC-002 as one assertion, so a regression in any of the five shows here."""
+    grown = WITH_IDS.replace(
+        "cards:\n",
+        "cards:\n  - id: V9WXY\n    subtopic: 'New'\n    front: 'Inserted'\n    back: 'x'\n",
+        1,
+    ).replace("front: 'Second'", "front: 'Second, edited'")
+    original, _, _ = build_pdf.load_cards([write(tmp_path, "topic-a.yaml", WITH_IDS)], [], [])
+    path = write(tmp_path, "renamed.yaml", grown)
+    changed, _, _ = build_pdf.load_cards([path], [], [])
+    filtered, _, _ = build_pdf.load_cards([path], [], ["Bayes"])
+
+    assert _ids_by_front(changed)["First"] == original[0]["id"]
+    assert _ids_by_front(changed)["Second, edited"] == original[1]["id"]
+    assert {c["id"] for c in filtered} <= {c["id"] for c in changed}
+
+
+# --- the footer when a card has no id (FR-005) -------------------------------
+
+
+def test_the_payload_carries_the_empty_id_rather_than_dropping_the_key(tmp_path):
+    """card.typ reads `card.id` unconditionally, so the key must always be there."""
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    payload = json.loads(json.dumps(cards))  # the shape that reaches the template
+    assert "id" in payload[0] and payload[0]["id"] == ""
+    assert "ref" in payload[0] and payload[0]["ref"]
+
+
+# --- id validation on the `lernkarten check` path ----------------------------
+#
+# `bin/lernkarten check` dispatches to build_pdf with --check; it never calls
+# check_project.py. Validation added only there would leave `lernkarten check`
+# reporting OK on a deck with two cards sharing an id — which is exactly what
+# SC-004 says must not happen. So the rules live in load_cards' errors channel,
+# the same one the schema errors already use.
+
+BROKEN = Path(__file__).resolve().parent / "fixtures" / "demo-project" / "broken"
+
+
+def test_load_cards_reports_a_duplicate_id_naming_both_cards():
+    _, errors, _ = build_pdf.load_cards([str(BROKEN / "duplicate-id.yaml")], [], [])
+    assert errors, "a duplicate id has to reach the check path, not only check_project"
+    assert any("A45DK" in e and "card 1" in e and "card 2" in e for e in errors), errors
+
+
+@pytest.mark.parametrize(
+    ("fixture", "expected"),
+    [
+        ("bad-alphabet-id.yaml", "I"),
+        ("wrong-length-id.yaml", "4"),
+        ("non-string-id.yaml", "int"),
+    ],
+)
+def test_load_cards_reports_an_unusable_id(fixture, expected):
+    _, errors, _ = build_pdf.load_cards([str(BROKEN / fixture)], [], [])
+    assert any(expected in e for e in errors), f"{fixture}: {errors}"
+
+
+def test_a_duplicate_across_two_files_is_still_a_duplicate(tmp_path):
+    """Ids are unique per project, so the check cannot be per file."""
+    a = write(tmp_path, "a.yaml", WITH_IDS)
+    b = write(tmp_path, "b.yaml", WITH_IDS)
+    _, errors, _ = build_pdf.load_cards([a, b], [], [])
+    assert any("A45DK" in e for e in errors), errors
+
+
+def test_a_deck_with_no_ids_produces_no_errors(tmp_path):
+    """US2: absent is not an error, however many cards are missing one."""
+    _, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert errors == []
+
+
+def test_a_deck_with_no_ids_is_advised_once_not_once_per_card(tmp_path, capsys):
+    """US2 scenario 2: exit 0, and one line for the run — not one per card.
+
+    A per-card advisory on a 300-card deck would bury the output it is printed
+    alongside, which is how a helpful nudge becomes noise people learn to skip.
+    """
+    body = "".join(
+        f"  - subtopic: 'Bayes'\n    front: 'Q{n}'\n    back: 'A{n}'\n" for n in range(5)
+    )
+    many = "topic: 'Statistics'\ncards:\n" + body
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", many)], [], [])
+    assert errors == [], "a missing id is never an error"
+    assert len(cards) == 5
+
+    build_pdf.advise_about_ids(cards)
+    lines = [ln for ln in capsys.readouterr().err.splitlines() if ln.strip()]
+    assert len(lines) == 1, f"one advisory per run, got {len(lines)}: {lines}"
+    assert "backfill" in lines[0], lines[0]
+
+
+def test_no_advisory_when_every_card_has_an_id(tmp_path, capsys):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
+    build_pdf.advise_about_ids(cards)
+    assert capsys.readouterr().err == ""
+
+
+def test_a_filtered_build_still_validates_the_cards_it_filters_out(tmp_path):
+    """A duplicate id is a fact about the file, not about the slice printed.
+
+    The validation used to sit inside the per-card loop, after the subtopic
+    filter, so `--subtopic` quietly skipped the cards it excluded — and the
+    duplicate they collided with went unreported.
+    """
+    deck = WITH_IDS.replace("id: QT8M2", "id: A45DK").replace(
+        "subtopic: 'Bayes'\n    front: 'Second'", "subtopic: 'Markov'\n    front: 'Second'"
+    )
+    path = write(tmp_path, "deck.yaml", deck)
+
+    _, unfiltered, _ = build_pdf.load_cards([path], [], [])
+    _, filtered, _ = build_pdf.load_cards([path], [], ["Bayes"])
+    assert any("A45DK" in e for e in unfiltered), unfiltered
+    assert any("A45DK" in e for e in filtered), (
+        f"the duplicate is outside the filter but still in the file: {filtered}"
+    )

@@ -4,15 +4,18 @@ topic: 'Kestrel Islands: Παλίρροια (ελληνικά)'
 language: greek
 grid: a7
 cards:
-  - subtopic: 'Rhythm of the tide'
+  - id: 4T0EY
+    subtopic: 'Rhythm of the tide'
     front: 'Τι σημαίνει ημιημερήσια παλίρροια;'
     back: 'Δύο πλημμυρίδες και δύο αμπώτιδες σε κάθε παλιρροιακή ημέρα.'
     source: 'Σημειώσεις πεδίου 2'
-  - subtopic: 'Rhythm of the tide'
+  - id: SWDPA
+    subtopic: 'Rhythm of the tide'
     front: 'Πόσο διαρκεί μια παλιρροιακή ημέρα;'
     back: '$24 "h" 50 "min"$ — κάθε πλημμυρίδα έρχεται περίπου 50 λεπτά αργότερα από την προηγούμενη.'
     source: 'Σημειώσεις πεδίου 2'
-  - subtopic: 'Range and the rule of twelfths'
+  - id: WNQ3H
+    subtopic: 'Range and the rule of twelfths'
     front: 'Πώς ορίζεται το εύρος της παλίρροιας;'
     back: 'Ύψος πλημμυρίδας μείον ύψος αμπώτιδας. \ Στο Torvig Harbour: $3.4 "m"$ κατά μέσο όρο.'
     source: 'Σημειώσεις πεδίου 2'

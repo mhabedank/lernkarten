@@ -32,12 +32,27 @@ code, comments, docs and commit messages are written in English.
   topic: 'Display name of the topic'
   language: german          # language of the cards in this file
   cards:
-    - subtopic: 'Subtopic'
+    - id: A45DK             # five characters, assigned once, never changed
+      subtopic: 'Subtopic'
       front: 'Question or term'
       back: 'Answer or definition'
       source: 'Short reference (optional)'
     - ...
   ```
+
+  `id` is the handle a user reads off the printed card and says out loud, so it
+  has to keep naming the same card after the edit that conversation asks for.
+  Five characters of **Crockford Base32** — `0123456789ABCDEFGHJKMNPQRSTVWXYZ`,
+  which leaves out `I`, `L`, `O` (misread as `1`, `1` and `0` off paper) and `U`
+  (so an id cannot spell something unfortunate). Unique within the project,
+  written first on each card, and **never rewritten** — not on an edit, not on a
+  move, not on a rename.
+
+  It is **optional**: a deck written before ids existed still builds, and
+  `lernkarten check` says so once per run rather than once per card.
+  `lernkarten id --backfill cards/*.yaml` fills the gaps; `--reassign` resolves
+  two decks that collide, keeping the id of whichever file comes first on the
+  command line.
 
   `language` is a plain language name or ISO code (`german`, `de`, `french`,
   …); `lernkarten build --help` lists the ones that work. It
@@ -112,9 +127,12 @@ This is a public open-source repo — it holds the tools, not the knowledge.
   `design/`, and commit subjects use the same set.
 - **Dependencies** are allowed when they install with a plain `pip install` on
   Windows, macOS and Linux, with wheels and no compiler — and prefer a
-  maintained library over hand-rolling. There are none at runtime yet, and there
-  is no mechanism to deliver one to a plugin user, so a *runtime* dependency
-  cannot ship today. The gates are in `CONTRIBUTING.md`. Python 3.12 or newer.
+  maintained library over hand-rolling. A *runtime* dependency ships through
+  `scripts/deps.py`, which installs the pinned set into a per-Python cache on
+  first use and is reported by `lernkarten deps --check`; `bin/lernkarten` calls
+  `deps.activate()` before doing any work. There is one today, `pyyaml==6.0.3`,
+  read through `scripts/yamlio.py`. The gates are in `CONTRIBUTING.md`. Python
+  3.12 or newer.
 - **Before every PR** these four gates have to be green (CI checks the same):
 
   ```bash

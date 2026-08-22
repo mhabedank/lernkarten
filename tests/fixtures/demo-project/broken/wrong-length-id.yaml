@@ -1,0 +1,14 @@
+# An id is exactly five characters. Four and six are both wrong, and the
+# message has to say which it found rather than only that it was wrong.
+topic: 'Kestrel Islands: Tides'
+language: english
+grid: a7
+cards:
+  - id: A45D
+    subtopic: 'Rhythm of the tide'
+    front: 'How many characters does an id have?'
+    back: 'Five.'
+  - id: A45DKM
+    subtopic: 'Rhythm of the tide'
+    front: 'Is a longer id accepted?'
+    back: 'No — the length is fixed so that revision addressing can parse it.'

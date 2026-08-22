@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 import build_pdf
+import cardid
 import yamlio
 
 # `research` carries no location: /research-gaps synthesised it from the web,
@@ -583,6 +584,32 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
     return subtopics, marked
 
 
+def _check_ids(cards, where, ids_seen, report, strict):
+    """Report unusable and duplicate ids, and nudge about missing ones.
+
+    What counts as wrong is decided in `cardid.problems_in`, so this and
+    `build_pdf.load_cards` cannot drift apart — they differ only in where the
+    message goes. Absent is never an error: a deck written before ids existed is
+    still a valid deck, and making it one would turn a new feature into a
+    breaking change. Under `--strict` it is a nudge, because that gate judges
+    what /cards produced and /cards is supposed to write one.
+
+    Nothing here writes. This runs inside a CI gate, and a gate that repaired
+    the tree would stop being able to fail (FR-013a).
+    """
+    for index, problem in cardid.problems_in(cards, ids_seen, where):
+        report.error(where, f"card {index}: {problem}")
+    if not strict:
+        return
+    for index, card in enumerate(cards, start=1):
+        if isinstance(card, dict) and "id" not in card:
+            report.warn(
+                where,
+                f"card {index}: no 'id' — /cards assigns one on write; "
+                "`lernkarten id --backfill` fills in a deck written by hand",
+            )
+
+
 def check_cards(project, subtopics, report, marked=None, strict=False):
     """cards/*.yaml: the schema /print reads, plus the card-style limits.
 
@@ -593,6 +620,10 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
     root = project / "cards"
     if not root.is_dir():
         return
+    # Ids are unique across the project, not per file, so this outlives the loop.
+    # Keyed by the normalised id: `a45dk` and `A45DK` are one id to a reader, so
+    # they have to be one id here too (FR-004).
+    ids_seen = {}
     for path in sorted(root.glob("*.yaml")):
         where = f"cards/{path.name}"
         data = read_yaml(path, report)
@@ -625,6 +656,7 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 "but not a statement. /cards writes the size the deck was written for; "
                 "add 'grid: a7' to say so",
             )
+        _check_ids(data["cards"] or [], where, ids_seen, report, strict)
         fronts = {}
         for i, card in enumerate(data["cards"] or [], start=1):
             report.count("cards")

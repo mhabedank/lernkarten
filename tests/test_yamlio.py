@@ -85,3 +85,58 @@ def test_yaml_error_is_a_value_error():
 def test_tabs_are_rejected_rather_than_guessed_at():
     with pytest.raises(yamlio.YamlError):
         yamlio.load("cards:\n\t- front: 'a'\n")
+
+
+# --- compose(): nodes with positions, for the card-id splice -----------------
+#
+# `load` returns values and throws the positions away. Adding a key to a card
+# file without reformatting it needs the positions, so `compose` exposes the
+# node tree. It goes through the same dependency bootstrap as `load`; a caller
+# importing PyYAML itself would skip that and break on a fresh checkout.
+
+DECK = """topic: 'Tides'
+cards:
+  - subtopic: 'Basics'
+    front: 'a'
+    back: 'b'
+  - subtopic: 'Basics'
+    front: 'c'
+    back: 'd'
+"""
+
+
+def _cards_node(src):
+    node = yamlio.compose(src)
+    return next(v for k, v in node.value if k.value == "cards")
+
+
+def test_compose_returns_a_node_tree_not_values():
+    node = yamlio.compose(DECK)
+    assert node is not None, "compose returned nothing"
+    assert hasattr(node, "value"), "compose should give nodes, not plain values"
+
+
+def test_compose_marks_each_card_with_its_line_and_column():
+    """The splice needs the first key's position, so the marks must be exact."""
+    cards = _cards_node(DECK)
+    positions = [
+        (c.value[0][0].value, c.value[0][0].start_mark.line, c.value[0][0].start_mark.column)
+        for c in cards.value
+    ]
+    assert positions == [("subtopic", 2, 4), ("subtopic", 5, 4)], positions
+
+
+def test_compose_reports_a_malformed_document_the_way_load_does():
+    with pytest.raises(yamlio.YamlError):
+        yamlio.compose("topic: 'unclosed\ncards:\n")
+
+
+def test_compose_works_without_the_caller_importing_pyyaml(monkeypatch):
+    """It must route through the bootstrap, not assume `yaml` is importable.
+
+    A bare `import yaml` in a caller breaks on a machine that has never run
+    deps.activate() — including the CI gate `python3 scripts/check_project.py`.
+    """
+    monkeypatch.delitem(sys.modules, "yaml", raising=False)
+    monkeypatch.setattr(yamlio, "_yaml", None)
+    assert yamlio.compose(DECK) is not None

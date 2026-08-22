@@ -9,11 +9,13 @@ skips instead of downloading 30 MB behind your back; set LERNKARTEN_E2E=1 (as
 CI does) to let the first test fetch it.
 """
 
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -27,6 +29,7 @@ DEMO_CARD_COUNT = 29
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import engine  # noqa: E402
+import yamlio  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -322,13 +325,32 @@ def bbox_pages(path):
     return pages
 
 
+def declared_ids():
+    """Every id the demo decks declare, read from the card files themselves.
+
+    The ids used to be `<stem>-<n>`, which a regex could pick out of the page.
+    A Crockford id is five characters with no separator, and the header band
+    sets the topic in upper case — so `TIDES` would match a naive pattern just
+    as well as a real id. Matching against what the decks actually declare is
+    both exact and self-maintaining.
+    """
+    found = set()
+    for card_file in CARDS:
+        deck = yamlio.load(Path(card_file).read_text(encoding="utf-8"))
+        for card in deck.get("cards") or []:
+            if isinstance(card, dict) and isinstance(card.get("id"), str):
+                found.add(card["id"])
+    return found
+
+
 def card_grid_per_page(path):
     """The card ids laid out as a grid, page by page: [[row], [row], ...]."""
+    known = declared_ids()
     pages = []
     for words in bbox_pages(path):
         rows = {}
         for x, y, w in words:
-            if not re.fullmatch(r"[\w-]+-\d+", w):
+            if w not in known:
                 continue
             # One row of cards shares a y to well under a millimetre; round so
             # the grouping survives the typesetter's sub-point placement.
@@ -808,3 +830,194 @@ def test_the_duplex_build_still_says_flip_on_long_edge(tmp_path):
     result = run("build", *CARDS, "-o", str(tmp_path / "d.pdf"))
     assert result.returncode == 0, result.stderr
     assert "8 pages, duplex, flip on long edge" in result.stdout, result.stdout
+
+
+# --- the id on the printed card (feat/card-id) -------------------------------
+#
+# The old id was `<stem>-<n>` and the measured example ran 124.62 pt against a
+# 94.49 pt box with `clip: true` — so it was cut off on the card, and a user
+# could not read it even to type it out. A five-character id fits with room to
+# spare, which is what lets it be set larger than the old 4.6 pt.
+
+ID_DECK = """topic: 'Legibility'
+language: english
+grid: a7
+cards:
+  - id: A45DK
+    subtopic: 'Basics'
+    front: 'Front'
+    back: 'Back'
+"""
+
+NO_ID_DECK = """topic: 'Legibility'
+language: english
+grid: a7
+cards:
+  - subtopic: 'Basics'
+    front: 'Front'
+    back: 'Back'
+"""
+
+
+def _words_on(path):
+    return [w for page in bbox_pages(path) for (_x, _y, w) in page]
+
+
+def test_the_id_is_printed_on_both_faces(tmp_path):
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    target = tmp_path / "id.pdf"
+    assert run("build", str(deck), "-o", str(target)).returncode == 0
+    assert _words_on(target).count("A45DK") == 2, "front and back each carry the id"
+
+
+MEASURE = """#set page(width: 400mm, height: 100mm, margin: 0pt)
+#context {
+  let cw = 100mm
+  let id = text(font: "IBM Plex Mono", size: SIZE, "A45DK · 1/2")
+  [#metadata((width: measure(id).width.pt(), cap: (cw / 3).pt()))<measurement>]
+}
+"""
+
+
+def measured_id_width(size_pt):
+    """The rendered width of the longest id line, through the pinned engine.
+
+    Read back with `typst query` rather than off the page: an SVG or PDF turns
+    text into glyph outlines, so the number would not be there to find. This is
+    the same mechanism the build already uses to detect an overflowing card.
+    """
+    binary, _ = engine.find(fetch_if_missing=False)
+    with tempfile.TemporaryDirectory() as work:
+        source = Path(work) / "m.typ"
+        source.write_text(MEASURE.replace("SIZE", f"{size_pt}pt"), encoding="utf-8")
+        result = subprocess.run(
+            [
+                str(binary),
+                "query",
+                "--ignore-system-fonts",
+                "--font-path",
+                str(ROOT / "assets" / "fonts"),
+                str(source),
+                "<measurement>",
+                "--field",
+                "value",
+            ],
+            capture_output=True,
+            text=True,
+        )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    return payload[0]["width"], payload[0]["cap"]
+
+
+def test_the_id_fits_the_box_it_is_clipped_to_by_measurement(tmp_path):
+    """FR-010/SC-005: measured through the engine, not eyeballed.
+
+    `templates/card.typ` caps the id block at `cw / 3` and sets `clip: true`,
+    so an id that is too wide is silently cut rather than reported — which is
+    exactly what happened to the old `<stem>-<n>` ids.
+    """
+    if shutil.which("pdftotext") is None:
+        pass  # this one does not need pdftotext, only the engine
+    width, cap = measured_id_width(8)
+    assert width < cap, f"the id block overruns its clip box: {width} pt against {cap} pt"
+    assert width / cap < 0.75, (
+        f"{width} pt is {100 * width / cap:.0f} % of the cap — too little headroom "
+        "for a denser grid or a longer side marker"
+    )
+
+
+def test_the_template_sets_the_id_at_the_agreed_size():
+    """FR-011: 8 pt, up from 4.6 pt.
+
+    Asserted against the template source rather than by comparing two synthetic
+    measurements — measuring 8 pt against 4.6 pt only proves that 8 is bigger
+    than 4.6, which is true whatever the card is actually set in.
+    """
+    source = (ROOT / "templates" / "card.typ").read_text(encoding="utf-8")
+    sizes = re.findall(r"size:\s*([0-9.]+)pt \* scale,\s*\n\s*fill: muted", source)
+    assert sizes == ["8"], f"the id should be set at 8pt * scale, found {sizes}"
+    assert "4.6pt" not in source, "the old id size is still in the template"
+
+
+def test_a_card_without_an_id_prints_the_side_marker_alone(tmp_path):
+    """FR-005: no id text and no separator — not a stranded '·'."""
+    deck = tmp_path / "plain.yaml"
+    deck.write_text(NO_ID_DECK, encoding="utf-8")
+    target = tmp_path / "plain.pdf"
+    assert run("build", str(deck), "-o", str(target)).returncode == 0
+
+    words = _words_on(target)
+    assert "1/2" in words and "2/2" in words, f"the side marker must remain: {words}"
+    assert "·" not in words, f"a separator with nothing before it was printed: {words}"
+
+
+def test_the_separator_is_there_when_there_is_an_id(tmp_path):
+    """The other half of the case above, so the guard cannot pass vacuously."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    target = tmp_path / "id.pdf"
+    assert run("build", str(deck), "-o", str(target)).returncode == 0
+    assert "·" in _words_on(target)
+
+
+# --- `lernkarten id` through the real command --------------------------------
+
+
+def test_backfill_through_the_command_assigns_ids_and_keeps_the_comments(tmp_path):
+    """US4 end to end. Needs no engine — backfill never renders anything."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(
+        "# a comment that has to survive\n"
+        "topic: 'Plain'\n"
+        "cards:\n"
+        "  - subtopic: 'One'\n"
+        "    front: 'a'\n"
+        "    back: 'b'\n",
+        encoding="utf-8",
+    )
+    before = deck.read_text(encoding="utf-8")
+
+    result = run("id", "--backfill", str(deck))
+    assert result.returncode == 0, result.stderr
+
+    after = deck.read_text(encoding="utf-8")
+    assert after.count("- id: ") == 1, f"no id was written: {after}"
+    assert "# a comment that has to survive" in after
+    assert "front: 'a'" in after
+    assert after != before
+
+
+def test_bare_id_without_a_flag_is_refused_with_usage(tmp_path):
+    """The contract: one of the two flags is required.
+
+    The destructive act must never be what happens when you type the command
+    with no flag and hit return.
+    """
+    deck = tmp_path / "deck.yaml"
+    deck.write_text("topic: 'T'\ncards:\n  - front: 'a'\n    back: 'b'\n", encoding="utf-8")
+    result = run("id", str(deck))
+    assert result.returncode != 0
+    assert "backfill" in (result.stderr + result.stdout).lower()
+
+
+def test_reassign_through_the_command_reports_what_it_cost(tmp_path):
+    """FR-013c: the report has to name the consequence, not just the change."""
+    a = tmp_path / "a.yaml"
+    b = tmp_path / "b.yaml"
+    for path, front in ((a, "a"), (b, "c")):
+        path.write_text(
+            f"topic: 'T'\ncards:\n  - id: A45DK\n    front: '{front}'\n    back: 'x'\n",
+            encoding="utf-8",
+        )
+    result = run("id", "--reassign", str(a), str(b))
+    assert result.returncode == 0, result.stderr
+
+    assert "id: A45DK" in a.read_text(encoding="utf-8"), "the first file keeps its id"
+    assert "id: A45DK" not in b.read_text(encoding="utf-8")
+    message = result.stderr + result.stdout
+    assert "A45DK" in message
+    assert "orphan" in message.lower() or "no longer name" in message.lower(), (
+        f"the report has to state the cost, not just the substitution: {message}"
+    )

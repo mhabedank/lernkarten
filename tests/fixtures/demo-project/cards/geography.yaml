@@ -2,23 +2,28 @@ topic: 'Kestrel Islands: Geography'
 language: english
 grid: a7
 cards:
-  - subtopic: 'The five islands'
+  - id: Y4H26
+    subtopic: 'The five islands'
     front: 'Name the five inhabited islands of the Kestrel archipelago.'
     back: '#list([Torvig], [Little Kestrel], [Skarn], [Ovray], [Bellhorn])'
     source: 'Field notes 1, "The five islands"'
-  - subtopic: 'The five islands'
+  - id: ZRKBA
+    subtopic: 'The five islands'
     front: 'Why does everything bound for the archipelago pass through Torvig?'
     back: 'Torvig Harbour has the only deep-water pier. \ From there the mail boat redistributes goods to the other islands.'
     source: 'Field notes 1, "The five islands"'
-  - subtopic: 'The five islands'
+  - id: GG2H5
+    subtopic: 'The five islands'
     front: 'Which island is the largest, and how large is it?'
     back: 'Torvig, $410 "km"^2$ — about four times the area of Little Kestrel.'
     source: 'Field notes 1, table'
-  - subtopic: 'Settlements'
+  - id: X4958
+    subtopic: 'Settlements'
     front: 'Where does the tide office of the archipelago sit?'
     back: 'In Fenmouth on Little Kestrel, the second settlement after Torvig Harbour.'
     source: 'Field notes 1, "Settlements"'
-  - subtopic: 'Settlements'
+  - id: 00GA5
+    subtopic: 'Settlements'
     front: 'What limits access to Ovray Cove?'
     back: 'It is reachable by boat only, and only at high water.'
     source: 'Field notes 1, "Settlements"'

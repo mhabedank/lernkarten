@@ -1,0 +1,5 @@
+analyzed: 2026-08-21
+commit: 001f463
+findings: 7 (1 CRITICAL, 1 HIGH, 3 MEDIUM, 2 LOW)
+resolved: C1, A1, A2, A3, A4 -- fixed in tasks.md, spec.md, contracts/cards-yaml.md
+remaining: A5, A6 (LOW, cosmetic -- stale ruamel note, SC-003 baseline)

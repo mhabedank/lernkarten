@@ -1,0 +1,18 @@
+# An `id:` key that is present but is not a string. Each of these has to be
+# reported naming the card, never crash, and never be mistaken for absent.
+topic: 'Kestrel Islands: Tides'
+language: english
+grid: a7
+cards:
+  - id:
+    subtopic: 'Rhythm of the tide'
+    front: 'What happens when the key is there but empty?'
+    back: 'It is reported — an empty id is not the same as no id.'
+  - id: 12345
+    subtopic: 'Rhythm of the tide'
+    front: 'What happens when the id parses as a number?'
+    back: 'It is reported: YAML reads it as an int, and an id is a string.'
+  - id: [A45DK]
+    subtopic: 'Rhythm of the tide'
+    front: 'And when it is a list?'
+    back: 'Reported the same way, naming the type it found.'

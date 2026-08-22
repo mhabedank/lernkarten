@@ -83,6 +83,25 @@ def load(text):
         raise YamlError(_one_line(e)) from e
 
 
+def compose(text):
+    """The document in `text` as a *node tree*, keeping every node's position.
+
+    `load` gives values; this gives nodes, and a node carries `start_mark` and
+    `end_mark` — the line and column the parser found it at. That is what lets
+    a caller edit a card file as text without re-serialising it, which is the
+    only way to add a key and keep the comments and quoting the user wrote.
+
+    Goes through the same bootstrap as `load`, so a machine that has never
+    installed PyYAML still works. A caller doing `import yaml` itself would
+    skip that and fail on a fresh checkout.
+    """
+    yaml = _load_pyyaml()
+    try:
+        return yaml.compose(text)
+    except yaml.YAMLError as e:
+        raise YamlError(_one_line(e)) from e
+
+
 def main():
     """Reads a file named on the command line — a way to eyeball a card file."""
     if len(sys.argv) != 2:
