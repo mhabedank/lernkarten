@@ -296,6 +296,13 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
         except ValueError as e:
             errors.append(f"{path}: {e}")
             continue
+        # Before the loop, so a --subtopic build still validates the cards it
+        # filters out: a duplicate id is a fact about the file, not about the
+        # slice someone asked to print. What counts as wrong is decided in
+        # cardid, so this and check_project.py cannot drift. `ids_seen` is
+        # carried across files because ids are unique per project.
+        for index, problem in cardid.problems_in(data["cards"] or [], ids_seen, path.name):
+            errors.append(f"{path}: card {index}: {problem}")
         for i, c in enumerate(data["cards"] or [], start=1):
             if not isinstance(c, dict) or "front" not in c or "back" not in c:
                 errors.append(f"{path}: card {i}: 'front' and 'back' are required")
@@ -312,20 +319,6 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
             # about. Absent is the empty string, never a missing key, because
             # templates/card.typ reads card.id unconditionally.
             card_id = c.get("id")
-            if "id" in c:
-                problem = cardid.validate(c["id"])
-                if problem is not None:
-                    errors.append(f"{path}: card {i}: unusable 'id' — {problem}")
-                else:
-                    key = cardid.normalise(c["id"])
-                    if key in ids_seen:
-                        first_file, first_index = ids_seen[key]
-                        errors.append(
-                            f"{path}: card {i}: id {c['id']} is already used by "
-                            f"card {first_index} in {first_file} — an id names one card"
-                        )
-                    else:
-                        ids_seen[key] = (path.name, i)
             card_id = str(card_id) if isinstance(card_id, str) else ""
             cards.append(
                 {

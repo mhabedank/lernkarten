@@ -336,3 +336,20 @@ illegal import.
 
 Moderates and minors from this review are left open deliberately — they are
 recorded above and are cheaper to judge against real code in Phase 9 (Verify).
+
+---
+
+## Post-implementation verification — 2026-08-21
+
+`speckit.verify` ran against the finished code. No CRITICAL findings; one HIGH,
+three MEDIUM, one LOW. All five are recorded in `.verify-done`. Four were fixed:
+
+| Finding | Resolution |
+|---|---|
+| **V1 (HIGH)** — `remove_ids` deleted a line when a card's `id` was not the first key. `cards_in` reported `has_id` for *any* key named `id` but paired it with the *first* key's position, and `remove_ids` conflated the two. The contract permits `id` anywhere, so this was legitimate input; only tests called it, so nothing corrupted data in production. | `cards_in` now reports `has_id` **and** `first_is_id` separately. `remove_ids` acts only on the shape `insert_ids` writes. Four cases added. |
+| **V2 (MEDIUM)** — FR-011a, the wordmark balance, was the stated upper bound on the id's size and was verified only by eye, named neither in a test nor on the manual checklist. | Named as row 23a in `docs/testing.md`, with the measured support (52.80 pt id against a 92.85 pt wordmark). Constitution XI wants a visual judgement *named*, not implicit. |
+| **V3 (MEDIUM)** — the duplicate/validation bookkeeping was implemented twice, in `build_pdf.load_cards` and `check_project._check_id`. The earlier claim that "one insertion point serves both" was not accurate. | Both now call `cardid.problems_in`; neither calls `validate` or `normalise` directly. Fixing this also surfaced a real bug: the validation sat **after** the `--subtopic` filter, so a filtered build skipped the cards it excluded and missed duplicates among them. Now a per-file pass, with a test. |
+| **V4 (MEDIUM)** — every implementation commit bundles its tests, so the history shows no red state. Constitution XI names "the test is committed failing … before the implementation". | **Accepted, and recorded here rather than silently.** Each test in this branch was run and seen failing on its assertion before the code that satisfies it — several of those failures are quoted in the working log — but the repository cannot evidence that, and a reviewer should know the difference. This is CHK037's question answered honestly: the ordering was followed, the *proof* is not in the artifact the constitution names. |
+
+**V5 (LOW)** — checklist items now answerable against the code — is left open
+deliberately; it is bookkeeping, not risk.

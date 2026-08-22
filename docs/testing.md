@@ -237,6 +237,7 @@ python3 scripts/zotero_stub.py
 | 21 | `/cards` | **SC-007**: read an id off a printed card, name it in a Claude session (*"A45DK uses a word it never defines"*), let the session edit that card, then look again | the id is unchanged and still names the same card. This is the feature's reason for existing and it leaves nothing on disk, so per constitution XI it is named here rather than left implicit |
 | 22 | `/print` | `lernkarten check` on a deck written before ids existed | exit 0, and **one** advisory line naming `--backfill` — not one line per card. The exit code is asserted by a test; the wording is a judgement and lives here |
 | 23 | `/print` | photocopy a sheet | the id still reads in black only |
+| 23a | `/print` | look at the footer band as a whole, at both grids | **FR-011a**: the id does not overpower `LERNKARTEN BY MHABEDANK` beside it. This, not the clip cap, is what bounds the id's size from above — every size up to 12 pt fits the box, and 11 pt still looks wrong. Measured support: at 8 pt the id is 52.80 pt against a 92.85 pt wordmark, so it stays the smaller of the two. Whether the band still reads as quiet is a judgement, which is why it is named here rather than asserted |
 
 **Steps 17–19 are per grid, and both grids have to be walked.** Registration is
 the thing that breaks when the column count changes: A8 has five vertical cut

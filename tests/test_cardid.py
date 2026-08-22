@@ -465,3 +465,43 @@ cards:
     assert "id: A45DK" not in after, f"the duplicate was not reassigned: {after}"
     assert after.count("- id: ") == 1, f"an id was added to the id-less card: {after}"
     assert "front: 'x'" in after and "front: 'z'" in after, "the cards themselves changed"
+
+
+# --- an id the user did not put first ----------------------------------------
+#
+# The contract says the reader must accept `id` anywhere in the card; writing it
+# first is only what /cards and backfill do. So remove_ids has to leave such a
+# card alone — it undoes the shape insert_ids writes and nothing else.
+
+ID_LAST = """cards:
+  - front: 'a'
+    back: 'b'
+    id: A45DK
+"""
+
+ID_MIDDLE = """cards:
+  - front: 'a'
+    id: A45DK
+    back: 'b'
+"""
+
+
+@pytest.mark.parametrize("src", [ID_LAST, ID_MIDDLE], ids=["id-last", "id-in-the-middle"])
+def test_remove_ids_leaves_an_id_the_user_placed_alone(src):
+    """It used to merge the card's real first key away — silent data loss.
+
+    `cards_in` reports has_id for *any* key called id, but pairs it with the
+    *first* key's position. Treating the two as the same thing deleted the
+    `front:` line of a card whose id happened to sit lower down.
+    """
+    assert cardid.remove_ids(src) == src
+
+
+@pytest.mark.parametrize("src", [ID_LAST, ID_MIDDLE], ids=["id-last", "id-in-the-middle"])
+def test_insert_ids_does_not_add_a_second_id_to_such_a_card(src):
+    assert cardid.insert_ids(src, _counter()) == src
+
+
+@pytest.mark.parametrize("src", [ID_LAST, ID_MIDDLE], ids=["id-last", "id-in-the-middle"])
+def test_the_round_trip_still_holds_for_such_a_card(src):
+    assert cardid.remove_ids(cardid.insert_ids(src, _counter())) == src

@@ -694,3 +694,23 @@ def test_no_advisory_when_every_card_has_an_id(tmp_path, capsys):
     cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
     build_pdf.advise_about_ids(cards)
     assert capsys.readouterr().err == ""
+
+
+def test_a_filtered_build_still_validates_the_cards_it_filters_out(tmp_path):
+    """A duplicate id is a fact about the file, not about the slice printed.
+
+    The validation used to sit inside the per-card loop, after the subtopic
+    filter, so `--subtopic` quietly skipped the cards it excluded — and the
+    duplicate they collided with went unreported.
+    """
+    deck = WITH_IDS.replace("id: QT8M2", "id: A45DK").replace(
+        "subtopic: 'Bayes'\n    front: 'Second'", "subtopic: 'Markov'\n    front: 'Second'"
+    )
+    path = write(tmp_path, "deck.yaml", deck)
+
+    _, unfiltered, _ = build_pdf.load_cards([path], [], [])
+    _, filtered, _ = build_pdf.load_cards([path], [], ["Bayes"])
+    assert any("A45DK" in e for e in unfiltered), unfiltered
+    assert any("A45DK" in e for e in filtered), (
+        f"the duplicate is outside the filter but still in the file: {filtered}"
+    )

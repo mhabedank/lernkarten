@@ -103,7 +103,11 @@ def cards_in(src):
     the parser already knows where every card starts, so the edit is a splice
     at a known offset rather than a re-serialisation.
 
-    Each entry is (line, column, has_id) for the card's *first key*, 0-based.
+    Each entry is (line, column, has_id, first_is_id) for the card's *first
+    key*, 0-based. The last two are deliberately separate: a card can carry an
+    id further down — the contract lets a reader accept `id` anywhere — and
+    treating "has one" as "starts with one" once deleted the card's real first
+    line.
     """
     node = yamlio.compose(src)
     if node is None or not hasattr(node, "value"):
@@ -140,7 +144,8 @@ def cards_in(src):
             )
         first_key = pairs[0][0]
         has_id = any(getattr(k, "value", None) == "id" for k, _ in pairs)
-        found.append((first_key.start_mark.line, first_key.start_mark.column, has_id))
+        first_is_id = getattr(first_key, "value", None) == "id"
+        found.append((first_key.start_mark.line, first_key.start_mark.column, has_id, first_is_id))
     return found
 
 
@@ -163,7 +168,7 @@ def insert_ids(src, gen):
     if not positions:
         return src
     lines = src.splitlines(keepends=True)
-    for line_no, column, has_id in reversed(positions):
+    for line_no, column, has_id, _first_is_id in reversed(positions):
         if has_id:
             continue
         line = lines[line_no]
@@ -184,8 +189,11 @@ def remove_ids(src):
     if not positions:
         return src
     lines = src.splitlines(keepends=True)
-    for line_no, column, has_id in reversed(positions):
-        if not has_id or line_no + 1 >= len(lines):
+    for line_no, column, _has_id, first_is_id in reversed(positions):
+        # `first_is_id`, not `has_id`: a card carrying an id further down was
+        # not written by insert_ids, so there is nothing here to undo. Acting on
+        # it merged the card's real first key away.
+        if not first_is_id or line_no + 1 >= len(lines):
             continue
         prefix = lines[line_no][:column]
         following = lines[line_no + 1]
@@ -200,6 +208,40 @@ def remove_ids(src):
             del lines[line_no]
         # anything else is an id the user placed themselves; leave it alone
     return "".join(lines)
+
+
+def problems_in(cards, ids_seen, where):
+    """Every unusable or duplicate id among `cards`, as (index, message).
+
+    `ids_seen` maps a normalised id to the (where, index) that claimed it first
+    and is updated in place, so a caller can carry it across files — ids are
+    unique per project, not per file.
+
+    This exists so `build_pdf` and `check_project` cannot drift: they report
+    through different channels (an errors list and a Report), but what counts
+    as wrong is decided once, here.
+    """
+    found = []
+    for index, card in enumerate(cards, start=1):
+        if not isinstance(card, dict) or "id" not in card:
+            continue
+        problem = validate(card["id"])
+        if problem is not None:
+            found.append((index, f"unusable 'id' — {problem}"))
+            continue
+        key = normalise(card["id"])
+        if key in ids_seen:
+            first_where, first_index = ids_seen[key]
+            found.append(
+                (
+                    index,
+                    f"id {card['id']} is already used by card {first_index} "
+                    f"in {first_where} — an id names one card",
+                )
+            )
+            continue
+        ids_seen[key] = (where, index)
+    return found
 
 
 def _read_all(paths):
@@ -304,7 +346,7 @@ def reassign(paths):
 def _replace_id(src, index, new):
     """Rewrite the id of the `index`-th card, leaving every other byte alone."""
     lines = src.splitlines(keepends=True)
-    for position, (line_no, column, has_id) in enumerate(cards_in(src), start=1):
+    for position, (line_no, column, has_id, _first) in enumerate(cards_in(src), start=1):
         if position != index or not has_id:
             continue
         line = lines[line_no]

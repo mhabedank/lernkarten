@@ -1,0 +1,8 @@
+verified: 2026-08-21
+commit: 0bdb1f6 (verified), fixes on top
+findings: 5 (0 CRITICAL, 1 HIGH, 3 MEDIUM, 1 LOW)
+resolved: V1 V2 V3 V4 -- see review.md for what each was and how it was closed
+open: V5 (LOW) -- checklist bookkeeping, not risk
+gates: ruff, pytest, LERNKARTEN_E2E=1 pytest, lernkarten check, check_docs,
+       check_project --strict -- all green after the fixes
+round-trip: 18/18 adversarial inputs invert byte-exactly (was 15/17)

@@ -584,41 +584,30 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
     return subtopics, marked
 
 
-def _check_id(card, where, index, ids_seen, report, strict):
-    """The `id` key: absent is fine, present and wrong is not.
+def _check_ids(cards, where, ids_seen, report, strict):
+    """Report unusable and duplicate ids, and nudge about missing ones.
 
-    Absent can never be an error — a deck written before ids existed is still a
-    valid deck, and making it one would turn a new feature into a breaking
-    change. Under `--strict` it is a nudge, because that gate judges what
-    /cards produced and /cards is supposed to write one.
+    What counts as wrong is decided in `cardid.problems_in`, so this and
+    `build_pdf.load_cards` cannot drift apart — they differ only in where the
+    message goes. Absent is never an error: a deck written before ids existed is
+    still a valid deck, and making it one would turn a new feature into a
+    breaking change. Under `--strict` it is a nudge, because that gate judges
+    what /cards produced and /cards is supposed to write one.
 
     Nothing here writes. This runs inside a CI gate, and a gate that repaired
     the tree would stop being able to fail (FR-013a).
     """
-    if "id" not in card:
-        if strict:
+    for index, problem in cardid.problems_in(cards, ids_seen, where):
+        report.error(where, f"card {index}: {problem}")
+    if not strict:
+        return
+    for index, card in enumerate(cards, start=1):
+        if isinstance(card, dict) and "id" not in card:
             report.warn(
                 where,
                 f"card {index}: no 'id' — /cards assigns one on write; "
                 "`lernkarten id --backfill` fills in a deck written by hand",
             )
-        return
-
-    problem = cardid.validate(card["id"])
-    if problem is not None:
-        report.error(where, f"card {index}: unusable 'id' — {problem}")
-        return
-
-    key = cardid.normalise(card["id"])
-    if key in ids_seen:
-        first_where, first_index = ids_seen[key]
-        report.error(
-            where,
-            f"card {index}: id {card['id']} is already used by card {first_index} "
-            f"in {first_where} — an id has to name one card",
-        )
-        return
-    ids_seen[key] = (where, index)
 
 
 def check_cards(project, subtopics, report, marked=None, strict=False):
@@ -667,6 +656,7 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 "but not a statement. /cards writes the size the deck was written for; "
                 "add 'grid: a7' to say so",
             )
+        _check_ids(data["cards"] or [], where, ids_seen, report, strict)
         fronts = {}
         for i, card in enumerate(data["cards"] or [], start=1):
             report.count("cards")
@@ -678,7 +668,6 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 report.error(where, f"card {i}: same front as card {fronts[front.strip().lower()]}")
             else:
                 fronts[front.strip().lower()] = i
-            _check_id(card, where, i, ids_seen, report, strict)
             if not card.get("subtopic"):
                 report.warn(where, f"card {i}: no subtopic")
             elif subtopics and card["subtopic"] not in subtopics:
