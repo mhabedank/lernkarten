@@ -233,6 +233,10 @@ python3 scripts/zotero_stub.py
 | 17b | print | `--sides simplex`: print the first page range, turn the stack over on the long edge, re-feed, print the second — 100 % scale both times | back of each card exactly behind its front. Note whether your printer stacks face-up: if it does, the second range needs reverse page order from the print dialog |
 | 18 | print | cut along the crop marks | cards of the size the grid promises, nothing clipped |
 | 19 | print | `lernkarten build … --margin 0` on a borderless printer | full-bleed cards, no white edge |
+| 20 | print | read the card id off a printed sheet at arm's length | the five characters are legible without leaning in — this is the whole point of setting it at 8 pt, and no test can judge it |
+| 21 | `/cards` | **SC-007**: read an id off a printed card, name it in a Claude session (*"A45DK uses a word it never defines"*), let the session edit that card, then look again | the id is unchanged and still names the same card. This is the feature's reason for existing and it leaves nothing on disk, so per constitution XI it is named here rather than left implicit |
+| 22 | `/print` | `lernkarten check` on a deck written before ids existed | exit 0, and **one** advisory line naming `--backfill` — not one line per card. The exit code is asserted by a test; the wording is a judgement and lives here |
+| 23 | `/print` | photocopy a sheet | the id still reads in black only |
 
 **Steps 17–19 are per grid, and both grids have to be walked.** Registration is
 the thing that breaks when the column count changes: A8 has five vertical cut

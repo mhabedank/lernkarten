@@ -98,7 +98,7 @@ either size:
 |---|---|---|
 | header | 8.6 mm | topic `/` subtopic, then the side marker: a red circle on the front, a yellow disc on the back |
 | field | the rest | one prompt on the front, the answer on the back |
-| footer | 6.2 mm | the mark, `LERNKARTEN BY MHABEDANK`, the card id and `1/2` or `2/2` |
+| footer | 6.2 mm | the mark, `LERNKARTEN BY MHABEDANK`, the card id at 8 pt and `1/2` or `2/2` |
 
 The frame and the band rules are 0.9 pt; the field is inset 3.4 mm across and
 2.8 mm down. The front prompt is Jost 500 at 14 pt and sits centred in the
@@ -107,6 +107,20 @@ wherever the answer leaves room, are one or two dotted rules — the note you
 write the third time you get the card wrong, and the one thing paper does that
 an app cannot. The source, if the card names one, sits on the bottom line
 behind a short blue dash.
+
+The card id sits in the right-hand block of the footer, IBM Plex Mono at 8 pt,
+followed by `·` and the side marker. It is five characters of Crockford Base32,
+and the size follows from that: the old id was the file name and the card's
+position — `genai-foundation-and-model-landscape-32` — which measured 124.62 pt
+against a block capped at `cw / 3`, 94.49 pt, with `clip: true`. It was cut off
+on the printed card. Five characters measure 52.80 pt, 56 % of the cap, which is
+what makes room to set it large enough to read across a desk.
+
+**8 pt and not larger**, though 11 pt would still fit the box. The wordmark
+beside it is 5 pt, and at 11 pt the id dominates a band that is meant to be
+quiet. The clip cap is not the binding constraint here; the balance of the
+footer is. A card with no id — a deck written before ids existed — shows the
+side marker on its own, with no separator in front of nothing.
 
 Two things the layout deliberately does *not* do:
 

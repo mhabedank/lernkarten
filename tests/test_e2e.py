@@ -14,8 +14,8 @@ import os
 import re
 import shutil
 import subprocess
-import tempfile
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -893,11 +893,18 @@ def measured_id_width(size_pt):
         source.write_text(MEASURE.replace("SIZE", f"{size_pt}pt"), encoding="utf-8")
         result = subprocess.run(
             [
-                str(binary), "query", "--ignore-system-fonts",
-                "--font-path", str(ROOT / "assets" / "fonts"),
-                str(source), "<measurement>", "--field", "value",
+                str(binary),
+                "query",
+                "--ignore-system-fonts",
+                "--font-path",
+                str(ROOT / "assets" / "fonts"),
+                str(source),
+                "<measurement>",
+                "--field",
+                "value",
             ],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)

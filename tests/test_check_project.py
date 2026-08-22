@@ -1048,9 +1048,7 @@ def test_checking_never_writes_to_the_files_it_reads(tmp_path):
     root = Path(project(tmp_path, cards=two_cards("A45DK", "A45DK")))
 
     def digests():
-        return {
-            p: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob("*.yaml"))
-        }
+        return {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob("*.yaml"))}
 
     before = digests()
     check_project.check(root, check_project.Report(), strict=True)

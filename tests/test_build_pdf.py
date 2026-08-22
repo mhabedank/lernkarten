@@ -676,12 +676,10 @@ def test_a_deck_with_no_ids_is_advised_once_not_once_per_card(tmp_path, capsys):
     A per-card advisory on a 300-card deck would bury the output it is printed
     alongside, which is how a helpful nudge becomes noise people learn to skip.
     """
-    many = MINIMAL.replace(
-        "  - subtopic: 'Bayes'\n    front: 'Question'\n    back: 'Answer'\n    source: 'Lecture 3'\n",
-        "".join(
-            f"  - subtopic: 'Bayes'\n    front: 'Q{n}'\n    back: 'A{n}'\n" for n in range(5)
-        ),
+    body = "".join(
+        f"  - subtopic: 'Bayes'\n    front: 'Q{n}'\n    back: 'A{n}'\n" for n in range(5)
     )
+    many = "topic: 'Statistics'\ncards:\n" + body
     cards, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", many)], [], [])
     assert errors == [], "a missing id is never an error"
     assert len(cards) == 5
