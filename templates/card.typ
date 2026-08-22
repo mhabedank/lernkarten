@@ -89,11 +89,15 @@
   // the mark and the wordmark and leaves the id.
   let footer(card, back) = context {
     let top = ch - foot-h
+    // A card written before ids existed carries none, and then the block shows
+    // the side marker on its own — a separator with nothing in front of it
+    // would be a smudge, not information.
+    let side = if back { "2/2" } else { "1/2" }
     let id = text(
       font: mono,
-      size: 4.6pt * scale,
+      size: 8pt * scale,
       fill: muted,
-      card.id + " · " + (if back { "2/2" } else { "1/2" }),
+      if card.id == "" { side } else { card.id + " · " + side },
     )
     // The id block takes exactly the width its text needs, so nothing wraps
     // and the rule in front of it stays put whatever the card file is called.

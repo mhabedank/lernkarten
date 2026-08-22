@@ -613,3 +613,14 @@ def test_the_five_operations_together_leave_every_id_where_it_was(tmp_path):
     assert _ids_by_front(changed)["First"] == original[0]["id"]
     assert _ids_by_front(changed)["Second, edited"] == original[1]["id"]
     assert {c["id"] for c in filtered} <= {c["id"] for c in changed}
+
+
+# --- the footer when a card has no id (FR-005) -------------------------------
+
+
+def test_the_payload_carries_the_empty_id_rather_than_dropping_the_key(tmp_path):
+    """card.typ reads `card.id` unconditionally, so the key must always be there."""
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    payload = json.loads(json.dumps(cards))  # the shape that reaches the template
+    assert "id" in payload[0] and payload[0]["id"] == ""
+    assert "ref" in payload[0] and payload[0]["ref"]
