@@ -47,6 +47,21 @@ the file sees the handle before the content.
 | `/cards` (the skill) | assigns a fresh id to every card it creates; **never** alters an id already present |
 | `lernkarten id --backfill` | assigns ids to cards lacking one; leaves existing ids byte-identical; idempotent |
 | `lernkarten check` / `check_project.py` | **never writes.** Read-only CI gate — reports and exits non-zero |
+| `lernkarten build` | **never writes** to `cards/*.yaml`. It reads ids and renders them; it never assigns, backfills or reassigns |
+
+## The `id` subcommand
+
+`lernkarten id` is the **writing** path. Its surface is fixed here because
+`quickstart.md` used two spellings and an implementer would otherwise guess.
+
+| Invocation | Behaviour |
+|---|---|
+| `lernkarten id --backfill <files>` | assign ids to cards lacking one; leave existing ids untouched; idempotent; all-or-nothing |
+| `lernkarten id --reassign <files>` | resolve duplicates across the given files, first-occurrence-wins by argument order |
+| `lernkarten id <files>` | **not defined** — exit non-zero with usage. One of the two flags is required, so the destructive act is never the default |
+
+Both flags read every file before writing any, so a failure anywhere leaves the
+whole set untouched (FR-007).
 
 ## Validation
 

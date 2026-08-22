@@ -113,7 +113,7 @@ Constitution XI it leaves nothing on disk to assert against.
 ## Scenario 6 — collision reassignment is steerable (SC-008) *(writing path)*
 
 ```bash
-lernkarten id deck-a.yaml deck-b.yaml     # both contain A45DK
+lernkarten id --reassign deck-a.yaml deck-b.yaml   # both contain A45DK
 ```
 
 **Expected**: the card in `deck-a.yaml` keeps `A45DK`; the one in `deck-b.yaml`

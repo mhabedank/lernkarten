@@ -77,7 +77,7 @@ with no `·` separator — which is the fallback FR-005 specifies (US2 scenario 
 
 ### Card position (`cardid.cards_in`)
 
-What `yaml.compose()` yields, reduced to what the splice needs:
+What `yamlio.compose()` yields (PyYAML's `compose`, reached through the bootstrap), reduced to what the splice needs:
 
 ```python
 [

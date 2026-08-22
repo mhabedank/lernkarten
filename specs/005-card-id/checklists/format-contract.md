@@ -16,7 +16,8 @@
 - [x] CHK004 Is the behaviour specified when **reassignment itself collides** with an existing id? [Gap, Spec §FR-013] — the reassignment rule is defined; the recursive case is not.
       → **Resolved 2026-08-21 — FR-013d specifies the recursive case; one pass leaves zero duplicates.**
 - [ ] CHK005 Are requirements defined for a card file that parses but is not the expected shape (`cards:` a mapping, a card a scalar)? [Coverage, Gap] — existing `build_pdf` behaviour covers some of this; the spec does not say whether id validation runs before or after that check.
-- [ ] CHK006 Does the spec state whether `lernkarten id` **requires** an explicit subcommand flag, or whether bare `lernkarten id <files>` is defined? [Ambiguity] — `quickstart.md` uses both `lernkarten id --backfill` and bare `lernkarten id` for reassignment without distinguishing them.
+- [x] CHK006 Does the spec state whether `lernkarten id` **requires** an explicit subcommand flag, or whether bare `lernkarten id <files>` is defined? [Ambiguity] — `quickstart.md` uses both `lernkarten id --backfill` and bare `lernkarten id` for reassignment without distinguishing them.
+      → **Resolved 2026-08-21 (Phase 6) — contracts/cards-yaml.md § The `id` subcommand fixes the surface: `--backfill` and `--reassign`, bare `lernkarten id` exits non-zero with usage.**
 
 ## Requirement Clarity
 
@@ -24,8 +25,10 @@
       → **Resolved 2026-08-21 — FR-006a restates preservation as a round-trip, removing the contradiction.**
 - [x] CHK008 Can "well-formed footer" be objectively measured, or does it rest on reviewer judgement? [Measurability, Spec §FR-005] — contrast FR-010, which is measurable by construction.
       → **Resolved 2026-08-21 — FR-005's fallback is now concrete, so it is measurable.**
-- [ ] CHK009 Is the duplicate test specified to operate on the **normalised** id rather than the literal string? [Ambiguity, Spec §FR-004 + §FR-008] — if `a45dk` and `A45DK` sit in two cards, FR-004 implies they collide but FR-008 never says the comparison is normalised first.
-- [ ] CHK010 Is "the writing path" defined by enumeration rather than by description? [Clarity, Spec §FR-013a] — the split between writing and validating paths is load-bearing for SC-009, so which commands belong to each must be listed, not inferred.
+- [x] CHK009 Is the duplicate test specified to operate on the **normalised** id rather than the literal string? [Ambiguity, Spec §FR-004 + §FR-008] — if `a45dk` and `A45DK` sit in two cards, FR-004 implies they collide but FR-008 never says the comparison is normalised first.
+      → **Resolved 2026-08-21 (Phase 6) — FR-008 now says sharing is judged on the normalised id, so `a45dk` and `A45DK` are a duplicate.**
+- [x] CHK010 Is "the writing path" defined by enumeration rather than by description? [Clarity, Spec §FR-013a] — the split between writing and validating paths is load-bearing for SC-009, so which commands belong to each must be listed, not inferred.
+      → **Resolved 2026-08-21 (Phase 6) — FR-013a enumerates both paths and places `lernkarten build` in neither.**
 
 ## Requirement Consistency
 
@@ -46,7 +49,8 @@
 ## Backwards Compatibility
 
 - [ ] CHK018 Are requirements defined for the **mixed** case — some cards with ids, some without — at every touchpoint (build, check, backfill, render), not just at build? [Coverage, Spec §US2 scenario 3] — the spec covers build and backfill; check and render are implied only.
-- [ ] CHK019 Is the migration path stated as strictly opt-in, with no command that silently backfills as a side effect? [Consistency, Contract §Backwards compatibility] — the read-only guarantee (FR-013a) covers `check`; confirm `build` is equally constrained.
+- [x] CHK019 Is the migration path stated as strictly opt-in, with no command that silently backfills as a side effect? [Consistency, Contract §Backwards compatibility] — the read-only guarantee (FR-013a) covers `check`; confirm `build` is equally constrained.
+      → **Resolved 2026-08-21 (Phase 6) — the contract's writer table states `lernkarten build` never writes to cards/*.yaml.**
 
 ## Notes
 

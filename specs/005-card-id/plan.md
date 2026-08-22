@@ -72,7 +72,8 @@ assert something weaker than FR-006 states — which is how a requirement quietl
 stops being true.
 
 **The chosen approach does not replace a library, it uses one.**
-`yaml.compose()` — PyYAML, already a runtime dependency — returns a node tree
+`compose()` — PyYAML, already a runtime dependency, reached through a new public
+`yamlio.compose()` so the bootstrap is not bypassed — returns a node tree
 carrying `start_mark`/`end_mark` line and column for every node. The library
 parses; the library locates each card; the only original code is a `str`
 insertion at a position the library supplied. No scanner, no parser, no emitter
@@ -105,7 +106,7 @@ Not applicable — no new package, dev tool or binary.
 | III | **(GATED)** Nothing is hand-rolled that a vetted library already does — or the Reuse check above says why | [x] The Reuse check above says why, at length. PyYAML does the parsing and supplies the positions; only the text splice is ours. |
 | IV | **(GATED)** Every new dependency has a completed vetting table above, and a reviewer read it | [x] No new dependency, so no table is owed. |
 | V | Code lands in an existing module where one fits; any new `scripts/` file has a reason and a docstring | [x] One new module, `scripts/cardid.py`. Justification in Structure Decision below; it is a **leaf** so `build_pdf`, `check_project` and the new CLI path can all import it without a cycle. |
-| VI | Script imports stay acyclic; the format reader and the engine locator remain leaves | [x] `cardid.py` imports only `yamlio` (and stdlib `secrets`/`re`). `yamlio` and `engine` stay leaves. No cycle: `build_pdf → cardid → yamlio`. |
+| VI | Script imports stay acyclic; the format reader and the engine locator remain leaves | [x] `cardid.py` imports only `yamlio` (and stdlib `secrets`/`re`). To make that true, `yamlio` gains a public `compose()` (T004b–T004d) routed through its existing `_load_pyyaml()` bootstrap — a bare `import yaml` in `cardid` would bypass the bootstrap and crash `check_project.py` on a machine that has never run `deps.activate()`. `yamlio` and `engine` stay leaves. No cycle: `build_pdf → cardid → yamlio`. |
 | VII | **(GATED)** No user content committed; nothing forced past `.gitignore`; examples stay subject-agnostic | [x] New fixtures go in `tests/fixtures/demo-project/`, which is invented material versioned on purpose. `cards/example.yaml` gains ids but stays a probability example. **Needs an explicit note in the PR description.** |
 | VIII | No binaries committed; new test material is generated from a text source | [x] Every new fixture is a text `.yaml`. `make_testdata.py` is not involved. |
 | IX | Typst sources edited, never generated files; nothing in `output/` hand-edited | [x] `templates/card.typ` is a source. Nothing in `output/` is touched. |
@@ -269,7 +270,7 @@ validation table and the backwards-compatibility rule, is in
 | `generate(taken)` | a fresh 5-char id not in `taken` (`secrets.choice`, redraw on clash) |
 | `normalise(text)` | upper-case and fold `I`/`L` → `1`, `O` → `0` (FR-004) |
 | `validate(text)` | `None` if valid, else why — length, alphabet, or type |
-| `cards_in(src)` | each card's marks, via `yaml.compose` |
+| `cards_in(src)` | each card's marks, via `yamlio.compose` (never a bare `import yaml`) |
 | `insert_ids(src, gen)` | splice `id:` as the first key of every card lacking one |
 | `remove_ids(src)` | the inverse — exists so the round-trip is *assertable* |
 | `backfill(paths)` | all-or-nothing across the invocation (FR-007) |
@@ -340,7 +341,7 @@ assertable form: the no-id fallback *value* (CHK001), redraw termination
 (CHK003), and the recursive collision case (CHK004). Assertion 4 now cites
 FR-006a, the round-trip formulation that removes FR-006's self-contradiction
 (CHK007), and assertion 17 pins 8 pt rather than accepting anything above the old
-floor (CHK020). **20 assertions total.**
+floor (CHK020). **20 assertions total.** *(Revised again after the Phase 7 cross-model review: T004c, T009a and T029a add three more — a bootstrap-safe `yamlio.compose()`, a guard against flow-style and aliased cards, and the `lernkarten check` path that SC-004 actually names. **23 assertions.**)*
 
 **Nothing in this table depends on a `--card` flag** — `/print` selection by id
 is out of scope (FR-014), and no assertion smuggles it back in.
