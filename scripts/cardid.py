@@ -226,14 +226,19 @@ def _read_all(paths):
 
 
 def ids_in(src):
-    """Every id declared in `src`, in file order."""
+    """Every id declared in `src`, as (card position, id), in file order.
+
+    The position is the card's own, counting from one — not its position among
+    the cards that happen to have an id. In a deck whose first card is id-less
+    the two differ, and rewriting by the wrong one edits the wrong card.
+    """
     data = yamlio.load(src)
     if not isinstance(data, dict):
         return []
     found = []
-    for card in data.get("cards") or []:
+    for position, card in enumerate(data.get("cards") or [], start=1):
         if isinstance(card, dict) and isinstance(card.get("id"), str):
-            found.append(card["id"])
+            found.append((position, card["id"]))
     return found
 
 
@@ -245,7 +250,7 @@ def backfill(paths):
     downloaded.
     """
     texts = _read_all(paths)
-    taken = {normalise(i) for src in texts.values() for i in ids_in(src)}
+    taken = {normalise(i) for src in texts.values() for _, i in ids_in(src)}
 
     def fresh():
         new = generate(taken)
@@ -274,12 +279,12 @@ def reassign(paths):
     """
     texts = _read_all(paths)
     seen = {}
-    taken = {normalise(i) for src in texts.values() for i in ids_in(src)}
+    taken = {normalise(i) for src in texts.values() for _, i in ids_in(src)}
     changes = []
 
     for path, src in texts.items():
         out = src
-        for index, old in enumerate(ids_in(src), start=1):
+        for index, old in ids_in(src):
             key = normalise(old)
             if key not in seen:
                 seen[key] = (path, index)

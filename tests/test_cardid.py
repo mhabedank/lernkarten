@@ -434,3 +434,34 @@ def test_reassign_does_nothing_when_there_is_nothing_to_resolve(tmp_path):
     before = a.read_text(encoding="utf-8")
     assert cardid.reassign([a]) == []
     assert a.read_text(encoding="utf-8") == before
+
+
+def test_reassign_targets_the_right_card_in_a_mixed_deck(tmp_path):
+    """The index a duplicate is found at is not the card's position.
+
+    `ids_in` skips cards that have no id, so in a deck whose first card is
+    id-less the second card's id comes back at index 1 — and rewriting "card 1"
+    would edit the wrong card, or silently edit nothing.
+    """
+    first = _write(tmp_path, "first.yaml", DECK_A)  # one card, id A45DK
+    mixed = _write(
+        tmp_path,
+        "mixed.yaml",
+        """topic: 'Mixed'
+cards:
+  - subtopic: 'No id here'
+    front: 'x'
+    back: 'y'
+  - id: A45DK
+    subtopic: 'Collides'
+    front: 'z'
+    back: 'w'
+""",
+    )
+    cardid.reassign([first, mixed])
+
+    assert "id: A45DK" in first.read_text(encoding="utf-8"), "the first file keeps its id"
+    after = mixed.read_text(encoding="utf-8")
+    assert "id: A45DK" not in after, f"the duplicate was not reassigned: {after}"
+    assert after.count("- id: ") == 1, f"an id was added to the id-less card: {after}"
+    assert "front: 'x'" in after and "front: 'z'" in after, "the cards themselves changed"
