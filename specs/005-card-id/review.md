@@ -353,3 +353,20 @@ three MEDIUM, one LOW. All five are recorded in `.verify-done`. Four were fixed:
 
 **V5 (LOW)** — checklist items now answerable against the code — is left open
 deliberately; it is bookkeeping, not risk.
+
+### Found while cutting the release — 2026-08-22
+
+`bin/lernkarten` is a **symlink** to `scripts/lernkarten` (git mode `120000`),
+not a byte-identical copy. The plan, the tasks and this review all described
+them as two files to keep in sync, and the check used to confirm it —
+`diff bin/lernkarten scripts/lernkarten` — follows the link and compares the
+file to itself, so it reported "identical" no matter what.
+
+Writing the `id` subcommand to both paths therefore applied the same edit twice:
+the dispatch block landed twice (the second unreachable) and the docstring line
+`lernkarten id --backfill cards/*.yaml` printed twice in `lernkarten` with no
+arguments. Behaviour was correct, which is why 434 tests, the cross-model
+review, the verification pass and 13 CI checks all stayed green — the defect was
+duplication, not misbehaviour, and only the help text showed it.
+
+Fixed in `build/release-0-6-0` before tagging. **`bin/lernkarten` is a symlink to `scripts/lernkarten`**, not a copy — `diff` follows it and compares the file to itself, so a check that they match proves nothing. Edit `scripts/lernkarten` only.

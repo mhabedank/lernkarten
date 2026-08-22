@@ -6,7 +6,6 @@
     lernkarten engine --check
     lernkarten deps --check
     lernkarten id --backfill cards/*.yaml
-    lernkarten id --backfill cards/*.yaml
 
 `build` and `check` take the same options; see `lernkarten build --help`.
 """
@@ -39,18 +38,6 @@ def main():
         sys.argv = ["lernkarten deps", *argv[1:]]
         deps.main()
         return
-
-    if command == "id":
-        import deps
-
-        try:
-            deps.activate()
-        except deps.DependencyError as e:
-            sys.exit(f"ERROR: {e}")
-        import cardid
-
-        sys.argv = ["lernkarten id", *argv[1:]]
-        sys.exit(cardid.main())
 
     if command == "id":
         import deps
