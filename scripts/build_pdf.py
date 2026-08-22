@@ -298,9 +298,23 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
                 f.lower() in subtopic.lower() for f in subtopic_filters
             ):
                 continue
+            # The id is the card's own, never its position. It used to be
+            # f"{path.stem}-{i}", which meant inserting a card, deleting one or
+            # renaming the file silently renamed every id after it — so an id
+            # quoted in a conversation stopped naming the card it was quoted
+            # about. Absent is the empty string, never a missing key, because
+            # templates/card.typ reads card.id unconditionally.
+            card_id = c.get("id")
+            card_id = str(card_id) if isinstance(card_id, str) else ""
             cards.append(
                 {
-                    "id": f"{path.stem}-{i}",
+                    "id": card_id,
+                    # How a diagnostic names this card, which is a different job
+                    # from what the card is called. A warning only has to locate
+                    # the card in the file, so position serves; without this a
+                    # deck predating ids would warn "card  does not fit" and say
+                    # nothing at all.
+                    "ref": card_id or f"{path.stem}-{i}",
                     "topic": topic,
                     "subtopic": subtopic,
                     "front": str(c["front"]),
@@ -421,7 +435,7 @@ def report_failure(cards, message, margin, grid, binary, workdir):
     culprit = offending_card(cards, margin, grid, binary, workdir)
     if culprit:
         print(
-            f"  Offending card: {culprit['id']} — {culprit['topic']}"
+            f"  Offending card: {culprit['ref']} — {culprit['topic']}"
             f"{' / ' + culprit['subtopic'] if culprit['subtopic'] else ''}",
             file=sys.stderr,
         )

@@ -72,7 +72,7 @@ The second run changes the file **not at all**.
 The precise property, and the one the test asserts, is a byte-exact round trip:
 
 ```python
-remove_ids(insert_ids(src)) == src      # on LF, CRLF and non-ASCII decks
+remove_ids(insert_ids(src)) == src  # on LF, CRLF and non-ASCII decks
 ```
 
 A naive "strip the `id:` lines and compare" check gives a **false failure** —

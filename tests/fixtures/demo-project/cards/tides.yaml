@@ -2,35 +2,43 @@ topic: 'Kestrel Islands: Tides'
 language: english
 grid: a7
 cards:
-  - subtopic: 'Rhythm of the tide'
+  - id: 5GDGH
+    subtopic: 'Rhythm of the tide'
     front: 'What does it mean that the Ashwind tide is semidiurnal?'
     back: 'Two high waters and two low waters per tidal day.'
     source: 'Field notes 2, "Basic quantities"'
-  - subtopic: 'Rhythm of the tide'
+  - id: 0TMD9
+    subtopic: 'Rhythm of the tide'
     front: 'How long is a tidal day, and what follows for high water?'
     back: '$24 "h" 50 "min"$. \ Every high water arrives about 50 minutes later than the one on the day before.'
     source: 'Field notes 2'
-  - subtopic: 'Range and the rule of twelfths'
+  - id: DKMPP
+    subtopic: 'Range and the rule of twelfths'
     front: 'How is the tidal range $R$ defined?'
     back: 'The height of high water minus the height of low water. \ At Torvig Harbour the mean range is $3.4 "m"$.'
     source: 'Field notes 2, "Basic quantities"'
-  - subtopic: 'Range and the rule of twelfths'
+  - id: D1DNP
+    subtopic: 'Range and the rule of twelfths'
     front: 'Give the spring and neap range at Torvig Harbour.'
     back: 'Spring: $5.1 "m"$ \ Neap: $1.7 "m"$ \ The spring range is exactly three times the neap range.'
     source: 'Field notes 2, "Basic quantities"'
-  - subtopic: 'Range and the rule of twelfths'
+  - id: FWHJ9
+    subtopic: 'Range and the rule of twelfths'
     front: 'State the rule of twelfths.'
     back: 'The range rises in six hours as $1/12, 2/12, 3/12, 3/12, 2/12, 1/12$. \ Half the range is reached after three hours; hours three and four are the fastest.'
     source: 'Field notes 2, "The rule of twelfths"'
-  - subtopic: 'Range and the rule of twelfths'
+  - id: 2J1EA
+    subtopic: 'Range and the rule of twelfths'
     front: 'When do spring tides occur, and what is the age of the tide?'
     back: 'Two days after new moon and after full moon — twice in a synodic month of $29.5$ days. \ That two-day lag is the age of the tide.'
     source: 'Field notes 2, "Spring and neap"'
-  - subtopic: 'Chart datum and the Ovray rule'
+  - id: 8KX1A
+    subtopic: 'Chart datum and the Ovray rule'
     front: 'What do the charted heights of the archipelago refer to?'
     back: 'Chart datum — the lowest astronomical tide. \ Soundings are a worst case: the real depth is almost always greater.'
     source: 'Field notes 2, "Chart datum"'
-  - subtopic: 'Chart datum and the Ovray rule'
+  - id: SNKTW
+    subtopic: 'Chart datum and the Ovray rule'
     front: 'Why is Ovray Cove unreachable at low water springs?'
     back: 'The cove dries out below $1.2 "m"$ above chart datum, and low water springs is $0.3 "m"$. \ At neaps low water is $1.6 "m"$, so the cove stays usable.'
     source: 'Field notes 2, "The Ovray rule"'

@@ -119,8 +119,10 @@ def test_compose_returns_a_node_tree_not_values():
 def test_compose_marks_each_card_with_its_line_and_column():
     """The splice needs the first key's position, so the marks must be exact."""
     cards = _cards_node(DECK)
-    positions = [(c.value[0][0].value, c.value[0][0].start_mark.line, c.value[0][0].start_mark.column)
-                 for c in cards.value]
+    positions = [
+        (c.value[0][0].value, c.value[0][0].start_mark.line, c.value[0][0].start_mark.column)
+        for c in cards.value
+    ]
     assert positions == [("subtopic", 2, 4), ("subtopic", 5, 4)], positions
 
 

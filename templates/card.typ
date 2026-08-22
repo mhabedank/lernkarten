@@ -153,7 +153,7 @@
       eval(card.front, mode: "markup"),
     )
     if measure(box(width: field-w, prompt)).height > field-h - 2 * pad-y {
-      [#metadata(card.id)<overflow>]
+      [#metadata(card.ref)<overflow>]
     }
     align(horizon + left, box(width: field-w, prompt))
   })
@@ -176,7 +176,7 @@
         + measure(box(width: field-w, source)).height
         + gutter
     )
-    if used > room { [#metadata(card.id)<overflow>] }
+    if used > room { [#metadata(card.ref)<overflow>] }
 
     let free = room - used
     let note-rule = line(length: 100%, stroke: (

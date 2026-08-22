@@ -60,12 +60,12 @@ Unchanged in shape; one field changes provenance.
 
 ```python
 {
-    "id":       "A45DK",   # WAS f"{path.stem}-{i}"; NOW read from the file
-    "topic":    "...",
+    "id": "A45DK",  # WAS f"{path.stem}-{i}"; NOW read from the file
+    "topic": "...",
     "subtopic": "...",
-    "front":    "...",
-    "back":     "...",
-    "source":   "...",
+    "front": "...",
+    "back": "...",
+    "source": "...",
 }
 ```
 
@@ -82,11 +82,11 @@ What `yamlio.compose()` yields (PyYAML's `compose`, reached through the bootstra
 ```python
 [
     {
-        "has_id":     False,
-        "first_key":  ("subtopic", line, column),   # 0-based, from start_mark
-        "last_value": line,                          # from end_mark
+        "has_id": False,
+        "first_key": ("subtopic", line, column),  # 0-based, from start_mark
+        "last_value": line,  # from end_mark
     },
-    ...
+    ...,
 ]
 ```
 

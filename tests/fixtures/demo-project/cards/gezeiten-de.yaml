@@ -4,19 +4,23 @@ topic: 'Kestrel-Inseln: Gezeiten (deutsch)'
 language: german
 grid: a7
 cards:
-  - subtopic: 'Tidenrhythmus'
+  - id: HNHF1
+    subtopic: 'Tidenrhythmus'
     front: 'Was heißt halbtägige (semidiurnale) Tide?'
     back: 'Zwei Hochwasser und zwei Niedrigwasser pro Tidentag.'
     source: 'Feldnotizen 2'
-  - subtopic: 'Tidenrhythmus'
+  - id: FXTQE
+    subtopic: 'Tidenrhythmus'
     front: 'Wie lang ist ein Tidentag im Ashwind-Meer?'
     back: '$24 "h" 50 "min"$ — jedes Hochwasser kommt rund 50 Minuten später als am Vortag.'
     source: 'Feldnotizen 2'
-  - subtopic: 'Tidenhub'
+  - id: P1H4B
+    subtopic: 'Tidenhub'
     front: 'Wie groß sind Spring- und Nipptidenhub in Torvig Harbour?'
     back: 'Springtidenhub: $5.1 "m"$ \ Nipptidenhub: $1.7 "m"$ \ Der Springhub ist genau dreimal so groß wie der Nipphub.'
     source: 'Feldnotizen 2'
-  - subtopic: 'Tidenhub'
+  - id: R3WZ4
+    subtopic: 'Tidenhub'
     front: 'Nenne die Zwölftelregel.'
     back: 'Der Hub steigt in sechs Stunden um $1/12, 2/12, 3/12, 3/12, 2/12, 1/12$. \ Nach drei Stunden ist die Hälfte erreicht.'
     source: 'Feldnotizen 2'

@@ -27,6 +27,7 @@ DEMO_CARD_COUNT = 29
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import engine  # noqa: E402
+import yamlio  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -322,13 +323,32 @@ def bbox_pages(path):
     return pages
 
 
+def declared_ids():
+    """Every id the demo decks declare, read from the card files themselves.
+
+    The ids used to be `<stem>-<n>`, which a regex could pick out of the page.
+    A Crockford id is five characters with no separator, and the header band
+    sets the topic in upper case — so `TIDES` would match a naive pattern just
+    as well as a real id. Matching against what the decks actually declare is
+    both exact and self-maintaining.
+    """
+    found = set()
+    for card_file in CARDS:
+        deck = yamlio.load(Path(card_file).read_text(encoding="utf-8"))
+        for card in deck.get("cards") or []:
+            if isinstance(card, dict) and isinstance(card.get("id"), str):
+                found.add(card["id"])
+    return found
+
+
 def card_grid_per_page(path):
     """The card ids laid out as a grid, page by page: [[row], [row], ...]."""
+    known = declared_ids()
     pages = []
     for words in bbox_pages(path):
         rows = {}
         for x, y, w in words:
-            if not re.fullmatch(r"[\w-]+-\d+", w):
+            if w not in known:
                 continue
             # One row of cards shares a y to well under a millimetre; round so
             # the grouping survives the typesetter's sub-point placement.

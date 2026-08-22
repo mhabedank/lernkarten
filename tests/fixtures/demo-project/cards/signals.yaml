@@ -2,31 +2,38 @@ topic: 'Kestrel Islands: Signals'
 language: english
 grid: a7
 cards:
-  - subtopic: 'The six flags'
+  - id: BS1M5
+    subtopic: 'The six flags'
     front: 'What do the grey and the blue flag mean?'
     back: 'Grey: mail boat sighted. \ Blue: pilot requested.'
     source: 'Field notes 3, "The six flags"'
-  - subtopic: 'The six flags'
+  - id: W9238
+    subtopic: 'The six flags'
     front: 'What does the red flag mean?'
     back: 'Harbour closed — do not enter.'
     source: 'Field notes 3, "The six flags"'
-  - subtopic: 'The six flags'
+  - id: NKQK0
+    subtopic: 'The six flags'
     front: 'Which two flags call for help, and how do they differ?'
     back: 'White: doctor needed on the island. \ Yellow: fresh water short.'
     source: 'Field notes 3, "The six flags"'
-  - subtopic: 'Rules of use'
+  - id: 1E782
+    subtopic: 'Rules of use'
     front: 'How is a mast with two flags read?'
     back: 'From the top down. The upper flag carries the more urgent message.'
     source: 'Field notes 3, rule 2'
-  - subtopic: 'Rules of use'
+  - id: W9KWP
+    subtopic: 'Rules of use'
     front: 'Why is there no "cancel" signal in the flag code?'
     back: 'A flag is only valid while it is hoisted — lowering it is the cancellation.'
     source: 'Field notes 3, rule 1'
-  - subtopic: 'Rules of use'
+  - id: A7BSD
+    subtopic: 'Rules of use'
     front: 'Which flag pair is forbidden, and why?'
     back: 'White over black. \ A doctor is of no use once the black flag is up, and the pair caused confusion.'
     source: 'Field notes 3, rule 4'
-  - subtopic: 'Rules of use'
+  - id: FX9FV
+    subtopic: 'Rules of use'
     front: 'What does a flag at half mast say?'
     back: '"Understood, help is on the way."'
     source: 'Field notes 3, rule 5'

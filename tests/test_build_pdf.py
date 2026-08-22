@@ -42,7 +42,11 @@ def test_load_cards_reads_the_fields(tmp_path):
     assert errors == []
     assert cards == [
         {
-            "id": "a-1",
+            # Was "a-1", the file stem and the card's position. MINIMAL declares
+            # no id, and an absent id is now the empty string — while `ref`
+            # keeps the positional label so diagnostics can still name the card.
+            "id": "",
+            "ref": "a-1",
             "topic": "Statistics",
             "subtopic": "Bayes",
             "front": "Question",
@@ -51,6 +55,116 @@ def test_load_cards_reads_the_fields(tmp_path):
             "language": "english",
         }
     ]
+
+
+# --- the card id comes from the file, not from the card's position ----------
+#
+# It used to be f"{path.stem}-{i}", which meant inserting a card, deleting one
+# or renaming the file silently renamed every id after it — the defect this
+# feature exists to remove.
+
+WITH_IDS = """
+topic: 'Statistics'
+cards:
+  - id: A45DK
+    subtopic: 'Bayes'
+    front: 'First'
+    back: 'a'
+  - id: QT8M2
+    subtopic: 'Bayes'
+    front: 'Second'
+    back: 'b'
+"""
+
+MIXED = """
+topic: 'Statistics'
+cards:
+  - id: A45DK
+    subtopic: 'Bayes'
+    front: 'Has one'
+    back: 'a'
+  - subtopic: 'Bayes'
+    front: 'Has none'
+    back: 'b'
+"""
+
+
+def test_load_cards_takes_the_id_from_the_file(tmp_path):
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
+    assert errors == []
+    assert [c["id"] for c in cards] == ["A45DK", "QT8M2"]
+
+
+def test_a_card_without_an_id_gets_the_empty_string(tmp_path):
+    """Never a missing key: the template reads `card.id` unconditionally."""
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert errors == []
+    assert cards[0]["id"] == ""
+
+
+def test_the_id_is_never_derived_from_the_file_name(tmp_path):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert "a-1" not in [c["id"] for c in cards]
+
+
+def test_a_deck_can_mix_cards_with_and_without_ids(tmp_path):
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", MIXED)], [], [])
+    assert errors == []
+    assert [c["id"] for c in cards] == ["A45DK", ""]
+
+
+def test_renaming_the_file_does_not_change_any_id(tmp_path):
+    """The defect in one assertion: the stem was the id's prefix."""
+    before, _, _ = build_pdf.load_cards([write(tmp_path, "topic-a.yaml", WITH_IDS)], [], [])
+    after, _, _ = build_pdf.load_cards([write(tmp_path, "topic-b.yaml", WITH_IDS)], [], [])
+    assert [c["id"] for c in before] == [c["id"] for c in after]
+
+
+def test_inserting_a_card_before_another_does_not_move_its_id(tmp_path):
+    inserted = WITH_IDS.replace(
+        "cards:\n",
+        "cards:\n  - id: V9WXY\n    subtopic: 'New'\n    front: 'Inserted'\n    back: 'x'\n",
+        1,
+    )
+    original, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    grown, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", inserted)], [], [])
+    by_front = {c["front"]: c["id"] for c in grown}
+    for card in original:
+        assert by_front[card["front"]] == card["id"], card["front"]
+
+
+def test_filtering_by_subtopic_does_not_change_an_id(tmp_path):
+    path = write(tmp_path, "a.yaml", WITH_IDS)
+    everything, _, _ = build_pdf.load_cards([path], [], [])
+    filtered, _, _ = build_pdf.load_cards([path], [], ["Bayes"])
+    assert [c["id"] for c in filtered] == [c["id"] for c in everything]
+
+
+# --- `ref`: how a diagnostic names a card, which is not the same job ---------
+#
+# The id is the name a person quotes, so it must not move when the deck is
+# edited. A warning only has to *locate* the card in the file, and position is
+# perfectly good for that. Keeping them separate is what stops a legacy deck
+# with no ids from emitting "WARNING: card  does not fit" with nothing in it.
+
+
+def test_ref_is_the_id_when_the_card_has_one(tmp_path):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
+    assert [c["ref"] for c in cards] == ["A45DK", "QT8M2"]
+
+
+def test_ref_falls_back_to_the_position_when_there_is_no_id(tmp_path):
+    """A blind warning is worse than a positional one."""
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "overflowing.yaml", MINIMAL)], [], [])
+    assert cards[0]["ref"] == "overflowing-1"
+    assert cards[0]["id"] == "", "the printed id stays empty; only the diagnostic falls back"
+
+
+def test_every_card_in_a_mixed_deck_still_gets_a_usable_ref(tmp_path):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", MIXED)], [], [])
+    refs = [c["ref"] for c in cards]
+    assert refs == ["A45DK", "deck-2"]
+    assert all(refs), "no card may end up with an empty diagnostic label"
 
 
 def test_load_cards_reports_broken_files(tmp_path):
