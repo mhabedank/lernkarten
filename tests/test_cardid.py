@@ -296,3 +296,141 @@ cards:
     out = cardid.insert_ids(ok, _counter())
     assert out.count("id:") == 2
     assert cardid.remove_ids(out) == ok
+
+
+# --- backfill and reassign: the writing path ---------------------------------
+
+DECK_A = """topic: 'Deck A'
+cards:
+  - id: A45DK
+    subtopic: 'One'
+    front: 'a'
+    back: 'b'
+"""
+
+DECK_B = """topic: 'Deck B'
+cards:
+  - id: A45DK
+    subtopic: 'One'
+    front: 'c'
+    back: 'd'
+"""
+
+PLAIN = """topic: 'Plain'
+cards:
+  - subtopic: 'One'
+    front: 'a'
+    back: 'b'
+  - subtopic: 'Two'
+    front: 'c'
+    back: 'd'
+"""
+
+
+def _write(tmp_path, name, text):
+    path = tmp_path / name
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_backfill_gives_every_card_an_id(tmp_path):
+    path = _write(tmp_path, "plain.yaml", PLAIN)
+    cardid.backfill([path])
+    written = path.read_text(encoding="utf-8")
+    assert written.count("- id: ") == 2
+    assert cardid.remove_ids(written) == PLAIN
+
+
+def test_backfill_is_idempotent(tmp_path):
+    path = _write(tmp_path, "plain.yaml", PLAIN)
+    cardid.backfill([path])
+    once = path.read_text(encoding="utf-8")
+    cardid.backfill([path])
+    assert path.read_text(encoding="utf-8") == once
+
+
+def test_backfill_leaves_an_existing_id_alone(tmp_path):
+    path = _write(tmp_path, "mixed.yaml", DECK_WITH_ONE_ID)
+    cardid.backfill([path])
+    written = path.read_text(encoding="utf-8")
+    assert "id: A45DK" in written
+    assert written.count("- id: ") == 2
+
+
+def test_backfill_never_repeats_an_id_across_files(tmp_path):
+    a = _write(tmp_path, "a.yaml", PLAIN)
+    b = _write(tmp_path, "b.yaml", PLAIN)
+    cardid.backfill([a, b])
+    import re as _re
+
+    ids = _re.findall(r"- id: (\S+)", a.read_text() + b.read_text())
+    assert len(ids) == 4 and len(set(ids)) == 4, ids
+
+
+def test_backfill_writes_nothing_at_all_when_one_file_is_unusable(tmp_path):
+    """FR-007: all of them or none — never a half-migrated project."""
+    good = _write(tmp_path, "good.yaml", PLAIN)
+    bad = _write(tmp_path, "bad.yaml", "topic: 'unclosed\ncards:\n")
+    before = good.read_text(encoding="utf-8")
+
+    with pytest.raises(cardid.CardIdError) as e:
+        cardid.backfill([good, bad])
+
+    assert "bad.yaml" in str(e.value), f"the message has to name the file: {e.value}"
+    assert good.read_text(encoding="utf-8") == before, "a healthy file was written anyway"
+
+
+def test_backfill_needs_no_engine_and_no_network(tmp_path, monkeypatch):
+    """FR-012: this is the first thing a user runs on a fresh checkout."""
+    import socket
+
+    monkeypatch.setattr(socket, "socket", _forbidden("network"))
+    path = _write(tmp_path, "plain.yaml", PLAIN)
+    cardid.backfill([path])
+    assert path.read_text(encoding="utf-8").count("- id: ") == 2
+
+
+def _forbidden(what):
+    def boom(*_a, **_k):
+        raise AssertionError(f"{what} must not be needed here")
+
+    return boom
+
+
+def test_reassign_keeps_the_first_and_moves_the_later_one(tmp_path):
+    """FR-013b: first occurrence wins, by the order given on the command line."""
+    a = _write(tmp_path, "a.yaml", DECK_A)
+    b = _write(tmp_path, "b.yaml", DECK_B)
+    changes = cardid.reassign([a, b])
+
+    assert "id: A45DK" in a.read_text(encoding="utf-8"), "the first file keeps its id"
+    assert "id: A45DK" not in b.read_text(encoding="utf-8"), "the later one had to move"
+    assert len(changes) == 1
+    assert changes[0]["old"] == "A45DK" and changes[0]["new"] != "A45DK"
+
+
+def test_swapping_the_arguments_reassigns_the_other_card(tmp_path):
+    """SC-008: this is what makes 'the user steers it' true rather than said."""
+    a = _write(tmp_path, "a.yaml", DECK_A)
+    b = _write(tmp_path, "b.yaml", DECK_B)
+    cardid.reassign([b, a])
+    assert "id: A45DK" in b.read_text(encoding="utf-8")
+    assert "id: A45DK" not in a.read_text(encoding="utf-8")
+
+
+def test_reassign_leaves_one_pass_with_no_duplicates(tmp_path):
+    """FR-013d: a replacement that itself clashes has to be redrawn."""
+    import re as _re
+
+    files = [_write(tmp_path, f"{n}.yaml", DECK_A) for n in "abcd"]
+    cardid.reassign(files)
+    ids = _re.findall(r"- id: (\S+)", "".join(f.read_text() for f in files))
+    assert len(ids) == 4, ids
+    assert len(set(ids)) == 4, f"one pass left duplicates behind: {ids}"
+
+
+def test_reassign_does_nothing_when_there_is_nothing_to_resolve(tmp_path):
+    a = _write(tmp_path, "a.yaml", DECK_A)
+    before = a.read_text(encoding="utf-8")
+    assert cardid.reassign([a]) == []
+    assert a.read_text(encoding="utf-8") == before

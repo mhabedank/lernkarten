@@ -953,3 +953,64 @@ def test_the_separator_is_there_when_there_is_an_id(tmp_path):
     target = tmp_path / "id.pdf"
     assert run("build", str(deck), "-o", str(target)).returncode == 0
     assert "·" in _words_on(target)
+
+
+# --- `lernkarten id` through the real command --------------------------------
+
+
+def test_backfill_through_the_command_assigns_ids_and_keeps_the_comments(tmp_path):
+    """US4 end to end. Needs no engine — backfill never renders anything."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(
+        "# a comment that has to survive\n"
+        "topic: 'Plain'\n"
+        "cards:\n"
+        "  - subtopic: 'One'\n"
+        "    front: 'a'\n"
+        "    back: 'b'\n",
+        encoding="utf-8",
+    )
+    before = deck.read_text(encoding="utf-8")
+
+    result = run("id", "--backfill", str(deck))
+    assert result.returncode == 0, result.stderr
+
+    after = deck.read_text(encoding="utf-8")
+    assert after.count("- id: ") == 1, f"no id was written: {after}"
+    assert "# a comment that has to survive" in after
+    assert "front: 'a'" in after
+    assert after != before
+
+
+def test_bare_id_without_a_flag_is_refused_with_usage(tmp_path):
+    """The contract: one of the two flags is required.
+
+    The destructive act must never be what happens when you type the command
+    with no flag and hit return.
+    """
+    deck = tmp_path / "deck.yaml"
+    deck.write_text("topic: 'T'\ncards:\n  - front: 'a'\n    back: 'b'\n", encoding="utf-8")
+    result = run("id", str(deck))
+    assert result.returncode != 0
+    assert "backfill" in (result.stderr + result.stdout).lower()
+
+
+def test_reassign_through_the_command_reports_what_it_cost(tmp_path):
+    """FR-013c: the report has to name the consequence, not just the change."""
+    a = tmp_path / "a.yaml"
+    b = tmp_path / "b.yaml"
+    for path, front in ((a, "a"), (b, "c")):
+        path.write_text(
+            f"topic: 'T'\ncards:\n  - id: A45DK\n    front: '{front}'\n    back: 'x'\n",
+            encoding="utf-8",
+        )
+    result = run("id", "--reassign", str(a), str(b))
+    assert result.returncode == 0, result.stderr
+
+    assert "id: A45DK" in a.read_text(encoding="utf-8"), "the first file keeps its id"
+    assert "id: A45DK" not in b.read_text(encoding="utf-8")
+    message = result.stderr + result.stdout
+    assert "A45DK" in message
+    assert "orphan" in message.lower() or "no longer name" in message.lower(), (
+        f"the report has to state the cost, not just the substitution: {message}"
+    )

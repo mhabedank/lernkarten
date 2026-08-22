@@ -19,9 +19,12 @@ Everything here works with no typesetting engine, no network and no state
 outside the card files themselves.
 """
 
-import secrets  # noqa: F401  - the generator uses it once implemented
+import argparse
+import secrets
+import sys
+from pathlib import Path
 
-import yamlio  # noqa: F401  - compose() for the splice, once implemented
+import yamlio
 
 # The 32 symbols, in Crockford's order. `I`, `L`, `O` and `U` are absent.
 ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -199,18 +202,182 @@ def remove_ids(src):
     return "".join(lines)
 
 
+def _read_all(paths):
+    """Every file's text, or one error naming the first file that failed.
+
+    Reading everything before writing anything is what makes the whole run
+    all-or-nothing: a project half-migrated because the fourth file was
+    unreadable is worse than one not migrated at all.
+    """
+    texts = {}
+    for path in paths:
+        path = Path(path)
+        try:
+            texts[path] = path.read_text(encoding="utf-8")
+        except OSError as e:
+            raise CardIdError(f"{path}: cannot be read — {e}") from e
+        try:
+            cards_in(texts[path])  # parses, and rejects a shape we cannot splice
+        except yamlio.YamlError as e:
+            raise CardIdError(f"{path}: {e}") from e
+        except CardIdError as e:
+            raise CardIdError(f"{path}: {e}") from e
+    return texts
+
+
+def ids_in(src):
+    """Every id declared in `src`, in file order."""
+    data = yamlio.load(src)
+    if not isinstance(data, dict):
+        return []
+    found = []
+    for card in data.get("cards") or []:
+        if isinstance(card, dict) and isinstance(card.get("id"), str):
+            found.append(card["id"])
+    return found
+
+
 def backfill(paths):
-    """Assign ids across `paths`, all of them or none."""
-    return []
+    """Assign ids across `paths`, all of them or none.
+
+    Returns the paths that changed. Needs no engine and no network: this is
+    the first thing a user runs on a fresh checkout, before anything has been
+    downloaded.
+    """
+    texts = _read_all(paths)
+    taken = {normalise(i) for src in texts.values() for i in ids_in(src)}
+
+    def fresh():
+        new = generate(taken)
+        taken.add(normalise(new))
+        return new
+
+    written = []
+    for path, src in texts.items():
+        out = insert_ids(src, fresh)
+        if out != src:
+            path.write_text(out, encoding="utf-8")
+            written.append(path)
+    return written
 
 
 def reassign(paths):
-    """Resolve duplicate ids across `paths`, first occurrence winning."""
-    return []
+    """Resolve duplicate ids across `paths`, first occurrence winning.
+
+    Files are considered in the order given, cards in file order, and the first
+    card seen carrying an id keeps it. That is the only rule the user can
+    steer: argument order is theirs, so putting the deck whose ids they quote
+    first preserves those ids.
+
+    Returns one record per reassignment, for a report that has to say what it
+    cost as well as what it changed.
+    """
+    texts = _read_all(paths)
+    seen = {}
+    taken = {normalise(i) for src in texts.values() for i in ids_in(src)}
+    changes = []
+
+    for path, src in texts.items():
+        out = src
+        for index, old in enumerate(ids_in(src), start=1):
+            key = normalise(old)
+            if key not in seen:
+                seen[key] = (path, index)
+                continue
+            # A replacement is drawn against every id in the combined set, so
+            # resolving one duplicate cannot create another (FR-013d).
+            new = generate(taken)
+            taken.add(normalise(new))
+            seen[normalise(new)] = (path, index)
+            out = _replace_id(out, index, new)
+            changes.append({"file": path, "card": index, "old": old, "new": new})
+        if out != src:
+            path.write_text(out, encoding="utf-8")
+    return changes
+
+
+def _replace_id(src, index, new):
+    """Rewrite the id of the `index`-th card, leaving every other byte alone."""
+    lines = src.splitlines(keepends=True)
+    for position, (line_no, column, has_id) in enumerate(cards_in(src), start=1):
+        if position != index or not has_id:
+            continue
+        line = lines[line_no]
+        head = line[:column]
+        rest = line[column:]
+        value = rest.split(":", 1)[1]
+        keep = len(value) - len(value.lstrip())
+        newline = _newline_of(line)
+        lines[line_no] = f"{head}id:{value[:keep]}{new}{newline}"
+        break
+    return "".join(lines)
+
+
+def report_reassignments(changes, out=sys.stderr):
+    """Say what changed, and what it cost.
+
+    The cost is the point: a reassigned id stops resolving in the conversation
+    that quoted it, and orphans any revision history recorded against it. A
+    report that listed only the substitution would hide the one thing the user
+    needs to know.
+    """
+    if not changes:
+        return
+    for change in changes:
+        print(
+            f"REASSIGNED: {change['file']} card {change['card']}: "
+            f"{change['old']} -> {change['new']}",
+            file=out,
+        )
+    print(
+        f"  {len(changes)} id(s) changed. The old ids no longer name these cards: "
+        "a past conversation quoting one now points at nothing, and any revision "
+        "history kept against it is orphaned.",
+        file=out,
+    )
 
 
 def main():
-    """The `lernkarten id` subcommand."""
+    """The `lernkarten id` subcommand.
+
+    One of the two flags is required. Neither backfilling nor reassigning is
+    what should happen when someone types the command with no flag and hits
+    return — reassignment in particular changes an id a user may have quoted
+    somewhere this tool cannot see.
+    """
+    parser = argparse.ArgumentParser(
+        prog="lernkarten id",
+        description="Give cards a short, stable id, or resolve ids that collide.",
+    )
+    what = parser.add_mutually_exclusive_group(required=True)
+    what.add_argument(
+        "--backfill",
+        action="store_true",
+        help="give every card that has no id one, leaving existing ids alone",
+    )
+    what.add_argument(
+        "--reassign",
+        action="store_true",
+        help="resolve duplicate ids; the first file on the command line keeps its own",
+    )
+    parser.add_argument("files", nargs="+", help="card files, e.g. cards/*.yaml")
+    args = parser.parse_args()
+
+    paths = [Path(f) for f in args.files]
+    try:
+        if args.backfill:
+            written = backfill(paths)
+            if written:
+                print(f"OK: ids written to {len(written)} file(s).")
+            else:
+                print("OK: every card already has an id.")
+        else:
+            changes = reassign(paths)
+            report_reassignments(changes)
+            if not changes:
+                print("OK: no id is used twice.")
+    except CardIdError as e:
+        sys.exit(f"ERROR: {e}")
     return 0
 
 
