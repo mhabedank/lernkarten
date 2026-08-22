@@ -1,0 +1,19 @@
+# Ids using the four characters Crockford Base32 leaves out. I, L and O are
+# misread as 1, 1 and 0 off a printed card; U is out so an id cannot spell
+# something unfortunate.
+topic: 'Kestrel Islands: Tides'
+language: english
+grid: a7
+cards:
+  - id: A45DI
+    subtopic: 'Rhythm of the tide'
+    front: 'Which character is misread as a one?'
+    back: 'A capital I, which is why it is not in the alphabet.'
+  - id: A45DO
+    subtopic: 'Rhythm of the tide'
+    front: 'Which character is misread as a zero?'
+    back: 'A capital O.'
+  - id: A4-DK
+    subtopic: 'Rhythm of the tide'
+    front: 'Is punctuation allowed in an id?'
+    back: 'No — the alphabet is digits and letters only.'

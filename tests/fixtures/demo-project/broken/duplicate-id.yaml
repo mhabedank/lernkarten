@@ -1,0 +1,14 @@
+# Two cards, one id. The state a project reaches by copying a deck from
+# somewhere else, and the thing an id must never do: name two cards.
+topic: 'Kestrel Islands: Tides'
+language: english
+grid: a7
+cards:
+  - id: A45DK
+    subtopic: 'Rhythm of the tide'
+    front: 'What does semidiurnal mean for the Ashwind tide?'
+    back: 'Two high waters and two low waters per tidal day.'
+  - id: A45DK
+    subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '$24 "h" 50 "min"$.'

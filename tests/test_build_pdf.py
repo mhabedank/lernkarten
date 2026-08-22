@@ -624,3 +624,75 @@ def test_the_payload_carries_the_empty_id_rather_than_dropping_the_key(tmp_path)
     payload = json.loads(json.dumps(cards))  # the shape that reaches the template
     assert "id" in payload[0] and payload[0]["id"] == ""
     assert "ref" in payload[0] and payload[0]["ref"]
+
+
+# --- id validation on the `lernkarten check` path ----------------------------
+#
+# `bin/lernkarten check` dispatches to build_pdf with --check; it never calls
+# check_project.py. Validation added only there would leave `lernkarten check`
+# reporting OK on a deck with two cards sharing an id — which is exactly what
+# SC-004 says must not happen. So the rules live in load_cards' errors channel,
+# the same one the schema errors already use.
+
+BROKEN = Path(__file__).resolve().parent / "fixtures" / "demo-project" / "broken"
+
+
+def test_load_cards_reports_a_duplicate_id_naming_both_cards():
+    _, errors, _ = build_pdf.load_cards([str(BROKEN / "duplicate-id.yaml")], [], [])
+    assert errors, "a duplicate id has to reach the check path, not only check_project"
+    assert any("A45DK" in e and "card 1" in e and "card 2" in e for e in errors), errors
+
+
+@pytest.mark.parametrize(
+    ("fixture", "expected"),
+    [
+        ("bad-alphabet-id.yaml", "I"),
+        ("wrong-length-id.yaml", "4"),
+        ("non-string-id.yaml", "int"),
+    ],
+)
+def test_load_cards_reports_an_unusable_id(fixture, expected):
+    _, errors, _ = build_pdf.load_cards([str(BROKEN / fixture)], [], [])
+    assert any(expected in e for e in errors), f"{fixture}: {errors}"
+
+
+def test_a_duplicate_across_two_files_is_still_a_duplicate(tmp_path):
+    """Ids are unique per project, so the check cannot be per file."""
+    a = write(tmp_path, "a.yaml", WITH_IDS)
+    b = write(tmp_path, "b.yaml", WITH_IDS)
+    _, errors, _ = build_pdf.load_cards([a, b], [], [])
+    assert any("A45DK" in e for e in errors), errors
+
+
+def test_a_deck_with_no_ids_produces_no_errors(tmp_path):
+    """US2: absent is not an error, however many cards are missing one."""
+    _, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", MINIMAL)], [], [])
+    assert errors == []
+
+
+def test_a_deck_with_no_ids_is_advised_once_not_once_per_card(tmp_path, capsys):
+    """US2 scenario 2: exit 0, and one line for the run — not one per card.
+
+    A per-card advisory on a 300-card deck would bury the output it is printed
+    alongside, which is how a helpful nudge becomes noise people learn to skip.
+    """
+    many = MINIMAL.replace(
+        "  - subtopic: 'Bayes'\n    front: 'Question'\n    back: 'Answer'\n    source: 'Lecture 3'\n",
+        "".join(
+            f"  - subtopic: 'Bayes'\n    front: 'Q{n}'\n    back: 'A{n}'\n" for n in range(5)
+        ),
+    )
+    cards, errors, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", many)], [], [])
+    assert errors == [], "a missing id is never an error"
+    assert len(cards) == 5
+
+    build_pdf.advise_about_ids(cards)
+    lines = [ln for ln in capsys.readouterr().err.splitlines() if ln.strip()]
+    assert len(lines) == 1, f"one advisory per run, got {len(lines)}: {lines}"
+    assert "backfill" in lines[0], lines[0]
+
+
+def test_no_advisory_when_every_card_has_an_id(tmp_path, capsys):
+    cards, _, _ = build_pdf.load_cards([write(tmp_path, "deck.yaml", WITH_IDS)], [], [])
+    build_pdf.advise_about_ids(cards)
+    assert capsys.readouterr().err == ""

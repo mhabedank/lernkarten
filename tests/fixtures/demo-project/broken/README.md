@@ -13,4 +13,8 @@ that swallows one of these errors breaks a test.
 | `not-a-mapping.yaml` | a top-level list instead of a mapping | `ERROR: expected a mapping with keys 'topic' and 'cards'` |
 | `malformed.yaml` | not readable as YAML | `ERROR: … line N`, exit 1 |
 | `overflows-only-at-a7.yaml` | nothing — the 507-character back fits A8 and not A7 | `WARNING: card … does not fit` by default, silent at `--grid a8`. The only fixture that tells the two grids apart, so the only one that catches an overflow query left at the wrong geometry. The direction inverted with BUG-007: the A8 card is now a scaled A7 card and keeps ~3 % more width, so it holds slightly *more* (first overflow at 520 characters against A7's 500) |
+| `duplicate-id.yaml` | two cards carrying the same `id` | `ERROR: … card 2: id A45DK is already used by card 1`, exit 1 — the message names **both** cards, because knowing only the id leaves you looking for the other one |
+| `bad-alphabet-id.yaml` | ids using `I`, `O` and `-`, none of which are in Crockford Base32 | `ERROR: … 'I' is not in the alphabet`, exit 1 |
+| `wrong-length-id.yaml` | ids of four and six characters | `ERROR: … expected 5 characters, found 4`, exit 1 |
+| `non-string-id.yaml` | `id:` empty, `id: 12345`, `id: [A45DK]` | `ERROR: … expected a string, found NoneType`, exit 1 — present-but-wrong is never mistaken for absent |
 | `escaped-linebreak.yaml` | a line-break `\` directly before a `*`, so the star is escaped rather than the line broken | typeset fails, stderr names the offending card |

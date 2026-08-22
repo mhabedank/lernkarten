@@ -29,6 +29,7 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
+import cardid
 import engine
 import yamlio
 
@@ -270,6 +271,12 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
     cards = []
     errors = []
     declared = []
+    # Ids are unique across the project, not per file, so this outlives the loop.
+    # Validation lives here rather than only in check_project.py because
+    # `lernkarten check` runs this module, not that one — putting the rules
+    # there alone would let `lernkarten check` report OK on a deck whose cards
+    # share an id, which is the one thing an id must never do.
+    ids_seen = {}
     for name in files:
         path = Path(name)
         try:
@@ -305,6 +312,20 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
             # about. Absent is the empty string, never a missing key, because
             # templates/card.typ reads card.id unconditionally.
             card_id = c.get("id")
+            if "id" in c:
+                problem = cardid.validate(c["id"])
+                if problem is not None:
+                    errors.append(f"{path}: card {i}: unusable 'id' — {problem}")
+                else:
+                    key = cardid.normalise(c["id"])
+                    if key in ids_seen:
+                        first_file, first_index = ids_seen[key]
+                        errors.append(
+                            f"{path}: card {i}: id {c['id']} is already used by "
+                            f"card {first_index} in {first_file} — an id names one card"
+                        )
+                    else:
+                        ids_seen[key] = (path.name, i)
             card_id = str(card_id) if isinstance(card_id, str) else ""
             cards.append(
                 {
@@ -324,6 +345,25 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
                 }
             )
     return cards, errors, declared
+
+
+def advise_about_ids(cards):
+    """One line, once, if any card has no id.
+
+    Once per run and not once per card: a 300-card deck would bury whatever it
+    is printed next to, and an advisory people learn to scroll past is worse
+    than none. Never an error — a deck written before ids existed is still a
+    valid deck.
+    """
+    without = sum(1 for c in cards if not c["id"])
+    if not without:
+        return
+    subject = "1 card has" if without == 1 else f"{without} cards have"
+    print(
+        f"NOTE: {subject} no id — run `lernkarten id --backfill` to give them one, "
+        "so a card can be named in conversation.",
+        file=sys.stderr,
+    )
 
 
 def main_language(cards, override=None):
@@ -556,6 +596,7 @@ def main():
     if not cards:
         print("No cards left after filtering — nothing to do.", file=sys.stderr)
         sys.exit(1)
+    advise_about_ids(cards)
 
     try:
         grid = resolve_grid(declared, args.grid)
