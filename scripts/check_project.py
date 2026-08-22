@@ -24,6 +24,7 @@ import sys
 from pathlib import Path
 
 import build_pdf
+import cardid
 import yamlio
 
 # `research` carries no location: /research-gaps synthesised it from the web,
@@ -583,6 +584,43 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
     return subtopics, marked
 
 
+def _check_id(card, where, index, ids_seen, report, strict):
+    """The `id` key: absent is fine, present and wrong is not.
+
+    Absent can never be an error — a deck written before ids existed is still a
+    valid deck, and making it one would turn a new feature into a breaking
+    change. Under `--strict` it is a nudge, because that gate judges what
+    /cards produced and /cards is supposed to write one.
+
+    Nothing here writes. This runs inside a CI gate, and a gate that repaired
+    the tree would stop being able to fail (FR-013a).
+    """
+    if "id" not in card:
+        if strict:
+            report.warn(
+                where,
+                f"card {index}: no 'id' — /cards assigns one on write; "
+                "`lernkarten id --backfill` fills in a deck written by hand",
+            )
+        return
+
+    problem = cardid.validate(card["id"])
+    if problem is not None:
+        report.error(where, f"card {index}: unusable 'id' — {problem}")
+        return
+
+    key = cardid.normalise(card["id"])
+    if key in ids_seen:
+        first_where, first_index = ids_seen[key]
+        report.error(
+            where,
+            f"card {index}: id {card['id']} is already used by card {first_index} "
+            f"in {first_where} — an id has to name one card",
+        )
+        return
+    ids_seen[key] = (where, index)
+
+
 def check_cards(project, subtopics, report, marked=None, strict=False):
     """cards/*.yaml: the schema /print reads, plus the card-style limits.
 
@@ -593,6 +631,10 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
     root = project / "cards"
     if not root.is_dir():
         return
+    # Ids are unique across the project, not per file, so this outlives the loop.
+    # Keyed by the normalised id: `a45dk` and `A45DK` are one id to a reader, so
+    # they have to be one id here too (FR-004).
+    ids_seen = {}
     for path in sorted(root.glob("*.yaml")):
         where = f"cards/{path.name}"
         data = read_yaml(path, report)
@@ -636,6 +678,7 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 report.error(where, f"card {i}: same front as card {fronts[front.strip().lower()]}")
             else:
                 fronts[front.strip().lower()] = i
+            _check_id(card, where, i, ids_seen, report, strict)
             if not card.get("subtopic"):
                 report.warn(where, f"card {i}: no subtopic")
             elif subtopics and card["subtopic"] not in subtopics:

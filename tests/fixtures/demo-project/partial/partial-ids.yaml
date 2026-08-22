@@ -1,0 +1,27 @@
+# A deck part-way through migration: two cards carry ids, two do not.
+#
+# Every other deck here is fully backfilled, which would leave the mixed case —
+# the one a real project is in the moment after `lernkarten id --backfill` is
+# interrupted, or after a card is added by hand — untested end to end.
+topic: 'Kestrel Islands: Harbour signals'
+language: english
+grid: a7
+cards:
+  - id: 7QH3W
+    subtopic: 'Flags'
+    front: 'What does a single blue pennant over Torvig Harbour mean?'
+    back: 'The harbour is closed to sail traffic until the next high water.'
+    source: 'Field notes 4'
+  - subtopic: 'Flags'
+    front: 'What does a red cone hoisted point-down signal?'
+    back: 'A gale is expected from a southerly quarter within twelve hours.'
+    source: 'Field notes 4'
+  - id: MJ0K8
+    subtopic: 'Lights'
+    front: 'How is the Ovray Cove leading light characterised?'
+    back: 'Occulting green, period six seconds, visible seven nautical miles.'
+    source: 'Field notes 4'
+  - subtopic: 'Lights'
+    front: 'What distinguishes an occulting light from a flashing one?'
+    back: 'Occulting is light with brief eclipses; flashing is dark with brief light.'
+    source: 'Field notes 4'

@@ -956,3 +956,102 @@ def test_an_area_that_is_not_a_top_level_topic_warns(tmp_path):
     assert not report.errors, messages(report)
     said = " | ".join(report.warnings)
     assert "Tides and navigation" in said, said
+
+
+# --- the card id (feat/card-id) ---------------------------------------------
+#
+# The check below is the red artifact for the prompt change. A prompt has no
+# unit test, so the only way to make "/cards assigns an id" verifiable at all
+# is a check here plus a case that fails against what the current prompt
+# writes (constitution XI).
+
+
+def test_a_missing_id_warns_only_under_strict(tmp_path):
+    """/cards should write one, but no project on disk has to have one.
+
+    Same shape as the grid key: a deck predating the feature is still a valid
+    deck, so this can never be an error — only a nudge at the gate that judges
+    what the model produced.
+    """
+    silent = project(tmp_path, cards=GOOD_CARDS)
+    report = check_project.check(Path(silent), check_project.Report(), strict=True)
+    # "no 'id'", not just "id" — the missing-grid warning contains the letters
+    # i and d inside "grid", so a loose match here passes without the check
+    # existing at all.
+    assert any("no 'id'" in w for w in report.warnings), report.warnings
+
+    report = check_project.check(Path(silent), check_project.Report())
+    assert not any("no 'id'" in w for w in report.warnings), (
+        f"outside --strict a deck without ids simply predates them: {report.warnings}"
+    )
+
+
+def two_cards(first_id, second_id):
+    """A two-card deck; GOOD_CARDS holds only one, so duplicates need this."""
+    return f"""topic: 'Tides'
+language: english
+cards:
+  - id: {first_id}
+    subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+  - id: {second_id}
+    subtopic: 'Rhythm of the tide'
+    front: 'What does semidiurnal mean?'
+    back: 'Two highs and two lows a day.'
+"""
+
+
+def test_a_duplicate_id_is_an_error_naming_both_cards(tmp_path):
+    """FR-008: an id that names two cards is the one thing this must catch."""
+    report = check(project(tmp_path, cards=two_cards("A45DK", "A45DK")))
+    duplicates = [e for e in report.errors if "A45DK" in e]
+    assert duplicates, messages(report)
+    assert any("card 1" in e and "card 2" in e for e in duplicates), (
+        f"the message has to name both cards, not just the id: {duplicates}"
+    )
+
+
+def test_a_duplicate_is_judged_on_the_normalised_id(tmp_path):
+    """FR-004 + FR-008: `a45dk` and `A45DK` are the same id to a reader."""
+    report = check(project(tmp_path, cards=two_cards("A45DK", "a45dk")))
+    assert any("card 1" in e and "card 2" in e for e in report.errors), messages(report)
+
+
+@pytest.mark.parametrize(
+    ("bad", "expected"),
+    [("A45D", "4"), ("A45DKM", "6"), ("A45DI", "I"), ("A45DO", "O"), ("A4-DK", "-")],
+)
+def test_an_unusable_id_is_reported_with_what_is_wrong(tmp_path, bad, expected):
+    cards = GOOD_CARDS.replace("  - subtopic:", f"  - id: {bad}\n    subtopic:", 1)
+    report = check(project(tmp_path, cards=cards))
+    named = [e for e in report.errors if expected in e]
+    assert named, f"{bad!r} should be reported naming {expected!r}: {messages(report)}"
+    assert any("card 1" in e for e in named), f"the message has to name the card: {named}"
+
+
+@pytest.mark.parametrize("bad", ["", "12345", "[a]"])
+def test_an_id_that_is_not_a_string_is_reported_rather_than_crashing(tmp_path, bad):
+    cards = GOOD_CARDS.replace("  - subtopic:", f"  - id: {bad}\n    subtopic:", 1)
+    report = check(project(tmp_path, cards=cards))
+    assert report.errors, f"`id: {bad}` should be reported: {messages(report)}"
+
+
+def test_checking_never_writes_to_the_files_it_reads(tmp_path):
+    """FR-013a / SC-009: this is a CI gate, and a gate that edits is not a gate.
+
+    Asserted by hashing rather than by reading the code, so it keeps holding
+    when the reassignment path lands next to it.
+    """
+    import hashlib
+
+    root = Path(project(tmp_path, cards=two_cards("A45DK", "A45DK")))
+
+    def digests():
+        return {
+            p: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob("*.yaml"))
+        }
+
+    before = digests()
+    check_project.check(root, check_project.Report(), strict=True)
+    assert digests() == before, "the checker modified a file it was only asked to read"

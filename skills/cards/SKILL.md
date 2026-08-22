@@ -93,7 +93,8 @@ topic: 'Display name'
 language: german               # language of these cards, plain name or ISO code
 grid: a7                       # the card size these cards are written for
 cards:
-  - subtopic: 'Subtopic'
+  - id: A45DK                   # five characters, assigned once, never changed
+    subtopic: 'Subtopic'
     front: 'Question/term'
     back: 'Answer'
     source: 'Short reference'   # optional, printed small on the back
@@ -108,6 +109,27 @@ text was sized for, and `/print` reads it so nobody has to remember a flag.
 52.5 x 74 mm) halves the paper and halves the width every line has. Omitting
 the key still prints at A7, so nothing breaks — but say it rather than imply
 it, and `check_project.py --strict` will ask for it.
+
+**Write an `id:` on every card you create, and never change one you did not.**
+It is the handle a user reads off the printed card and says out loud —
+*"A45DK uses GAN without defining it"* — so it has to keep naming the same card
+after the edit that conversation asks for.
+
+- **Five characters** from `0123456789ABCDEFGHJKMNPQRSTVWXYZ` — Crockford
+  Base32. `I`, `L`, `O` and `U` are not in it: the first three are misread as
+  `1`, `1` and `0` off a printed card, and the fourth is left out so an id
+  cannot spell something unfortunate.
+- **Unique within the project.** Read the ids already in `cards/*.yaml` before
+  you write new ones, and draw again on a clash.
+- **First key on the card**, before `subtopic`, so a diff that adds ids stays
+  readable.
+- **Never rewrite an existing id** — not when you correct the card, not when
+  you move it, not when you rename the file. That is the whole point: an id
+  that changed when a card was fixed would break at the exact moment it was
+  being used.
+- A deck written before ids existed still builds. `lernkarten id --backfill
+  cards/*.yaml` fills in the gaps; do not hand-write ids into an old deck
+  yourself.
 
 **One deck is one size.** The key is top level only, never on a card, and two
 files in one build that declare different grids are refused unless `/print`

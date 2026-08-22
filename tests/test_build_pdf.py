@@ -541,3 +541,75 @@ def test_a_one_page_range_is_written_as_one_page():
     note = build_pdf.print_order_note(2, "simplex")
     assert "page 1" in note and "page 2" in note, note
     assert "1-1" not in note and "2-2" not in note, note
+
+
+# --- the five operations that used to move an id (SC-002) --------------------
+#
+# Each of these silently renamed cards under the old scheme. Together they are
+# the reason the feature exists: an id quoted in a conversation has to still
+# name the same card after the conversation causes an edit.
+
+PARTIAL = Path(__file__).resolve().parent / "fixtures" / "demo-project" / "partial"
+
+
+def _ids_by_front(cards):
+    return {c["front"]: c["id"] for c in cards}
+
+
+def test_a_deck_part_way_through_migration_still_builds(tmp_path):
+    """Some cards with ids, some without — the state a real project sits in."""
+    cards, errors, _ = build_pdf.load_cards([str(PARTIAL / "partial-ids.yaml")], [], [])
+    assert errors == []
+    assert len(cards) == 4
+    assert [c["id"] for c in cards] == ["7QH3W", "", "MJ0K8", ""]
+    assert all(c["ref"] for c in cards), "every card still needs a diagnostic label"
+
+
+def test_deleting_a_card_before_another_does_not_move_its_id(tmp_path):
+    shortened = WITH_IDS.replace(
+        "  - id: A45DK\n    subtopic: 'Bayes'\n    front: 'First'\n    back: 'a'\n", "", 1
+    )
+    full, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    fewer, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", shortened)], [], [])
+    assert _ids_by_front(fewer)["Second"] == _ids_by_front(full)["Second"] == "QT8M2"
+
+
+def test_editing_a_card_does_not_change_its_id(tmp_path):
+    """The case that rules out deriving the id from the card's content.
+
+    Editing is exactly the moment a conversation about a card leads to — so an
+    id that changed here would break at the one point it is most needed.
+    """
+    edited = WITH_IDS.replace("front: 'First'", "front: 'First, corrected'").replace(
+        "back: 'a'", "back: 'a much better answer'"
+    )
+    before, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    after, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", edited)], [], [])
+    assert after[0]["id"] == before[0]["id"] == "A45DK"
+    assert after[0]["front"] != before[0]["front"], "the edit has to have happened"
+
+
+def test_reordering_the_cards_does_not_change_any_id(tmp_path):
+    lines = WITH_IDS.strip().splitlines()
+    head, first, second = lines[:2], lines[2:6], lines[6:]
+    reordered = "\n".join(head + second + first) + "\n"
+    before, _, _ = build_pdf.load_cards([write(tmp_path, "a.yaml", WITH_IDS)], [], [])
+    after, _, _ = build_pdf.load_cards([write(tmp_path, "b.yaml", reordered)], [], [])
+    assert _ids_by_front(after) == _ids_by_front(before)
+
+
+def test_the_five_operations_together_leave_every_id_where_it_was(tmp_path):
+    """SC-002 as one assertion, so a regression in any of the five shows here."""
+    grown = WITH_IDS.replace(
+        "cards:\n",
+        "cards:\n  - id: V9WXY\n    subtopic: 'New'\n    front: 'Inserted'\n    back: 'x'\n",
+        1,
+    ).replace("front: 'Second'", "front: 'Second, edited'")
+    original, _, _ = build_pdf.load_cards([write(tmp_path, "topic-a.yaml", WITH_IDS)], [], [])
+    path = write(tmp_path, "renamed.yaml", grown)
+    changed, _, _ = build_pdf.load_cards([path], [], [])
+    filtered, _, _ = build_pdf.load_cards([path], [], ["Bayes"])
+
+    assert _ids_by_front(changed)["First"] == original[0]["id"]
+    assert _ids_by_front(changed)["Second, edited"] == original[1]["id"]
+    assert {c["id"] for c in filtered} <= {c["id"] for c in changed}
