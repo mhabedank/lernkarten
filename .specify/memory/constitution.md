@@ -44,7 +44,7 @@ The pipeline splits into a **model-driven half** (`/sources`, `/ingest`,
 `scripts/*.py`, `templates/*.typ`).
 
 The two halves never call into each other's internals. Their entire contract is
-five file formats:
+six file formats:
 
 | Artifact | Format |
 |---|---|
@@ -52,9 +52,10 @@ five file formats:
 | `sources.yaml` | source register; every entry has a unique kebab-case `id`. `type: research` is written by `/research-gaps` and carries the `gap` it closes instead of a `path`/`url` |
 | `knowledge/<source-id>/<document>.md` | text with one frontmatter block (`source`, `path`/`url`, `ingested`) |
 | `catalog/topics.md` | topics (`##`) and subtopics (`###`), each with a description and references into `knowledge/`. Optional per subtopic: `Status: gap` \| `out of scope`, `Parents:` (every topic it belongs under, primary first), `Related:`; optional per topic: `Also covers:`. Every one absent means the pre-goal behaviour |
-| `cards/<topic-slug>.yaml` | `topic`, `language`, `cards[]` with `subtopic`, `front`, `back`, optional `source` |
+| `cards/<topic-slug>.yaml` | `topic`, `language`, `cards[]` with `subtopic`, `front`, `back`, optional `source`, optional `front_image`/`back_image` |
+| `figures/<source-id>/<file>` | pictures worth showing rather than only describing — written by `/ingest`, read by the build, gitignored like `knowledge/`. The one artifact that is bytes rather than text |
 
-Changing one of these five formats is a breaking change: it touches the skill
+Changing one of these six formats is a breaking change: it touches the skill
 that writes it, the script that reads it, `scripts/check_project.py`, the demo
 project and the docs. Treat it as such.
 
