@@ -72,6 +72,38 @@ cards:
 """
 
 
+CARDS_WITH_PICTURE = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+    back_image: 'figures/field-notes/chart.png'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'When does slack water follow the turn?'
+    back: 'Roughly two hours after.'
+    source: 'Field notes'
+"""
+
+TOP_LEVEL_PICTURE = """topic: 'Tides'
+language: english
+back_image: 'figures/field-notes/chart.png'
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+
+def with_figure(root, relative="figures/field-notes/chart.png"):
+    """Puts a file where a card or a knowledge document says a picture is."""
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"\x89PNG\r\n\x1a\n")
+    return root
+
+
 def project(
     tmp_path,
     sources=GOOD_SOURCES,
@@ -324,6 +356,42 @@ def test_a_grid_on_an_individual_card_is_reported(tmp_path):
     )
     report = check(project(tmp_path, cards=cards))
     assert any("grid" in e and "card 1" in e for e in report.errors), messages(report)
+
+
+# --- pictures on a card (feat/figure-cards) --------------------------------
+
+
+def test_a_card_may_carry_a_picture(tmp_path):
+    report = check(with_figure(project(tmp_path, cards=CARDS_WITH_PICTURE)))
+    assert not report.errors, messages(report)
+
+
+@pytest.mark.parametrize(
+    ("path", "fragment"),
+    [
+        ("figures/field-notes/gone.png", "does not exist"),
+        ("figures/field-notes/chart.tiff", "not an image the engine reads"),
+        ("../outside.png", "outside the project"),
+    ],
+    ids=["missing", "wrong-format", "escaping"],
+)
+def test_a_card_picture_must_exist_and_be_an_accepted_format(tmp_path, path, fragment):
+    """Three causes, three messages. One message covering all of them is useless.
+
+    The order matters: the extension is checked before the file is looked for,
+    so a `.tiff` that is also absent is reported as the wrong format rather than
+    as missing — the first thing wrong with it is the thing worth fixing.
+    """
+    cards = CARDS_WITH_PICTURE.replace("figures/field-notes/chart.png", path)
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert any(fragment in e for e in report.errors), messages(report)
+    assert any("back_image" in e for e in report.errors), "the message has to name the face"
+
+
+def test_a_picture_key_at_the_top_level_is_an_error(tmp_path):
+    """A picture belongs to a card, the way a grid belongs to a deck."""
+    report = check(with_figure(project(tmp_path, cards=TOP_LEVEL_PICTURE)))
+    assert any("belongs on a card" in e for e in report.errors), messages(report)
 
 
 # --- the card-style limits follow the grid (US2) ---------------------------

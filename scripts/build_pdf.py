@@ -60,6 +60,11 @@ DEFAULT_GRID = GRIDS["2x4"]
 SIDES = ("duplex", "simplex")
 DEFAULT_SIDES = "duplex"
 
+# The picture formats the pinned engine reads. Verified against typst 0.15.1:
+# TIFF and BMP come back as "unknown image format". Bumping the engine may
+# widen this, which is one more reason the version is pinned deliberately.
+IMAGE_FORMATS = ("png", "jpg", "jpeg", "gif", "svg", "webp")
+
 # The engine's own fonts plus ours, and nothing the machine happens to have
 # installed — so a card looks the same wherever it is printed.
 FONT_ARGS = ["--ignore-system-fonts", "--font-path", str(FONTS)]
@@ -260,6 +265,37 @@ def resolve_grid(declared, flag=None):
     )
 
 
+def project_root(card_file):
+    """What a picture path on a card is relative to.
+
+    The parent of the directory holding the card file: the pipeline writes
+    decks into <project>/cards/, so that parent is the project. Resolving
+    against the working directory instead would make a deck build only for
+    whoever happened to run it from the right folder — portability is the whole
+    point of keeping the path relative in the first place.
+    """
+    return Path(card_file).resolve().parent.parent
+
+
+def resolve_picture(value, root):
+    """(absolute path, problem) for one picture path. Exactly one is None.
+
+    The order is the contract: extension, then inside-the-project, then exists.
+    A `.tiff` that is also absent is reported as the wrong format, because that
+    is the first thing wrong with it and the only one worth fixing. Whether the
+    bytes really are the image the name claims is left to the engine, which
+    already answers it precisely and costs us no dependency to ask.
+    """
+    if Path(value).suffix.lower().lstrip(".") not in IMAGE_FORMATS:
+        return None, f"is not an image the engine reads ({', '.join(IMAGE_FORMATS)})"
+    target = (Path(root) / value).resolve()
+    if not target.is_relative_to(Path(root).resolve()):
+        return None, "is outside the project"
+    if not target.is_file():
+        return None, "does not exist"
+    return target, None
+
+
 def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_LANGUAGE):
     """Reads the card files and returns the cards, the errors, and the grids.
 
@@ -320,15 +356,34 @@ def load_cards(files, topic_filters, subtopic_filters, default_language=DEFAULT_
             # templates/card.typ reads card.id unconditionally.
             card_id = c.get("id")
             card_id = str(card_id) if isinstance(card_id, str) else ""
+            ref = card_id or f"{path.stem}-{i}"
+            # Pictures are resolved here, once, so nothing downstream ever sees
+            # a path it has to interpret: templates/card.typ is handed a bare
+            # file name inside the compile workdir and cannot escape its
+            # sandbox. A face without a picture is the empty string, never a
+            # missing key — card.typ reads both fields unconditionally.
+            pictures = {}
+            for face in ("front_image", "back_image"):
+                # Not `declared`: that name belongs to the grid list this
+                # function returns, and shadowing it here emptied it.
+                stated = c.get(face)
+                if stated is None:
+                    pictures[face] = ""
+                    continue
+                target, problem = resolve_picture(str(stated), project_root(path))
+                if problem:
+                    errors.append(f"{path}: card {ref}: {face} '{stated}' {problem}")
+                pictures[face] = "" if problem else str(target)
             cards.append(
                 {
                     "id": card_id,
+                    **pictures,
                     # How a diagnostic names this card, which is a different job
                     # from what the card is called. A warning only has to locate
                     # the card in the file, so position serves; without this a
                     # deck predating ids would warn "card  does not fit" and say
                     # nothing at all.
-                    "ref": card_id or f"{path.stem}-{i}",
+                    "ref": ref,
                     "topic": topic,
                     "subtopic": subtopic,
                     "front": str(c["front"]),

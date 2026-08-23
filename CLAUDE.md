@@ -36,6 +36,7 @@ code, comments, docs and commit messages are written in English.
       subtopic: 'Subtopic'
       front: 'Question or term'
       back: 'Answer or definition'
+      back_image: 'figures/<source-id>/<slug>.png'   # optional, see below
       source: 'Short reference (optional)'
     - ...
   ```
@@ -66,6 +67,20 @@ code, comments, docs and commit messages are written in English.
   is one size — the key is top level only, never on a card, and two files in
   one build that declare different grids are refused unless `--grid` settles
   it. `--grid` on the command line always overrides the file.
+
+  `front_image` and `back_image` put a **picture** on that face — a chart, a
+  flow chart, a labelled diagram: something worth *showing* rather than only
+  describing. Both are optional, and a card may carry neither, either or both.
+  The path is relative to the **project root**, the folder your `cards/`
+  directory sits in, so a project stays buildable after it is copied to another
+  machine. The engine reads `png`, `jpg`, `jpeg`, `gif`, `svg` and `webp`;
+  anything else is refused by name. A missing, unreadable or escaping path is an
+  error that names the card and the face, never a silently blank card.
+
+  The **text on that face stays required**. A back that is only a picture has no
+  answer to read; the answer says what the picture shows, and the picture shows
+  it. Pictures are written by `/ingest` into `figures/<source-id>/` — user
+  content, gitignored like `knowledge/`.
 
   `front`/`back` are **Typst markup**. Write them in single quotes, so a
   backslash is a line break and `"` needs no escaping; double the apostrophe

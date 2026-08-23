@@ -53,8 +53,62 @@ def test_load_cards_reads_the_fields(tmp_path):
             "back": "Answer",
             "source": "Lecture 3",
             "language": "english",
+            # A face without a picture is the empty string, never a missing
+            # key — the same bargain `id` strikes, and for the same reason:
+            # templates/card.typ reads both fields unconditionally.
+            "front_image": "",
+            "back_image": "",
         }
     ]
+
+
+# --- pictures on a card ----------------------------------------------------
+#
+# A path is relative to the project root, and the project root is the parent of
+# the directory the card file sits in. So a deck under test has to go into
+# cards/, the way the pipeline writes one — not into tmp_path itself.
+
+PNG = b"\x89PNG\r\n\x1a\n"  # a file with the right name; the engine judges the rest
+
+WITH_PICTURE = """
+topic: 'Statistics'
+cards:
+  - id: A45DK
+    subtopic: 'Bayes'
+    front: 'Question'
+    back: 'Answer'
+    back_image: 'figures/demo/chart.png'
+"""
+
+
+def deck_with_picture(tmp_path, deck=WITH_PICTURE, pictures=("figures/demo/chart.png",)):
+    (tmp_path / "cards").mkdir(exist_ok=True)
+    for relative in pictures:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(PNG)
+    return write(tmp_path / "cards", "deck.yaml", deck)
+
+
+def test_load_cards_carries_the_picture_keys(tmp_path):
+    cards, errors, _ = build_pdf.load_cards([deck_with_picture(tmp_path)], [], [])
+    assert errors == []
+    assert cards[0].get("front_image") == ""
+    assert cards[0].get("back_image") == str(
+        (tmp_path / "figures" / "demo" / "chart.png").resolve()
+    )
+
+
+def test_a_picture_path_resolves_against_the_project_root(tmp_path, monkeypatch):
+    """A deck that only builds from one working directory is not portable."""
+    deck = deck_with_picture(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    inside, errors_inside, _ = build_pdf.load_cards([deck], [], [])
+    monkeypatch.chdir(ROOT)
+    outside, errors_outside, _ = build_pdf.load_cards([deck], [], [])
+    assert errors_inside == [] and errors_outside == []
+    assert inside[0].get("back_image"), "the resolved path has to be there at all"
+    assert inside[0].get("back_image") == outside[0].get("back_image")
 
 
 # --- the card id comes from the file, not from the card's position ----------

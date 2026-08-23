@@ -656,6 +656,15 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 "but not a statement. /cards writes the size the deck was written for; "
                 "add 'grid: a7' to say so",
             )
+        # A picture answers one question; it is not a property of the file. The
+        # same rule the grid key has, pointing the other way.
+        for face in ("front_image", "back_image"):
+            if face in data:
+                report.error(
+                    where,
+                    f"'{face}' belongs on a card, not at the top level — "
+                    "one picture answers one question",
+                )
         _check_ids(data["cards"] or [], where, ids_seen, report, strict)
         fronts = {}
         for i, card in enumerate(data["cards"] or [], start=1):
@@ -691,6 +700,15 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                     f"card {i}: 'grid' belongs at the top level, not on a card — "
                     "one deck is one size",
                 )
+            # The same four causes, in the same order, as the build reports —
+            # the rules live in build_pdf so the two can never drift, which is
+            # the arrangement cardid.problems_in already set for card ids.
+            for face in ("front_image", "back_image"):
+                if face not in card:
+                    continue
+                _, problem = build_pdf.resolve_picture(str(card[face]), project)
+                if problem:
+                    report.error(where, f"card {i}: {face} '{card[face]}' {problem}")
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)

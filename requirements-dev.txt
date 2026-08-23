@@ -10,3 +10,7 @@ pillow>=11,<13
 # The runtime dependency, listed here too so a checkout can run the tests without
 # waiting for scripts/deps.py to fetch it. scripts/deps.py holds the real pin.
 pyyaml==6.0.3
+# The optional runtime dependency (scripts/deps.py FIGURES): pulls figures off
+# PDF pages for /ingest. Listed here for the same reason as pyyaml — and because
+# a test that renders a real PDF cannot monkeypatch its way to one.
+pypdfium2==5.13.0
