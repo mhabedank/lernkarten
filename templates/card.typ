@@ -149,6 +149,13 @@
     footer(card, back)
   })
 
+  // The smallest picture still worth printing. Overflow is measured against
+  // this and not against the room the picture happens to be given: a diagram
+  // squeezed into 2 mm would "fit" and teach nothing, which is exactly the
+  // silent failure the overflow warning exists to prevent.
+  let min-picture = 15mm * scale
+  let picture(path) = image(path, fit: "contain", width: 100%, height: 100%)
+
   let front(card) = face(card, false, context {
     let prompt = text(
       font: display,
@@ -156,10 +163,24 @@
       size: 14pt * scale,
       eval(card.front, mode: "markup"),
     )
-    if measure(box(width: field-w, prompt)).height > field-h - 2 * pad-y {
-      [#metadata(card.ref)<overflow>]
+    let room = field-h - 2 * pad-y
+    let prompt-h = measure(box(width: field-w, prompt)).height
+    // A recognition card — "what does this chart show?" — puts the picture
+    // under the prompt. The prompt keeps its size and its place; the picture
+    // takes what is left, and never the other way round.
+    if card.front_image != "" {
+      let gutter = 2.5mm * scale
+      if prompt-h + gutter + min-picture > room { [#metadata(card.ref)<overflow>] }
+      box(width: field-w, height: room, grid(
+        rows: (auto, 1fr),
+        row-gutter: gutter,
+        box(width: field-w, prompt),
+        picture(card.front_image),
+      ))
+    } else {
+      if prompt-h > room { [#metadata(card.ref)<overflow>] }
+      align(horizon + left, box(width: field-w, prompt))
     }
-    align(horizon + left, box(width: field-w, prompt))
   })
 
   // The back stacks answer, note rules and source. The rules are for what you
@@ -175,10 +196,12 @@
     }
     let gutter = 3mm * scale
     let room = field-h - 2 * pad-y
+    let has-picture = card.back_image != ""
     let used = (
       measure(box(width: field-w, answer)).height
         + measure(box(width: field-w, source)).height
         + gutter
+        + if has-picture { min-picture + gutter } else { 0mm }
     )
     if used > room { [#metadata(card.ref)<overflow>] }
 
@@ -194,11 +217,15 @@
       note-rule
     }
 
+    // The middle row is contested: the note rules fill it when the answer
+    // leaves room, and a picture takes it outright when there is one. The
+    // picture wins — rules crammed into what a diagram leaves over would be a
+    // smudge, not somewhere to write.
     box(width: field-w, height: room, grid(
       rows: (auto, 1fr, auto),
       row-gutter: gutter,
       answer,
-      align(bottom, notes),
+      if has-picture { picture(card.back_image) } else { align(bottom, notes) },
       source,
     ))
   })

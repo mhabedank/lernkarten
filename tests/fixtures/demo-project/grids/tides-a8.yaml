@@ -50,3 +50,8 @@ cards:
     front: 'What is slack water?'
     back: 'The pause between flood and ebb, when the stream barely runs.'
     source: 'Field notes 2'
+  - subtopic: 'Rhythm'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/island-images/tide-chart.svg'
+    source: 'Tide chart'

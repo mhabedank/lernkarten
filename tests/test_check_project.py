@@ -161,7 +161,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 29
+    assert counts["cards"] == 31
 
 
 def test_the_demo_project_passes_on_the_command_line():
@@ -386,6 +386,44 @@ def test_a_card_picture_must_exist_and_be_an_accepted_format(tmp_path, path, fra
     report = check(with_figure(project(tmp_path, cards=cards)))
     assert any(fragment in e for e in report.errors), messages(report)
     assert any("back_image" in e for e in report.errors), "the message has to name the face"
+
+
+TWO_PICTURE_CARDS_AT_A8 = """topic: 'Tides'
+language: english
+grid: a8
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/field-notes/chart.png'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What does this chart show?'
+    front_image: 'figures/field-notes/chart.png'
+    back: 'How the range is spread over six hours.'
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+
+def test_an_a8_deck_with_pictures_is_noted_once(tmp_path):
+    """Legal at every grid — but small, and said once rather than once per card.
+
+    A note repeated for every picture in a sixteen-up deck is noise, and noise
+    is what gets scrolled past. The deck is the thing that chose the size.
+    """
+    report = check(with_figure(project(tmp_path, cards=TWO_PICTURE_CARDS_AT_A8)))
+    assert not report.errors, messages(report)
+    notes = [w for w in report.warnings if "A8" in w]
+    assert len(notes) == 1, f"expected exactly one A8 note, got {notes}"
+
+
+def test_an_a8_deck_without_pictures_is_not_noted(tmp_path):
+    cards = TWO_PICTURE_CARDS_AT_A8.replace(
+        "    back_image: 'figures/field-notes/chart.png'\n", ""
+    ).replace("    front_image: 'figures/field-notes/chart.png'\n", "")
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert not [w for w in report.warnings if "A8" in w], report.warnings
 
 
 def test_a_picture_key_at_the_top_level_is_an_error(tmp_path):

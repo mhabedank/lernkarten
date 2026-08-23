@@ -111,6 +111,59 @@ def test_a_picture_path_resolves_against_the_project_root(tmp_path, monkeypatch)
     assert inside[0].get("back_image") == outside[0].get("back_image")
 
 
+THREE_CARDS_ONE_PICTURE = """
+topic: 'Statistics'
+cards:
+  - id: A45DK
+    subtopic: 'Bayes'
+    front: 'One'
+    back: 'a'
+    back_image: 'figures/demo/chart.png'
+  - id: QT8M2
+    subtopic: 'Bayes'
+    front: 'Two'
+    back: 'b'
+    front_image: 'figures/demo/chart.png'
+  - id: V9WXY
+    subtopic: 'Bayes'
+    front: 'Three'
+    back: 'c'
+    back_image: 'figures/demo/chart.png'
+"""
+
+
+def test_pictures_are_staged_content_addressed(tmp_path):
+    """One picture on three cards is one file in the workdir.
+
+    Content-addressed rather than named after the source, so a rename in the
+    project cannot collide here and the same bytes are never copied twice.
+    """
+    deck = deck_with_picture(tmp_path, THREE_CARDS_ONE_PICTURE)
+    cards, errors, _ = build_pdf.load_cards([deck], [], [])
+    assert errors == []
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+    staged = build_pdf.stage_figures(cards, workdir)
+    copies = sorted(p.name for p in workdir.iterdir())
+    assert len(copies) == 1, f"one picture, one copy — found {copies}"
+    assert copies[0].startswith("fig-") and copies[0].endswith(".png")
+    assert set(staged.values()) == set(copies)
+
+
+def test_payload_carries_staged_names_not_project_paths(tmp_path):
+    """The template is handed a bare file name, so it cannot leave its sandbox."""
+    deck = deck_with_picture(tmp_path, THREE_CARDS_ONE_PICTURE)
+    cards, _, _ = build_pdf.load_cards([deck], [], [])
+    workdir = tmp_path / "work"
+    workdir.mkdir()
+    staged = build_pdf.stage_figures(cards, workdir)
+    rendered = build_pdf.payload(cards, staged)
+    assert rendered[0]["back_image"].startswith("fig-")
+    assert "/" not in rendered[0]["back_image"] and "\\" not in rendered[0]["back_image"]
+    assert rendered[0]["front_image"] == "", "a face without a picture stays the empty string"
+    assert rendered[1]["front_image"] == rendered[0]["back_image"], "same picture, same file"
+
+
 # --- the card id comes from the file, not from the card's position ----------
 #
 # It used to be f"{path.stem}-{i}", which meant inserting a card, deleting one

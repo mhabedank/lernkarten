@@ -87,43 +87,43 @@ implementation `scripts/<module>.py`; prompts `skills/<name>/SKILL.md`; layout
 
 ### Test material first — `tests/fixtures/demo-project/`
 
-- [ ] T027 [US1] Give `tests/fixtures/demo-project/generators/tide-chart.typ` a **distinctive flat colour** that appears nowhere in the card design (`#ff00ff`; the design uses `#c2251b`, `#f0c000`, `#0a3f8f`, `#141414`, `#fbfaf6`, `#e9e5da`, `#3a3733`, `#8c8779`, `#b5b0a2`). Comment why: T044 finds the picture by looking for that colour
-- [ ] T028 [US1] Add a `figures/island-images/tide-chart.png` target to `scripts/make_testdata.py` and to `.gitignore` (`tests/fixtures/demo-project/figures/`) — generated, never committed (constitution VIII)
-- [ ] T029 [US1] Add two figure cards to `tests/fixtures/demo-project/cards/tides.yaml` — one `back_image:`, one `front_image:`, both pointing at that picture
-- [ ] T030 [US1] Update `DEMO_CARD_COUNT` in `tests/test_e2e.py` (29 → 31)
-- [ ] T031 [P] [US1] Add a figure card to `tests/fixtures/demo-project/grids/tides-a8.yaml` so the A8 path has something to render
+- [X] T027 [US1] Give `tests/fixtures/demo-project/generators/tide-chart.typ` a **distinctive flat colour** that appears nowhere in the card design (`#ff00ff`; the design uses `#c2251b`, `#f0c000`, `#0a3f8f`, `#141414`, `#fbfaf6`, `#e9e5da`, `#3a3733`, `#8c8779`, `#b5b0a2`). Comment why: T044 finds the picture by looking for that colour
+- [X] T028 [US1] Add a `figures/island-images/tide-chart.png` target to `scripts/make_testdata.py` and to `.gitignore` (`tests/fixtures/demo-project/figures/`) — generated, never committed (constitution VIII)
+- [X] T029 [US1] Add two figure cards to `tests/fixtures/demo-project/cards/tides.yaml` — one `back_image:`, one `front_image:`, both pointing at that picture
+- [X] T030 [US1] Update `DEMO_CARD_COUNT` in `tests/test_e2e.py` (29 → 31)
+- [X] T031 [P] [US1] Add a figure card to `tests/fixtures/demo-project/grids/tides-a8.yaml` so the A8 path has something to render
 
 ### 🔴 Red — before any implementation
 
-- [ ] T032 🔴 [P] [US1] `tests/test_build_pdf.py::test_pictures_are_staged_content_addressed` — one picture on three cards is copied into the workdir **once**, named `fig-<sha256[:12]>.<ext>`. Fails: no staging exists
-- [ ] T033 🔴 [P] [US1] `tests/test_build_pdf.py::test_payload_carries_staged_names_not_project_paths` — `payload()` emits the staged file name, or `""` for a face without a picture. Fails
-- [ ] T034 🔴 [US1] `tests/test_e2e.py::test_a_figure_deck_builds_without_costing_a_page` — 31 cards → 8 pages. Fails (needs `LERNKARTEN_E2E=1`)
-- [ ] T035 🔴 [US1] `tests/test_e2e.py::test_a_picture_lands_on_the_face_that_named_it` — render page 1 and page 2 with Pillow and assert `#ff00ff` is present on the back page and absent from the front, then the mirror case for `front_image:`. Fails
-- [ ] T036 🔴 [US1] `tests/test_e2e.py::test_text_plus_picture_over_the_field_warns` — the existing `WARNING: card … does not fit` names the card when answer text plus the **minimum** picture height exceed the field (R1). Fails
-- [ ] T037 🔴 [US1] `tests/test_e2e.py::test_an_a8_deck_with_a_picture_builds` — the A8 fixture builds and the picture scales with the card. Fails
-- [ ] T038 🔴 [US1] `tests/test_check_project.py::test_an_a8_deck_with_pictures_is_noted_once` — one note per run, not one per card (FR-007). Fails: silent today
+- [X] T032 🔴 [P] [US1] `tests/test_build_pdf.py::test_pictures_are_staged_content_addressed` — one picture on three cards is copied into the workdir **once**, named `fig-<sha256[:12]>.<ext>`. Fails: no staging exists
+- [X] T033 🔴 [P] [US1] `tests/test_build_pdf.py::test_payload_carries_staged_names_not_project_paths` — `payload()` emits the staged file name, or `""` for a face without a picture. Fails
+- [X] T034 🔴 [US1] `tests/test_e2e.py::test_a_figure_deck_builds_without_costing_a_page` — 31 cards → 8 pages. Fails (needs `LERNKARTEN_E2E=1`)
+- [X] T035 🔴 [US1] `tests/test_e2e.py::test_a_picture_lands_on_the_face_that_named_it` — render page 1 and page 2 with Pillow and assert `#ff00ff` is present on the back page and absent from the front, then the mirror case for `front_image:`. Fails
+- [X] T036 🔴 [US1] `tests/test_e2e.py::test_text_plus_picture_over_the_field_warns` — the existing `WARNING: card … does not fit` names the card when answer text plus the **minimum** picture height exceed the field (R1). Fails
+- [X] T037 🔴 [US1] `tests/test_e2e.py::test_an_a8_deck_with_a_picture_builds` — the A8 fixture builds and the picture scales with the card. Fails
+- [X] T038 🔴 [US1] `tests/test_check_project.py::test_an_a8_deck_with_pictures_is_noted_once` — one note per run, not one per card (FR-007). Fails: silent today
 
 **Checkpoint**: `pytest` is red for exactly the reasons this story exists. **Commit here.**
 
 ### 🟢 Green — the deterministic half
 
-- [ ] T039 [US1] Implement content-addressed staging in `scripts/build_pdf.py` `typeset()`, beside the existing `shutil.copy` of `templates/*.typ` — one copy per distinct picture per run (R2)
-- [ ] T040 [US1] Add `front_image`/`back_image` to `payload()` in `scripts/build_pdf.py`, holding the staged name or `""` — empty string, never a missing key, for the same reason `id` is
-- [ ] T041 [US1] Add the once-per-run A8 note to `scripts/check_project.py` — collected during `check_cards()`, emitted after the loop
+- [X] T039 [US1] Implement content-addressed staging in `scripts/build_pdf.py` `typeset()`, beside the existing `shutil.copy` of `templates/*.typ` — one copy per distinct picture per run (R2)
+- [X] T040 [US1] Add `front_image`/`back_image` to `payload()` in `scripts/build_pdf.py`, holding the staged name or `""` — empty string, never a missing key, for the same reason `id` is
+- [X] T041 [US1] Add the once-per-run A8 note to `scripts/check_project.py` — collected during `check_cards()`, emitted after the loop
 
 ### Layout — `templates/card.typ`
 
 > Read `docs/design.md` before touching anything visible (constitution XVI).
 
-- [ ] T042 [US1] Front face in `templates/card.typ`: prompt, then the picture below it, `fit: "contain"`. The prompt keeps 14 pt and its position
-- [ ] T043 [US1] Back face in `templates/card.typ`: the picture takes the `1fr` row where the note rules live; a face with a picture has **no** note rules
-- [ ] T044 [US1] Overflow in `templates/card.typ`: measure against a **minimum useful picture height**, not the room the picture is given — otherwise a picture squeezed to 2 mm reports "fits". Make T036 pass
-- [ ] T045 [US1] Verify the three bands do not move, so `assets/brand/*.typ` need no re-render — if they do move, `python3 scripts/render_brand.py` and commit the PNGs
-- [ ] T046 [US1] Eyeball both builds: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml -o output/figures.pdf` and the same with `--margin 0 --no-logo`
+- [X] T042 [US1] Front face in `templates/card.typ`: prompt, then the picture below it, `fit: "contain"`. The prompt keeps 14 pt and its position
+- [X] T043 [US1] Back face in `templates/card.typ`: the picture takes the `1fr` row where the note rules live; a face with a picture has **no** note rules
+- [X] T044 [US1] Overflow in `templates/card.typ`: measure against a **minimum useful picture height**, not the room the picture is given — otherwise a picture squeezed to 2 mm reports "fits". Make T036 pass
+- [X] T045 [US1] Verify the three bands do not move, so `assets/brand/*.typ` need no re-render — if they do move, `python3 scripts/render_brand.py` and commit the PNGs
+- [X] T046 [US1] Eyeball both builds: `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml -o output/figures.pdf` and the same with `--margin 0 --no-logo`
 
 ### Refactor
 
-- [ ] T047 [US1] Clean up: staging, validation and payload should read as three separate concerns in `scripts/build_pdf.py`, not one long function
+- [X] T047 [US1] Clean up: staging, validation and payload should read as three separate concerns in `scripts/build_pdf.py`, not one long function
 
 **Checkpoint**: a hand-written figure card prints correctly at both grids. This is the MVP — everything below is about *getting* the pictures and *writing* the cards.
 

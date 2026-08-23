@@ -1,0 +1,53 @@
+<!--
+  The figure store of the demo project: what /ingest keeps when it decides a
+  picture is worth showing rather than only describing. Invented, like every
+  other word in this fixture.
+
+  SVG and committed, deliberately. A missing picture on a card is an error, not
+  a warning, because the build cannot proceed without it; so a demo card that
+  pointed at a generated raster would make `pytest` fail on a fresh checkout,
+  before scripts/make_testdata.py has ever run. Text has no such problem, and
+  the constitution's no-binaries rule is satisfied by the same stroke.
+
+  The bar blue #5b7fb5 is load-bearing: it appears nowhere in the card design,
+  so tests/test_e2e.py finds this picture on a printed page by looking for it,
+  and proves it landed on the face that asked for it. Change it and that test
+  goes blind.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 108" role="img"
+     aria-label="The rule of twelfths: 1, 2, 3, 3, 2, 1 twelfths of the range per hour">
+  <g font-family="Jost" fill="#141414">
+    <text x="130" y="13" font-size="12" text-anchor="middle">The rule of twelfths</text>
+
+    <g fill="#5b7fb5">
+      <rect x="18" y="76" width="26" height="8"/>
+      <rect x="58" y="68" width="26" height="16"/>
+      <rect x="98" y="52" width="26" height="32"/>
+      <rect x="138" y="52" width="26" height="32"/>
+      <rect x="178" y="68" width="26" height="16"/>
+      <rect x="218" y="76" width="26" height="8"/>
+    </g>
+
+    <g font-size="8" text-anchor="middle">
+      <text x="31" y="72">1/12</text>
+      <text x="71" y="64">2/12</text>
+      <text x="111" y="48">3/12</text>
+      <text x="151" y="48">3/12</text>
+      <text x="191" y="64">2/12</text>
+      <text x="231" y="72">1/12</text>
+    </g>
+
+    <line x1="10" y1="84" x2="252" y2="84" stroke="#141414" stroke-width="1"/>
+
+    <g font-size="8" text-anchor="middle" fill="#3a3733">
+      <text x="31" y="94">h1</text>
+      <text x="71" y="94">h2</text>
+      <text x="111" y="94">h3</text>
+      <text x="151" y="94">h4</text>
+      <text x="191" y="94">h5</text>
+      <text x="231" y="94">h6</text>
+    </g>
+    <text x="10" y="105" font-size="7" fill="#3a3733">low water</text>
+    <text x="252" y="105" font-size="7" fill="#3a3733" text-anchor="end">high water</text>
+  </g>
+</svg>

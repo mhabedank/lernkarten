@@ -20,6 +20,7 @@ Examples:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -422,9 +423,46 @@ def main_language(cards, override=None):
     return counts.most_common(1)[0][0] if counts else DEFAULT_LANGUAGE
 
 
-def payload(cards):
-    """The card data the template renders, with languages as the engine wants them."""
-    return [dict(c, lang=LANGUAGES[c["language"]]) for c in cards]
+def stage_figures(cards, workdir):
+    """Copies every picture the cards name into the compile workdir.
+
+    The engine refuses a path that escapes its project root, and that root is
+    the workdir the templates are copied into — so a picture has to come along
+    rather than be pointed at. Content-addressed: one picture on three cards is
+    one file, and a rename in the project cannot collide in here.
+
+    Returns {resolved source path: staged file name}.
+    """
+    staged = {}
+    for card in cards:
+        for face in ("front_image", "back_image"):
+            source = card.get(face) or ""
+            if not source or source in staged:
+                continue
+            data = Path(source).read_bytes()
+            digest = hashlib.sha256(data).hexdigest()[:12]
+            name = f"fig-{digest}{Path(source).suffix.lower()}"
+            (Path(workdir) / name).write_bytes(data)
+            staged[source] = name
+    return staged
+
+
+def payload(cards, staged=None):
+    """The card data the template renders, with languages as the engine wants them.
+
+    Pictures arrive as the *staged* file name, never a project path — the
+    template resolves nothing and cannot look outside the workdir.
+    """
+    staged = staged or {}
+    return [
+        dict(
+            c,
+            lang=LANGUAGES[c["language"]],
+            front_image=staged.get(c.get("front_image") or "", ""),
+            back_image=staged.get(c.get("back_image") or "", ""),
+        )
+        for c in cards
+    ]
 
 
 def engine_inputs(margin, logo, grid, sides=DEFAULT_SIDES):
@@ -473,7 +511,8 @@ def typeset(cards, target, margin, logo, grid, binary, workdir, sides=DEFAULT_SI
     """
     for template in TEMPLATES.glob("*.typ"):
         shutil.copy(template, workdir / template.name)
-    (workdir / "cards.json").write_text(json.dumps(payload(cards)), encoding="utf-8")
+    staged = stage_figures(cards, workdir)
+    (workdir / "cards.json").write_text(json.dumps(payload(cards, staged)), encoding="utf-8")
     output = workdir / "cards.pdf"
     result = subprocess.run(
         [

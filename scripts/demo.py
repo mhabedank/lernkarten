@@ -29,7 +29,9 @@ import make_testdata
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE = ROOT / "tests" / "fixtures" / "demo-project"
-GENERATED = ("knowledge", "catalog", "cards")
+# What the pipeline produces, and what --raw therefore leaves out. figures/
+# belongs here for the same reason knowledge/ does: /ingest writes it.
+GENERATED = ("knowledge", "catalog", "cards", "figures")
 # Parts of the fixture that are test material rather than project content:
 # `broken/` holds deliberately invalid files, `grids/` decks that declare a
 # `grid:` key and must stay out of the globbed corpus. Nothing below reads this

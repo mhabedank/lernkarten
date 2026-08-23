@@ -624,6 +624,9 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
     # Keyed by the normalised id: `a45dk` and `A45DK` are one id to a reader, so
     # they have to be one id here too (FR-004).
     ids_seen = {}
+    # Said once at the end, not once per card: a picture at A8 is legal and
+    # small, and a note repeated for every one of sixteen cards is noise.
+    dense_with_pictures = []
     for path in sorted(root.glob("*.yaml")):
         where = f"cards/{path.name}"
         data = read_yaml(path, report)
@@ -709,9 +712,24 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 _, problem = build_pdf.resolve_picture(str(card[face]), project)
                 if problem:
                     report.error(where, f"card {i}: {face} '{card[face]}' {problem}")
+                elif build_pdf.parse_grid(data.get("grid") or "a7") == build_pdf.GRIDS["4x4"]:
+                    dense_with_pictures.append(where)
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)
+    _note_pictures_at_a8(dense_with_pictures, report)
+
+
+def _note_pictures_at_a8(decks, report):
+    """One line for the whole run, naming the decks it is about."""
+    if not decks:
+        return
+    names = ", ".join(sorted(set(decks)))
+    report.warn(
+        names,
+        "pictures at A8 print about a third of the area they get at A7 — legal, "
+        "and worth a look before printing sixteen up",
+    )
 
 
 def check_markup(where, i, front, back, report):

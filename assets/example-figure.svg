@@ -9,7 +9,7 @@
   Black on nothing, no fill, no colour carrying meaning: it survives a
   black-only laser and a photocopy, which is the test every printed thing in
   this repo has to pass. The type is Jost, the display face the card already
-  uses, resolved from assets/fonts by the build's --font-path.
+  uses, resolved from assets/fonts by the font path the build passes.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 44" role="img"
      aria-label="Sample space, then event, then probability">
