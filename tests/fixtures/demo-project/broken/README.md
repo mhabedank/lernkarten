@@ -18,3 +18,7 @@ that swallows one of these errors breaks a test.
 | `wrong-length-id.yaml` | ids of four and six characters | `ERROR: … expected 5 characters, found 4`, exit 1 |
 | `non-string-id.yaml` | `id:` empty, `id: 12345`, `id: [A45DK]` | `ERROR: … expected a string, found NoneType`, exit 1 — present-but-wrong is never mistaken for absent |
 | `escaped-linebreak.yaml` | a line-break `\` directly before a `*`, so the star is escaped rather than the line broken | typeset fails, stderr names the offending card |
+| `missing-image.yaml` | `back_image` names a file that is not there | `ERROR: … card M5SS1: back_image '…/gone.png' does not exist`, exit 1 |
+| `image-wrong-format.yaml` | a `.tiff`, which the engine does not read — and which is also absent | `ERROR: … is not an image the engine reads (png, jpg, jpeg, gif, svg, webp)`, exit 1. Reported as the wrong *format*, not as missing: the extension is checked first, because it is the first thing wrong with it |
+| `image-outside-project.yaml` | a `../../../` path climbing out of the project | `ERROR: … is outside the project`, exit 1 — a deck that only builds on the machine that wrote it is a defect |
+| `unreadable-image.yaml` | `not-really-a-picture.png`: a real file, an accepted extension, and plain text inside | typeset fails, stderr names the offending card. The one cause Python cannot answer without decoding the bytes, so the engine answers it and `offending_card()` attributes it |

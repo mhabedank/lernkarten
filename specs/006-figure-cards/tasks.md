@@ -203,14 +203,14 @@ implementation `scripts/<module>.py`; prompts `skills/<name>/SKILL.md`; layout
 
 **Independent Test**: the four broken fixtures each exit non-zero with a distinct message.
 
-- [ ] T081 [P] [US4] Add `tests/fixtures/demo-project/broken/missing-image.yaml` — `back_image:` naming a file that is not there
-- [ ] T082 [P] [US4] Add `tests/fixtures/demo-project/broken/image-wrong-format.yaml` — a `.tiff`, which typst refuses (verified in R3)
-- [ ] T083 [P] [US4] Add `tests/fixtures/demo-project/broken/image-outside-project.yaml` — a `../../` path that escapes the project
-- [ ] T084 [US4] Add `tests/fixtures/demo-project/broken/unreadable-image.yaml` plus a `make_testdata.py` target writing a text file named `.png` — a real file, an accepted extension, and not an image. Generated, never committed
-- [ ] T085 [US4] Add four rows to `tests/fixtures/demo-project/broken/README.md`, one per fixture, each naming the expected reaction
-- [ ] T086 🔴 [US4] Add the four fixtures to the parametrised `test_a_broken_card_file_is_rejected_with_its_reason` in `tests/test_e2e.py`, asserting **four different messages**. Fails
-- [ ] T087 [US4] Make them pass: the three Python causes in `scripts/build_pdf.py` in the T016 order, and the fourth attributed to its card by `offending_card()` (R4)
-- [ ] T088 [US4] Confirm a deck written before ids existed still names the card — the positional ref stands in, as the overflow warning already does
+- [X] T081 [P] [US4] Add `tests/fixtures/demo-project/broken/missing-image.yaml` — `back_image:` naming a file that is not there
+- [X] T082 [P] [US4] Add `tests/fixtures/demo-project/broken/image-wrong-format.yaml` — a `.tiff`, which typst refuses (verified in R3)
+- [X] T083 [P] [US4] Add `tests/fixtures/demo-project/broken/image-outside-project.yaml` — a `../../` path that escapes the project
+- [X] T084 [US4] Add `tests/fixtures/demo-project/broken/unreadable-image.yaml` plus a `make_testdata.py` target writing a text file named `.png` — a real file, an accepted extension, and not an image. Generated, never committed
+- [X] T085 [US4] Add four rows to `tests/fixtures/demo-project/broken/README.md`, one per fixture, each naming the expected reaction
+- [X] T086 🔴 [US4] Add the four fixtures to the parametrised `test_a_broken_card_file_is_rejected_with_its_reason` in `tests/test_e2e.py`, asserting **four different messages**. Fails
+- [X] T087 [US4] Make them pass: the three Python causes in `scripts/build_pdf.py` in the T016 order, and the fourth attributed to its card by `offending_card()` (R4)
+- [X] T088 [US4] Confirm a deck written before ids existed still names the card — the positional ref stands in, as the overflow warning already does
 
 **Checkpoint**: nothing reaches the printer with a hole in it.
 

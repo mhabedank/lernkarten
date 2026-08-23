@@ -1,0 +1,11 @@
+# A picture that is not there. The build cannot proceed, so this is an error and
+# not a warning — and the message has to name the card and the face, or the user
+# is left grepping a deck for a path.
+topic: 'Kestrel Islands: Tides'
+language: english
+cards:
+  - id: M5SS1
+    subtopic: 'Range and the rule of twelfths'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/island-images/gone.png'

@@ -217,6 +217,27 @@ def test_an_overlong_card_warns_but_still_builds(tmp_path):
         ("missing-fields.yaml", "card 2: 'front' and 'back' are required"),
         ("not-a-mapping.yaml", "expected a mapping with keys 'topic' and 'cards'"),
         ("malformed.yaml", "line 8"),
+        # Four ways a picture can be wrong, and four different messages. One
+        # message covering all of them would send the user looking in the wrong
+        # place three times out of four. The order they are checked in is why
+        # the .tiff — which is also absent — is reported as the wrong format.
+        (
+            "missing-image.yaml",
+            "card M5SS1: back_image 'figures/island-images/gone.png' does not exist",
+        ),
+        (
+            "image-wrong-format.yaml",
+            "card FMT01: back_image 'figures/island-images/tide-chart.tiff' "
+            "is not an image the engine reads",
+        ),
+        (
+            "image-outside-project.yaml",
+            "card ESC01: back_image '../../../elsewhere/chart.png' is outside the project",
+        ),
+        # The only one Python cannot answer: a real file with an accepted name
+        # that is not an image. The engine says so, and offending_card() says
+        # which card it belongs to.
+        ("unreadable-image.yaml", "Offending card: RDB21"),
     ],
 )
 def test_a_broken_card_file_is_rejected_with_its_reason(fixture, message):
