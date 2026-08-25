@@ -45,6 +45,13 @@ GOAL_DEPTHS = ("awareness", "working", "expert")
 # there — a cover sheet, a form template — which is a different thing from a
 # scan with no text layer, and the two used to be written identically (BUG-004).
 CONTENT_STATES = ("sparse",)
+# `visual:` on a figure entry is /ingest's verdict on one picture: what kind of
+# thing it is, or `none` for a picture not worth showing. A closed vocabulary
+# rather than a boolean, because `show: yes` parses as True under YAML 1.1 while
+# `show: "no"` parses as a string — a trap worth not setting. The kind is not
+# dead weight either: /cards phrases a prompt about a chart differently from one
+# about a map.
+VISUAL_KINDS = ("diagram", "chart", "map", "none")
 CATALOG_STATUS = ("gap", "out of scope")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
@@ -307,7 +314,91 @@ def check_knowledge(project, source_ids, report):
                 report.warn(where, "barely any text — did the extraction work?")
             if content == "sparse":
                 sparse.add(path.resolve())
+            _check_figures(project, folder.name, where, head, body, report)
     return sparse
+
+
+def _check_figures(project, source, where, head, body, report):
+    """The `figures:` list: one entry per picture /ingest looked at.
+
+    Both verdicts are recorded, kept and rejected, so a second run does not
+    open the same picture to reach the same conclusion. A rejection is silent
+    for the reason `content: sparse` is silent — warning about a correctly
+    recorded verdict on every run replaces a false alarm with a permanent true
+    one.
+    """
+    entries = head.get("figures")
+    if entries is None:
+        return
+    if not isinstance(entries, list):
+        report.error(where, "'figures' has to be a list of entries, one per picture looked at")
+        return
+
+    seen = {}
+    for n, entry in enumerate(entries, start=1):
+        if not isinstance(entry, dict):
+            report.error(where, f"figure {n}: expected a mapping with 'at' and 'visual'")
+            continue
+        if not entry.get("at"):
+            report.error(where, f"figure {n}: 'at' missing — say where the picture sat")
+            continue
+        visual = entry.get("visual")
+        # Present-but-wrong is never reported as absent, the way a non-string
+        # `id` is not reported as a missing one.
+        if visual is None:
+            report.error(
+                where,
+                f"figure {n}: 'visual' missing — what kind of picture is it "
+                f"({', '.join(VISUAL_KINDS)})?",
+            )
+            continue
+        if visual not in VISUAL_KINDS:
+            report.error(
+                where,
+                f"figure {n}: 'visual: {visual}' is not one of {', '.join(VISUAL_KINDS)}",
+            )
+            continue
+
+        if visual == "none":
+            if entry.get("path"):
+                report.error(where, f"figure {n}: 'visual: none' cannot carry a 'path'")
+            if not entry.get("why"):
+                report.error(where, f"figure {n}: 'why' missing — say why it is not worth showing")
+            continue
+
+        # Independent of the path, so a figure missing both is told about both.
+        if not entry.get("caption"):
+            report.error(where, f"figure {n}: kept, so it needs a 'caption' saying what it shows")
+        relative = str(entry.get("path") or "")
+        if not relative:
+            report.error(where, f"figure {n}: kept, so it needs a 'path' to the copy")
+            continue
+        expected = f"figures/{source}/"
+        if not relative.startswith(expected):
+            report.error(where, f"figure {n}: '{relative}' does not sit under {expected}")
+            continue
+        if Path(relative).suffix.lower().lstrip(".") not in build_pdf.IMAGE_FORMATS:
+            report.error(
+                where,
+                f"figure {n}: '{relative}' is not an image the engine reads "
+                f"({', '.join(build_pdf.IMAGE_FORMATS)})",
+            )
+            continue
+        if relative in seen:
+            report.error(where, f"figure {n}: '{relative}' is already figure {seen[relative]}")
+            continue
+        seen[relative] = n
+        # A warning, not an error, and the same bargain check_sources strikes
+        # with a source path: nothing downstream breaks until a *card* names
+        # this picture, and that is an error, because then a build stops.
+        if not (project / relative).is_file():
+            report.warn(where, f"figure {n}: '{relative}' does not exist")
+        if relative not in body:
+            report.error(
+                where,
+                f"figure {n}: kept, but the body never shows it — "
+                "a figure named and not marked is half an edit",
+            )
 
 
 @dataclasses.dataclass

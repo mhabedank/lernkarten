@@ -1159,3 +1159,153 @@ def test_checking_never_writes_to_the_files_it_reads(tmp_path):
     before = digests()
     check_project.check(root, check_project.Report(), strict=True)
     assert digests() == before, "the checker modified a file it was only asked to read"
+
+
+# --- the figure store (feat/figure-cards) ----------------------------------
+#
+# /ingest looks at a picture once, decides whether showing it teaches something
+# the transcription cannot, and writes the verdict down. These are the checks
+# that make that prompt change verifiable at all: a prompt has no unit test, so
+# the artifact it writes is what gets asserted (constitution XI).
+
+KEPT = """---
+source: field-notes
+document: "A document"
+path: "raw/a.md"
+ingested: 2026-08-14
+figures:
+  - at: 'page 3'
+    visual: chart
+    path: figures/field-notes/chart.png
+    caption: 'How the range is spread over six hours'
+---
+
+Some text about the tide, long enough to look like a real extraction of it.
+
+![Figure: How the range is spread over six hours](figures/field-notes/chart.png)
+
+More text after the picture, so the body is not just a link on its own line.
+"""
+
+
+def figures_block(entries, body=None):
+    """A knowledge document carrying the given `figures:` entries verbatim."""
+    marker = "![Figure: x](figures/field-notes/chart.png)"
+    return (
+        '---\nsource: field-notes\ndocument: "A"\npath: "raw/a.md"\n'
+        f"ingested: 2026-08-14\nfigures:\n{entries}---\n\n"
+        + (body if body is not None else f"Text about the tide. {marker}\n" + "Filler. " * 20)
+    )
+
+
+def test_a_document_may_carry_a_figure(tmp_path):
+    report = check(with_figure(project(tmp_path, knowledge=KEPT)))
+    assert not report.errors, messages(report)
+
+
+@pytest.mark.parametrize(
+    ("entries", "fragment"),
+    [
+        ("  - visual: chart\n    path: figures/field-notes/chart.png\n    caption: 'c'\n", "'at'"),
+        ("  - at: 'page 3'\n    path: figures/field-notes/chart.png\n", "'visual' missing"),
+    ],
+    ids=["no-at", "no-visual"],
+)
+def test_a_figure_entry_needs_at_and_visual(tmp_path, entries, fragment):
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any(fragment in e for e in report.errors), messages(report)
+
+
+def test_figures_must_be_a_list(tmp_path):
+    document = KEPT.replace(
+        "figures:\n  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/chart.png\n"
+        "    caption: 'How the range is spread over six hours'\n",
+        "figures: chart\n",
+    )
+    report = check(with_figure(project(tmp_path, knowledge=document)))
+    assert any("a list" in e for e in report.errors), messages(report)
+
+
+def test_visual_is_a_closed_vocabulary(tmp_path):
+    """A vocabulary and not a boolean: `show: yes` is True under YAML 1.1 and
+    `show: "no"` is not, which is a trap this project would step in once."""
+    entries = "  - at: 'page 3'\n    visual: photo\n    path: figures/field-notes/chart.png\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("is not one of" in e and "photo" in e for e in report.errors), messages(report)
+
+
+def test_a_rejected_figure_needs_a_why(tmp_path):
+    entries = "  - at: 'page 1'\n    visual: none\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("'why'" in e for e in report.errors), messages(report)
+
+
+def test_a_rejected_figure_cannot_carry_a_path(tmp_path):
+    entries = "  - at: 'page 1'\n    visual: none\n    why: 'a logo'\n    path: figures/x.png\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("cannot carry a 'path'" in e for e in report.errors), messages(report)
+
+
+def test_a_kept_figure_needs_a_path_and_a_caption(tmp_path):
+    entries = "  - at: 'page 3'\n    visual: chart\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("'path'" in e for e in report.errors), messages(report)
+    assert any("'caption'" in e for e in report.errors), messages(report)
+
+
+def test_a_kept_figure_must_sit_under_its_own_source(tmp_path):
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/somewhere-else/chart.png\n    caption: 'c'\n"
+    )
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("figures/field-notes/" in e for e in report.errors), messages(report)
+
+
+def test_a_figure_file_that_is_gone_is_only_a_warning(tmp_path):
+    """The same bargain check_sources strikes: the demo's pictures are not all
+    generated yet on a fresh checkout, and nothing downstream breaks until a
+    card names one — at which point it is an error, because a build stops."""
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/gone.png\n    caption: 'c'\n"
+    )
+    body = "Text. ![Figure: x](figures/field-notes/gone.png)\n" + "Filler. " * 20
+    report = check(project(tmp_path, knowledge=figures_block(entries, body)))
+    assert not report.errors, messages(report)
+    assert any("does not exist" in w for w in report.warnings), report.warnings
+
+
+def test_a_kept_figure_must_be_shown_in_the_body(tmp_path):
+    """A figure named in the frontmatter and absent from the text is half an
+    edit, which is the failure this format invites."""
+    body = "Text about the tide with no picture in it at all. " * 6
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/chart.png\n    caption: 'c'\n"
+    )
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries, body))))
+    assert any("never shows it" in e for e in report.errors), messages(report)
+
+
+def test_two_figures_may_not_share_a_path(tmp_path):
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/chart.png\n    caption: 'c'\n"
+        "  - at: 'page 4'\n    visual: diagram\n"
+        "    path: figures/field-notes/chart.png\n    caption: 'd'\n"
+    )
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("twice" in e or "already" in e for e in report.errors), messages(report)
+
+
+def test_a_rejected_figure_is_silent(tmp_path):
+    """Its whole job is to answer 'was this looked at?' with yes. Warning about
+    a correctly recorded verdict every run replaces a false alarm with a
+    permanent true one — the reasoning `content: sparse` already settled."""
+    entries = "  - at: 'page 1'\n    visual: none\n    why: 'a logo in every page header'\n"
+    body = "Text about the tide. " * 20
+    report = check(project(tmp_path, knowledge=figures_block(entries, body)))
+    assert not report.errors, messages(report)
+    assert not [w for w in report.warnings if "figure" in w.lower()], report.warnings

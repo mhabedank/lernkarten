@@ -137,43 +137,43 @@ implementation `scripts/<module>.py`; prompts `skills/<name>/SKILL.md`; layout
 
 ### Test material first
 
-- [ ] T048 [P] [US2] Give `tests/fixtures/demo-project/generators/handbook.typ` a figure on page 3 **and** a logo in the page header repeated on all four pages — the keep case and the furniture case in one document (FR-013)
-- [ ] T049 [P] [US2] Add `tests/fixtures/demo-project/raw/field-notes/chart-notes.md` with a relative `![…](…)` link to a picture, plus its generator — the markdown-link path (FR-008)
-- [ ] T050 [P] [US2] Add an `<img>` to `tests/fixtures/demo-project/raw/web/index.html` and a generator for the picture it points at — the web path
-- [ ] T051 [US2] Wire all three new targets into `scripts/make_testdata.py` and `.gitignore`; add a row for each to `tests/fixtures/demo-project/README.md`
-- [ ] T052 [P] [US2] Commit `tests/fixtures/demo-project/knowledge/island-images/tide-chart.md` — a **kept** entry (`visual: chart`, `path: figures/island-images/tide-chart.png`, `caption:`) with the inline marker in the body. Without this the seven checks below only ever run against synthetic `tmp_path` projects, and `check(DEMO)` at `tests/test_check_project.py:124` passes vacuously
-- [ ] T053 [P] [US2] Commit `tests/fixtures/demo-project/knowledge/island-images/harbour-noticeboard.md` — a **rejected** entry (`visual: none`, `why:`), so the demo exercises both branches of the verdict
+- [X] T048 [P] [US2] Give `tests/fixtures/demo-project/generators/handbook.typ` a figure on page 3 **and** a logo in the page header repeated on all four pages — the keep case and the furniture case in one document (FR-013)
+- [X] T049 [P] [US2] Add `tests/fixtures/demo-project/raw/field-notes/chart-notes.md` with a relative `![…](…)` link to a picture, plus its generator — the markdown-link path (FR-008)
+- [X] T050 [P] [US2] Add an `<img>` to `tests/fixtures/demo-project/raw/web/index.html` and a generator for the picture it points at — the web path
+- [X] T051 [US2] Wire all three new targets into `scripts/make_testdata.py` and `.gitignore`; add a row for each to `tests/fixtures/demo-project/README.md`
+- [X] T052 [P] [US2] Commit `tests/fixtures/demo-project/knowledge/island-images/tide-chart.md` — a **kept** entry (`visual: chart`, `path: figures/island-images/tide-chart.png`, `caption:`) with the inline marker in the body. Without this the seven checks below only ever run against synthetic `tmp_path` projects, and `check(DEMO)` at `tests/test_check_project.py:124` passes vacuously
+- [X] T053 [P] [US2] Commit `tests/fixtures/demo-project/knowledge/island-images/harbour-noticeboard.md` — a **rejected** entry (`visual: none`, `why:`), so the demo exercises both branches of the verdict
 
 ### 🔴 Red — `scripts/figures.py` (deterministic)
 
-- [ ] T054 🔴 [P] [US2] `tests/test_figures.py::test_extract_reports_a_manifest` — `extract` on the handbook PDF prints the JSON shape in [contracts/figures-cli.md](./contracts/figures-cli.md). Fails: no module
-- [ ] T055 🔴 [P] [US2] `tests/test_figures.py::test_a_picture_repeated_on_every_page_is_offered_once` — the header logo appears once with `repeated_on: 4`. Fails
-- [ ] T056 🔴 [P] [US2] `tests/test_figures.py::test_extract_without_pypdfium2_exits_three` — monkeypatch the import away; exit code 3, one stderr line naming the document, **no traceback** (FR-018). Fails
-- [ ] T057 🔴 [P] [US2] `tests/test_figures.py::test_fetch_uses_the_standard_library` — `fetch` pulls a picture from a local `http.server`, the way `tests/test_ingest_sources.py` already serves the web fixture. Fails
-- [ ] T058 🔴 [P] [US2] `tests/test_figures.py::test_fetch_refuses_a_redirect_off_the_source_host` — a local server 302-ing to another host is refused, naming the URL; and no cookie or auth header is ever sent (FR-016). Fails: no module
-- [ ] T059 🔴 [P] [US2] `tests/test_figures.py::test_place_slugs_dedups_and_never_overwrites` — kebab-case slug, `-2` on collision, same bytes twice → one file, existing destination left alone without `--force` (FR-014). Fails
+- [X] T054 🔴 [P] [US2] `tests/test_figures.py::test_extract_reports_a_manifest` — `extract` on the handbook PDF prints the JSON shape in [contracts/figures-cli.md](./contracts/figures-cli.md). Fails: no module
+- [X] T055 🔴 [P] [US2] `tests/test_figures.py::test_a_picture_repeated_on_every_page_is_offered_once` — the header logo appears once with `repeated_on: 4`. Fails
+- [X] T056 🔴 [P] [US2] `tests/test_figures.py::test_extract_without_pypdfium2_exits_three` — monkeypatch the import away; exit code 3, one stderr line naming the document, **no traceback** (FR-018). Fails
+- [X] T057 🔴 [P] [US2] `tests/test_figures.py::test_fetch_uses_the_standard_library` — `fetch` pulls a picture from a local `http.server`, the way `tests/test_ingest_sources.py` already serves the web fixture. Fails
+- [X] T058 🔴 [P] [US2] `tests/test_figures.py::test_fetch_refuses_a_redirect_off_the_source_host` — a local server 302-ing to another host is refused, naming the URL; and no cookie or auth header is ever sent (FR-016). Fails: no module
+- [X] T059 🔴 [P] [US2] `tests/test_figures.py::test_place_slugs_dedups_and_never_overwrites` — kebab-case slug, `-2` on collision, same bytes twice → one file, existing destination left alone without `--force` (FR-014). Fails
 
 ### 🔴 Red — the knowledge frontmatter contract (model-driven half)
 
 > These are the artifact checks that make the prompt change verifiable at all (constitution XI). Each fails against what `/ingest` writes **today**.
 
-- [ ] T060 🔴 [US2] `tests/test_check_project.py::test_figures_must_be_a_list_of_entries_with_at_and_visual` — K1, K2 from [contracts/knowledge-frontmatter.md](./contracts/knowledge-frontmatter.md). Fails: accepted today
-- [ ] T061 🔴 [US2] `tests/test_check_project.py::test_visual_is_a_closed_vocabulary` — K3: `diagram`, `chart`, `map`, `none`, nothing else. Fails
-- [ ] T062 🔴 [US2] `tests/test_check_project.py::test_a_rejected_figure_needs_a_why_and_no_path` — K4. Fails
-- [ ] T063 🔴 [US2] `tests/test_check_project.py::test_a_kept_figure_needs_a_path_and_a_caption_that_resolve` — K5, K6, K8: exists, under `figures/<source>/`, accepted extension, source matches the folder. Fails
-- [ ] T064 🔴 [US2] `tests/test_check_project.py::test_a_kept_figure_must_be_shown_in_the_body` — K7: the path appears as a markdown image link. Fails — this is the one that catches half an edit
-- [ ] T065 🔴 [US2] `tests/test_check_project.py::test_two_figures_may_not_share_a_path` — K9. Fails
-- [ ] T066 🔴 [US2] `tests/test_check_project.py::test_a_rejected_figure_is_silent` — K10: no warning, for the reason `content: sparse` is silent. Fails if the implementation warns
+- [X] T060 🔴 [US2] `tests/test_check_project.py::test_figures_must_be_a_list_of_entries_with_at_and_visual` — K1, K2 from [contracts/knowledge-frontmatter.md](./contracts/knowledge-frontmatter.md). Fails: accepted today
+- [X] T061 🔴 [US2] `tests/test_check_project.py::test_visual_is_a_closed_vocabulary` — K3: `diagram`, `chart`, `map`, `none`, nothing else. Fails
+- [X] T062 🔴 [US2] `tests/test_check_project.py::test_a_rejected_figure_needs_a_why_and_no_path` — K4. Fails
+- [X] T063 🔴 [US2] `tests/test_check_project.py::test_a_kept_figure_needs_a_path_and_a_caption_that_resolve` — K5, K6, K8: exists, under `figures/<source>/`, accepted extension, source matches the folder. Fails
+- [X] T064 🔴 [US2] `tests/test_check_project.py::test_a_kept_figure_must_be_shown_in_the_body` — K7: the path appears as a markdown image link. Fails — this is the one that catches half an edit
+- [X] T065 🔴 [US2] `tests/test_check_project.py::test_two_figures_may_not_share_a_path` — K9. Fails
+- [X] T066 🔴 [US2] `tests/test_check_project.py::test_a_rejected_figure_is_silent` — K10: no warning, for the reason `content: sparse` is silent. Fails if the implementation warns
 
 ### 🟢 Green
 
-- [ ] T067 [US2] Write `scripts/figures.py` — `extract | fetch | place`, module docstring in the established style (what it does, who invokes it, why it exists). Imports `deps` only; `pypdfium2` imported inside `extract` (constitution VI)
-- [ ] T068 [US2] Implement `check_knowledge()`'s `figures:` validation in `scripts/check_project.py` until T060–T066 pass; add `VISUAL_KINDS` beside `CONTENT_STATES`
-- [ ] T069 [US2] Update `skills/ingest/SKILL.md`: judge every picture; the four places pictures come from (folder file, PDF page, web page, markdown link); call `figures.py` with an explicit `--project`, as the Zotero path already does; record the verdict for **both** answers; mark kept figures inline in the transcription; count pictures towards the existing "ask before more than 20" threshold; report unreadable ones and continue
-- [ ] T070 [US2] Keep `skills/ingest/SKILL.md` frontmatter valid — `name: ingest`, `description` still names its triggers (`check_docs.py` enforces it)
-- [ ] T071 [US2] Add `figures/*` and `!figures/.gitkeep` to `.gitignore`, create `figures/.gitkeep`, and add `"figures/"` to `BLOCKED` in `tests/test_repo_hygiene.py`
-- [ ] T072 🔴→🟢 [US2] `tests/test_repo_hygiene.py::test_figures_are_not_versioned` — written failing before T071, green after
-- [ ] T073 [US2] Refactor: the figure rules in `check_project.py` should read as one block, not scattered through `check_knowledge()`
+- [X] T067 [US2] Write `scripts/figures.py` — `extract | fetch | place`, module docstring in the established style (what it does, who invokes it, why it exists). Imports `deps` only; `pypdfium2` imported inside `extract` (constitution VI)
+- [X] T068 [US2] Implement `check_knowledge()`'s `figures:` validation in `scripts/check_project.py` until T060–T066 pass; add `VISUAL_KINDS` beside `CONTENT_STATES`
+- [X] T069 [US2] Update `skills/ingest/SKILL.md`: judge every picture; the four places pictures come from (folder file, PDF page, web page, markdown link); call `figures.py` with an explicit `--project`, as the Zotero path already does; record the verdict for **both** answers; mark kept figures inline in the transcription; count pictures towards the existing "ask before more than 20" threshold; report unreadable ones and continue
+- [X] T070 [US2] Keep `skills/ingest/SKILL.md` frontmatter valid — `name: ingest`, `description` still names its triggers (`check_docs.py` enforces it)
+- [X] T071 [US2] Add `figures/*` and `!figures/.gitkeep` to `.gitignore`, create `figures/.gitkeep`, and add `"figures/"` to `BLOCKED` in `tests/test_repo_hygiene.py`
+- [X] T072 🔴→🟢 [US2] `tests/test_repo_hygiene.py::test_figures_are_not_versioned` — written failing before T071, green after
+- [X] T073 [US2] Refactor: the figure rules in `check_project.py` should read as one block, not scattered through `check_knowledge()`
 
 **Checkpoint**: `/ingest` judges, keeps and records; a second run changes nothing; deleting one figure brings back exactly that one.
 

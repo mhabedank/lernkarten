@@ -279,3 +279,35 @@ def test_the_order_may_be_named_anywhere_in_the_same_paragraph(tmp_path, monkeyp
 
     assert len(errors) == 1, errors
     assert "later paragraph" not in " ".join(errors)
+
+
+def test_a_markdown_example_in_inline_code_is_not_a_dead_link(tmp_path, monkeypatch):
+    """Docs have to be able to *show* markdown syntax without being it.
+
+    skills/ingest/SKILL.md tells the model to write
+    `![Figure: caption](figures/<id>/<slug>.png)` into a knowledge document.
+    That is an example of a path to write, not a path that exists — the same
+    reason fenced code blocks are already skipped.
+    """
+    doc = tmp_path / "docs"
+    doc.mkdir()
+    (doc / "workflow.md").write_text(
+        "Write `![Figure: caption](figures/<id>/<slug>.png)` into the body.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    errors = []
+    check_docs.check_links(errors)
+    assert errors == [], errors
+
+
+def test_a_real_dead_link_outside_code_is_still_reported(tmp_path, monkeypatch):
+    doc = tmp_path / "docs"
+    doc.mkdir()
+    (doc / "workflow.md").write_text("See [the design](design.md).\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    errors = []
+    check_docs.check_links(errors)
+    assert any("design.md" in e for e in errors), errors

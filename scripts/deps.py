@@ -187,6 +187,24 @@ def activate(install_if_missing=True, quiet=False):
     return "installed"
 
 
+def activate_optional(requirements, quiet=False):
+    """Puts an optional set on sys.path, installing it on first use.
+
+    Same bargain as activate(), for a set the user only pays for when they ask
+    for what it does. Raises DependencyError rather than exiting, because the
+    caller's job is to degrade — an ingest that loses its figures still has
+    every transcription to write.
+    """
+    if not missing(requirements):
+        return "system"
+    target = target_dir(requirements)
+    if missing(requirements, extra_path=target):
+        install(requirements, target=target, quiet=quiet)
+    if str(target) not in sys.path:
+        sys.path.insert(0, str(target))
+    return str(target)
+
+
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter

@@ -25,11 +25,12 @@ import make_testdata  # noqa: E402
 import yamlio  # noqa: E402
 
 # Everything below these paths is user content — except for the exceptions.
-BLOCKED = ("knowledge/", "catalog/", "cards/", "output/")
+BLOCKED = ("knowledge/", "catalog/", "cards/", "figures/", "output/")
 ALLOWED = {
     "knowledge/.gitkeep",
     "catalog/.gitkeep",
     "cards/.gitkeep",
+    "figures/.gitkeep",
     "cards/example.yaml",
 }
 
@@ -213,6 +214,7 @@ def test_gitignore_covers_the_user_paths():
         "knowledge/*",
         "catalog/*",
         "cards/*",
+        "figures/*",
         "output/",
     ):
         assert pattern in lines, f".gitignore does not cover {pattern}"

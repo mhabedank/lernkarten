@@ -12,6 +12,10 @@ catalog/*
 cards/*
 !cards/.gitkeep
 !cards/example.yaml
+# The pictures /ingest keeps. Somebody else's diagram is theirs, and a public
+# repo is the wrong place for it — user content, like everything above.
+figures/*
+!figures/.gitkeep
 output/
 
 # The demo project under tests/ is the exception: invented content, written for
