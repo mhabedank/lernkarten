@@ -185,13 +185,13 @@ implementation `scripts/<module>.py`; prompts `skills/<name>/SKILL.md`; layout
 
 **Independent Test**: `/cards` against a catalog whose subtopic references a document with a kept figure, then `lernkarten check cards/*.yaml` and `python3 scripts/check_project.py .` both exit 0.
 
-- [ ] T074 🔴 [P] [US3] `tests/test_check_project.py::test_a_face_with_a_picture_needs_text` — C6/FR-023: `back_image:` with an empty `back:` errors. Fails: accepted today
-- [ ] T075 🔴 [P] [US3] `tests/test_check_project.py::test_a_figure_is_not_printed_on_six_cards` — C7/FR-022: more than one card using a figure on the same face warns. Fails: silent today
-- [ ] T076 🔴 [P] [US3] `tests/test_check_project.py::test_a_figure_also_yields_a_text_only_card` — C10/FR-024: a file in which every card of a picture-bearing subtopic carries a picture warns. Fails: silent today. This is the red artifact FR-024 lacked — a `skills/` requirement that writes a file is assertable, and constitution XI does not waive it
-- [ ] T077 [US3] Implement all three checks in `scripts/check_project.py` `check_cards()`
-- [ ] T078 [US3] Update `skills/cards/SKILL.md`: the three card kinds and what each is for; at most one description and one recognition card per figure; the answer text comes from the figure's `caption`; the picture never replaces the text; the existing `Status: gap` / `out of scope` rules apply unchanged; report how many cards carry a picture
-- [ ] T079 [US3] Keep `skills/cards/SKILL.md` frontmatter valid — `name: cards`, `description` still names its triggers
-- [ ] T080 [US3] Confirm nothing about ids, topic files, merging or the text budget changed — a figure card is an ordinary card with one more key
+- [X] T074 🔴 [P] [US3] `tests/test_check_project.py::test_a_face_with_a_picture_needs_text` — C6/FR-023: `back_image:` with an empty `back:` errors. Fails: accepted today
+- [X] T075 🔴 [P] [US3] `tests/test_check_project.py::test_a_figure_is_not_printed_on_six_cards` — C7/FR-022: more than one card using a figure on the same face warns. Fails: silent today
+- [X] T076 🔴 [P] [US3] `tests/test_check_project.py::test_a_figure_also_yields_a_text_only_card` — C10/FR-024: a file in which every card of a picture-bearing subtopic carries a picture warns. Fails: silent today. This is the red artifact FR-024 lacked — a `skills/` requirement that writes a file is assertable, and constitution XI does not waive it
+- [X] T077 [US3] Implement all three checks in `scripts/check_project.py` `check_cards()`
+- [X] T078 [US3] Update `skills/cards/SKILL.md`: the three card kinds and what each is for; at most one description and one recognition card per figure; the answer text comes from the figure's `caption`; the picture never replaces the text; the existing `Status: gap` / `out of scope` rules apply unchanged; report how many cards carry a picture
+- [X] T079 [US3] Keep `skills/cards/SKILL.md` frontmatter valid — `name: cards`, `description` still names its triggers
+- [X] T080 [US3] Confirm nothing about ids, topic files, merging or the text budget changed — a figure card is an ordinary card with one more key
 
 **Checkpoint**: a `/cards` run over a figure-bearing catalog produces a deck that checks clean and prints.
 
@@ -218,29 +218,29 @@ implementation `scripts/<module>.py`; prompts `skills/<name>/SKILL.md`; layout
 
 ## Phase 8: Docs & Cross-Cutting
 
-- [ ] T089 [P] Add a section to `docs/design.md`: how a picture sits in the field, what it may displace (the note rules), what it never may (prompt, answer, source line, bands) — and the honest limit, that a source's chart may carry meaning in colour and turn to grey on grey
-- [ ] T090 [P] Add `figures/` to the artifact list in `docs/workflow.md`, beside `knowledge/`
-- [ ] T091 [P] Update `docs/testing.md`: the fixture table gains the new material, and the manual checklist gains **four named items** — the `/ingest` summary line for an unreadable picture (FR-015), the picture count folded into the "ask before more than 20" threshold (FR-017), the `/cards` count of picture-bearing cards (FR-025), and *hold a printed figure card* (constitution XI's run-output carve-out; naming them is required, not optional)
-- [ ] T092 [P] Update `README.md` and `docs/index.html` — **the first optional runtime dependency lands here**, so any claim that nothing needs installing has to be re-read and corrected if it is now false
-- [ ] T093 [P] Add any new expected file to `REQUIRED_FILES` in `scripts/check_docs.py` (`scripts/figures.py`, if the list covers scripts)
-- [ ] T094 English throughout: code, comments, docstrings, docs, commit messages
+- [X] T089 [P] Add a section to `docs/design.md`: how a picture sits in the field, what it may displace (the note rules), what it never may (prompt, answer, source line, bands) — and the honest limit, that a source's chart may carry meaning in colour and turn to grey on grey
+- [X] T090 [P] Add `figures/` to the artifact list in `docs/workflow.md`, beside `knowledge/`
+- [X] T091 [P] Update `docs/testing.md`: the fixture table gains the new material, and the manual checklist gains **four named items** — the `/ingest` summary line for an unreadable picture (FR-015), the picture count folded into the "ask before more than 20" threshold (FR-017), the `/cards` count of picture-bearing cards (FR-025), and *hold a printed figure card* (constitution XI's run-output carve-out; naming them is required, not optional)
+- [X] T092 [P] Update `README.md` and `docs/index.html` — **the first optional runtime dependency lands here**, so any claim that nothing needs installing has to be re-read and corrected if it is now false
+- [X] T093 [P] Add any new expected file to `REQUIRED_FILES` in `scripts/check_docs.py` (`scripts/figures.py`, if the list covers scripts)
+- [X] T094 English throughout: code, comments, docstrings, docs, commit messages
 
 ---
 
 ## Phase 9: Gates
 
-- [ ] T095 `ruff check .`
-- [ ] T096 `ruff format --check .`
-- [ ] T097 `pytest`
-- [ ] T098 `bin/lernkarten check cards/*.yaml`
-- [ ] T099 `python3 scripts/check_docs.py`
-- [ ] T100 `python3 scripts/make_testdata.py` — the new generated material builds from its Typst sources
-- [ ] T101 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py tests/test_testdata.py tests/test_ingest_sources.py tests/test_figures.py -v`
-- [ ] T102 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
-- [ ] T103 `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf`
-- [ ] T104 Build on the Python floor (3.12) with only the declared dependencies installed
-- [ ] T105 With `pypdfium2` deliberately absent: a full `/ingest` still completes and names the documents whose figures it could not extract (SC-005)
-- [ ] T106 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, `figures/`, non-example `cards/`, `output/`, no binaries
+- [X] T095 `ruff check .`
+- [X] T096 `ruff format --check .`
+- [X] T097 `pytest`
+- [X] T098 `bin/lernkarten check cards/*.yaml`
+- [X] T099 `python3 scripts/check_docs.py`
+- [X] T100 `python3 scripts/make_testdata.py` — the new generated material builds from its Typst sources
+- [X] T101 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py tests/test_testdata.py tests/test_ingest_sources.py tests/test_figures.py -v`
+- [X] T102 `python3 scripts/check_project.py tests/fixtures/demo-project --strict`
+- [X] T103 `bin/lernkarten build tests/fixtures/demo-project/cards/*.yaml --margin 0 --no-logo -o output/borderless.pdf`
+- [X] T104 Build on the Python floor (3.12) with only the declared dependencies installed
+- [X] T105 With `pypdfium2` deliberately absent: a full `/ingest` still completes and names the documents whose figures it could not extract (SC-005)
+- [X] T106 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, `figures/`, non-example `cards/`, `output/`, no binaries
 - [ ] T107 Push the branch and open a pull request; confirm the branch is `feat/figure-cards` and every commit subject carries an allowed prefix
 
 ---

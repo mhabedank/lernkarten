@@ -195,7 +195,12 @@ python3 scripts/zotero_stub.py
 | 7 | `/ingest` | delete one knowledge file, `/ingest` again | exactly that one comes back |
 | 8a | `/ingest` | `/ingest handbook` | text of the first two pages only — `pages: "1-2"` is respected |
 | 8b | `/ingest` | `/ingest tide-tables` | the scan is read as images; the tide figures are there and not garbled |
-| 8c | `/ingest` | `/ingest island-images` | both images are picked up without a `pattern`; transcribed structurally, `type: infographic` in the frontmatter, no OCR word salad |
+| 8c | `/ingest` | `/ingest island-images` | both images are picked up without a `pattern`; transcribed structurally, no OCR word salad. The chart is kept — `visual: chart`, a `path:` under `figures/island-images/`, a caption, and a markdown image link in the body where it sat. The photograph is **rejected**, `visual: none` with a `why:`, and nothing is copied for it |
+| 8c-i | `/ingest` | `/ingest handbook` | the figure on page 3 is offered and kept; the office mark in the running header is offered **once** with `repeated_on: 4` and rejected as furniture |
+| 8c-ii | `/ingest` | `/ingest` a second time | **run output, nothing on disk (FR-014):** every picture reported as skipped, no file under `figures/` rewritten. Delete exactly one figure and exactly that one comes back |
+| 8c-iii | `/ingest` | uninstall `pypdfium2`, `/ingest handbook` | **run output (FR-018):** the transcription is still written in full, and the summary names the document whose figures could not be extracted. Exit 3 from `figures.py`, no traceback |
+| 8c-iv | `/ingest` | point a source at an unreadable image | **run output (FR-015):** the summary names the file and the reason, and the ingest carries on |
+| 8c-v | `/ingest` | a source with more than 20 pictures across PDFs, pages and links | **run output (FR-017):** you are asked first, and told how many — pictures found inside documents count towards the same threshold as a folder of images |
 | 8d | `/ingest` | `/ingest office-notes` | the DOCX arrives as text |
 | 8e | `/ingest` | `/ingest harbour-office` (server running) | three pages under `knowledge/harbour-office/`, nav bar and cookie banner dropped, `depth: 1` followed |
 | 8f | `/ingest` | `/ingest harbour-office-members` | the login page is *not* ingested and nothing behind it is invented; no credentials are typed anywhere |
@@ -213,6 +218,9 @@ python3 scripts/zotero_stub.py
 | 9b | `/catalog` | delete `goal.md`, `/catalog` again | no `Status:` lines at all, plus one line saying the catalog covers the material rather than the topic |
 | 9c | `/catalog` | read the closing report | covered / gap / out-of-scope counts, and `/research-gaps` named when there is a gap |
 | 9d | `/research-gaps` | `/research-gaps` with no network | reports which gaps stayed open, writes nothing, never invents a document |
+| 10a | `/cards` | `/cards` over a subtopic with a kept figure | three kinds of card: one description card (picture on the back), one recognition card (picture on the front), and at least one text-only detail card |
+| 10b | `/cards` | read the closing report | **run output (FR-025):** how many of the cards written carry a picture |
+| 10c | `/cards` | look at the recognition card | the picture does not answer its own question — a chart with its title printed inside it tests reading, not recall |
 | 9e | `/research-gaps` | delete a `research` source and its folder, `/catalog` | the subtopic goes back to `Status: gap` |
 | 10 | `/catalog` | rename a subtopic by hand, `/catalog` again | your edit survives |
 | 11 | `/cards` | `/cards Tides` | `cards/tides.yaml`, 3–8 cards per subtopic, `language:` set |
@@ -237,6 +245,8 @@ python3 scripts/zotero_stub.py
 | 21 | `/cards` | **SC-007**: read an id off a printed card, name it in a Claude session (*"A45DK uses a word it never defines"*), let the session edit that card, then look again | the id is unchanged and still names the same card. This is the feature's reason for existing and it leaves nothing on disk, so per constitution XI it is named here rather than left implicit |
 | 22 | `/print` | `lernkarten check` on a deck written before ids existed | exit 0, and **one** advisory line naming `--backfill` — not one line per card. The exit code is asserted by a test; the wording is a judgement and lives here |
 | 23 | `/print` | photocopy a sheet | the id still reads in black only |
+| 23a | `/print` | photocopy a sheet holding a **figure card** | the diagram still reads. This is the one thing no check can judge: our own graphics never let colour carry meaning alone, but a chart from someone else's PDF does, and a red-versus-green series goes grey on grey. If it does not survive, the card's text still has to say what the picture showed |
+| 23b | `/print` | print a figure deck at `--grid a8` | the picture scales with the card and is still legible at sixteen up; `check_project.py` said so once, not once per card |
 | 23a | `/print` | look at the footer band as a whole, at both grids | **FR-011a**: the id does not overpower `LERNKARTEN BY MHABEDANK` beside it. This, not the clip cap, is what bounds the id's size from above — every size up to 12 pt fits the box, and 11 pt still looks wrong. Measured support: at 8 pt the id is 52.80 pt against a 92.85 pt wordmark, so it stays the smaller of the two. Whether the band still reads as quiet is a judgement, which is why it is named here rather than asserted |
 
 **Steps 17–19 are per grid, and both grids have to be walked.** Registration is

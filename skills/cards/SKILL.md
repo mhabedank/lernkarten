@@ -26,8 +26,9 @@ Creates flashcards from the topic catalog and the references under
    substance. Replace only on an explicit request ("regenerate").
 5. Validate after writing: `lernkarten check cards/*.yaml`
    (checks the schema and test-compiles). Fix errors right away.
-6. Summary: number of cards per topic/subtopic, then the scope report below,
-   then point at `/print`.
+6. Summary: number of cards per topic/subtopic, **how many of them carry a
+   picture** (the deck now depends on files outside `cards/`), then the scope
+   report below, then point at `/print`.
 
 ## Scope — what to skip, and what to say about it
 
@@ -86,6 +87,40 @@ none at all when the other end is a gap or out of scope: there is nothing to
 read at a gap, and out-of-scope material is what the user asked not to be
 tested on.
 
+## Cards from a figure
+
+A knowledge document may carry a `figures:` list — pictures `/ingest` judged
+worth *showing* rather than only describing. A kept figure has a `path:` and a
+`caption:`, and is marked in the body where it sat. Write **three kinds** of
+card from one, not one:
+
+- **The description card.** Prompt on the front, picture on the back:
+  `front: 'Describe the CRISP-DM cycle'`, `back_image:` the figure, and a
+  `back:` that says in one or two lines what the picture shows — the figure's
+  `caption:` is the starting point. One per figure.
+- **The recognition card.** Picture on the front, answer in text on the back:
+  `front: 'What does this chart show?'`, `front_image:` the figure. One per
+  figure. **Check the picture does not answer its own question**: a chart whose
+  title is printed inside it gives the game away, and then the card tests
+  reading, not recall. Ask something the picture does not label — which phase
+  follows which, what the axis means — or leave the recognition card out.
+- **Detail cards.** Ordinary text-only cards about what is *in* the picture,
+  written from the transcription: "Which phase does CRISP-DM return to after
+  Evaluation?". At least one, always. A figure that yields only picture cards
+  teaches the diagram and never what it means, and `check_project.py` says so.
+
+Rules that hold for all three:
+
+- **The text on a face carrying a picture is never empty.** A back that is only
+  a picture has no answer to read; a front that is only a picture has no
+  question on it. The picture shows it, the text says what it shows.
+- **One figure, one description card and one recognition card.** Printing a
+  diagram onto six cards in a row wastes paper and teaches nothing extra.
+- The path goes in `front_image:`/`back_image:` exactly as the knowledge
+  document's `path:` spells it — relative to the project root.
+- The existing scope rules are unchanged: a subtopic marked `Status: gap` or
+  `out of scope` gets no cards, figure or otherwise, unless it is named.
+
 ## Card schema
 
 ```yaml
@@ -97,6 +132,7 @@ cards:
     subtopic: 'Subtopic'
     front: 'Question/term'
     back: 'Answer'
+    back_image: 'figures/<source-id>/<slug>.png'   # optional; front_image too
     source: 'Short reference'   # optional, printed small on the back
 ```
 

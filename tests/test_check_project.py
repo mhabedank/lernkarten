@@ -1309,3 +1309,77 @@ def test_a_rejected_figure_is_silent(tmp_path):
     report = check(project(tmp_path, knowledge=figures_block(entries, body)))
     assert not report.errors, messages(report)
     assert not [w for w in report.warnings if "figure" in w.lower()], report.warnings
+
+
+# --- what /cards writes from a figure (US3) --------------------------------
+
+PICTURE_WITHOUT_TEXT = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe the rule of twelfths'
+    back: ''
+    back_image: 'figures/field-notes/chart.png'
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+FIGURE_ON_SIX_CARDS = """topic: 'Tides'
+language: english
+cards:
+""" + "".join(
+    f"""  - subtopic: 'Rhythm of the tide'
+    front: 'Question {n}'
+    back: 'Answer {n}'
+    back_image: 'figures/field-notes/chart.png'
+"""
+    for n in range(1, 4)
+)
+
+ONLY_PICTURE_CARDS = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/field-notes/chart.png'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What does this chart show?'
+    front_image: 'figures/field-notes/chart.png'
+    back: 'How the range is spread over six hours.'
+"""
+
+
+def test_a_face_with_a_picture_needs_text(tmp_path):
+    """A back that is only a picture has no answer to read."""
+    report = check(with_figure(project(tmp_path, cards=PICTURE_WITHOUT_TEXT)))
+    assert any("back_image" in e and "text" in e for e in report.errors), messages(report)
+
+
+def test_a_figure_is_not_printed_on_six_cards(tmp_path):
+    """One description card and one recognition card per figure, not a set."""
+    report = check(with_figure(project(tmp_path, cards=FIGURE_ON_SIX_CARDS)))
+    assert any("more than one card" in w for w in report.warnings), report.warnings
+
+
+def test_a_figure_also_yields_a_text_only_card(tmp_path):
+    """FR-024: a chart has to produce recall practice, not only recognition.
+
+    Both cards here carry the picture, so the subtopic tests whether the user
+    remembers the diagram and never whether they understood it.
+    """
+    report = check(with_figure(project(tmp_path, cards=ONLY_PICTURE_CARDS)))
+    assert any("text-only card" in w for w in report.warnings), report.warnings
+
+
+def test_a_subtopic_with_both_kinds_is_not_warned_about(tmp_path):
+    cards = (
+        ONLY_PICTURE_CARDS
+        + """  - subtopic: 'Rhythm of the tide'
+    front: 'Which hour passes half the range?'
+    back: 'The third.'
+"""
+    )
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert not [w for w in report.warnings if "text-only card" in w], report.warnings

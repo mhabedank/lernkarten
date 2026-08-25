@@ -718,6 +718,11 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
     # Said once at the end, not once per card: a picture at A8 is legal and
     # small, and a note repeated for every one of sixteen cards is noise.
     dense_with_pictures = []
+    # {(file, figure, face): [card, ...]} and {(file, subtopic): [has picture?]},
+    # both filled in the loop and judged after it, because both questions are
+    # about a whole file rather than about one card.
+    figure_faces = {}
+    by_subtopic = {}
     for path in sorted(root.glob("*.yaml")):
         where = f"cards/{path.name}"
         data = read_yaml(path, report)
@@ -803,12 +808,44 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 _, problem = build_pdf.resolve_picture(str(card[face]), project)
                 if problem:
                     report.error(where, f"card {i}: {face} '{card[face]}' {problem}")
-                elif build_pdf.parse_grid(data.get("grid") or "a7") == build_pdf.GRIDS["4x4"]:
-                    dense_with_pictures.append(where)
+                else:
+                    if build_pdf.parse_grid(data.get("grid") or "a7") == build_pdf.GRIDS["4x4"]:
+                        dense_with_pictures.append(where)
+                    figure_faces.setdefault((where, str(card[face]), face), []).append(i)
+                    # A picture supplements the answer; it never replaces it.
+                    # A back that is only a picture has nothing to read, and a
+                    # front that is only a picture has no question on it.
+                    text = front if face == "front_image" else back
+                    if not text.strip():
+                        report.error(
+                            where,
+                            f"card {i}: {face} with no text on that face — "
+                            "the picture shows it, the text says what it shows",
+                        )
+            subtopic = str(card.get("subtopic") or "")
+            has_picture = any(f in card for f in ("front_image", "back_image"))
+            by_subtopic.setdefault((where, subtopic), []).append(has_picture)
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)
     _note_pictures_at_a8(dense_with_pictures, report)
+    for (where, picture, face), cards in figure_faces.items():
+        if len(cards) > 1:
+            report.warn(
+                where,
+                f"more than one card uses '{picture}' as {face} "
+                f"(cards {', '.join(str(c) for c in cards)}) — one description card and "
+                "one recognition card per figure, not a set",
+            )
+    for (where, subtopic), flags in by_subtopic.items():
+        # A figure that yields only picture cards tests recognition and never
+        # recall: the user learns the diagram, not what it means.
+        if any(flags) and not any(not f for f in flags):
+            report.warn(
+                where,
+                f"'{subtopic}': every card carries a picture — a figure needs at least one "
+                "text-only card from its transcription, or it only ever tests recognition",
+            )
 
 
 def _note_pictures_at_a8(decks, report):
