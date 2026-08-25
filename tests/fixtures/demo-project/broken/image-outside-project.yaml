@@ -1,0 +1,10 @@
+# A path that climbs out of the project. A deck that only builds on the machine
+# that wrote it is a defect, not a preference, so this is refused by name.
+topic: 'Kestrel Islands: Tides'
+language: english
+cards:
+  - id: ESC01
+    subtopic: 'Range and the rule of twelfths'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: '../../../elsewhere/chart.png'

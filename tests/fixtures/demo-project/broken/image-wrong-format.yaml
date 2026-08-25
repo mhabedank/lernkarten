@@ -1,0 +1,11 @@
+# A format the typesetting engine does not read. Checked before the file is
+# looked for, so this is reported as the wrong format rather than as missing —
+# the first thing wrong with it is the thing worth fixing.
+topic: 'Kestrel Islands: Tides'
+language: english
+cards:
+  - id: FMT01
+    subtopic: 'Range and the rule of twelfths'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/island-images/tide-chart.tiff'

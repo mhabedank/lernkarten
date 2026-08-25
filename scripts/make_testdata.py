@@ -17,6 +17,9 @@ What comes out (all of it .gitignored):
     raw/handbook/tide-almanac.pdf        61 pages — long enough to need chunking
     raw/handbook/damaged.pdf             truncated: extraction has to fail
     raw/images/tide-chart.png            an infographic
+    raw/images/office-mark.png           a logo, repeated in the handbook header
+    raw/field-notes/diagrams/…           a picture a markdown note *links* to
+    raw/web/harbour-plan.png             a picture the local web fixture shows
     raw/images/harbour-noticeboard.jpg   a photo-like JPEG (needs Pillow)
     raw/office/mail-boat-timetable.docx  a Word document
     raw/field-notes/harbour-log.txt      text that is not UTF-8
@@ -98,9 +101,25 @@ JPEG_QUALITY = 80
 
 
 def typst(binary, source, target, extra=()):
-    """Compiles one typst file. --ignore-system-fonts keeps it reproducible."""
+    """Compiles one typst file. --ignore-system-fonts keeps it reproducible.
+
+    The root is the demo project, not the generator's own folder: handbook.typ
+    embeds raw/images/tide-chart.png as a figure, and the engine refuses a path
+    that climbs out of the root it was given.
+    """
     result = subprocess.run(
-        [str(binary), "compile", "--ignore-system-fonts", *extra, str(source), str(target)],
+        [
+            str(binary),
+            "compile",
+            "--ignore-system-fonts",
+            # Only when the source really lives in the demo: build_scan writes
+            # its intermediate somewhere temporary, and a root it sits outside
+            # of is refused.
+            *(("--root", str(DEMO)) if Path(source).is_relative_to(DEMO) else ()),
+            *extra,
+            str(source),
+            str(target),
+        ],
         capture_output=True,
         text=True,
     )
@@ -222,6 +241,29 @@ def build_docx(target):
 # scan has to exist by then.
 JOBS = [
     (
+        RAW / "images" / "tide-chart.png",
+        GENERATORS / "tide-chart.typ",
+        build_image,
+    ),
+    (
+        RAW / "images" / "office-mark.png",
+        GENERATORS / "office-mark.typ",
+        build_image,
+    ),
+    # The two remaining places a picture can come from: linked by a document,
+    # and shown on a fetched page. Both have to be followed to be judged.
+    (
+        RAW / "field-notes" / "diagrams" / "signal-flags.png",
+        GENERATORS / "signal-flags.typ",
+        build_image,
+    ),
+    (
+        RAW / "web" / "harbour-plan.png",
+        GENERATORS / "harbour-plan.typ",
+        build_image,
+    ),
+    # ^ before the handbook, which embeds it as a figure.
+    (
         RAW / "handbook" / "kestrel-handbook.pdf",
         GENERATORS / "handbook.typ",
         lambda binary, source, target: build_pdf_with_text(binary, source, target),
@@ -245,11 +287,6 @@ JOBS = [
         RAW / "field-notes" / "harbour-log.txt",
         Path(__file__).resolve(),
         lambda binary, source, target: build_latin1_text(target),
-    ),
-    (
-        RAW / "images" / "tide-chart.png",
-        GENERATORS / "tide-chart.typ",
-        build_image,
     ),
     (
         RAW / "images" / "harbour-noticeboard.jpg",

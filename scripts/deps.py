@@ -40,6 +40,19 @@ REQUIREMENTS = [
     ("pyyaml==6.0.3", "yaml"),
 ]
 
+# Optional, and installed only when something actually asks for it. pypdfium2
+# renders a figure region off a PDF page for /ingest (scripts/figures.py) — 3.5
+# MB of PDF renderer that a project of markdown and photographs never needs, so
+# it stays out of REQUIREMENTS, which every `lernkarten` command installs.
+# py3-none wheels for all six platforms the engine supports, win_arm64 included,
+# and no transitive dependencies at all.
+FIGURES = [
+    ("pypdfium2==5.13.0", "pypdfium2"),
+]
+
+# Every optional set, by the name a user sees in `lernkarten deps --check`.
+OPTIONAL = {"figures": FIGURES}
+
 # Bumped by hand when the layout of the cache directory changes.
 LAYOUT = "1"
 
@@ -174,6 +187,24 @@ def activate(install_if_missing=True, quiet=False):
     return "installed"
 
 
+def activate_optional(requirements, quiet=False):
+    """Puts an optional set on sys.path, installing it on first use.
+
+    Same bargain as activate(), for a set the user only pays for when they ask
+    for what it does. Raises DependencyError rather than exiting, because the
+    caller's job is to degrade — an ingest that loses its figures still has
+    every transcription to write.
+    """
+    if not missing(requirements):
+        return "system"
+    target = target_dir(requirements)
+    if missing(requirements, extra_path=target):
+        install(requirements, target=target, quiet=quiet)
+    if str(target) not in sys.path:
+        sys.path.insert(0, str(target))
+    return str(target)
+
+
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -189,6 +220,14 @@ def main():
     except DependencyError as e:
         sys.exit(f"ERROR: {e}")
     print(f"{target_dir()}\n  {len(REQUIREMENTS)} requirement(s) (from {origin})")
+
+    # The optional sets are reported, never installed here. Absent is the normal
+    # state for a project that has no PDF figures, so it is a line of
+    # information and not a failure — `lernkarten deps --check` still exits 0.
+    for name, requirements in OPTIONAL.items():
+        absent = missing(requirements, extra_path=target_dir(requirements))
+        state = f"not installed ({', '.join(absent)})" if absent else "installed"
+        print(f"  optional '{name}': {state} — fetched on first use")
 
 
 if __name__ == "__main__":

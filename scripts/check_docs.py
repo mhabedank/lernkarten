@@ -62,6 +62,10 @@ PLUGIN_MANIFEST = ".claude-plugin/plugin.json"
 PLUGIN_NAME = "lernkarten"
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 CODEBLOCK = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
+# `![Figure: caption](figures/<id>/<slug>.png)` is a path to *write*, not one
+# that exists. Docs have to be able to show markdown syntax without being it,
+# which is the same reason code blocks are skipped.
+INLINE_CODE = re.compile(r"`[^`\n]*`")
 
 
 def check_required_files(errors):
@@ -168,8 +172,10 @@ def markdown_files():
 
 def check_links(errors):
     for path in markdown_files():
-        # Code blocks show format examples with placeholder paths — skip them
+        # Code shows format examples with placeholder paths — skip it, fenced
+        # and inline alike.
         text = CODEBLOCK.sub("", path.read_text(encoding="utf-8"))
+        text = INLINE_CODE.sub("", text)
         for target in LINK.findall(text):
             if target.startswith(("http://", "https://", "mailto:", "#")):
                 continue

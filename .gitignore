@@ -12,6 +12,10 @@ catalog/*
 cards/*
 !cards/.gitkeep
 !cards/example.yaml
+# The pictures /ingest keeps. Somebody else's diagram is theirs, and a public
+# repo is the wrong place for it — user content, like everything above.
+figures/*
+!figures/.gitkeep
 output/
 
 # The demo project under tests/ is the exception: invented content, written for
@@ -28,6 +32,8 @@ tests/fixtures/demo-project/raw/handbook/
 tests/fixtures/demo-project/raw/images/
 tests/fixtures/demo-project/raw/office/
 tests/fixtures/demo-project/raw/field-notes/harbour-log.txt
+tests/fixtures/demo-project/raw/field-notes/diagrams/
+tests/fixtures/demo-project/raw/web/harbour-plan.png
 tests/fixtures/zotero/storage/
 
 # --- Build leftovers ----------------------------------------------------

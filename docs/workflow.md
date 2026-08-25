@@ -110,6 +110,34 @@ The text is not summarised — completeness is what counts here; condensing
 happens in the next step. Scanned PDFs without a text layer are read as images,
 and so are infographics and diagrams — no OCR to garble them.
 
+**Pictures worth showing are kept.** Some diagrams teach something the words
+cannot: a chart, a flow chart, a decision tree, a map. `/ingest` looks at every
+picture it meets — a file in a folder, a figure on a PDF page, an image on a web
+page, one linked from a markdown note — and decides. What it keeps goes into
+`figures/<source-id>/`, and the verdict is written into the document, for the
+rejections too:
+
+```markdown
+---
+source: university-statistics
+document: "Lecture 03 — Conditional probability"
+path: "/Users/…/University/Statistics/lecture03.pdf"
+ingested: 2026-08-12
+figures:
+  - at: 'page 4'
+    visual: diagram
+    path: figures/university-statistics/bayes-tree.png
+    caption: 'The tree that turns a conditional into a joint probability'
+  - at: 'page 1'
+    visual: none
+    why: 'the faculty crest, in every page header'
+---
+```
+
+Recording the rejections is what stops a second `/ingest` opening the same
+picture to reach the same conclusion. `/cards` reads the list later and puts the
+picture on the back of a card.
+
 **Incremental:** a second call skips everything that has not changed since last
 time. Web pages are re-fetched after 7 days. `/ingest university-statistics`
 limits the run to one source.
@@ -336,8 +364,8 @@ sources. [testing.md](testing.md) has the checklist that goes with it.
 
 ## Where your data lives
 
-`sources.yaml`, `knowledge/`, `catalog/`, `cards/` and `output/` are excluded
-in `.gitignore`. A `git status` stays clean no matter how much you ingest — and
+`sources.yaml`, `knowledge/`, `catalog/`, `figures/`, `cards/` and `output/` are
+excluded in `.gitignore`. A `git status` stays clean no matter how much you ingest — and
 a fork of the repo never contains anyone else's material. If you do want to
 version your cards, a separate private repo inside the `cards/` folder is the
 simplest way.

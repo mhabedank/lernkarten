@@ -72,6 +72,38 @@ cards:
 """
 
 
+CARDS_WITH_PICTURE = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+    back_image: 'figures/field-notes/chart.png'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'When does slack water follow the turn?'
+    back: 'Roughly two hours after.'
+    source: 'Field notes'
+"""
+
+TOP_LEVEL_PICTURE = """topic: 'Tides'
+language: english
+back_image: 'figures/field-notes/chart.png'
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+
+def with_figure(root, relative="figures/field-notes/chart.png"):
+    """Puts a file where a card or a knowledge document says a picture is."""
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"\x89PNG\r\n\x1a\n")
+    return root
+
+
 def project(
     tmp_path,
     sources=GOOD_SOURCES,
@@ -129,7 +161,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 29
+    assert counts["cards"] == 31
 
 
 def test_the_demo_project_passes_on_the_command_line():
@@ -324,6 +356,80 @@ def test_a_grid_on_an_individual_card_is_reported(tmp_path):
     )
     report = check(project(tmp_path, cards=cards))
     assert any("grid" in e and "card 1" in e for e in report.errors), messages(report)
+
+
+# --- pictures on a card (feat/figure-cards) --------------------------------
+
+
+def test_a_card_may_carry_a_picture(tmp_path):
+    report = check(with_figure(project(tmp_path, cards=CARDS_WITH_PICTURE)))
+    assert not report.errors, messages(report)
+
+
+@pytest.mark.parametrize(
+    ("path", "fragment"),
+    [
+        ("figures/field-notes/gone.png", "does not exist"),
+        ("figures/field-notes/chart.tiff", "not an image the engine reads"),
+        ("../outside.png", "outside the project"),
+    ],
+    ids=["missing", "wrong-format", "escaping"],
+)
+def test_a_card_picture_must_exist_and_be_an_accepted_format(tmp_path, path, fragment):
+    """Three causes, three messages. One message covering all of them is useless.
+
+    The order matters: the extension is checked before the file is looked for,
+    so a `.tiff` that is also absent is reported as the wrong format rather than
+    as missing — the first thing wrong with it is the thing worth fixing.
+    """
+    cards = CARDS_WITH_PICTURE.replace("figures/field-notes/chart.png", path)
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert any(fragment in e for e in report.errors), messages(report)
+    assert any("back_image" in e for e in report.errors), "the message has to name the face"
+
+
+TWO_PICTURE_CARDS_AT_A8 = """topic: 'Tides'
+language: english
+grid: a8
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/field-notes/chart.png'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What does this chart show?'
+    front_image: 'figures/field-notes/chart.png'
+    back: 'How the range is spread over six hours.'
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+
+def test_an_a8_deck_with_pictures_is_noted_once(tmp_path):
+    """Legal at every grid — but small, and said once rather than once per card.
+
+    A note repeated for every picture in a sixteen-up deck is noise, and noise
+    is what gets scrolled past. The deck is the thing that chose the size.
+    """
+    report = check(with_figure(project(tmp_path, cards=TWO_PICTURE_CARDS_AT_A8)))
+    assert not report.errors, messages(report)
+    notes = [w for w in report.warnings if "A8" in w]
+    assert len(notes) == 1, f"expected exactly one A8 note, got {notes}"
+
+
+def test_an_a8_deck_without_pictures_is_not_noted(tmp_path):
+    cards = TWO_PICTURE_CARDS_AT_A8.replace(
+        "    back_image: 'figures/field-notes/chart.png'\n", ""
+    ).replace("    front_image: 'figures/field-notes/chart.png'\n", "")
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert not [w for w in report.warnings if "A8" in w], report.warnings
+
+
+def test_a_picture_key_at_the_top_level_is_an_error(tmp_path):
+    """A picture belongs to a card, the way a grid belongs to a deck."""
+    report = check(with_figure(project(tmp_path, cards=TOP_LEVEL_PICTURE)))
+    assert any("belongs on a card" in e for e in report.errors), messages(report)
 
 
 # --- the card-style limits follow the grid (US2) ---------------------------
@@ -1053,3 +1159,227 @@ def test_checking_never_writes_to_the_files_it_reads(tmp_path):
     before = digests()
     check_project.check(root, check_project.Report(), strict=True)
     assert digests() == before, "the checker modified a file it was only asked to read"
+
+
+# --- the figure store (feat/figure-cards) ----------------------------------
+#
+# /ingest looks at a picture once, decides whether showing it teaches something
+# the transcription cannot, and writes the verdict down. These are the checks
+# that make that prompt change verifiable at all: a prompt has no unit test, so
+# the artifact it writes is what gets asserted (constitution XI).
+
+KEPT = """---
+source: field-notes
+document: "A document"
+path: "raw/a.md"
+ingested: 2026-08-14
+figures:
+  - at: 'page 3'
+    visual: chart
+    path: figures/field-notes/chart.png
+    caption: 'How the range is spread over six hours'
+---
+
+Some text about the tide, long enough to look like a real extraction of it.
+
+![Figure: How the range is spread over six hours](figures/field-notes/chart.png)
+
+More text after the picture, so the body is not just a link on its own line.
+"""
+
+
+def figures_block(entries, body=None):
+    """A knowledge document carrying the given `figures:` entries verbatim."""
+    marker = "![Figure: x](figures/field-notes/chart.png)"
+    return (
+        '---\nsource: field-notes\ndocument: "A"\npath: "raw/a.md"\n'
+        f"ingested: 2026-08-14\nfigures:\n{entries}---\n\n"
+        + (body if body is not None else f"Text about the tide. {marker}\n" + "Filler. " * 20)
+    )
+
+
+def test_a_document_may_carry_a_figure(tmp_path):
+    report = check(with_figure(project(tmp_path, knowledge=KEPT)))
+    assert not report.errors, messages(report)
+
+
+@pytest.mark.parametrize(
+    ("entries", "fragment"),
+    [
+        ("  - visual: chart\n    path: figures/field-notes/chart.png\n    caption: 'c'\n", "'at'"),
+        ("  - at: 'page 3'\n    path: figures/field-notes/chart.png\n", "'visual' missing"),
+    ],
+    ids=["no-at", "no-visual"],
+)
+def test_a_figure_entry_needs_at_and_visual(tmp_path, entries, fragment):
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any(fragment in e for e in report.errors), messages(report)
+
+
+def test_figures_must_be_a_list(tmp_path):
+    document = KEPT.replace(
+        "figures:\n  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/chart.png\n"
+        "    caption: 'How the range is spread over six hours'\n",
+        "figures: chart\n",
+    )
+    report = check(with_figure(project(tmp_path, knowledge=document)))
+    assert any("a list" in e for e in report.errors), messages(report)
+
+
+def test_visual_is_a_closed_vocabulary(tmp_path):
+    """A vocabulary and not a boolean: `show: yes` is True under YAML 1.1 and
+    `show: "no"` is not, which is a trap this project would step in once."""
+    entries = "  - at: 'page 3'\n    visual: photo\n    path: figures/field-notes/chart.png\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("is not one of" in e and "photo" in e for e in report.errors), messages(report)
+
+
+def test_a_rejected_figure_needs_a_why(tmp_path):
+    entries = "  - at: 'page 1'\n    visual: none\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("'why'" in e for e in report.errors), messages(report)
+
+
+def test_a_rejected_figure_cannot_carry_a_path(tmp_path):
+    entries = "  - at: 'page 1'\n    visual: none\n    why: 'a logo'\n    path: figures/x.png\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("cannot carry a 'path'" in e for e in report.errors), messages(report)
+
+
+def test_a_kept_figure_needs_a_path_and_a_caption(tmp_path):
+    entries = "  - at: 'page 3'\n    visual: chart\n"
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("'path'" in e for e in report.errors), messages(report)
+    assert any("'caption'" in e for e in report.errors), messages(report)
+
+
+def test_a_kept_figure_must_sit_under_its_own_source(tmp_path):
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/somewhere-else/chart.png\n    caption: 'c'\n"
+    )
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("figures/field-notes/" in e for e in report.errors), messages(report)
+
+
+def test_a_figure_file_that_is_gone_is_only_a_warning(tmp_path):
+    """The same bargain check_sources strikes: the demo's pictures are not all
+    generated yet on a fresh checkout, and nothing downstream breaks until a
+    card names one — at which point it is an error, because a build stops."""
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/gone.png\n    caption: 'c'\n"
+    )
+    body = "Text. ![Figure: x](figures/field-notes/gone.png)\n" + "Filler. " * 20
+    report = check(project(tmp_path, knowledge=figures_block(entries, body)))
+    assert not report.errors, messages(report)
+    assert any("does not exist" in w for w in report.warnings), report.warnings
+
+
+def test_a_kept_figure_must_be_shown_in_the_body(tmp_path):
+    """A figure named in the frontmatter and absent from the text is half an
+    edit, which is the failure this format invites."""
+    body = "Text about the tide with no picture in it at all. " * 6
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/chart.png\n    caption: 'c'\n"
+    )
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries, body))))
+    assert any("never shows it" in e for e in report.errors), messages(report)
+
+
+def test_two_figures_may_not_share_a_path(tmp_path):
+    entries = (
+        "  - at: 'page 3'\n    visual: chart\n"
+        "    path: figures/field-notes/chart.png\n    caption: 'c'\n"
+        "  - at: 'page 4'\n    visual: diagram\n"
+        "    path: figures/field-notes/chart.png\n    caption: 'd'\n"
+    )
+    report = check(with_figure(project(tmp_path, knowledge=figures_block(entries))))
+    assert any("twice" in e or "already" in e for e in report.errors), messages(report)
+
+
+def test_a_rejected_figure_is_silent(tmp_path):
+    """Its whole job is to answer 'was this looked at?' with yes. Warning about
+    a correctly recorded verdict every run replaces a false alarm with a
+    permanent true one — the reasoning `content: sparse` already settled."""
+    entries = "  - at: 'page 1'\n    visual: none\n    why: 'a logo in every page header'\n"
+    body = "Text about the tide. " * 20
+    report = check(project(tmp_path, knowledge=figures_block(entries, body)))
+    assert not report.errors, messages(report)
+    assert not [w for w in report.warnings if "figure" in w.lower()], report.warnings
+
+
+# --- what /cards writes from a figure (US3) --------------------------------
+
+PICTURE_WITHOUT_TEXT = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe the rule of twelfths'
+    back: ''
+    back_image: 'figures/field-notes/chart.png'
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+FIGURE_ON_SIX_CARDS = """topic: 'Tides'
+language: english
+cards:
+""" + "".join(
+    f"""  - subtopic: 'Rhythm of the tide'
+    front: 'Question {n}'
+    back: 'Answer {n}'
+    back_image: 'figures/field-notes/chart.png'
+"""
+    for n in range(1, 4)
+)
+
+ONLY_PICTURE_CARDS = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'figures/field-notes/chart.png'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What does this chart show?'
+    front_image: 'figures/field-notes/chart.png'
+    back: 'How the range is spread over six hours.'
+"""
+
+
+def test_a_face_with_a_picture_needs_text(tmp_path):
+    """A back that is only a picture has no answer to read."""
+    report = check(with_figure(project(tmp_path, cards=PICTURE_WITHOUT_TEXT)))
+    assert any("back_image" in e and "text" in e for e in report.errors), messages(report)
+
+
+def test_a_figure_is_not_printed_on_six_cards(tmp_path):
+    """One description card and one recognition card per figure, not a set."""
+    report = check(with_figure(project(tmp_path, cards=FIGURE_ON_SIX_CARDS)))
+    assert any("more than one card" in w for w in report.warnings), report.warnings
+
+
+def test_a_figure_also_yields_a_text_only_card(tmp_path):
+    """FR-024: a chart has to produce recall practice, not only recognition.
+
+    Both cards here carry the picture, so the subtopic tests whether the user
+    remembers the diagram and never whether they understood it.
+    """
+    report = check(with_figure(project(tmp_path, cards=ONLY_PICTURE_CARDS)))
+    assert any("text-only card" in w for w in report.warnings), report.warnings
+
+
+def test_a_subtopic_with_both_kinds_is_not_warned_about(tmp_path):
+    cards = (
+        ONLY_PICTURE_CARDS
+        + """  - subtopic: 'Rhythm of the tide'
+    front: 'Which hour passes half the range?'
+    back: 'The third.'
+"""
+    )
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert not [w for w in report.warnings if "text-only card" in w], report.warnings

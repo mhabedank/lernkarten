@@ -1,0 +1,28 @@
+<!--
+  The picture on the back of the figure card in cards/example.yaml.
+
+  Hand-written, so this file is the source and nothing generates it — and it is
+  text, so committing it does not break the no-binaries rule the way an example
+  PNG would. Subject-agnostic on purpose: it demonstrates the format, not a
+  field of study.
+
+  Black on nothing, no fill, no colour carrying meaning: it survives a
+  black-only laser and a photocopy, which is the test every printed thing in
+  this repo has to pass. The type is Jost, the display face the card already
+  uses, resolved from assets/fonts by the font path the build passes.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 44" role="img"
+     aria-label="Sample space, then event, then probability">
+  <g fill="none" stroke="#141414" stroke-width="2" stroke-linecap="square">
+    <rect x="3" y="3" width="78" height="38"/>
+    <rect x="111" y="3" width="78" height="38"/>
+    <rect x="219" y="3" width="78" height="38"/>
+    <path d="M81 22 H105 M99 17 L105 22 L99 27"/>
+    <path d="M189 22 H213 M207 17 L213 22 L207 27"/>
+  </g>
+  <g font-family="Jost" font-size="13" fill="#141414" text-anchor="middle">
+    <text x="42" y="27">Sample space</text>
+    <text x="150" y="27">Event</text>
+    <text x="258" y="27">Probability</text>
+  </g>
+</svg>

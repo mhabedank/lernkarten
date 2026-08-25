@@ -136,6 +136,39 @@ fixed, so A8 takes its width out of the *field*, not out of the header or the
 footer. What changes with the size is how much text fits, not where anything
 sits.
 
+### A picture in the field
+
+A card may carry a picture on either face — `front_image` for "what does this
+show?", `back_image` for "describe X". It sits **inside the field**, so the
+three bands do not move and nothing about the sheet changes.
+
+| Face | Where it goes | What it may displace |
+|---|---|---|
+| front | under the prompt, which keeps its 14 pt and its place | the vertical centring; the prompt moves to the top |
+| back | the row the note rules live in, between answer and source | the note rules, entirely |
+
+The picture wins that middle row outright. Rules crammed into what a diagram
+leaves over would be a smudge, not somewhere to write, so a face with a picture
+has none.
+
+It is `fit: "contain"`, so it is never cropped and never wider than the field.
+And it is measured for overflow at a **minimum useful height** rather than at
+the room it happens to be given — otherwise an answer long enough to squeeze a
+diagram to two millimetres would report "fits" and print something nobody can
+read. Past that, the card is reported and split in two, exactly as an overlong
+text card is. The type is never shrunk to make room; that rule has no exception
+for pictures.
+
+**One limit is real and cannot be designed away.** This project's own graphics
+obey *colour never carries meaning alone*, but a chart lifted from someone
+else's PDF does not: a red-versus-green series becomes grey on grey on a
+black-only laser, and no check can judge that. What the layout guarantees
+instead is that the card still works without the picture — the text on the same
+face says what the picture shows, which is why that text is required rather
+than optional. Whether the figure itself survived the toner is a question for
+the printed sheet, and it is on the manual checklist in
+[testing.md](testing.md).
+
 The layout lives in [`templates/card.typ`](../templates/card.typ) and nowhere
 else. The sheet that arranges them is
 [`templates/cards.typ`](../templates/cards.typ).

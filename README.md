@@ -110,6 +110,23 @@ cards:
     source: 'Lecture 3, slide 12'
 ```
 
+A card can also carry a **picture** — a chart, a flow chart, a labelled
+diagram, something worth *showing* rather than only describing. `/ingest` looks
+at the pictures in your sources and decides which ones are worth keeping; a
+photograph of a page is not, a decision tree is. What it keeps ends up on the
+back of a card:
+
+```yaml
+  - subtopic: 'Process models'
+    front: 'Describe the CRISP-DM cycle'
+    back: 'Six phases, and the loop back from Evaluation to Business understanding.'
+    back_image: 'figures/course-slides/crisp-dm.png'
+```
+
+The text stays: the picture shows it, the text says what it shows. Put the
+picture on the *front* instead (`front_image:`) and you get the other question —
+"what does this show?".
+
 Cards come out in the language of your sources — German, French, whatever you
 feed it. The file says which one (`language: german`, or an ISO code like
 `de`), and printing takes care of the rest: hyphenation, quotation marks, the
@@ -159,6 +176,7 @@ prints the cards without the mark and the wordmark.
 ```
 sources.yaml          your sources
 knowledge/            ingested texts
+figures/              pictures worth showing on a card
 catalog/              the topic catalog
 cards/                your cards
 output/               finished PDFs

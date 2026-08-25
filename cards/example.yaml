@@ -57,3 +57,15 @@ cards:
     front: 'What does the central limit theorem state?'
     back: 'The standardised sum of i.i.d. variables with finite variance converges in distribution to $cal(N)(0,1)$.'
     source: 'Example source'
+  # A picture on the back. `back_image` (and `front_image`, for a card that asks
+  # "what does this show?") names a file relative to the project root — the
+  # folder your cards/ directory sits in. The engine reads png, jpg, jpeg, gif,
+  # svg and webp. The text stays: a card whose whole answer is a picture has
+  # nothing to read, so the answer says what the picture shows and the picture
+  # shows it.
+  - id: 7QH3T
+    subtopic: 'Basics'
+    front: 'Describe the path from a sample space to a probability'
+    back: 'An event is a subset of the sample space; $P$ maps that subset to a number in $[0,1]$.'
+    back_image: 'assets/example-figure.svg'
+    source: 'Example source'

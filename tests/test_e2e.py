@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI = ROOT / "bin" / "lernkarten"
 DEMO = ROOT / "tests" / "fixtures" / "demo-project"
 CARDS = sorted(str(p) for p in (DEMO / "cards").glob("*.yaml"))
-DEMO_CARD_COUNT = 29
+DEMO_CARD_COUNT = 31
 
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -94,8 +94,8 @@ def test_a_topic_filter_narrows_the_build(tmp_path):
     target = tmp_path / "tides.pdf"
     result = run("build", *CARDS, "--topic", "Tides", "-o", str(target))
     assert result.returncode == 0, result.stderr
-    assert "8 cards" in result.stdout, result.stdout
-    assert pdf_pages(target) == 2
+    assert "10 cards" in result.stdout, result.stdout
+    assert pdf_pages(target) == 4
 
 
 def test_a_subtopic_filter_narrows_the_build(tmp_path):
@@ -217,6 +217,27 @@ def test_an_overlong_card_warns_but_still_builds(tmp_path):
         ("missing-fields.yaml", "card 2: 'front' and 'back' are required"),
         ("not-a-mapping.yaml", "expected a mapping with keys 'topic' and 'cards'"),
         ("malformed.yaml", "line 8"),
+        # Four ways a picture can be wrong, and four different messages. One
+        # message covering all of them would send the user looking in the wrong
+        # place three times out of four. The order they are checked in is why
+        # the .tiff — which is also absent — is reported as the wrong format.
+        (
+            "missing-image.yaml",
+            "card M5SS1: back_image 'figures/island-images/gone.png' does not exist",
+        ),
+        (
+            "image-wrong-format.yaml",
+            "card FMT01: back_image 'figures/island-images/tide-chart.tiff' "
+            "is not an image the engine reads",
+        ),
+        (
+            "image-outside-project.yaml",
+            "card ESC01: back_image '../../../elsewhere/chart.png' is outside the project",
+        ),
+        # The only one Python cannot answer: a real file with an accepted name
+        # that is not an image. The engine says so, and offending_card() says
+        # which card it belongs to.
+        ("unreadable-image.yaml", "Offending card: RDB21"),
     ],
 )
 def test_a_broken_card_file_is_rejected_with_its_reason(fixture, message):
@@ -448,7 +469,7 @@ def test_check_accepts_the_grid_flag_too():
     """FR-001: both subcommands take it, not just build."""
     result = run("check", *CARDS, "--grid", "a8")
     assert result.returncode == 0, result.stderr
-    assert "29 cards valid" in result.stdout
+    assert f"{DEMO_CARD_COUNT} cards valid" in result.stdout
 
 
 def test_a_zero_margin_cuts_to_the_a_series_sizes(tmp_path):
@@ -789,7 +810,7 @@ def test_a_single_sheet_deck_looks_the_same_in_both_orders(tmp_path):
     Worth pinning: it is the deck someone tries the flag on first, and a build
     that reordered anything here would be reordering a two-page document.
     """
-    one_deck = str(DEMO / "cards" / "tides.yaml")  # 8 cards, exactly one a7 sheet
+    one_deck = str(DEMO / "cards" / "signals.yaml")  # 7 cards, exactly one a7 sheet
     duplex, simplex = tmp_path / "one-d.pdf", tmp_path / "one-s.pdf"
     assert run("build", one_deck, "-o", str(duplex)).returncode == 0
     assert run("build", one_deck, "-o", str(simplex), "--sides", "simplex").returncode == 0
@@ -1021,3 +1042,102 @@ def test_reassign_through_the_command_reports_what_it_cost(tmp_path):
     assert "orphan" in message.lower() or "no longer name" in message.lower(), (
         f"the report has to state the cost, not just the substitution: {message}"
     )
+
+
+# --- pictures on a card (feat/figure-cards) ---------------------------------
+#
+# The demo figure is a chart whose bars are #5b7fb5, a blue that appears nowhere
+# in the card design. So "did the picture print on this face?" becomes a
+# question a test can answer: render the page and look for that colour.
+
+CHART_BLUE = (0x5B, 0x7F, 0xB5)
+
+FIGURE_DECK = """topic: 'Tides'
+language: english
+cards:
+  - id: F3M2Q
+    subtopic: 'Range'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    {face}: 'figures/chart.svg'
+    source: 'Tide chart'
+"""
+
+
+def one_figure_card(tmp_path, face):
+    """A one-card project, so front and back are page 1 and page 2 exactly."""
+    (tmp_path / "cards").mkdir(exist_ok=True)
+    (tmp_path / "figures").mkdir(exist_ok=True)
+    shutil.copyfile(
+        DEMO / "figures" / "island-images" / "tide-chart.svg",
+        tmp_path / "figures" / "chart.svg",
+    )
+    deck = tmp_path / "cards" / "deck.yaml"
+    deck.write_text(FIGURE_DECK.format(face=face), encoding="utf-8")
+    return str(deck)
+
+
+def page_holds(path, index, rgb, tolerance=40):
+    """Whether page `index` (0-based) of the PDF holds a pixel near `rgb`."""
+    pdfium = pytest.importorskip("pypdfium2", reason="renders the page to look at it")
+    page = pdfium.PdfDocument(str(path))[index]
+    pixels = page.render(scale=2).to_pil().convert("RGB").getdata()
+
+    def near(pixel):
+        return sum((a - b) ** 2 for a, b in zip(pixel, rgb, strict=True)) <= tolerance**2
+
+    return any(near(pixel) for pixel in pixels)
+
+
+@pytest.mark.parametrize(
+    ("face", "printed_on", "blank"),
+    [("back_image", 1, 0), ("front_image", 0, 1)],
+    ids=["back", "front"],
+)
+def test_a_picture_lands_on_the_face_that_named_it(tmp_path, face, printed_on, blank):
+    target = tmp_path / "one.pdf"
+    assert run("build", one_figure_card(tmp_path, face), "-o", str(target)).returncode == 0
+    assert pdf_pages(target) == 2
+    assert page_holds(target, printed_on, CHART_BLUE), f"{face} did not print on its own face"
+    assert not page_holds(target, blank, CHART_BLUE), f"{face} printed on the other face too"
+
+
+def test_a_figure_deck_costs_no_extra_page(tmp_path):
+    """31 cards at 8 up is 4 sheets, whether or not two of them carry a picture."""
+    target = tmp_path / "figures.pdf"
+    result = run("build", *CARDS, "-o", str(target))
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(target) == 2 * -(-DEMO_CARD_COUNT // 8)
+
+
+def test_a_picture_scales_with_the_card_at_a8(tmp_path):
+    """A deck legal at a7 stays legal at a8: the picture shrinks with everything else."""
+    target = tmp_path / "a8.pdf"
+    result = run("build", str(DEMO / "grids" / "tides-a8.yaml"), "-o", str(target))
+    assert result.returncode == 0, result.stderr
+    assert page_holds(target, 1, CHART_BLUE), "the picture has to survive the denser grid"
+
+
+def test_a_back_whose_text_and_picture_do_not_fit_is_named(tmp_path):
+    """The picture is measured at its minimum, not at the room it is given.
+
+    Without that, an answer long enough to squeeze the diagram to two
+    millimetres would report "fits" and print something nobody can read.
+    """
+    (tmp_path / "cards").mkdir()
+    (tmp_path / "figures").mkdir()
+    shutil.copyfile(
+        DEMO / "figures" / "island-images" / "tide-chart.svg",
+        tmp_path / "figures" / "chart.svg",
+    )
+    deck = tmp_path / "cards" / "deck.yaml"
+    deck.write_text(
+        "topic: 'Tides'\nlanguage: english\ncards:\n"
+        "  - id: F3M2Q\n    subtopic: 'Range'\n    front: 'Describe the rule of twelfths'\n"
+        f"    back: '{'The range is spread unevenly over the six hours of the flood. ' * 6}'\n"
+        "    back_image: 'figures/chart.svg'\n",
+        encoding="utf-8",
+    )
+    result = run("build", str(deck), "-o", str(tmp_path / "over.pdf"))
+    assert result.returncode == 0, "an overlong card still builds"
+    assert "F3M2Q" in result.stderr and "does not fit" in result.stderr, result.stderr

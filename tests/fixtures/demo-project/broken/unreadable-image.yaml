@@ -1,0 +1,11 @@
+# A real file, an accepted extension, and not an image. Python cannot tell
+# without decoding it, so this one is the engine's verdict — surfaced through
+# the test typeset and attributed to its card by offending_card().
+topic: 'Kestrel Islands: Tides'
+language: english
+cards:
+  - id: RDB21
+    subtopic: 'Range and the rule of twelfths'
+    front: 'Describe the rule of twelfths'
+    back: 'One twelfth, two, three, three, two, one.'
+    back_image: 'broken/not-really-a-picture.png'

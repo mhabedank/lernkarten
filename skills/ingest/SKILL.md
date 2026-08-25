@@ -25,12 +25,19 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
 ## Extraction per type
 
 - **folder**: collect files recursively by `pattern` (default: `*.pdf`, `*.md`,
-  `*.txt`, `*.html`, `*.docx`, `*.png`, `*.jpg`, `*.jpeg`). PDFs as below;
+  `*.txt`, `*.html`, `*.docx`, `*.png`, `*.jpg`, `*.jpeg`). A markdown or HTML
+  file may *link* pictures (`![…](diagrams/flow.png)`, `<img src=…>`): follow
+  those links relative to the file and judge what they point at, the same way.
+  A remote link is fetched with `figures.py fetch`. PDFs as below;
   DOCX → the docx skill or `textutil -convert txt` (macOS); MD/TXT taken as
   they are; images as under **image** below. A folder of photos or screenshots
   is therefore ingested without a `pattern` — say so in the summary, and ask
   before ingesting more than 20 images, since each one is looked at.
-- **pdf**: read it with the Read tool, in chunks via `pages` (20 pages per
+- **pdf**: pull the figures off the pages first —
+  `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/figures.py extract <pdf> --project <project root>
+  --source-id <id>` — then judge the candidates it lists. **Exit code 3 means no
+  PDF renderer**: say which document lost its figures, and carry on; the text is
+  unaffected. Then read it with the Read tool, in chunks via `pages` (20 pages per
   call). Nothing has to be installed for this. If `pdftotext` happens to be
   available, prefer it for documents over ~40 pages — `pdftotext -layout`
   (with `-f`/`-l` when `pages` is given) is far cheaper — and fall back to the
@@ -60,7 +67,9 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
      frontmatter.
   4. API unreachable → stop and ask the user to start Zotero.
 - **web**: fetch the page with WebFetch (prompt: "return the full content as
-  markdown, without navigation/boilerplate"). With `depth: 1`, also fetch the
+  markdown, without navigation/boilerplate"). Pictures on the page are fetched
+  with `figures.py fetch` and judged like any other; one that will not download
+  is reported in the summary and the ingest continues. With `depth: 1`, also fetch the
   subpages of the same domain linked from the content (max. 20). If WebFetch
   returns 403 (bot protection): fall back to the browser tools
   (`preview_start` with the URL, then `get_page_text`; collect links via
@@ -75,8 +84,8 @@ Extracts the content of all (or the named) sources from `sources.yaml` into
 - **image** (infographics, diagrams, screenshots): do NOT run OCR — multi-column
   graphics come out as word salad. Instead look at the file with the Read tool
   and transcribe the content in a structured way: title, every box/column in
-  reading order, axis and arrow labels, footnotes. Set `type: infographic` in
-  the frontmatter.
+  reading order, axis and arrow labels, footnotes. Then **judge it** — see
+  *Pictures worth showing* below.
 
 ## File format `knowledge/<id>/<slug>.md`
 
@@ -88,6 +97,14 @@ path: "/absolute/path or URL"
 content: sparse          # optional — see below
 characters: 68           # with `content: sparse`, how much text there was
 ingested: 2026-08-10
+figures:                 # optional — one entry per picture you looked at
+  - at: 'page 3'
+    visual: chart
+    path: figures/<source-id>/tide-curve.png
+    caption: 'What the picture shows, in one line'
+  - at: 'page 1'
+    visual: none
+    why: 'a logo in every page header'
 ---
 
 <extracted text>
@@ -109,3 +126,48 @@ Read tool, or *thin*:
   the extraction is complete and a second pass has nothing to find. Leaving the
   two indistinguishable is what made `/catalog` guess whether a near-empty
   document was broken or real.
+
+## Pictures worth showing
+
+Some pictures teach something a transcription cannot: a chart, a flow chart, a
+labelled diagram, a decision tree, a map. Most do not: a photograph, a
+screenshot of prose, a logo, a divider, a stock illustration. **Decide once,
+here**, and write the verdict down — `/cards` reads it and never opens the
+picture again.
+
+1. **Transcribe it either way.** The text is what `/catalog` and the detail
+   cards read. Keeping a picture is in addition, never instead.
+2. **Judge it.** Ask what a card would show. If the answer is "the words I just
+   transcribed", the picture is not worth keeping.
+3. **Keep it** by placing a copy:
+   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/figures.py place <staged file>
+   --project <project root> --source-id <id> --slug <kebab-case>`. It prints
+   the path to write into `path:`. Never move or rename the original.
+4. **Mark it in the body** at the point the picture sat, as ordinary markdown:
+   `![Figure: <caption>](figures/<id>/<slug>.png)`. A figure named in the
+   frontmatter and absent from the text is half an edit, and
+   `check_project.py` says so.
+5. **Record the rejections too**, with `visual: none` and a one-line `why:`.
+   That is what stops the next run looking at the same picture to reach the
+   same conclusion.
+
+`visual:` is one of `diagram`, `chart`, `map`, or `none`. Anything but `none`
+needs a `path:` and a `caption:`; `none` needs a `why:` and must not carry a
+`path:`.
+
+**A picture repeated across pages is furniture.** `figures.py extract` reports
+it once with `repeated_on: <n>` — a mark in a running header, not a figure.
+Keep it only if it genuinely is one.
+
+**Count pictures towards the same threshold as images**: ask before looking at
+more than 20 in one run, whether they came from a folder, a PDF, a web page or
+a markdown link. Each one is looked at, and that is what costs.
+
+**Fetch nothing the text rules would not fetch.** No paywall, no login the user
+is not already entitled to, and no redirect off the source's own host —
+`figures.py fetch` refuses that last one for you.
+
+**Say what happened.** The summary names every picture that could not be
+fetched, opened or decoded, with the reason, and every document whose figures
+were skipped because no PDF renderer was available. A broken picture never
+stops an ingest.

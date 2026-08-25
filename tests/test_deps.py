@@ -10,6 +10,7 @@ same bargain tests/test_e2e.py strikes with the engine: a plain `pytest` never
 reaches the network.
 """
 
+import importlib.util
 import os
 import subprocess
 import sys
@@ -60,7 +61,7 @@ def test_the_pins_here_and_in_requirements_dev_agree():
         for line in (ROOT / "requirements-dev.txt").read_text(encoding="utf-8").splitlines()
         if "==" in line and not line.startswith("#")
     )
-    for requirement, _ in deps.REQUIREMENTS:
+    for requirement, _ in [*deps.REQUIREMENTS, *getattr(deps, "FIGURES", [])]:
         name, version = requirement.split("==", 1)
         assert name in declared, f"{name} is pinned in deps.py but absent from requirements-dev.txt"
         assert declared[name] == version, (
@@ -72,6 +73,42 @@ def test_every_requirement_names_a_module_that_can_be_checked():
     """The module name is how absence is detected, so it must be the real one."""
     for requirement, module in deps.REQUIREMENTS:
         assert module and " " not in module, f"{requirement}: {module!r} is not an import name"
+
+
+def test_the_optional_set_is_separate_from_the_default_one():
+    """The PDF renderer is 3.5 MB that most projects never need.
+
+    It reaches a user only when a PDF figure is actually asked for, so it must
+    not sit in REQUIREMENTS: everything there is installed on the first
+    `lernkarten` command, whatever that command happens to be.
+    """
+    assert not any("pypdfium2" in r for r, _ in deps.REQUIREMENTS), (
+        "the PDF renderer belongs in FIGURES, not in the set every user installs"
+    )
+    figures = getattr(deps, "FIGURES", [])
+    assert figures, "deps.FIGURES has to exist, and hold something, before it can be optional"
+    for requirement, module in figures:
+        assert "==" in requirement, f"{requirement} is not pinned to one version"
+        assert module and " " not in module, f"{requirement}: {module!r} is not an import name"
+
+
+def test_the_optional_set_gets_its_own_cache_directory():
+    """Two requirement sets, two directories — or installing one clobbers the other."""
+    figures = getattr(deps, "FIGURES", [])
+    assert figures, "deps.FIGURES has to exist before it can have a directory of its own"
+    assert deps.target_dir(figures) != deps.target_dir()
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("pypdfium2") is not None,
+    reason="pypdfium2 is installed here, so its absence cannot be observed",
+)
+def test_missing_reports_the_optional_set_separately():
+    """Absent optional package, present default set. The two must not be confused."""
+    assert deps.missing() == [], "a development checkout already has the default set"
+    figures = getattr(deps, "FIGURES", [])
+    assert figures, "deps.FIGURES has to exist before its absence can be reported"
+    assert deps.missing(figures) == [figures[0][0]]
 
 
 def test_activate_is_satisfied_by_an_installed_package():

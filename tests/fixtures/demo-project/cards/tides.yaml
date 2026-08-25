@@ -42,3 +42,18 @@ cards:
     front: 'Why is Ovray Cove unreachable at low water springs?'
     back: 'The cove dries out below $1.2 "m"$ above chart datum, and low water springs is $0.3 "m"$. \ At neaps low water is $1.6 "m"$, so the cove stays usable.'
     source: 'Field notes 2, "The Ovray rule"'
+  # The two figure cards: one asks for the picture, one asks about it. Both
+  # print from figures/, which scripts/make_testdata.py fills by copying
+  # raw/images/tide-chart.png — the way /ingest keeps a picture worth showing.
+  - id: F3M2Q
+    subtopic: 'Range and the rule of twelfths'
+    front: 'Describe how the range is distributed over the six hours of the flood'
+    back: 'One twelfth, two, three, three, two, one — half the range is passed after the third hour.'
+    back_image: 'figures/island-images/tide-chart.svg'
+    source: 'Tide chart, harbour office'
+  - id: K7WT4
+    subtopic: 'Range and the rule of twelfths'
+    front: 'What does this chart show?'
+    front_image: 'figures/island-images/tide-chart.svg'
+    back: 'The rule of twelfths: how the tidal range is spread over the six hours between low and high water.'
+    source: 'Tide chart, harbour office'
