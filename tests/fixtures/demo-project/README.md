@@ -39,9 +39,18 @@ in *versioned* is generated:
 | `raw/handbook/tide-almanac.pdf` | PDF | | 61 pages — long enough to need chunking |
 | `raw/handbook/damaged.pdf` | PDF | | truncated: every extractor has to give up |
 | `raw/images/tide-chart.png` | PNG | | an infographic — transcribe it, never OCR it |
-| `raw/images/harbour-noticeboard.jpg` | JPEG | | a photo of a notice |
+| `raw/images/harbour-noticeboard.jpg` | JPEG | | a photo of a notice — the picture /ingest is meant to *reject* |
+| `raw/images/office-mark.png` | PNG | | a logo, embedded in every page header of the handbook: offered once, as furniture rather than a figure |
+| `raw/field-notes/diagrams/signal-flags.png` | PNG | | a picture `chart-notes.md` *links* to, relative to itself — the link has to be followed to be judged |
+| `raw/web/harbour-plan.png` | PNG | | a picture the local web fixture shows with `<img>`: fetched, then judged |
 | `raw/office/mail-boat-timetable.docx` | DOCX | | a Word document |
 | `../zotero/storage/*/*.pdf` | PDF | | the attachments of the fake library |
+
+`figures/island-images/tide-chart.svg` is the one picture that is **committed**
+rather than generated: the demo cards print it, a missing picture on a card is
+an error, and a fresh checkout has to pass `pytest` before
+`scripts/make_testdata.py` has ever run. SVG is text, so the no-binaries rule is
+satisfied by the same stroke.
 
 Build the generated half once:
 

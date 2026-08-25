@@ -18,6 +18,8 @@ What comes out (all of it .gitignored):
     raw/handbook/damaged.pdf             truncated: extraction has to fail
     raw/images/tide-chart.png            an infographic
     raw/images/office-mark.png           a logo, repeated in the handbook header
+    raw/field-notes/diagrams/…           a picture a markdown note *links* to
+    raw/web/harbour-plan.png             a picture the local web fixture shows
     raw/images/harbour-noticeboard.jpg   a photo-like JPEG (needs Pillow)
     raw/office/mail-boat-timetable.docx  a Word document
     raw/field-notes/harbour-log.txt      text that is not UTF-8
@@ -246,6 +248,18 @@ JOBS = [
     (
         RAW / "images" / "office-mark.png",
         GENERATORS / "office-mark.typ",
+        build_image,
+    ),
+    # The two remaining places a picture can come from: linked by a document,
+    # and shown on a fetched page. Both have to be followed to be judged.
+    (
+        RAW / "field-notes" / "diagrams" / "signal-flags.png",
+        GENERATORS / "signal-flags.typ",
+        build_image,
+    ),
+    (
+        RAW / "web" / "harbour-plan.png",
+        GENERATORS / "harbour-plan.typ",
         build_image,
     ),
     # ^ before the handbook, which embeds it as a figure.

@@ -80,6 +80,26 @@ def load_pdfium():
         return None
 
 
+def page_range(spec, total):
+    """`"1-4"`, `"3"` or None -> the page numbers to look at.
+
+    The same slice `sources.yaml` already spells for a `type: pdf` source, so a
+    source that ingests two pages of a forty-page book does not have its
+    figures pulled off the other thirty-eight.
+    """
+    if not spec:
+        return range(1, total + 1)
+    first, _, last = str(spec).partition("-")
+    try:
+        start = int(first)
+        end = int(last) if last else start
+    except ValueError:
+        raise ValueError("write it as N or N-M") from None
+    if start < 1 or end < start:
+        raise ValueError("write it as N or N-M, counting from 1")
+    return range(start, min(end, total) + 1)
+
+
 def extract(args):
     """Raster figures off the pages of a PDF, as a manifest for the model to judge."""
     pdfium = load_pdfium()
@@ -93,7 +113,14 @@ def extract(args):
     folder = staging_dir(args.project, args.source_id)
     candidates, skipped = {}, []
     document = pdfium.PdfDocument(str(args.pdf))
+    try:
+        wanted = page_range(args.pages, len(document))
+    except ValueError as e:
+        fail(f"--pages {args.pages}: {e}")
+        return 1
     for number, page in enumerate(document, start=1):
+        if number not in wanted:
+            continue
         for image in (o for o in page.get_objects() if isinstance(o, pdfium.PdfImage)):
             width, height = image.get_px_size()
             where = f"page {number}"
@@ -202,6 +229,10 @@ def main(argv=None):
 
     one = verbs.add_parser("extract", parents=[common], help="raster figures off a PDF's pages")
     one.add_argument("pdf")
+    one.add_argument(
+        "--pages",
+        help="only these pages, as N or N-M — the same slice sources.yaml spells",
+    )
     one.set_defaults(run=extract)
 
     two = verbs.add_parser("fetch", parents=[common], help="download one picture from a URL")

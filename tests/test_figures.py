@@ -223,3 +223,35 @@ def test_the_module_runs_as_a_command():
     assert result.returncode == 0
     for verb in ("extract", "fetch", "place"):
         assert verb in result.stdout
+
+
+def test_pages_narrows_what_is_looked_at(tmp_path):
+    """`sources.yaml` already spells a slice; extract honours the same one.
+
+    The figure sits on page 3, so asking for pages 1-2 must not find it — a
+    source that ingests two pages of a long book should not have figures pulled
+    off the rest of it.
+    """
+    pytest.importorskip("pypdfium2")
+    found = manifest(tmp_path, "--pages", "1-2")
+    assert not [c for c in found["candidates"] if c["width"] > 500], found["candidates"]
+    assert [c for c in found["candidates"] if c["width"] < 500], "the header mark is on page 1"
+
+
+@pytest.mark.parametrize("spec", ["nonsense", "0-2", "4-2"])
+def test_a_bad_page_range_is_refused_by_name(tmp_path, spec, capsys):
+    pytest.importorskip("pypdfium2")
+    code = figures.main(
+        [
+            "extract",
+            str(HANDBOOK),
+            "--project",
+            str(project(tmp_path)),
+            "--source-id",
+            "handbook",
+            "--pages",
+            spec,
+        ]
+    )
+    assert code == 1
+    assert spec in capsys.readouterr().err
