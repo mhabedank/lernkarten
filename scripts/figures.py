@@ -43,9 +43,38 @@ from pathlib import Path
 
 import deps
 
-# Kept in step with build_pdf.IMAGE_FORMATS by the test suite rather than by an
-# import: this module must not pull the PDF build in just to name six strings.
+# Two sets, not one. What the *engine can print* is a property of the pinned
+# typst and lives in build_pdf.IMAGE_FORMATS; what the *web hands back* is a
+# property of the web, and is wider. Conflating them is BUG-008: AVIF is served
+# constantly and typst 0.15.1 refuses it, so a single list either rejects a
+# quarter of real picture URLs or lets a card name something unprintable.
+#
+# Downloadable. A picture here may still be refused as a *card* picture, with a
+# message that says which of the two problems it has.
+NETWORK_FORMATS = ("png", "jpg", "jpeg", "gif", "svg", "webp", "avif")
+# What `place` will put in figures/, because the engine can print it. Kept equal
+# to build_pdf.IMAGE_FORMATS by tests/test_build_pdf.py rather than by an
+# import: this module must not pull the PDF build in to name six strings.
 IMAGE_FORMATS = ("png", "jpg", "jpeg", "gif", "svg", "webp")
+
+# What a response has to start with to be the thing it claims. Content-Type is
+# a hint from a server that may be careless; the bytes are not.
+MAGIC = (
+    (b"\x89PNG\r\n\x1a\n", "png"),
+    (b"\xff\xd8\xff", "jpg"),
+    (b"GIF87a", "gif"),
+    (b"GIF89a", "gif"),
+)
+
+# Says who we are. Cloudflare blocks the *empty* case, not any particular
+# client, so an honest product token is enough — impersonating a browser would
+# be the thing FR-016 forbids.
+#
+# No version in it deliberately. The version lives in exactly three files and
+# check_docs.py compares them; a fourth copy here would drift, and a server
+# operator wanting to identify this tool needs the name and the repository, not
+# the build.
+USER_AGENT = "lernkarten (+https://github.com/mhabedank/lernkarten)"
 SLUG = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
 STAGING = ".figures-staging"
 # Below this a picture is an icon, a rule or a spacer, not something worth
@@ -151,8 +180,39 @@ def extract(args):
     return 0
 
 
+def sniff(content_type, data):
+    """The format of a response, or None. The bytes win over the header.
+
+    A server's Content-Type is a hint from something that may be careless; the
+    leading bytes are the thing itself. SVG and AVIF have no short magic number
+    worth trusting, so they fall back to the declared type — which is safe,
+    because being wrong about them costs a clear message rather than a bad card.
+    """
+    for prefix, name in MAGIC:
+        if data.startswith(prefix):
+            return name
+    if data[4:12] == b"ftypavif":
+        return "avif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    declared = (content_type or "").split(";")[0].strip().lower()
+    if declared == "image/svg+xml" and b"<svg" in data[:512].lower():
+        return "svg"
+    if declared.startswith("image/"):
+        candidate = declared.removeprefix("image/")
+        if candidate in NETWORK_FORMATS:
+            return candidate
+    return None
+
+
 def fetch(args):
-    """One picture from a URL, with urllib — no dependency for what is in the box."""
+    """One picture from a URL, with urllib — no dependency for what is in the box.
+
+    The *response* decides what this is, never the URL. A CDN path carries no
+    extension to read (181 of 851 real URLs had none), and a `.png` that serves
+    an error page is not a picture however it is spelled. Checking the name
+    first is BUG-008.
+    """
     origin = urllib.parse.urlparse(args.url)
 
     class SameHostOnly(urllib.request.HTTPRedirectHandler):
@@ -164,19 +224,28 @@ def fetch(args):
             return super().redirect_request(req, fp, code, msg, headers, newurl)
 
     opener = urllib.request.build_opener(SameHostOnly)
-    name = Path(urllib.parse.unquote(origin.path)).name or "picture"
-    if Path(name).suffix.lower().lstrip(".") not in IMAGE_FORMATS:
-        fail(f"{args.url}: not a picture this engine reads ({', '.join(IMAGE_FORMATS)})")
-        return 1
+    # On the opener, not the request: a redirect builds a fresh request, and a
+    # header set on the first one would not survive it.
+    opener.addheaders = [("User-Agent", USER_AGENT)]
+
     try:
         # No credentials, ever: only what the page would hand anyone.
-        with opener.open(urllib.request.Request(args.url), timeout=30) as response:
+        with opener.open(args.url, timeout=30) as response:
             data = response.read()
+            content_type = response.headers.get("Content-Type", "")
     except Exception as e:  # noqa: BLE001 — one line out, whatever went wrong
         fail(f"{args.url}: {e}")
         return 1
 
-    target = staging_dir(args.project, args.source_id) / name
+    kind = sniff(content_type, data)
+    if kind is None:
+        declared = (content_type or "no Content-Type").split(";")[0].strip()
+        fail(f"{args.url}: the response is {declared}, not a picture")
+        return 1
+
+    # The URL may name no file at all, so the name comes from what came back.
+    stem = Path(urllib.parse.unquote(origin.path)).stem or "picture"
+    target = staging_dir(args.project, args.source_id) / f"{stem}.{kind}"
     target.write_bytes(data)
     print(str(target))
     return 0
@@ -192,7 +261,19 @@ def place(args):
         fail(f"'{args.slug}' is not kebab-case — lower case, digits and single hyphens")
         return 1
     suffix = source.suffix.lower()
-    if suffix.lstrip(".") not in IMAGE_FORMATS:
+    kind = suffix.lstrip(".")
+    # Three different problems, three different messages. They used to share
+    # one, which sent the user looking in the wrong place (BUG-008): "not a
+    # picture" reads like the file is broken when the truth is that it is a
+    # perfectly good picture in a format the typesetter cannot print.
+    if kind in NETWORK_FORMATS and kind not in IMAGE_FORMATS:
+        fail(
+            f"{source.name}: {kind.upper()} is a real picture, and the typesetter cannot "
+            f"read it — convert it first, e.g. `sips -s format png {source.name}` or any "
+            "image editor, then place the PNG"
+        )
+        return 1
+    if kind not in IMAGE_FORMATS:
         fail(f"{source.name}: not a picture this engine reads ({', '.join(IMAGE_FORMATS)})")
         return 1
 

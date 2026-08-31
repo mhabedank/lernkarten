@@ -52,6 +52,20 @@ non-zero for that URL alone (FR-015).
 Never follows a redirect off the source's host, never sends credentials, and
 never fetches from a page the ingest rules already refuse (FR-016).
 
+**Amended 2026-08-25 ([BUG-008](../bugs/BUG-008.md)).** ~~The format is checked
+against the URL's extension before the request goes out.~~ That rejected 28 % of
+real picture URLs — an extensionless CDN path carries nothing to check, and the
+message blamed the format for a missing filename.
+
+| Rule | Behaviour |
+|---|---|
+| Identifies itself with a product token (`lernkarten/<version> (+<repo url>)`) set on the **opener**, so it survives a redirect. Never a browser string (FR-026) | |
+| The format is decided from the **response** — `Content-Type`, then leading bytes — never from the URL (FR-027) | |
+| A response that is not an image is refused **before** staging, so a `.png` URL serving HTML is caught here rather than at typesetting | |
+| The staged file is named from the sniffed type, since an extensionless URL gives nothing to name it with — and `place` needs a real extension | |
+| What may be **downloaded** is a wider set than what the engine can **print**. A real image the engine cannot print (AVIF) is refused *as a card picture*, naming the conversion — never as "not a picture" (FR-028) | |
+| A URL carrying no filename is reported as that, not as a format problem | |
+
 ## `figures.py place`
 
 ```bash

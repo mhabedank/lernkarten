@@ -165,7 +165,21 @@ a markdown link. Each one is looked at, and that is what costs.
 
 **Fetch nothing the text rules would not fetch.** No paywall, no login the user
 is not already entitled to, and no redirect off the source's own host —
-`figures.py fetch` refuses that last one for you.
+`figures.py fetch` refuses that last one for you. It identifies itself as
+`lernkarten` and never as a browser; a host that blocks the tool by name is a
+host that has said no, and that answer stands.
+
+**A URL does not tell you what it is.** Many carry no file name at all — this is
+what a CDN serves for anything pasted out of Google Docs — so do not skip one
+because it "looks like it is not an image". `fetch` decides from the response
+and tells you which of three things went wrong: it is not a picture, the URL
+names no file, or it is a real picture the typesetter cannot print.
+
+**That last case is AVIF, mostly.** The web serves it constantly and the
+typesetter cannot read it. `fetch` will download it; `place` will refuse it and
+say what to convert. Convert it and place the result, or record the picture as
+`visual: none` with that as the `why:` — either is honest, and inventing a
+transcription for a picture you never kept is not.
 
 **Say what happened.** The summary names every picture that could not be
 fetched, opened or decoded, with the reason, and every document whose figures

@@ -6,6 +6,8 @@
 
 **Status**: Draft
 
+**Bugfix**: 2026-08-25 — [BUG-008](./bugs/BUG-008.md) `fetch` could not reach 28 % of real picture URLs: no `User-Agent`, and the format decided from the URL path instead of the response. Adds FR-026 to FR-028, SC-011, two edge cases.
+
 **Input**: User description: "the lernkarten pipeline should also leveralge images from the sources. its must decide if an image has valiable viaualiztaion and build cards rfrom it. lets say. we have a chart or a flow chart. the pipeline then can create cards which ask for details in the charts or how specific concepüt work, for example "Describe CRISP-DM". You would then have the visualization of the backside."
 
 ## Scope in the Pipeline *(mandatory)*
@@ -137,6 +139,10 @@ Before spending paper, the user runs `lernkarten check cards/*.yaml`. Every pict
 - **A very large raster** (a 20 MP screenshot) on a 105 mm card: the PDF must not grow unreasonably and the build must not take visibly longer per card.
 - **The same picture referenced by cards in two decks**: allowed, stored once.
 - **A remote image that 404s, or a markdown link pointing outside the source folder**: reported in the summary, ingest continues.
+- **A URL that carries no filename**, or one whose last path segment is a CDN key: fetched and judged from the response; reported as a missing filename if it fails, never as a format problem.
+- **A picture in a format the engine cannot print** (AVIF is the common one): downloading it is fine, printing it is not. Refused as a card picture, naming the conversion.
+- **A URL ending `.png` that serves an HTML error page**: refused before staging, not at typesetting.
+- **A host that blocks a request with no `User-Agent`**: fetched successfully, because the tool says who it is.
 - **A "figure" that is the whole page**: a scanned diagram page is a figure; a page of prose is not, however it was rasterised.
 
 ## Requirements *(mandatory)*
@@ -155,7 +161,7 @@ Before spending paper, the user runs `lernkarten check cards/*.yaml`. Every pict
 
 **Getting the pictures**
 
-- **FR-008**: `/ingest` MUST find pictures in all four places they occur: image files reachable from a `folder` source; figures embedded in the pages of a PDF source; images on a fetched web page; and images linked from an ingested markdown file, whether the link is relative to that file or a remote URL.
+- **FR-008**: `/ingest` MUST find pictures in all four places they occur: image files reachable from a `folder` source; figures embedded in the pages of a PDF source; images on a fetched web page; and images linked from an ingested markdown file, whether the link is relative to that file or a remote URL. A URL does **not** announce its format: it may carry no filename at all (`lh7-us.googleusercontent.com/docsz/AD_4nX…`, which is what WordPress serves for anything pasted out of Google Docs), so what a picture *is* has to be settled from the response — see FR-027.
 - **FR-009**: `/ingest` MUST decide, for every picture it looks at, whether the picture itself is worth showing on a card, and MUST record the decision — for both answers, so a rejection is not indistinguishable from a step that never ran.
 - **FR-010**: When the answer is yes, `/ingest` MUST place a copy under `figures/<source-id>/<slug>.<ext>` and name that copy in the knowledge document's frontmatter. The original under `raw/` (or wherever the source lives) MUST NOT be moved, renamed or modified.
 - **FR-011**: `/ingest` MUST mark, inside the transcription, the place where each kept figure sat, so `/cards` reads the picture in the context that explains it rather than as a loose file.
@@ -179,6 +185,17 @@ Before spending paper, the user runs `lernkarten check cards/*.yaml`. Every pict
 - **FR-023**: A card carrying a picture MUST carry non-empty text on that same face.
 - **FR-024**: `/cards` MUST also write text-only detail cards from the figure's transcription. Observably: in the file a figure's cards land in, a subtopic that carries a picture-bearing card MUST also carry at least one card with no picture key — a chart produces recall practice, not only recognition.
 - **FR-025**: `/cards` MUST report, in its summary, how many of the cards it wrote carry a picture.
+
+**Reaching the web** *(added 2026-08-25 by [BUG-008](./bugs/BUG-008.md))*
+
+These belong with the fetching rules above and are numbered here instead: a
+requirement number is an address, and FR-026 to FR-028 are already cited from
+`tasks.md`, the fetch contract and the bug report. Appending keeps the list
+readable by number; FR-008 points forward to them.
+
+- **FR-026**: `/ingest` MUST identify itself when fetching a picture, with an honest product token (`lernkarten/<version> (+<repository url>)`) set on the opener so it survives a redirect. It MUST NOT impersonate a browser. This is not a loosening of FR-016: bot protection blocks the *empty* case, and saying who you are is the opposite of pretending to be someone else.
+- **FR-027**: The format of a fetched picture MUST be decided from the **response** — its `Content-Type` and its leading bytes — and never from the URL path. A response that is not an image MUST be refused *before* it is staged, so a `.png` URL serving an HTML error page is caught where it happens rather than at typesetting.
+- **FR-028**: The formats accepted **from the network** and the formats the **engine can print** are two different sets and MUST be kept apart. A fetched picture that is a real image the engine cannot print MUST be refused *as a card picture*, with a message naming the conversion needed — never with a message claiming it is not an image. A URL that carries no filename MUST likewise be reported as that, and not as a format problem.
 
 ### Format Contracts *(mandatory — state "none" if untouched)*
 
@@ -233,6 +250,7 @@ Before spending paper, the user runs `lernkarten check cards/*.yaml`. Every pict
 - **SC-008**: A face whose text and picture together exceed the field is named by the overflow warning, and the card is neither cropped nor set below the minimum type size.
 - **SC-009**: The same figure deck builds at `a7` and at `a8`, both without error, and the `a8` build says once that pictures are small at that size.
 - **SC-010**: A fresh checkout with only Python builds a deck containing figure cards from one command, fetching the engine once and installing only the pinned dependency set.
+- **SC-011**: Against a server that imitates the real web, all four shapes behave: an extensionless URL serving `image/png` is fetched and staged with a usable name; a host that 403s a request without a `User-Agent` is fetched with one; a `.png` URL serving `text/html` is refused before staging; and a fetched AVIF is refused as a *card picture* with a message naming the conversion.
 
 ## Assumptions
 
@@ -242,6 +260,13 @@ Before spending paper, the user runs `lernkarten check cards/*.yaml`. Every pict
 - **Figures are user content**, gitignored like `knowledge/` and `cards/`, enforced by the same hook and the same hygiene test. The demo project's pictures stay generated by `scripts/make_testdata.py`, never committed (constitution VII and VIII).
 - **The text on a face stays required.** A face that is only a picture has no prompt on the front and no answer on the back, no context for the source line, and nothing for `check_project.py` to measure. The picture supplements the text rather than replacing it.
 - **Copyright is the user's call.** Reproducing a figure from someone else's document onto a private study card is the user's decision, exactly as transcribing that document's text already is. `cards/` and `figures/` are gitignored, so this repository never carries it, and no automated check will attempt to judge it.
+- ~~**The engine's format set is also the right set to accept from the network.**~~
+  Wrong, and the cause of BUG-008. They answer different questions — what typst
+  0.15.1 can print, and what a web server may hand back — and AVIF is in the
+  second but not the first. Deciding what a fetched picture is needs no
+  dependency (`Content-Type` plus a few magic-byte prefixes); *converting* one
+  the engine cannot print would need a runtime image library, which is why FR-028
+  refuses rather than converts.
 - **Only the PDF path needs a new dependency.** Folder images need nothing, web images reuse the fetching that already exists, and markdown links resolve to one or the other.
 - The demo project already carries most of the material — `generators/tide-chart.typ` (an infographic worth showing), `generators/noticeboard.typ` (a photograph that is not), `generators/handbook.typ` (a PDF that can gain a figure and a running logo), and the local web fixture under `raw/web`. What is new is a markdown file linking a picture, a figure-bearing demo card, and the four broken fixtures for SC-002.
 - This relies on the existing overflow mechanism (`<overflow>` metadata read back with `typst query`) being able to measure a block containing an image, and on `yamlio` reporting the line number of a malformed card file.
