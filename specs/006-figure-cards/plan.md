@@ -4,6 +4,10 @@
 
 **Input**: Feature specification from `/specs/006-figure-cards/spec.md`
 
+**Bugfix**: 2026-08-25 — [BUG-008](./bugs/BUG-008.md) Updated from bugfix patch.
+R3 answered a question about the *engine*; `figures.py` reused the answer for a
+question about the *network*. R8 separates them.
+
 ## Summary
 
 A card gains two optional keys, `front_image:` and `back_image:`, and `/ingest`
@@ -219,6 +223,8 @@ decisions that shape everything below:
 5. A picture path resolves against **the parent of the card file's directory** ([R5](./research.md#r5--what-resolves-a-picture-path-given-a-card-file-can-live-anywhere)).
 6. `pypdfium2==5.13.0`, optional, through `deps.py` ([R6](./research.md#r6--is-there-a-library-for-pulling-figures-out-of-a-pdf-and-does-it-clear-the-gates)).
 7. The demo project is extended, never duplicated ([R7](./research.md#r7--does-the-demo-project-already-carry-the-material)).
+8. What may be *downloaded* is a wider set than what the engine can *print*,
+   and it is decided from the response, not the URL ([R8](./research.md#r8--what-may-be-accepted-from-the-network-added-by-bug-008)).
 
 ## Phase 1: Design
 

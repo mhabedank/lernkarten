@@ -86,6 +86,47 @@ constant lives next to `engine.VERSION`'s consumers with a comment saying that
 bumping the engine may widen it (constitution XV already requires the engine
 bump to be deliberate).
 
+> **Correction, 2026-08-25 ([BUG-008](./bugs/BUG-008.md))**: right for a *card*,
+> and wrongly reused for a *fetch*. AVIF is genuinely not in the set — verified,
+> `error: unknown image format` — but the web serves it constantly, and a URL
+> frequently carries no extension to check at all. What may be *downloaded* is a
+> different question; see R8.
+
+---
+
+## R8 — What may be accepted from the network? *(added by BUG-008)*
+
+**Decision**: a **second, wider set**, decided from the response rather than from
+the URL. `build_pdf.IMAGE_FORMATS` stays what it is — what typst 0.15.1 can
+print — and `figures.py` gets its own list of what a web server may hand back.
+
+**Why R3 was not enough**: R3 asked "which picture formats may a *card* name?"
+and answered correctly. `figures.py:47` copied that answer for "what may we
+*download*?", with a comment asserting the two are "kept in step". They are not
+the same question:
+
+| | what the engine prints | what the web hands back |
+|---|---|---|
+| decided by | typst 0.15.1, pinned | the server |
+| knowable from | the file's extension | the response |
+| AVIF | **no** — `error: unknown image format` | yes, and often: 53 of 851 URLs |
+
+**Evidence**: a genuine AVIF (`ftypavif` magic, round-tripped through Pillow)
+compiled against the pinned engine fails. So AVIF cannot simply be added to
+`IMAGE_FORMATS`: that would move a clear message to an engine error at build
+time, and would wrongly let a card name one.
+
+**Consequence**: three answers where there was one —
+
+1. *Is this an image?* — the response says: `Content-Type`, then magic bytes.
+2. *May it go on a card?* — the engine's set says.
+3. *Does this URL name a file at all?* — often not, and that is its own message.
+
+**Alternatives considered**: *widening `IMAGE_FORMATS`* — refuted above.
+*Converting AVIF to PNG on fetch* — needs a runtime image library (Pillow is
+dev-only) to clear Principle IV for something the user solves with one command;
+refusing with an honest message is proportionate, and FR-028 says so.
+
 ---
 
 ## R4 — What can be checked in Python, and what has to be left to the engine?
