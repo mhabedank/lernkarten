@@ -821,3 +821,22 @@ def test_a_filtered_build_still_validates_the_cards_it_filters_out(tmp_path):
     assert any("A45DK" in e for e in filtered), (
         f"the duplicate is outside the filter but still in the file: {filtered}"
     )
+
+
+def test_the_engine_set_and_the_network_set_are_not_the_same():
+    """BUG-008: one constant was answering two questions.
+
+    What typst can print is decided by the pinned engine; what a web server may
+    hand back is decided by the web. figures.py copied the first for the second
+    with a comment saying they are "kept in step" — the wrong invariant, and the
+    reason 28 % of real picture URLs were unreachable. AVIF is the proof: on the
+    web constantly, and refused by typst 0.15.1.
+    """
+    import figures
+
+    network = getattr(figures, "NETWORK_FORMATS", ())
+    assert "avif" not in build_pdf.IMAGE_FORMATS, "the engine cannot print it"
+    assert "avif" in network, "the web serves it anyway, so the network set has to allow it"
+    assert set(build_pdf.IMAGE_FORMATS) < set(network), (
+        "everything printable is downloadable, and the network set is strictly wider"
+    )
