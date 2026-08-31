@@ -6,7 +6,7 @@
       "name": "lernkarten",
       "source": "./",
       "description": "Turn folders, PDFs, a Zotero library or web pages into printable flashcards",
-      "version": "0.7.0",
+      "version": "0.7.1",
       "license": "MIT",
       "homepage": "https://github.com/mhabedank/lernkarten",
       "keywords": ["flashcards", "learning", "pdf", "printing", "zotero"]
