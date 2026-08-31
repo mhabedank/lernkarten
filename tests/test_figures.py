@@ -7,7 +7,6 @@ degraded path is tested as carefully as the working one — it is the one a user
 offline will actually take.
 """
 
-import base64
 import http.server
 import json
 import subprocess
@@ -153,7 +152,10 @@ class Server(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):  # noqa: N802 — http.server's spelling
-        if self.redirect_to:
+        # Only /moved.png redirects. Redirecting every path would send the
+        # target back round and urllib would call it a loop, which is not the
+        # thing under test.
+        if self.redirect_to and self.path == "/moved.png":
             self.send_response(302)
             self.send_header("Location", self.redirect_to)
             self.end_headers()
@@ -211,7 +213,7 @@ def test_fetch_uses_the_standard_library(tmp_path, serving):
 
 def test_fetch_refuses_a_redirect_off_the_source_host(tmp_path, serving, capsys):
     """A source is a place the user chose. A redirect is not that choice."""
-    url = serving(redirect_to="http://example.invalid/elsewhere.png")
+    url = serving("/moved.png", redirect_to="http://example.invalid/elsewhere.png")
     code = figures.main(["fetch", url, "--project", str(project(tmp_path)), "--source-id", "web"])
     assert code != 0
     assert "example.invalid" in capsys.readouterr().err

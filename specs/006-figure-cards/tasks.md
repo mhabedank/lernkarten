@@ -153,8 +153,8 @@ implementation `scripts/<module>.py`; prompts `skills/<name>/SKILL.md`; layout
 - [X] T054 🔴 [P] [US2] `tests/test_figures.py::test_extract_reports_a_manifest` — `extract` on the handbook PDF prints the JSON shape in [contracts/figures-cli.md](./contracts/figures-cli.md). Fails: no module
 - [X] T055 🔴 [P] [US2] `tests/test_figures.py::test_a_picture_repeated_on_every_page_is_offered_once` — the header logo appears once with `repeated_on: 4`. Fails
 - [X] T056 🔴 [P] [US2] `tests/test_figures.py::test_extract_without_pypdfium2_exits_three` — monkeypatch the import away; exit code 3, one stderr line naming the document, **no traceback** (FR-018). Fails
-- [ ] T057 ⚠️ Reopened 🔴 [P] [US2] (reopened — BUG-008) `tests/test_figures.py::test_fetch_uses_the_standard_library` — `fetch` pulls a picture from a local `http.server`, the way `tests/test_ingest_sources.py` already serves the web fixture. Fails
-- [ ] T058 ⚠️ Reopened 🔴 [P] [US2] (reopened — BUG-008) `tests/test_figures.py::test_fetch_refuses_a_redirect_off_the_source_host` — a local server 302-ing to another host is refused, naming the URL; and no cookie or auth header is ever sent (FR-016). Fails: no module
+- [X] T057 ⚠️ Reopened 🔴 [P] [US2] (reopened — BUG-008) `tests/test_figures.py::test_fetch_uses_the_standard_library` — `fetch` pulls a picture from a local `http.server`, the way `tests/test_ingest_sources.py` already serves the web fixture. Fails
+- [X] T058 ⚠️ Reopened 🔴 [P] [US2] (reopened — BUG-008) `tests/test_figures.py::test_fetch_refuses_a_redirect_off_the_source_host` — a local server 302-ing to another host is refused, naming the URL; and no cookie or auth header is ever sent (FR-016). Fails: no module
 - [X] T059 🔴 [P] [US2] `tests/test_figures.py::test_place_slugs_dedups_and_never_overwrites` — kebab-case slug, `-2` on collision, same bytes twice → one file, existing destination left alone without `--force` (FR-014). Fails
 
 ### 🔴 Red — the knowledge frontmatter contract (model-driven half)
@@ -327,24 +327,24 @@ paths, a 403 for a request with no `User-Agent`, an HTML error page behind a
 
 ### Test material first — a fixture that resembles what it stands for
 
-- [ ] T114 [US2] Extend the server in `tests/test_figures.py` to imitate the web rather than our own code: serve `image/png` at a path with **no extension**, answer **403** when the request carries no `User-Agent`, serve `text/html` at a path ending `.png`, and serve a real AVIF. This is the root cause — the old fixture could not express either defect Root cause of BUG-008; the fixture the old T057/T058 leaned on could not express either defect (SC-011).
+- [X] T114 [US2] Extend the server in `tests/test_figures.py` to imitate the web rather than our own code: serve `image/png` at a path with **no extension**, answer **403** when the request carries no `User-Agent`, serve `text/html` at a path ending `.png`, and serve a real AVIF. This is the root cause — the old fixture could not express either defect Root cause of BUG-008; the fixture the old T057/T058 leaned on could not express either defect (SC-011).
 
 ### 🔴 Red — before any implementation
 
-- [ ] T115 🔴 [P] [US2] `test_fetch_identifies_itself` — a request with no `User-Agent` is refused by the server; `fetch` succeeds because it sends a product token. Assert the token names the tool and its repository and is **not** a browser string (FR-026)
-- [ ] T116 🔴 [P] [US2] `test_the_user_agent_survives_a_redirect` — set on the opener, not the request, so a same-host redirect still carries it (FR-026)
-- [ ] T117 🔴 [P] [US2] `test_an_extensionless_url_is_fetched_and_named_from_the_response` — `…/docsz/AD_4nX…` serving `image/png` is staged as `.png` and `place` accepts it (FR-027)
-- [ ] T118 🔴 [P] [US2] `test_a_png_url_serving_html_is_refused_before_staging` — nothing is written, and the message says what came back (FR-027)
-- [ ] T119 🔴 [P] [US2] `test_a_url_with_no_filename_says_so` — the message is about the missing filename, not about the format (FR-028)
-- [ ] T120 🔴 [P] [US2] `test_avif_is_fetched_but_refused_as_a_card_picture` — downloaded, then refused by `place` with a message naming the conversion. **Not** by widening `IMAGE_FORMATS`: verified, the pinned engine gives `error: unknown image format` (FR-028)
-- [ ] T121 🔴 [US2] `tests/test_build_pdf.py::test_the_engine_set_and_the_network_set_are_not_the_same` — the two constants are deliberately different, so nothing "keeps them in step" again (FR-028)
+- [X] T115 🔴 [P] [US2] `test_fetch_identifies_itself` — a request with no `User-Agent` is refused by the server; `fetch` succeeds because it sends a product token. Assert the token names the tool and its repository and is **not** a browser string (FR-026)
+- [X] T116 🔴 [P] [US2] `test_the_user_agent_survives_a_redirect` — set on the opener, not the request, so a same-host redirect still carries it (FR-026)
+- [X] T117 🔴 [P] [US2] `test_an_extensionless_url_is_fetched_and_named_from_the_response` — `…/docsz/AD_4nX…` serving `image/png` is staged as `.png` and `place` accepts it (FR-027)
+- [X] T118 🔴 [P] [US2] `test_a_png_url_serving_html_is_refused_before_staging` — nothing is written, and the message says what came back (FR-027)
+- [X] T119 🔴 [P] [US2] `test_a_url_with_no_filename_says_so` — the message is about the missing filename, not about the format (FR-028)
+- [X] T120 🔴 [P] [US2] `test_avif_is_fetched_but_refused_as_a_card_picture` — downloaded, then refused by `place` with a message naming the conversion. **Not** by widening `IMAGE_FORMATS`: verified, the pinned engine gives `error: unknown image format` (FR-028)
+- [X] T121 🔴 [US2] `tests/test_build_pdf.py::test_the_engine_set_and_the_network_set_are_not_the_same` — the two constants are deliberately different, so nothing "keeps them in step" again (FR-028)
 
 **Checkpoint**: `pytest` is red for both defects and for the honesty they buy. Commit here.
 
 ### 🟢 Green
 
-- [ ] T122 [US2] In `scripts/figures.py`: set the product token on the opener; drop the pre-request extension check; decide the format from `Content-Type` then magic bytes; name the staged file from the sniffed type; split `IMAGE_FORMATS` into the network set and the engine set, deleting the "kept in step" comment that asserted the wrong invariant (FR-026, FR-027, FR-028)
-- [ ] T123 [US2] Separate the three messages — not an image, cannot be printed, no filename — so none of them reads like another (FR-028)
-- [ ] T124 [US2] Update `skills/ingest/SKILL.md`: a fetched picture the engine cannot print is reported with the conversion needed, and counts as looked-at either way (FR-028)
+- [X] T122 [US2] In `scripts/figures.py`: set the product token on the opener; drop the pre-request extension check; decide the format from `Content-Type` then magic bytes; name the staged file from the sniffed type; split `IMAGE_FORMATS` into the network set and the engine set, deleting the "kept in step" comment that asserted the wrong invariant (FR-026, FR-027, FR-028)
+- [X] T123 [US2] Separate the three messages — not an image, cannot be printed, no filename — so none of them reads like another (FR-028)
+- [X] T124 [US2] Update `skills/ingest/SKILL.md`: a fetched picture the engine cannot print is reported with the conversion needed, and counts as looked-at either way (FR-028)
 
 **Checkpoint**: the four shapes of SC-011 behave, and the 28 % is reachable.
