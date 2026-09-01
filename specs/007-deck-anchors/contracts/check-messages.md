@@ -78,11 +78,17 @@ in the same file.
 
 **Scope**: one finding per orphaned item.
 
+**No catalog required.** A-2 reads `cards/*.yaml` and nothing else. A project
+with no `catalog/topics.md`, or with one that mentions none of the subtopics the
+cards name, is checked exactly the same way: the question is about one card file
+and the other cards in it, and the catalog has no part in it. (A-1 is the
+opposite — with no catalog there are no `Term:` lines and it is silent.)
+
 **Shape**:
 
 ```
 ERROR: cards/geography.yaml: card 1: 'Skarn' is enumerated and never
-       explained — no other card in this file names it
+       named — no other card in this file mentions it
 ```
 
 **Must contain**, per FR-014:
@@ -90,12 +96,25 @@ ERROR: cards/geography.yaml: card 1: 'Skarn' is enumerated and never
 | Element | Example |
 |---|---|
 | the card file | `cards/geography.yaml` |
-| the card | by its **1-based index within the file** (`card 1`), always — never by `id` |
+| the card | by its **1-based index within the file** (`card 1`), always — never by `id`. The index counts **every** element of `cards`, skipped ones included |
 | the orphaned item | **verbatim**, as it was written between the brackets — not the normalised head term |
 
 The item is quoted verbatim so the reader does not have to diff a list of *k*
 items by hand (SC-002). Where the head-term cut changed what was matched, the
 verbatim item is still what is printed.
+
+**"Named", not "explained"** (review W6): the check tests naming — a
+token-sequence mention — and the message must not promise the judgement a
+deterministic check cannot make. A draft said "never explained"; it was
+reworded before any test pinned the string.
+
+**The index counts skipped cards.** It is the card's position in the file's
+unfiltered `cards` list — `enumerate(cards, start=1)` over all of them, with the
+skip applied inside the loop, never a filter applied before it. `check_cards`
+numbers its own messages that way, so a card that A-2 skips (FR-012a) must not
+renumber the cards after it, or one file would answer to two numberings and a
+reader diffing an A-2 message against a required-keys error would be sent to the
+wrong card.
 
 **Index, not `id`** (FR-014, decided in the post-checklist session). The draft
 asked for the `id` where one exists. It was dropped: no message anywhere in
@@ -105,7 +124,7 @@ function that exists to check ids, still writes `card {index}: unusable 'id' —
 check two grammars and the tests two shapes to assert on. The index is the
 file's convention and A-2 uses it without exception.
 
-**Silent when**: the item contains a `$…$` span (the maths gate, FR-013a); the
+**Silent when**: the item contains a `$` (the maths gate — any `$`, deliberately a superset of a balanced `$…$` span; FR-013 as amended in review W4, FR-013a); the
 bracket-depth scan is unbalanced (the whole card is skipped, FR-013); the item's
 head term is named by any other card in the file.
 

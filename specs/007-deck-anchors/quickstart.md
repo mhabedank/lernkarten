@@ -129,9 +129,17 @@ lernkarten check cards/example.yaml
 
 **Expected**: both clean. `example.yaml`'s Kolmogorov-axioms card enumerates
 three items that appear on no other card in that file, and **all three contain a
-`$…$` span**, so the maths gate skips them. If either command reports an orphan
-there, the gate has been weakened to strip-maths-then-head-term and FR-013a has
-been broken.
+`$…$` span**, so the maths gate skips them.
+
+The orphan, if the gate is weakened to strip-maths-then-head-term, is reported by
+the **first** command only. `lernkarten check` cannot report one at all:
+`bin/lernkarten` imports `engine`, `deps`, `cardid` and `build_pdf` and never
+`check_project`, so it is listed here as the second half of the FR-013a
+regression — the card file still has to typeset — and not as the detector. Nor
+does CI catch it: `.github/workflows/ci.yml:120` runs the project checker against
+`tests/fixtures/demo-project` and against nothing else. The detector that runs
+unattended is the pytest case `test_the_shipped_example_deck_has_no_orphan`
+(plan § 4, task T007a).
 
 ## 6. The repo's four gates
 

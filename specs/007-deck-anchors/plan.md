@@ -83,11 +83,11 @@ the post-design re-check.*
 | X | Skill frontmatter valid | **yes** — `name` and `description` of all three edited skills are untouched; only body prose changes. `check_docs.py` re-verifies |
 | XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — see [Test plan](#test-plan-the-red-sequence). The prompt half's red artifact is A-1 itself, exactly as XI prescribes |
 | XII | The four gates pass; ruff not loosened | **yes** — no per-file ignore added |
-| XIII | English throughout | **yes** — the Greek and Russian strings are *card content* in the invented fixture, which XIII explicitly carves out |
+| XIII | English throughout | **yes** — all prose, code and commit text is English. The Greek and Russian strings are the invented fixture's card text, plus the `Term:` aliases in its catalog that exist only to match that card text. XIII carves out the cards a user generates; an alias is the catalog's handle on one, and the demo fixture is the repo's one acknowledged carve-out (VII) |
 | XIV | Branch `<prefix>/<short-kebab-name>` | **yes** — `feat/deck-anchors`; commit subjects use `test:`, `feat:`, `skill:`, `docs:` |
 | XV | Engine version unchanged | **yes** — untouched |
 | XVI | `docs/design.md` read before a visible change | **n/a** — nothing visible changes. The deck gains one card; the card looks identical |
-| XVII | Card style and Typst escaping respected | **yes** — the one new demo card and the one reworded back obey the ~120/~400 budget, single-star emphasis and the `\ ` line-break rule |
+| XVII | Card style and Typst escaping respected | **yes** — the one new demo card and the four rewords obey the ~120/~400 budget, single-star emphasis and the `\ ` line-break rule |
 
 **Open-item check**: this feature does not touch the constitution's one open
 item (dependencies pinned by version rather than by hash). It adds no
@@ -127,9 +127,11 @@ tests/
 ├── test_check_project.py       # both red cases + the unit tests + two count edits
 ├── test_e2e.py                 # three assertion edits + stale comments
 └── fixtures/demo-project/
-    ├── catalog/topics.md       # four Term: lines
+    ├── catalog/topics.md       # seven Term: lines
     ├── cards/tides.yaml        # +1 anchor card
     ├── cards/geography.yaml    # 1 reworded back (closes both orphans)
+    ├── cards/gezeiten-de.yaml  # 2 reworded backs (anchor Tidenrhythmus, Tidenhub)
+    ├── cards/signals.yaml      # 1 reworded front (anchors The six flags)
     └── README.md               # a section on the two new modes (FR-024)
 
 CLAUDE.md                       # the Term: line in the catalog convention
@@ -173,8 +175,8 @@ knowledge document.
 |---|---|---|---|
 | 1 | `ATTRIBUTE`, line 61 | `^(Status\|Parents\|Also covers\|Related\|References\|Goal\|Term):(.*)$` | reused machinery, one alternative added |
 | 2 | `check_catalog`, in the `for entry in catalog.subtopics` loop (~line 610) | read `entry.attribute("term")`; if the key is present, `catalog_names(value)`; zero aliases → **error**; else `terms[entry.name] = aliases` | new ~8 lines, reuses `catalog_names` |
-| 3 | `check_catalog`, `return` (line 673) | `return subtopics, marked, terms` | signature change |
-| 4 | `check`, line 892 | `subtopics, marked, terms = check_catalog(...)`; `check_cards(project, subtopics, report, marked, terms=terms, strict=strict)` | wiring |
+| 3 | `check_catalog`, `return` (line 675) | `return subtopics, marked, terms` | signature change |
+| 4 | `check`, line 895 | `subtopics, marked, terms = check_catalog(...)`; `check_cards(project, subtopics, report, marked, terms=terms, strict=strict)` | wiring |
 | 5 | `check_cards`, signature (line 704) | add `terms=None` **after** `marked`, before `strict` | keyword with a default, so no other caller breaks |
 | 6 | `check_cards`, beside `figure_faces` / `by_subtopic` (~line 727) | `anchor_text = {}` | new accumulator |
 | 7 | `check_cards`, in the per-card loop next to the existing `by_subtopic.setdefault` (~line 826) | append this card's `front + " " + back` to `anchor_text[(where, subtopic)]` | new 2 lines |
@@ -187,7 +189,7 @@ All private, all in `check_project.py`, all pure functions:
 
 ```python
 LIST_HEAD = "#list("
-ITEM_SEPARATOR = re.compile(r"[—–,:;]|\s\(")   # em dash, en dash, comma, colon, semicolon, " ("
+ITEM_SEPARATOR = re.compile(r"[—–,:;]|\s\(|\s-\s")   # em dash, en dash, comma, colon, semicolon, " (", " - "
 
 def _mentions(haystack_key, needle_key)  -> bool          # space-padded token containment
 def _list_items(back)                    -> list | None   # bracket-depth scan; None = unbalanced
@@ -297,7 +299,7 @@ the result:
 | 37 (a "rich" fixture) | 10 | 6 | 10 | ~15 |
 
 **So the budget is hard: the demo deck ends at exactly 32 cards. One card added,
-one card reworded.** At 33 or more, fifteen real assertions across
+four cards reworded — a reword moves no count.** At 33 or more, fifteen real assertions across
 `tests/test_e2e.py` move — several of them structural (`marks[:4] ==
 [{"1/2"}] * 4` becomes `marks[:5]`; `range(2)` becomes `range(3)`) — and a
 feature about vocabulary would ship buried under a print-layout diff.
@@ -306,7 +308,7 @@ feature about vocabulary would ship buried under a print-layout diff.
 
 Do these **in this order, in one commit**, so the counts move once:
 
-**(a) `tests/fixtures/demo-project/catalog/topics.md` — add four `Term:` lines.**
+**(a) `tests/fixtures/demo-project/catalog/topics.md` — add seven `Term:` lines.**
 Each goes directly under the subtopic's description, before `References:`:
 
 | Subtopic | `Term:` line | Files it binds | Anchored today? |
@@ -315,11 +317,18 @@ Each goes directly under the subtopic's description, before `References:`:
 | `Rhythm of the tide` | `Term: Rhythm of the tide, Tidenrhythmus, παλίρροια` | tides, palirroia-el | **tides: NO** → needs the anchor in (c). palirroia: yes, `παλίρροια` |
 | `Range and the rule of twelfths` | `Term: Tidal range, rule of twelfths, εύρος, правило двенадцатых` | tides, palirroia-el, priliv-ru | all three yes |
 | `Chart datum and the Ovray rule` | `Term: Chart datum, нуля глубин` | tides, priliv-ru | both yes |
+| `Tidenrhythmus` | `Term: Tidenrhythmus` | gezeiten-de | **NO** → reword in (b2) |
+| `Tidenhub` | `Term: Tidenhub` | gezeiten-de | **NO** → reword in (b2); `Nipptidenhub`/`Springtidenhub` are single tokens and do not count |
+| `The six flags` | `Term: The six flags` | signals | **NO** → reword in (b3) |
 
-Deliberately **no** `Term:` line on `Settlements`, `Rules of use`, `The six
-flags`, `Tidenrhythmus`, `Tidenhub` (they would each cost an anchor card, and
-the first two are descriptions rather than terms — which is itself the fixture's
-demonstration of FR-011a), nor on the three subtopics with no cards.
+Deliberately **no** `Term:` line on `Settlements` and `Rules of use` — they are
+descriptions rather than terms, which is itself the fixture's demonstration of
+FR-011a — nor on the three subtopics with no cards: the line is inert without
+cards (I-2) and is added when cards arrive, per FR-027's "at latest" rule.
+`Tidenrhythmus`, `Tidenhub` and `The six flags` **do** get lines: an earlier
+draft withheld them to hold the card budget, which the cross-model review
+rejected as evasion-by-omission (W2); (b2) and (b3) anchor all three by reword
+at zero count cost.
 
 Note the aliases are written in the **inflected form the cards actually use**
 (`нуля глубин`, not `нуль глубин`; `εύρος`). `topic_key()` does no stemming;
@@ -341,6 +350,29 @@ than the one it replaces because it says where the goods go.
 subtopic that actually discusses Bellhorn — that subtopic is `Status: out of
 scope`, and `check_cards` warns for every card under a marked subtopic, which
 under `--strict` is a CI failure (research R8).
+
+**(b2) `tests/fixtures/demo-project/cards/gezeiten-de.yaml` — two one-line
+rewords, no card added** (review W2, resolved as "anchor by reword"):
+
+- card `HNHF1`'s back becomes
+  `'Zwei Hochwasser und zwei Niedrigwasser pro Tidentag — das ist der Tidenrhythmus.'`
+  (80 characters; the card already defines the concept — now it also names it);
+- card `R3WZ4`'s back: `Der Hub steigt` becomes `Der Tidenhub steigt` — one
+  word, nothing else.
+
+Card `P1H4B` stays as it is: `Nipptidenhub` and `Springtidenhub` are single
+tokens and must **not** anchor `Tidenhub`, so after this edit the shipped
+fixture itself demonstrates the token-not-substring rule R4 calls A-1's most
+important property.
+
+**(b3) `tests/fixtures/demo-project/cards/signals.yaml` — one one-line reword**:
+card `NKQK0`'s front becomes
+`'Which two of the six flags call for help, and how do they differ?'`
+(65 characters, still unique among the file's fronts; `the six flags` now
+appears as a token sequence). The two e2e assertions that touch these files
+move nothing: `test_a_subtopic_filter_narrows_the_build` asserts a card
+*count* (`"3 cards"`), and the script-coverage test greps `halbtägige`, which
+lives in card `HNHF1`'s **front** — untouched.
 
 **(c) `tests/fixtures/demo-project/cards/tides.yaml` — add exactly one card**,
 the anchor for `Rhythm of the tide`. It needs a unique five-character Crockford
@@ -424,14 +456,33 @@ errors and zero warnings.
 Only now do the three `SKILL.md` files change (SC-003, FR-025: the checks are
 committed red *before* either prompt is edited, visible in the commit order).
 
-### The regression guard
+### The regression guards
 
-Add `test_a_subtopic_without_a_term_line_is_silent`, asserting that a project
+**One.** Add `test_a_subtopic_without_a_term_line_is_silent`, asserting that a project
 built from `GOOD_CATALOG` + `GOOD_CARDS` reports neither an error nor a warning.
-`GOOD_CARDS` is used at **seventeen** call sites and names neither *rhythm* nor
+`GOOD_CARDS` is used at **fifteen** call sites and names neither *rhythm* nor
 *tide*; it survives only because `GOOD_CATALOG` carries no `Term:` line
 (research R7). That property is load-bearing and currently implicit — this test
 makes it explicit so it cannot be lost by a future tightening of A-1.
+
+**Two.** Add `test_the_shipped_example_deck_has_no_orphan`, a `tmp_path` project
+whose card file is the text of the repo's own `cards/example.yaml`, asserting
+`not report.errors`. This is the **only automated** guard on FR-013a. Nothing in
+CI runs the project checker over the repository root — `.github/workflows/ci.yml`
+runs it against `tests/fixtures/demo-project` and nothing else — and
+`lernkarten check cards/example.yaml` never imports `check_project`, so without
+this test a weakened maths gate reaches the pull request and is caught, if at
+all, by a human remembering to type one command.
+
+It must be a `tmp_path` copy rather than `check(ROOT)`. `check_cards` globs
+`<project>/cards/*.yaml`, and a contributor's own deck lives in exactly that
+folder — `cards/` (bar `example.yaml`), `catalog/`, `knowledge/` and
+`sources.yaml` are gitignored precisely because the repo root doubles as a
+scratch project. `check(ROOT)` would fail on their material rather than on ours.
+Copy `assets/example-figure.svg` into the temporary project with the existing
+`with_figure()` helper: card 10 names it as a `back_image` and a missing picture
+is an error. `example.yaml`'s subtopics are not in `GOOD_CATALOG`, so the run
+reports ten *warnings* and no error — assert on `report.errors` alone.
 
 ## 5. Documentation changes
 
@@ -439,7 +490,7 @@ makes it explicit so it cannot be lost by a future tightening of A-1.
 |---|---|---|
 | `skills/learning-goal/SKILL.md` | the `## Depth` section (line ~74): the three bullets currently read as mutually exclusive slices. State that the level is a **ceiling** and that each includes the ones below — `expert` implies `working` implies `awareness`. Do **not** touch the closed set or the `check_project.py` sentence at line 59 | FR-001, FR-002 |
 | `skills/cards/SKILL.md` | (i) reference `goal.md` and its `depth` from the card-writing end — the file mentions neither today; (ii) the **anchor rule**; (iii) the anchor's *content* standard — a functional definition (what it changes, what it costs, what it does not fix), explicitly **not** a dictionary gloss; (iv) **anchor, not coverage**: one card per *named* concept, never a definitional layer beneath everything; (v) **nothing is introduced only inside a `#list([…])` back**, next to the existing `#list` note in § Style rules; (vi) a numbered **step** running `python3 scripts/check_project.py .` after the merge in step 4, with what to do when it reports | FR-003–FR-007, FR-026 |
-| `skills/catalog/SKILL.md` | the `Term:` line in the attribute list at lines 86–92, beside `Status:`, `Parents:` and `Related:` — what it is for, that aliases are comma-separated and must cover **every language the deck is written in**, that they are matched **literally with no stemming** (so write the form the cards use), and that leaving it out means A-1 stays silent | FR-027 |
+| `skills/catalog/SKILL.md` | the `Term:` line in the attribute list at lines 86–92, beside `Status:`, `Parents:` and `Related:` — what it is for, that aliases are comma-separated and must cover **every language the deck is written in**, that they are matched **literally with no stemming** (so write the form the cards use), and that leaving it out means A-1 stays silent; **plus one sentence in the writing guidance instructing `/catalog` to write the line** for a subtopic whose heading names a concept, at latest when its cards exist — without it A-1 has no writer (FR-027 as amended, review W1) | FR-027 |
 | `CLAUDE.md` | one clause in the **Topic catalog** convention bullet, in the existing "Optional per subtopic" sentence | FR-027 |
 | `tests/fixtures/demo-project/README.md` | a section on the two new failure modes | FR-024 |
 | `docs/testing.md` | manual-checklist rows for SC-006 and SC-008 (reading each prompt cold; the checker step firing during a real `/cards` run) — both are run-output requirements that leave nothing on disk, which constitution XI sends to the checklist **named**, never implicit | SC-006, SC-008 |
@@ -467,11 +518,11 @@ Run `python3 scripts/check_docs.py` after commit 4 and before the PR.
 
 | # | Risk | Likelihood | Mitigation |
 |---|---|---|---|
-| **1** | **The demo deck grows past 32 and fifteen e2e assertions move.** The single largest risk, and the one the incoming brief had wrong — it named two count sites; there are also ~13 bare page-count literals over `*CARDS` | high if unwatched | the hard 32-card budget of § 3. One added card, one reworded. If a later requirement forces a 33rd, the fifteen sites are enumerated in research R5 — budget the extra work, do not discover it |
-| **2** | **`GOOD_CARDS`' seventeen call sites.** An A-1 that matched the *heading* rather than a `Term:` line would break every one of them, including `test_a_minimal_project_is_clean`, which asserts zero warnings as well as zero errors | low under D1 | verified in research R7: `GOOD_CATALOG` carries no `Term:` line, so `terms` is empty and A-1 is silent. Pinned by an explicit new test |
+| **1** | **The demo deck grows past 32 and fifteen e2e assertions move.** The single largest risk, and the one the incoming brief had wrong — it named two count sites; there are also ~13 bare page-count literals over `*CARDS` | high if unwatched | the hard 32-card budget of § 3. One added card, four rewords — a reword moves no count. If a later requirement forces a 33rd, the fifteen sites are enumerated in research R5 — budget the extra work, do not discover it |
+| **2** | **`GOOD_CARDS`' fifteen call sites.** An A-1 that matched the *heading* rather than a `Term:` line would break every one of them, including `test_a_minimal_project_is_clean`, which asserts zero warnings as well as zero errors | low under D1 | verified in research R7: `GOOD_CATALOG` carries no `Term:` line, so `terms` is empty and A-1 is silent. Pinned by an explicit new test |
 | **3** | **`--strict` turns a warning into a CI failure on the fixture.** A new card missing an `id` or a `source` fails the build even though neither is an error | medium | § 3(c) states the per-card requirements. Run `check_project.py tests/fixtures/demo-project --strict` after **every** fixture edit, not once at the end |
 | **4** | **The A-2 fix put under a marked subtopic.** `Relief and the crater` is where Bellhorn belongs by subject, and it is `Status: out of scope` — a card there warns, and warns fail under `--strict` | medium (it is the intuitive place) | § 3(b): the fix is a reword of a card already under `The five islands` |
-| **5** | **The maths gate weakened to strip-maths-then-head-term.** It looks like the more thorough rule and it would break `cards/example.yaml`, taking the `lernkarten check cards/example.yaml` gate and `docs/testing.md` step 14 with it | medium | FR-013a names it explicitly; prototype in research R3 shows all three items skipped; the unit table in § 4 has the case |
+| **5** | **The maths gate weakened to strip-maths-then-head-term.** It looks like the more thorough rule and it would report two of `cards/example.yaml`'s three Kolmogorov items as orphans. Note **which** gate sees that: `python3 scripts/check_project.py .` over the repo itself, never `lernkarten check cards/example.yaml` — `bin/lernkarten` imports `engine`, `deps`, `cardid` and `build_pdf` and never `check_project`. CI runs the project checker only over the demo fixture | medium | FR-013a names it explicitly; prototype in research R3 shows all three items skipped; the unit table in § 4 has the case; and the second regression guard in § 4 makes `pytest` the gate rather than a manual pre-PR command |
 | **6** | **Inflected aliases.** `topic_key()` does no stemming, so `нуль глубин` does not match a card saying `нуля глубин`. A user writing the dictionary form gets a finding they cannot explain | medium for real users | the alias set in § 3(a) uses the measured forms; `skills/catalog/SKILL.md` and the contract both say matching is literal |
 | **7** | **A term containing a comma is torn in two** by `catalog_names(line, known=())`, which has no `known` set to match against first | low | documented as a limitation in the contract; a comma-free alias is the workaround. Not worth a `known` set: the candidates would be the aliases themselves |
 | **8** | **`check_catalog`'s changed arity.** Exactly one direct caller unpacks it — `tests/test_check_project.py:857` | low | named in research R2; it is a one-line edit |
@@ -491,7 +542,7 @@ Deliberately left open here:
 
 - the task-level split of § 3's ordered fixture edits, and whether (a)–(f) are
   one task or six;
-- the exact wording of the four `Term:` lines' aliases beyond the anchors
+- the exact wording of the seven `Term:` lines' aliases beyond the anchors
   measured in research R4 — the *set* is fixed, the phrasing of the new anchor
   card's front and back is not;
 - the exact prose of the six `skills/cards/SKILL.md` additions and where in the

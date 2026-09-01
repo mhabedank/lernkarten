@@ -34,6 +34,7 @@ References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 | the line is present and parses to at least one alias | — | *(the normal case)* |
 | the line is present and empty, or parses to zero aliases | **error** | `subtopic 'X': 'Term:' is empty — name the term, or leave the line out` |
 | the line is absent | — | A-1 emits nothing for that subtopic (FR-011a) |
+| the line is written **twice** under one subtopic | *first wins* | `parse_catalog` uses `setdefault`, the existing rule that lets a `References:` line wrap onto a second line. The second line is discarded silently, as every repeated attribute already is |
 | the line sits on a topic (`##`) | *ignored* | consistent with `Parents:` on a topic today |
 
 **Matching semantics** — this is the contract, not an implementation detail:
@@ -120,7 +121,7 @@ Not a persisted structure; the output of the bracket-depth scan over one card's
 back  ──scan──▶  ["Torvig", "Little Kestrel", "Skarn", ...]  or  None
                                                                   └─ unbalanced: skip the card
 each item ──maths gate──▶ skipped if it contains a "$"
-          ──head term──▶  cut at the first of: — – , : ; " ("
+          ──head term──▶  cut at the first of: — – , : ; " (" " - "
           ──topic_key──▶  the key matched against the other cards in the file
 ```
 
@@ -130,7 +131,7 @@ each item ──maths gate──▶ skipped if it contains a "$"
 |---|---|---|
 | **Subtopic term** | the concept a `###` heading is about, made addressable by its optional `Term:` line. A subtopic without one has no term as far as the checker is concerned | the subtopic name |
 | **Anchor** | a card in a given file, under a given subtopic, whose `front + back` names one of that subtopic's aliases. Not a card *type* — same schema, same budget, same style rules; what makes it the anchor is that it names the term | `(card file, subtopic)` |
-| **Enumeration card** | a card whose `back` contains at least one `#list(...)`. A card with no `back`, or one that is not a mapping, is not one — A-2 skips it and the existing required-keys error covers it (FR-012a) | its 1-based index within the file, never its `id` (FR-014) |
+| **Enumeration card** | a card whose `back` contains at least one `#list(...)`. A card with no `back`, or one that is not a mapping, is not one — A-2 skips it and the existing required-keys error covers it (FR-012a) | its 1-based index within the file, never its `id` (FR-014). The index is the position in the **unfiltered** `cards` list, so a skipped card still consumes one and the numbering never diverges from `check_cards`' own |
 | **Enumeration item** | one `[...]` element of a `#list(...)` body | its verbatim text |
 | **Orphan** | an enumeration item, not skipped by the maths gate, whose head term is named by no *other* card in the same file | the item verbatim |
 
@@ -145,6 +146,7 @@ each item ──maths gate──▶ skipped if it contains a "$"
 | I-5 | An item named only on the card that enumerates it is still an orphan | A-2 — the haystack excludes the enumerating card |
 | I-6 | An unbalanced `#list(` fragment produces no finding | A-2 — the scan returns `None` and the card is skipped |
 | I-9 | A card with a missing or non-mapping `back` produces no A-2 finding (FR-012a) | A-2 — skipped before the scan; `check_cards` already reports it |
+| I-11 | Skipping a card does not renumber the cards after it | A-2 — the index is the position in the unfiltered `cards` list, `enumerate(..., start=1)` over all of them |
 | I-10 | A subtopic marked `Status: gap`/`out of scope` that has cards is still checked by A-1 (FR-009a) | A-1 — keyed on `anchor_text`, which is built from cards, not from `marked` |
 | I-7 | An empty `Term:` line is an error (FR-011b) | `check_catalog` |
 | I-8 | `depth` remains exactly `awareness \| working \| expert` | `GOAL_DEPTHS`, unchanged |

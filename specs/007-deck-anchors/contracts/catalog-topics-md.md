@@ -14,7 +14,12 @@ A subtopic body may carry, in any order among the other attribute lines:
 Term: <alias>[, <alias>]*
 ```
 
-- **Written by**: `/catalog` (`skills/catalog/SKILL.md`).
+- **Written by**: `/catalog` (`skills/catalog/SKILL.md`) — and not merely on
+  request: the skill's writing guidance instructs producing the line for a
+  subtopic whose heading names a concept, at latest when its cards exist
+  (FR-027 as amended in review W1). A format the prompts never write is a dead
+  format; the line is inert on a subtopic without cards, so writing it early
+  costs nothing.
 - **Read by**: `scripts/check_project.py` — check A-1 only.
 - **Optional.** Absent means the pre-feature behaviour: A-1 says nothing about
   that subtopic, neither error nor warning. This is the same "absent means the
@@ -49,6 +54,11 @@ per card file (FR-010): an English anchor in `cards/tides.yaml` does not satisfy
 the Greek cards in `cards/palirroia-el.yaml`. One subtopic, one `Term:` line,
 one alias per language the deck actually uses.
 
+When A-1 fires on a file whose cards already name the concept in their own
+language, the missing piece is the **alias**, not a card: add that language's
+alias to the line. The checker step in `skills/cards/SKILL.md` names that
+remedy (review W5).
+
 ## Matching rules
 
 | Rule | Detail |
@@ -78,6 +88,14 @@ one alias per language the deck actually uses.
 | absent | nothing |
 | one or more aliases | nothing (the normal case) |
 | present but empty (`Term:`), or parses to zero aliases | **error**: `catalog/topics.md: subtopic 'X': 'Term:' is empty — name the term, or leave the line out` |
+| written **twice** under one subtopic | nothing — **the first line wins**, the second is discarded silently |
+
+**A repeated `Term:` line is not an error.** `parse_catalog` stores attributes
+with `setdefault`, so the first occurrence of a key is the one that survives.
+That is not a rule invented here: it is what already lets a `References:` line
+wrap onto a second line without the continuation being read as a new attribute,
+and `Term:` inherits it unchanged. A subtopic that wants more aliases adds them
+to the one line, comma-separated.
 
 ## Backwards compatibility
 

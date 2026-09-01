@@ -107,8 +107,22 @@ cards/example.yaml card 2 (4V946)
   named by FR-023. The rule finds them and nothing else.
 - `cards/example.yaml` is untouched, confirming FR-013a: the maths gate must not
   be weakened to strip-maths-then-head-term, or two of those three items become
-  false positives and the `lernkarten check cards/example.yaml` gate breaks.
+  false positives. **Which gate would catch that is worth naming, because the
+  obvious answer is wrong**: `lernkarten check cards/example.yaml` cannot report
+  an orphan at all — `bin/lernkarten` imports `engine`, `deps`, `cardid` and
+  `build_pdf`, never `check_project`. The detector is
+  `python3 scripts/check_project.py .`, and since CI runs the project checker
+  only over `tests/fixtures/demo-project` (`.github/workflows/ci.yml:120`), the
+  plan pins it with a pytest case over the shipped file instead of relying on a
+  manual command.
 - **A-2 can therefore be an error**, as FR-015 requires.
+
+**Amended in cross-model review (W3)**: ` - ` (spaced hyphen-minus) joins the
+separator set — `[Amber - the middle stage]` is what a keyboard produces where
+this repo writes an em dash, and without the cut it was A-2's one realistic
+false positive. Spaced, so hyphenated compounds (`sigma-additivity`,
+`Half-mast`) are not torn. Neither `#list` back above contains a spaced hyphen,
+so the zero-false-positive measurement stands unchanged.
 
 ## R4 — Which demo subtopics actually need an anchor card?
 
@@ -150,6 +164,12 @@ per `(card file, subtopic)` pair.
    FR-011 they simply carry no `Term:` line, and A-1 stays silent — which is
    also the fixture's demonstration of FR-011a.
 
+**Amended in cross-model review (W2)**: the three unanchored named-concept
+pairs above (`Tidenrhythmus`, `Tidenhub`, `The six flags`) are no longer left
+out of the `Term:` set. All three are anchored by rewording existing cards —
+plan §3(b2)/(b3) — at zero count cost, so the R5 budget below is unaffected.
+The table above measures the tree before this feature.
+
 ## R5 — The fixture budget (the one that reshaped the plan)
 
 **Open because**: the task context stated that the demo card count lives in two
@@ -173,7 +193,8 @@ The arithmetic (`2 × ⌈cards ÷ per-sheet⌉`, 8 up at a7, 16 up at a8):
 
 **Decision**: **the demo deck ends at exactly 32 cards — one card added, no
 more.** The A-2 fix is made by *rewording* an existing card rather than adding
-two.
+two, and the three A-1 gaps outside `tides.yaml` are closed the same way —
+rewords of `HNHF1`, `R3WZ4` and `NKQK0`, zero count cost (review W2).
 
 **Rationale**. At 33 or more, fifteen assertions across `tests/test_e2e.py` move
 (`:83`, `:84`, `:98`, `:118`, `:255`, `:419`, `:420`, `:428`, `:441`, `:442`,
@@ -254,21 +275,26 @@ instead, which is both cheaper and more precise:
 | an item named only on its own card is still an orphan | `tmp_path` |
 | a subtopic with zero cards is exempt | the demo (`Right of way in the Kestrel Deep`) |
 
-## R7 — Does `GOOD_CARDS` survive? (the seventeen call sites)
+## R7 — Does `GOOD_CARDS` survive? (the fifteen call sites)
 
 **Verified.** `GOOD_CARDS` (`tests/test_check_project.py:65`) is one card,
 `subtopic: 'Rhythm of the tide'`, front *"How long is a tidal day?"*, back
 *"24 h 50 min."* — it names neither *rhythm* nor *tide*. It is paired with
 `GOOD_CATALOG` (`:37`), whose single subtopic carries only a `References:` line.
 
+It is used at **fifteen** call sites. A grep for the name reports seventeen
+lines, but `:65` is the definition itself and `:1096` is a docstring; the
+fifteen that matter are the uses, `:112` — the default argument of `project()` —
+among them, which is why so many tests reach it without naming it.
+
 Under D1, A-1 keys off `Term:`. `GOOD_CATALOG` has no `Term:` line, so `terms`
-is empty and A-1 emits nothing. **All seventeen call sites are unaffected**, and
+is empty and A-1 emits nothing. **All fifteen call sites are unaffected**, and
 in particular `test_a_minimal_project_is_clean` (`:173-175`), which asserts *no
 errors and no warnings*, stays green.
 
 This property is load-bearing and is stated as an assumption in the spec: any
 future tightening of A-1 that matched against the heading rather than a `Term:`
-line would have to rewrite seventeen tests. The plan adds a test that pins it
+line would have to rewrite fifteen tests. The plan adds a test that pins it
 (`test_a_subtopic_without_a_term_line_is_silent`) so it cannot be lost by
 accident.
 
@@ -316,9 +342,9 @@ construction; the plan adds no timing test because there is nothing to regress.
 | R2 | `check_catalog` returns `(subtopics, marked, terms)`; `check_cards` takes `terms=None`. One test call site updates |
 | R3 | The FR-013 rule finds exactly `Skarn` and `Bellhorn`, and skips all three of `example.yaml`'s maths items |
 | R4 | Only `tides.yaml` / `Rhythm of the tide` needs a new anchor card. Aliases must be written in the inflected form the cards use |
-| R5 | **The demo deck ends at exactly 32 cards.** One added card, one reworded card, four assertion edits — not fifteen |
+| R5 | **The demo deck ends at exactly 32 cards.** One added card, four reworded cards, four assertion edits — not fifteen |
 | R6 | Both red cases are `tmp_path` projects. `broken/` gains nothing; the demo README documents the two modes |
-| R7 | `GOOD_CARDS` and all seventeen call sites are unaffected, and a new test pins that |
+| R7 | `GOOD_CARDS` and all fifteen call sites are unaffected, and a new test pins that |
 | R8 | The fixture must be clean under `--strict`: ids, sources, and no cards under a marked subtopic |
 | R9 | An empty `Term:` is an error; a misplaced one is ignored; a comma cannot appear inside an alias |
 | R10 | No measurable cost, no timing test |
