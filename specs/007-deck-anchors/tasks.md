@@ -53,9 +53,9 @@ count budget is measured against.
 
 <!-- parallel-group: 1 -->
 
-- [ ] T001 [P] Install the dev tooling: `python3 -m pip install --user -r requirements-dev.txt` (pytest, ruff). Touches no repo file.
-- [ ] T002 [P] Confirm the working copy: `git -C <worktree> branch --show-current` is `feat/deck-anchors` and `git status` is clean apart from `specs/007-deck-anchors/`. Touches no repo file.
-- [ ] T003 [P] Record the baseline: `python3 scripts/check_project.py tests/fixtures/demo-project --strict` prints `31 cards, 0 warning(s)` and exits 0, and `pytest -q` is fully green. Paste both into the PR description later. Touches no repo file.
+- [x] T001 [P] Install the dev tooling: `python3 -m pip install --user -r requirements-dev.txt` (pytest, ruff). Touches no repo file.
+- [x] T002 [P] Confirm the working copy: `git -C <worktree> branch --show-current` is `feat/deck-anchors` and `git status` is clean apart from `specs/007-deck-anchors/`. Touches no repo file.
+- [x] T003 [P] Record the baseline: `python3 scripts/check_project.py tests/fixtures/demo-project --strict` prints `31 cards, 0 warning(s)` and exits 0, and `pytest -q` is fully green. Paste both into the PR description later. Touches no repo file.
 
 **Checkpoint**: the tree is green at 31 cards. Every number in Phase 4 is
 measured against this line.
@@ -79,7 +79,7 @@ file, so none of them may be parallelised.
 
 <!-- sequential -->
 
-- [ ] T004 🔴 [US1] Add the A-1 red case to `tests/test_check_project.py`. New module constant `TERM_CATALOG` — `GOOD_CATALOG` with `Term: Rhythm of the tide` inserted under `### Rhythm of the tide`, above `References:` — and the test:
+- [x] T004 🔴 [US1] Add the A-1 red case to `tests/test_check_project.py`. New module constant `TERM_CATALOG` — `GOOD_CATALOG` with `Term: Rhythm of the tide` inserted under `### Rhythm of the tide`, above `References:` — and the test:
 
   ```python
   def test_a_subtopic_with_a_term_and_no_anchor_is_reported(tmp_path):
@@ -92,13 +92,13 @@ file, so none of them may be parallelised.
 
   `project()` writes `cards/tides.yaml` from `GOOD_CARDS`, whose one card says *"How long is a tidal day?"* / *"24 h 50 min."* and names neither *rhythm* nor *tide*. **Red today because `report.errors` is empty** — `Term:` is not in `ATTRIBUTE`, so the line is discarded as body prose and nothing reads it. FR-010, FR-011, FR-014, contracts/check-messages.md §A-1.
 
-- [ ] T005 🔴 [US1] Add the two cases beside it in `tests/test_check_project.py`. Together they prove T004 is about the anchor and not about the `Term:` line existing — and they are **not the same colour**, which is the point of the pair:
+- [x] T005 🔴 [US1] Add the two cases beside it in `tests/test_check_project.py`. Together they prove T004 is about the anchor and not about the `Term:` line existing — and they are **not the same colour**, which is the point of the pair:
   - `test_an_anchor_card_silences_the_check` — **green today, green after**. `TERM_CATALOG` plus a second card under `subtopic: 'Rhythm of the tide'` whose front reads *"What is the rhythm of the tide?"* → `assert not report.errors`.
   - `test_a_card_under_another_subtopic_does_not_anchor_it` — 🔴 **red today**, for exactly T004's reason: it asserts that the A-1 error **is** reported, and today `report.errors` is empty because nothing reads `Term:`. `TERM_CATALOG` extended with a second subtopic `### Slack water`, and the term-naming card filed under **that** subtopic in the same file → the A-1 error is still reported. This is FR-010's narrowed haystack (`anchor_text` keyed `(where, subtopic)`), and it is the only thing that distinguishes the shipped rule from the drafted one.
 
   Give the second subtopic a `References:` line pointing at `../knowledge/field-notes/a.md`, or `check_catalog` reports it as a branch with nothing behind it — a stray error that would make the test read as passing for the wrong reason. Story 1 scenario 2, CHK015.
 
-- [ ] T006 🔴 [US2] Add the A-2 red case to `tests/test_check_project.py`. New module constant `LIST_CARDS`:
+- [x] T006 🔴 [US2] Add the A-2 red case to `tests/test_check_project.py`. New module constant `LIST_CARDS`:
 
   ```yaml
   topic: 'Signals'
@@ -116,9 +116,9 @@ file, so none of them may be parallelised.
 
   and `test_an_orphan_in_a_list_back_is_reported`, asserting `'Amber'` appears **verbatim** in `messages(report)`, that `card 1` appears (the 1-based index, never an `id` — FR-014), and that `'Green'` does **not**. **Red today because `report.errors` is empty.** FR-012, FR-014, SC-002, contracts/check-messages.md §A-2.
 
-- [ ] T007 [US1] Add the regression guard `test_a_subtopic_without_a_term_line_is_silent` to `tests/test_check_project.py`: `check(project(tmp_path))` — plain `GOOD_CATALOG` + `GOOD_CARDS` — asserts **neither an error nor a warning**. Green today and it must stay green: `GOOD_CARDS` is used at fifteen call sites and names neither *rhythm* nor *tide*, and it survives only because `GOOD_CATALOG` carries no `Term:` line. Research R7, FR-011a, CHK021, Risk 2.
+- [x] T007 [US1] Add the regression guard `test_a_subtopic_without_a_term_line_is_silent` to `tests/test_check_project.py`: `check(project(tmp_path))` — plain `GOOD_CATALOG` + `GOOD_CARDS` — asserts **neither an error nor a warning**. Green today and it must stay green: `GOOD_CARDS` is used at fifteen call sites and names neither *rhythm* nor *tide*, and it survives only because `GOOD_CATALOG` carries no `Term:` line. Research R7, FR-011a, CHK021, Risk 2.
 
-- [ ] T007a [US2] Add the second regression guard `test_the_shipped_example_deck_has_no_orphan` to `tests/test_check_project.py` — a `tmp_path` project whose card file is the text of the repo's **own** `cards/example.yaml`:
+- [x] T007a [US2] Add the second regression guard `test_the_shipped_example_deck_has_no_orphan` to `tests/test_check_project.py` — a `tmp_path` project whose card file is the text of the repo's **own** `cards/example.yaml`:
 
   ```python
   def test_the_shipped_example_deck_has_no_orphan(tmp_path):
@@ -137,7 +137,7 @@ file, so none of them may be parallelised.
 
   FR-013a, Risk 5, CHK019. *(File: `tests/test_check_project.py`)*
 
-- [ ] T008 Checkpoint — run `pytest tests/test_check_project.py -q` and confirm, item by item:
+- [x] T008 Checkpoint — run `pytest tests/test_check_project.py -q` and confirm, item by item:
   - `test_a_subtopic_with_a_term_and_no_anchor_is_reported` **fails**, and the failure line is an `assert` on `said`, not an `AttributeError`, `ImportError` or `KeyError`;
   - `test_a_card_under_another_subtopic_does_not_anchor_it` **fails** the same way — it too asserts that an A-1 error is reported, and there is no A-1 yet;
   - `test_an_orphan_in_a_list_back_is_reported` **fails** the same way;
@@ -146,7 +146,7 @@ file, so none of them may be parallelised.
 
   Paste the three failure outputs into the PR description (constitution XI, SC-003).
 
-- [ ] T009 Commit: `test: red cases for the anchor and orphan checks`. Nothing under `scripts/` is in this commit — verify with `git show --stat`.
+- [x] T009 Commit: `test: red cases for the anchor and orphan checks`. Nothing under `scripts/` is in this commit — verify with `git show --stat`.
 
 **Checkpoint**: `pytest` is red for exactly three reasons, all on assertions.
 
@@ -191,8 +191,10 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 - [ ] T013 [US2] Implement **A-2** in `scripts/check_project.py`: `_check_orphans(where, cards, report)`, called at the end of each file's body in `check_cards`, after the inner card loop, so findings come out per file in card order. Skip any element that is not a mapping or carries no `back` (FR-012a — `check_cards` already reports it as `card {i}: 'front' and 'back' are required`, and one malformed card must never yield two findings). Coerce a non-string `back` with `str()`, as the surrounding loop does. Haystack for card *i* is `front + " " + back` of every **other** card in the file, `topic_key`-normalised (I-5: an item named only on its own card is still an orphan). Message, verbatim per contract:
 
   ```python
-  report.error(where, f"card {i}: '{item}' is enumerated and never named — "
-                      "no other card in this file mentions it")
+  report.error(
+      where,
+      f"card {i}: '{item}' is enumerated and never named — no other card in this file mentions it",
+  )
   ```
 
   `item` is the text between the brackets, **verbatim**, never the normalised head term.
@@ -209,8 +211,11 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
   A pair with no aliases (`terms.get(subtopic)` falsy) is skipped silently — FR-011a, I-3. A pair whose subtopic is marked `Status: gap`/`out of scope` **is still checked** — A-1 keys off cards existing, not off the mark, and it must not duplicate the existing "subtopic is marked" warning (FR-009a, I-10). Message, verbatim per contract, naming the **first** alias (FR-014a):
 
   ```python
-  report.error(where, f"subtopic '{subtopic}': no card names the term ('{alias}') — "
-                      "one card in this file has to name the concept and say what it is")
+  report.error(
+      where,
+      f"subtopic '{subtopic}': no card names the term ('{alias}') — "
+      "one card in this file has to name the concept and say what it is",
+  )
   ```
 
   FR-010, FR-014, FR-014a, FR-015, I-1, I-2.

@@ -1383,3 +1383,109 @@ def test_a_subtopic_with_both_kinds_is_not_warned_about(tmp_path):
     )
     report = check(with_figure(project(tmp_path, cards=cards)))
     assert not [w for w in report.warnings if "text-only card" in w], report.warnings
+
+
+# --- deck anchors and orphaned list items (007-deck-anchors) ----------------
+
+TERM_CATALOG = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+Term: Rhythm of the tide
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+TERM_CATALOG_TWO_SUBTOPICS = (
+    TERM_CATALOG
+    + """
+### Slack water
+The pause at the turn of the tide.
+References: [a](../knowledge/field-notes/a.md)
+"""
+)
+
+ANCHORED_CARDS = (
+    GOOD_CARDS
+    + """  - subtopic: 'Rhythm of the tide'
+    front: 'What is the rhythm of the tide?'
+    back: 'Two high and two low waters in a tidal day, each about 50 minutes later.'
+    source: 'Field notes'
+"""
+)
+
+CARDS_ANCHORED_UNDER_ANOTHER_SUBTOPIC = (
+    GOOD_CARDS
+    + """  - subtopic: 'Slack water'
+    front: 'What is the rhythm of the tide?'
+    back: 'Two high and two low waters in a tidal day, each about 50 minutes later.'
+    source: 'Field notes'
+"""
+)
+
+LIST_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the four Ashwind warning stages.'
+    back: '#list([Green], [Amber], [Ashwind], [Full Ashwind])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What does the green stage mean?'
+    back: 'Nothing unusual — the predicted tide holds.'
+    source: 'Field notes'
+"""
+
+
+def test_a_subtopic_with_a_term_and_no_anchor_is_reported(tmp_path):
+    report = check(project(tmp_path, catalog=TERM_CATALOG))
+    said = messages(report)
+    assert "cards/tides.yaml" in said, said
+    assert "Rhythm of the tide" in said, said
+    assert "no card names the term" in said, said
+
+
+def test_an_anchor_card_silences_the_check(tmp_path):
+    """One card in the file names the term, so nothing is reported."""
+    report = check(project(tmp_path, catalog=TERM_CATALOG, cards=ANCHORED_CARDS))
+    assert not report.errors, messages(report)
+
+
+def test_a_card_under_another_subtopic_does_not_anchor_it(tmp_path):
+    """The haystack is the file's cards *under that subtopic* and nothing else."""
+    report = check(
+        project(
+            tmp_path,
+            catalog=TERM_CATALOG_TWO_SUBTOPICS,
+            cards=CARDS_ANCHORED_UNDER_ANOTHER_SUBTOPIC,
+        )
+    )
+    said = messages(report)
+    assert "cards/tides.yaml" in said, said
+    assert "Rhythm of the tide" in said, said
+    assert "no card names the term" in said, said
+
+
+def test_an_orphan_in_a_list_back_is_reported(tmp_path):
+    """An item enumerated on one card and named by no other card in the file."""
+    report = check(project(tmp_path, cards=LIST_CARDS))
+    said = messages(report)
+    assert "Amber" in said, said
+    assert "card 1" in said, said
+    assert "Green" not in said, said
+
+
+def test_a_subtopic_without_a_term_line_is_silent(tmp_path):
+    """No `Term:` line means the pre-feature behaviour: neither error nor warning."""
+    report = check(project(tmp_path))
+    assert not report.errors, messages(report)
+    assert not report.warnings, report.warnings
+
+
+def test_the_shipped_example_deck_has_no_orphan(tmp_path):
+    """The one automated guard on the maths gate (FR-013a)."""
+    example = (ROOT / "cards" / "example.yaml").read_text(encoding="utf-8")
+    root = with_figure(project(tmp_path, cards=example), "assets/example-figure.svg")
+    report = check(root)
+    assert not report.errors, messages(report)
