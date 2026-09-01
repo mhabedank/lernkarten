@@ -60,8 +60,9 @@ cut, fold, glue, and put their cards in it.
    `assets/card-box.pdf`, and the page is still one self-contained file with an
    unchanged set of external sub-resources.
 3. **Given** the committed PDF, **When** its page geometry is read, **Then** it
-   is exactly one page at A4 portrait — so a user prints it without choosing a
-   page range or an orientation.
+   is one page, portrait, and A4 to within printing tolerance — so a user prints
+   it without choosing a page range or an orientation. The exact millimetres are
+   209.97 × 296.97; see SC-002.
 
 ---
 
@@ -126,12 +127,28 @@ than not publishing it, unless the constraint is stated where the download is.
   so its stated exception covers this artifact. VIII today reads: *"The one
   deliberate exception is the brand PNGs under `assets/`, which are committed
   because nobody should have to run a renderer to read the README."* The box
-  earns the same exception on the same logic — nobody should have to run a
-  renderer to print a box. The amendment MUST say that plainly, and MUST keep the
-  rule itself intact: generated test material stays generated, and the exception
-  stays a short, named list rather than becoming a general permission.
+  earns an exception for a related reason — nobody should have to run a renderer
+  to print a box either. The amendment MUST keep the rule itself intact:
+  generated test material stays generated, and the exception stays a short,
+  **named** list rather than becoming a general permission.
   - Without this, the repository carries a principle and a file that contradict
     each other, and every future review re-discovers it.
+  - **The amendment MUST NOT claim this is the same case as the brand PNGs.** It
+    is not, in the part that matters: the PNGs have Typst sources at
+    `assets/brand/*.typ` and a render script, so they are committed for
+    *convenience* and remain regenerable and reviewable as text. The box has no
+    source at all. The PNG exception trades regeneration effort; this one gives
+    up regenerability. Saying "the same logic" would misrepresent the precedent,
+    and that misrepresentation is what the next source-less binary would cite.
+  - The amendment MUST also acknowledge that **Principle IX** ("sources of truth,
+    never generated artifacts") now has a standing counterexample, rather than
+    leaving a reader to find it.
+- **FR-009a**: The same amendment MUST name the **committed fonts**
+  (`assets/fonts/*.ttf`, four files) in Principle VIII's exception list. They are
+  committed binaries that the list does not mention, so the repository already
+  contradicts VIII today — FR-009's own rationale applies to them verbatim, and
+  fixing one contradiction while walking past the other would ship the claim
+  "a short named list" as false.
 
 **Explicitly out of scope**: a Typst source, a render script, regenerating the
 PDF, deriving the box from the card size, an A7 box, and any change to the
@@ -195,7 +212,10 @@ These follow from cutting the build pipeline. They are decisions, not oversights
 
 - **SC-001**: `git ls-files` includes `assets/card-box.pdf` — it is in the
   repository, not in one working copy.
-- **SC-002**: The committed PDF is exactly 1 page at A4 portrait.
+- **SC-002**: The committed PDF is exactly 1 page, portrait, and A4 **within
+  printing tolerance** — its MediaBox is `595.2 × 841.8 pt` (209.97 × 296.97 mm),
+  a Quartz approximation of A4 rather than the exact 595.276 × 841.89 pt. Any
+  assertion must allow that, or it can never pass.
 - **SC-003**: A reader on the landing page reaches the download in one click from
   the section about printing.
 - **SC-004**: The grid constraint is readable next to the download, without
@@ -209,5 +229,7 @@ These follow from cutting the build pipeline. They are decisions, not oversights
 - The artifact at `assets/card-box.pdf` is correct and final. It was folded and
   used; this feature takes that as proven and does not re-test the geometry.
 - A user has a printer that handles 160–250 gsm card stock, and scissors and glue.
-- GitHub Pages serves the PDF from the repository, so the landing page can link it
-  by relative path without a release asset or a CDN.
+- GitHub Pages does **not** serve the repository — the workflow assembles a `_site`
+  holding `docs/index.html` and nothing else, so the PDF has to be copied into it
+  explicitly (FR-003). An earlier draft of this spec assumed the opposite; it was
+  wrong, and following it would have shipped a 404 as the feature's deliverable.
