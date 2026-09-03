@@ -171,6 +171,17 @@ show you where to cut. Borderless printers get the full 105 × 74.25 mm (≈ A7)
 with `--margin 0`; any other value works too, via `--margin <mm>`. `--no-logo`
 prints the cards without the mark and the wordmark.
 
+### Somewhere to keep them
+
+Cut cards are a loose stack. [`assets/card-box.pdf`](assets/card-box.pdf) is a
+cut-and-fold box on one A4 sheet — print it on 160–250 gsm card stock at 100 %,
+check the printed ruler, cut, fold, glue. It holds about 90 cards, and it is
+also on the [landing page](https://mhabedank.github.io/lernkarten/).
+
+It fits a deck printed at `--grid a8` with the **default margin** (cards
+71.75 × 50 mm). An `a7` card is 100 mm wide and will not go in — and `a7` is the
+default grid, so check which one you printed before you cut the box out.
+
 ## Where your files live
 
 ```

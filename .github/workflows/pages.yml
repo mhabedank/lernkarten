@@ -1,15 +1,19 @@
 name: Landing page
 
-# Publishes docs/index.html to GitHub Pages. The page is one self-contained
-# file, so the site is that file and nothing else. Set Pages -> Source to
-# "GitHub Actions" once in the repository settings; after that this runs on
-# every push to main that touches the page.
+# Publishes the landing page to GitHub Pages. The page is one self-contained
+# file, and the site is that file plus the one thing it offers for download:
+# the printable card box. Nothing else in the repository is served, so anything
+# the page links has to be copied in here first — a relative link to a path that
+# is not in _site is a 404 that looks fine when the page is opened locally.
+# Set Pages -> Source to "GitHub Actions" once in the repository settings; after
+# that this runs on every push to main that touches either file.
 
 on:
   push:
     branches: [main]
     paths:
       - docs/index.html
+      - assets/card-box.pdf
       - .github/workflows/pages.yml
   workflow_dispatch:
 
@@ -35,6 +39,7 @@ jobs:
         run: |
           mkdir -p _site
           cp docs/index.html _site/index.html
+          cp assets/card-box.pdf _site/card-box.pdf
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

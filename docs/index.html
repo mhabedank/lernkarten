@@ -259,6 +259,9 @@
   .rule-item p { margin-top: 6px; font-size: 15px; line-height: 1.6; color: var(--muted); }
   .print__cut { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
   .print__cut p { font-size: 15px; line-height: 1.6; color: var(--muted); }
+  .print__box { padding: 22px 28px; border-top: var(--rule); display: flex; flex-direction: column; gap: 8px; }
+  .print__box h3 { font-size: 17px; line-height: 1.2; }
+  .print__box p { font-size: 15px; line-height: 1.6; color: var(--muted); }
 
   /* Three principles */
   .principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--sand); border-bottom: var(--rule); }
@@ -366,7 +369,7 @@
     .hero__text, .hero__side, .anatomy__cards, .install__main, .install__side,
     .yaml > div, .principle { padding: 28px 20px; }
     .hero__facts { gap: 18px; }
-    .anatomy__item, .rule-item, .print__cut, .foot { padding: 20px; }
+    .anatomy__item, .rule-item, .print__cut, .print__box, .foot { padding: 20px; }
     /* Without this the sheets hold the page open at 320 px and the whole
        layout scrolls sideways. */
     .print__sheets { min-width: 0; padding: 28px 20px; gap: 24px; }
@@ -686,6 +689,19 @@
             <circle cx="190" cy="108.5" r="4" fill="#0a3f8f"/>
           </svg>
           <p>A 5 mm free margin is kept by default (cards 100 × 71.75 mm) so printers with a non-printable edge clip nothing, and crop marks in that margin show where to cut. Borderless printers get the full A7 with <span class="mono">--margin 0</span>.</p>
+        </div>
+        <!--
+          The href is relative because pages.yml copies the PDF next to this
+          file in _site. It resolves on the deployed site and is dead when this
+          file is opened straight out of docs/ — the two are not siblings in the
+          repository. check_docs.py link-checks markdown only, so nothing else
+          records that.
+        -->
+        <div class="print__box">
+          <h3>and something to keep them in</h3>
+          <p>A box, from one more sheet. Print it on 160–250 gsm card stock at 100 %, check the printed ruler before you cut, fold the dashed lines and glue the grey tabs. It holds about 90 cards.</p>
+          <p><a href="card-box.pdf">Download the card box (PDF, one A4 page)</a></p>
+          <p class="print__box-note">Sized for a deck printed at the <span class="mono">a8</span> grid with the default margin — cards 71.75 × 50 mm, inner box 73 × 24 × 52 mm. An <span class="mono">a7</span> card is 100 mm wide and will not go in, and neither will an <span class="mono">a8</span> deck printed at <span class="mono">--margin 0</span>.</p>
         </div>
       </div>
     </div>

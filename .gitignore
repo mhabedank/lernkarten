@@ -41,6 +41,11 @@ tests/fixtures/zotero/storage/
 *.log
 *.out
 *.pdf
+# The printable card box is not a build leftover — it is a shipped deliverable,
+# published with the landing page. It has no source in this repo and cannot be
+# regenerated, which is why Principle VIII names it explicitly. This negation
+# has to stay *below* `*.pdf`: .gitignore is last-match-wins.
+!assets/card-box.pdf
 
 # --- Python -------------------------------------------------------------
 __pycache__/

@@ -176,7 +176,8 @@ else. The sheet that arranges them is
 ## The press sheet
 
 A configurable grid, `--grid`, with two settings — because those are the two
-that cut to a card you can buy a box for:
+that cut to a card there is a box for: A7 is a size boxes are sold in, and A8 is
+the one this project ships as a printable net (see [The box](#the-box)):
 
 | `--grid` | Alias | Per A4 sheet | Card at `--margin 5` | Card at `--margin 0` |
 |---|---|---|---|---|
@@ -204,6 +205,47 @@ grid prints at the other unchanged. The band holds about 53 characters of
 `TOPIC / SUBTOPIC` on one line at either size; past that the label wraps inside
 the band and stays readable, and text is only lost around 200 characters, where
 a fourth line no longer fits.
+
+## The box
+
+A cut-and-fold box for the cards, on one A4 portrait sheet:
+[`assets/card-box.pdf`](../assets/card-box.pdf). Print it on 160–250 gsm card
+stock at 100 %, cut the solid lines, fold the dashed ones, glue the tabs.
+It holds about 90 cards.
+
+| Property | Value |
+|---|---|
+| Fits | a deck at `--grid a8`, **default margin** — cards 71.75 × 50 mm |
+| Inner box | 73 × 24 × 52 mm |
+| Capacity | ≈ 90 cards, depending on stock |
+| Paper | 160–250 gsm |
+| Sheet | one page, A4 portrait |
+
+**It does not fit an A7 deck**, which is the default grid: an A7 card is 100 mm
+wide against a 73 mm opening. Nor does an A8 deck printed at `--margin 0`, whose
+cards are 74.25 mm. The landing page says so beside the download, because the
+sheet cannot be changed to say it — see below.
+
+The three line types are told apart **without colour**, as everything printed
+here must be: cut is a solid stroke, fold is dashed, and a glue area is a tint
+*plus* the printed word `glue`. A legend on the sheet names all three. Photocopy
+it in black and nothing is lost, which is the rule this whole page exists for.
+
+**This artifact has no source in the repository.** It was designed and folded
+outside it, and nothing in a checkout can rebuild it — the one exception to
+[Principle IX](../.specify/memory/constitution.md) and a named entry in
+Principle VIII. So the rules on this page apply to it by *inspection*, not by
+construction, and three things it prints about itself are wrong and cannot be
+fixed:
+
+- it says `a4 landscape`; the page is A4 **portrait** (MediaBox 595.2 × 841.8 pt)
+- it says `cards 70 × 49 mm`, a nominal; the real A8 card is **71.75 × 50 mm**
+- it does not name the grid at all
+
+Those three are why the landing page carries the constraint and this table
+carries the measurements. `tests/test_repo_hygiene.py` pins the file's SHA-256:
+"unchanged" is the only guarantee an artifact without a source can offer, so a
+replacement has to be re-folded and the hash updated deliberately.
 
 ## The screen surfaces
 

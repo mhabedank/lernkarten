@@ -39,10 +39,11 @@ TEMPLATES = ROOT / "templates"
 TEMPLATE = TEMPLATES / "cards.typ"  # imports card.typ, so both are copied along
 FONTS = ROOT / "assets" / "fonts"
 # The press sheet. Two grids, because those are the two that cut to a standard
-# card: 2 x 4 is DIN A7 and 4 x 4 is DIN A8, so a deck still drops into a box
-# you can buy. Everything else — card size, the column mirroring that makes
-# duplex line up, the crop marks, the page count — derives from these two
-# numbers in templates/cards.typ.
+# card: 2 x 4 is DIN A7 and 4 x 4 is DIN A8, so a deck drops into a box that
+# exists — bought for A7, or printed from assets/card-box.pdf for A8.
+# Everything else — card size, the column mirroring that makes duplex line up,
+# the crop marks, the page count — derives from these two numbers in
+# templates/cards.typ.
 A4 = (210, 297)  # mm, portrait; sheet() turns it when the grid needs it
 GRIDS = {
     "2x4": (2, 4),

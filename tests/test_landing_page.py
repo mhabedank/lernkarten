@@ -431,3 +431,80 @@ def test_the_page_stays_one_self_contained_file():
     assert loaded == EXTERNAL_SUBRESOURCES, (
         f"the page's external sub-resources changed: {loaded ^ EXTERNAL_SUBRESOURCES}"
     )
+
+
+# ---------------------------------------------------------------------------
+# The card box download (feature 007).
+#
+# The site is *assembled*, not served from the repository: pages.yml copies
+# docs/index.html into _site and nothing else. So a link to the box is only half
+# the requirement — the other half lives in the workflow, and it is asserted as
+# text because CI never executes it. A YAML error here merges green and surfaces
+# as a failed deploy on main.
+# ---------------------------------------------------------------------------
+
+WORKFLOW = ROOT / ".github" / "workflows" / "pages.yml"
+BOX_PDF = "card-box.pdf"
+
+
+def print_section():
+    """The `print it, cut it` section — where a reader is told to cut."""
+    source = page_source()
+    match = re.search(r'<section id="print".*?</section>', source, re.DOTALL)
+    assert match, 'docs/index.html has no <section id="print"> — this test\'s anchor moved'
+    return match.group(0)
+
+
+def test_the_landing_page_offers_the_box_beside_the_cutting():
+    """The download belongs where the reader has just been told to cut."""
+    assert f'href="{BOX_PDF}"' in print_section(), (
+        f"the print section does not link {BOX_PDF} — the box is unreachable, which "
+        "is the whole gap issue #45 opened"
+    )
+
+
+def test_the_pages_workflow_publishes_the_box():
+    """`href="card-box.pdf"` is a 404 unless the workflow puts it there.
+
+    The site is one assembled file. Without the copy the deployed link is
+    broken, and nothing else in this suite would notice: opened from the
+    filesystem the page is fine, and CI never runs the workflow.
+    """
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    copied = re.search(r"^\s*cp\s+\S*assets/card-box\.pdf\s+\S*_site/", workflow, re.MULTILINE)
+    assert copied, "pages.yml does not copy the box into _site — the download would 404"
+    triggers = re.search(r"paths:\n(.*?)\n\s*\w+:", workflow, re.DOTALL)
+    assert triggers and "assets/card-box.pdf" in triggers.group(1), (
+        "pages.yml does not trigger on assets/card-box.pdf — replacing the box "
+        "would never redeploy the site"
+    )
+
+
+def box_block():
+    """The download block itself, not the section around it.
+
+    Scoping matters: the print section already says `a8` and `--margin 0` for
+    unrelated reasons, so asserting against the whole section passes before the
+    caption is written and proves nothing.
+    """
+    match = re.search(r'<div class="print__box">.*?</div>\s*</div>', print_section(), re.DOTALL)
+    assert match, 'docs/index.html has no <div class="print__box"> holding the download'
+    return match.group(0)
+
+
+def test_the_box_download_says_which_deck_it_fits():
+    """An A7 reader has to stop *before* spending an hour on a box.
+
+    The sheet itself cannot say this — it has no source in this repository, and
+    it prints `cards 70 x 49 mm`, a nominal that is not the real card. So the
+    only place the constraint can live is beside the link.
+    """
+    block = box_block().lower()
+    assert "a8" in block, (
+        "the box download does not name the a8 grid — an A7 deck is 100 mm wide "
+        "against a 73 mm opening, and A7 is the default"
+    )
+    assert "margin" in block, (
+        "the box download does not mention the margin — a deck printed at "
+        "--margin 0 has 74.25 mm cards and does not fit either"
+    )
