@@ -32,8 +32,8 @@ Single flat module, no `src/`. Tests in `tests/test_<module>.py`.
 
 ## Phase 1: Setup
 
-- [ ] T001 `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
-- [ ] T002 `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
+- [x] T001 `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
+- [x] T002 `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
 
 **Not needed**: `make_testdata.py` and the typesetting engine. Nothing here
 compiles or renders anything.
@@ -56,8 +56,8 @@ repository contradicting itself for the length of the branch.
 
 <!-- sequential -->
 
-- [ ] T003 🔴 In `tests/test_repo_hygiene.py`, assert that **every committed binary under `assets/`** is named in Principle VIII's exception list in `.specify/memory/constitution.md` — walk `git ls-files assets/` for non-text extensions and require each to appear. **Red because** the list names only "the brand PNGs", so it misses the four `.ttf` fonts *today* and will miss the box. — *Without this, a branch that commits the PDF and forgets the amendment is fully green, and the one mechanism making this feature constitutionally legitimate is the one thing nothing checks. Asserting the whole list rather than one filename also makes it self-policing: the next committed binary cannot slip past unnamed.* **(FR-009, FR-009a)**
-- [ ] T004 Amend Principle VIII in `.specify/memory/constitution.md`. **Keep the rule intact** — generated test material stays generated, and the exception stays a short *named* list, never a general permission. The list gains two entries, and the amendment must be honest about the difference between them:
+- [x] T003 🔴 In `tests/test_repo_hygiene.py`, assert that **every committed binary under `assets/`** is named in Principle VIII's exception list in `.specify/memory/constitution.md` — walk `git ls-files assets/` for non-text extensions and require each to appear. **Red because** the list names only "the brand PNGs", so it misses the four `.ttf` fonts *today* and will miss the box. — *Without this, a branch that commits the PDF and forgets the amendment is fully green, and the one mechanism making this feature constitutionally legitimate is the one thing nothing checks. Asserting the whole list rather than one filename also makes it self-policing: the next committed binary cannot slip past unnamed.* **(FR-009, FR-009a)**
+- [x] T004 Amend Principle VIII in `.specify/memory/constitution.md`. **Keep the rule intact** — generated test material stays generated, and the exception stays a short *named* list, never a general permission. The list gains two entries, and the amendment must be honest about the difference between them:
   - **`assets/fonts/*.ttf`** (four files) — committed binaries the list already fails to name. Redistributable fonts with no conceivable in-repo source. **(FR-009a)**
   - **`assets/card-box.pdf`** — and here the amendment must **not** say "the same logic as the brand PNGs". The PNGs have Typst sources at `assets/brand/*.typ` and a render script: they are committed for *convenience* and stay regenerable and reviewable as text. The box has no source at all. Say that plainly — the PNG exception trades regeneration effort, this one gives up regenerability, and its physical validation is what stands in for a source. **(FR-009)**
   - Acknowledge that **Principle IX** ("sources of truth, never generated artifacts") now has a standing counterexample, rather than leaving a reader to discover it.
@@ -77,11 +77,12 @@ landing page.
 
 <!-- parallel-group: 1 (max 3 concurrent) -->
 
-- [ ] T005 🔴 [P] [US1] In `tests/test_repo_hygiene.py`, add four assertions: `ignored(["assets/card-box.pdf"]) == set()`; `"assets/card-box.pdf" in versioned_files()`; the page geometry; and a **SHA-256 pin** of the file. **Red because** `.gitignore:43` is `*.pdf`, the file is untracked, and there is nothing to measure. **(covers FR-001, FR-002, SC-002)**
+- [x] T005 🔴 [P] [US1] In `tests/test_repo_hygiene.py`, add four assertions: `ignored(["assets/card-box.pdf"]) == set()`; `"assets/card-box.pdf" in versioned_files()`; the page geometry; and a **SHA-256 pin** of the file. **(covers FR-001, FR-002, SC-002)**
+  - **Only the first two are red.** `.gitignore:43` is `*.pdf` and the file is untracked, so those two fail on their assertion. The geometry and the hash read the PDF *from disk*, where it already exists — they are **regression guards, green from the start**, like `test_the_page_stays_one_self_contained_file`. That is legitimate under constitution XI (they guard an artifact this feature does not create) but it has to be *declared*, not discovered: a task that claims a green test is red is how a suite stops meaning anything.
   - **Geometry — do not copy the existing pattern.** `pdf_page_size_mm` (`tests/test_e2e.py:662`) rounds to two decimals and returns **`(209.97, 296.97)`** for this file: its MediaBox is `0 0 595.2 841.8`, a Quartz approximation of A4, not the exact `595.276 × 841.89`. Every existing caller asserts strict equality with `(210.0, 297.0)` (`test_e2e.py:676`, `:684`); copying that writes a test **no change in this feature can make pass**. Assert one page, portrait (`width < height`), and each dimension within **0.5 mm** of 210 × 297.
   - **Reuse, don't re-write, the helper** — but `import test_e2e` executes that module's top level. Either import it explicitly and accept that, or lift `pdf_page_size_mm` into a shared place. Say which in the commit.
   - **The hash** is what makes T008's "commit it unchanged" enforceable. The spec's entire safety argument is that this artifact was folded and validated; nothing currently pins *which bytes* those were, so a silent re-export in any later PR would pass every other assertion here while invalidating it.
-- [ ] T006 🔴 [P] [US1] In `tests/test_landing_page.py`, add two assertions: the page source links `card-box.pdf`, and `.github/workflows/pages.yml` both copies `assets/card-box.pdf` into `_site/` and lists it under `paths:`. Assert the workflow **as text** — a 404 on the deployed site is invisible to every other kind of test. **Red because** neither the link nor the copy exists.
+- [x] T006 🔴 [P] [US1] In `tests/test_landing_page.py`, add two assertions: the page source links `card-box.pdf`, and `.github/workflows/pages.yml` both copies `assets/card-box.pdf` into `_site/` and lists it under `paths:`. Assert the workflow **as text** — a 404 on the deployed site is invisible to every other kind of test. **Red because** neither the link nor the copy exists.
 
 **Also confirm green from the start** (regression guard, not a red task):
 `test_the_page_stays_one_self_contained_file` must still pass — it inspects
@@ -92,15 +93,15 @@ not change the external sub-resource set.
 
 <!-- sequential -->
 
-- [ ] T007 [US1] In `.gitignore`, negate the `*.pdf` build-leftover rule for this one file: add `!assets/card-box.pdf` with a comment saying why, in the shape of the existing `!cards/example.yaml` carve-out. Leave `*.pdf` itself intact. **(FR-001)**
+- [x] T007 [US1] In `.gitignore`, negate the `*.pdf` build-leftover rule for this one file: add `!assets/card-box.pdf` with a comment saying why, in the shape of the existing `!cards/example.yaml` carve-out. Leave `*.pdf` itself intact. **(FR-001)**
   **Placement is not cosmetic**: `.gitignore` is last-match-wins, so the negation must sit **below** the `*.pdf` rule on line 43. The carve-out this task names as its model sits at line 14 — *above* it — so copying its position produces a negation that does nothing.
-- [ ] T008 [US1] `git add assets/card-box.pdf` and commit it **unchanged** — do not regenerate, re-export or open it in an editor. Commit subject uses the `feat/` prefix. **(FR-002)** — **Depends on T007** (git refuses the file before it) **and on T004** (the rule before the exception to it).
+- [x] T008 [US1] `git add assets/card-box.pdf` and commit it **unchanged** — do not regenerate, re-export or open it in an editor. Commit subject uses the `feat/` prefix. **(FR-002)** — **Depends on T007** (git refuses the file before it) **and on T004** (the rule before the exception to it).
 
 <!-- parallel-group: 2 (max 3 concurrent) -->
 
-- [ ] T009 [P] [US1] In `.github/workflows/pages.yml`, add `cp assets/card-box.pdf _site/card-box.pdf` to the *Assemble the site* step and `assets/card-box.pdf` to the `paths:` trigger. Update the step's comment — the site is no longer "that file and nothing else". **(FR-003, plan.md F1)**
+- [x] T009 [P] [US1] In `.github/workflows/pages.yml`, add `cp assets/card-box.pdf _site/card-box.pdf` to the *Assemble the site* step and `assets/card-box.pdf` to the `paths:` trigger. Update the step's comment — the site is no longer "that file and nothing else". **(FR-003, plan.md F1)**
   **This edit merges green even if it is broken.** T006 reads the workflow as text, CI never executes it, and a YAML syntax error surfaces first as a failed deploy on `main`. Parse the file with `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/pages.yml'))"` before committing, and treat the manual checklist's "follow the deployed link" as mandatory rather than ceremony.
-- [ ] T010 [P] [US1] In `docs/index.html`, add the download link `href="card-box.pdf"` in the section about printing — relative, same origin, not a `raw.githubusercontent.com` URL. **Add an HTML comment** stating that the path is correct on the deployed site, where `pages.yml` puts the two files side by side, and dead when the file is opened straight from `docs/`. `check_docs.py` link-checks markdown only, so nothing else records this. **(FR-003)**
+- [x] T010 [P] [US1] In `docs/index.html`, add the download link `href="card-box.pdf"` in the section about printing — relative, same origin, not a `raw.githubusercontent.com` URL. **Add an HTML comment** stating that the path is correct on the deployed site, where `pages.yml` puts the two files side by side, and dead when the file is opened straight from `docs/`. `check_docs.py` link-checks markdown only, so nothing else records this. **(FR-003)**
 
 **Checkpoint**: `pytest tests/test_repo_hygiene.py tests/test_landing_page.py` green.
 
@@ -118,11 +119,11 @@ harmful — a download offered to everyone that fits only the non-default grid.
 
 <!-- sequential -->
 
-- [ ] T011 🔴 [US2] In `tests/test_landing_page.py`, assert the text beside the download names the grid (`a8`) **and** the default margin. **Red because** no such text exists. Do **not** assert against the PDF's own wording — the sheet says `a4 landscape` and `cards 70 × 49 mm`, and both are wrong (plan.md F2).
+- [x] T011 🔴 [US2] In `tests/test_landing_page.py`, assert the text beside the download names the grid (`a8`) **and** the default margin. **Red because** no such text exists. Do **not** assert against the PDF's own wording — the sheet says `a4 landscape` and `cards 70 × 49 mm`, and both are wrong (plan.md F2).
 
 ### Implementation
 
-- [ ] T012 [US2] In `docs/index.html`, add the caption beside the download: fits a deck printed at `--grid a8` at the default margin; card 71.75 × 50 mm, inner box 73 × 24 × 52 mm, ≈ 90 cards, 160–250 gsm. Reading text stays at or above the 15 px screen floor. **(FR-004)** — same file as T010, so **not** parallel with it
+- [x] T012 [US2] In `docs/index.html`, add the caption beside the download: fits a deck printed at `--grid a8` at the default margin; card 71.75 × 50 mm, inner box 73 × 24 × 52 mm, ≈ 90 cards, 160–250 gsm. Reading text stays at or above the 15 px screen floor. **(FR-004)** — same file as T010, so **not** parallel with it
 
 **Checkpoint**: `pytest tests/test_landing_page.py` green.
 
@@ -134,26 +135,26 @@ harmful — a download offered to everyone that fits only the non-default grid.
 
 <!-- sequential -->
 
-- [ ] T013 🔴 In `tests/test_repo_hygiene.py`, add three assertions: (a) no versioned file still says a deck's box is one **you can buy**; (b) `docs/design.md` has a box section naming the card size and the `a8` constraint; (c) `README.md` names the box. **Red because** two files still say it and neither document mentions the box. **(covers FR-005, FR-006, FR-008)**
+- [x] T013 🔴 In `tests/test_repo_hygiene.py`, add three assertions: (a) no versioned file still says a deck's box is one **you can buy**; (b) `docs/design.md` has a box section naming the card size and the `a8` constraint; (c) `README.md` names the box. **Red because** two files still say it and neither document mentions the box. **(covers FR-005, FR-006, FR-008)**
   **Watch the extension filter.** The obvious model, `test_the_repo_does_not_still_promise_five_commands`, skips anything not `.md/.html/.typ/.yaml` (`test_repo_hygiene.py:233`) — so copying it verbatim would **not** scan `scripts/build_pdf.py`, which is exactly one of the two offenders. Include `.py`, or scan all versioned text. Keep the `specs/` exemption: those files record what was true when each feature was written.
 
 ### Implementation
 
 <!-- parallel-group: 3 (max 3 concurrent) -->
 
-- [ ] T014 [P] In `scripts/build_pdf.py:41-45`, correct the comment: the two grids cut to a card you can *print* a box for — one of them ships with this project. **(FR-008)**
-- [ ] T015 [P] In `docs/design.md`, fix the *The press sheet* sentence at line 179, and add a **The box** section: card 71.75 × 50 mm, inner 73 × 24 × 52 mm, ≈ 90 cards, 160–250 gsm, A4 portrait, `a8` only, and that it has no Typst source and is edited outside this repository. State the cut/fold/glue encoding — solid, dashed, tinted-plus-labelled — so the doubling rule is on record. This section is the canonical vocabulary for the artifact; use it consistently ("the box", "the sheet"). **(FR-005, FR-008)**
-- [ ] T016 [P] In `README.md`, name the box under *Printing and cutting* (line 142) with a link to the file. **(FR-006)**
+- [x] T014 [P] In `scripts/build_pdf.py:41-45`, correct the comment: the two grids cut to a card you can *print* a box for — one of them ships with this project. **(FR-008)**
+- [x] T015 [P] In `docs/design.md`, fix the *The press sheet* sentence at line 179, and add a **The box** section: card 71.75 × 50 mm, inner 73 × 24 × 52 mm, ≈ 90 cards, 160–250 gsm, A4 portrait, `a8` only, and that it has no Typst source and is edited outside this repository. State the cut/fold/glue encoding — solid, dashed, tinted-plus-labelled — so the doubling rule is on record. This section is the canonical vocabulary for the artifact; use it consistently ("the box", "the sheet"). **(FR-005, FR-008)**
+- [x] T016 [P] In `README.md`, name the box under *Printing and cutting* (line 142) with a link to the file. **(FR-006)**
 
 <!-- parallel-group: 4 (max 3 concurrent) -->
 
-- [ ] T017 [P] In `skills/print/SKILL.md`, add one sentence after the cutting instructions naming the box and where to get it. **(FR-007)** — run output, so no automated test; it goes on the manual checklist instead
-- [ ] T018 [P] In `docs/testing.md`, add the four manual checklist items: follow the deployed link and confirm a PDF downloads; print at 100 %, measure the scale bar, fold, glue, fill with an A8 deck; read the caption and confirm an A7 user would stop; confirm the `/print` sentence appears in a real run. Constitution XI requires run-output requirements to be **named** on the checklist, never left implicit.
+- [x] T017 [P] In `skills/print/SKILL.md`, add one sentence after the cutting instructions naming the box and where to get it. **(FR-007)** — run output, so no automated test; it goes on the manual checklist instead
+- [x] T018 [P] In `docs/testing.md`, add the four manual checklist items: follow the deployed link and confirm a PDF downloads; print at 100 %, measure the scale bar, fold, glue, fill with an A8 deck; read the caption and confirm an A7 user would stop; confirm the `/print` sentence appears in a real run. Constitution XI requires run-output requirements to be **named** on the checklist, never left implicit.
 
 <!-- sequential -->
 
-- [ ] T019 Run the four gates: `ruff check . && ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`. `check_docs.py` fails on a documentation link that does not resolve, so T015 and T016 are the likely offenders.
-- [ ] T020 Write the PR description. It **must** state two things a reviewer would otherwise have to infer: that the `.gitignore` negation is a deliberate carve-out and not a `git add -f` (constitution VII, and Governance requires the note), and that the Principle VIII amendment in T004 is what makes the committed binary legitimate.
+- [x] T019 Run the four gates: `ruff check . && ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`. `check_docs.py` fails on a documentation link that does not resolve, so T015 and T016 are the likely offenders.
+- [x] T020 Write the PR description. It **must** state two things a reviewer would otherwise have to infer: that the `.gitignore` negation is a deliberate carve-out and not a `git add -f` (constitution VII, and Governance requires the note), and that the Principle VIII amendment in T004 is what makes the committed binary legitimate.
 
 ---
 

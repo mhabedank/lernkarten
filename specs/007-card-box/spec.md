@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-01 · **Revised**: 2026-09-01 (scope cut, see *History*)
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: GitHub issue #45 — "Nothing holds the cards once they are cut: no printable box template".
 
