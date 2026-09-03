@@ -163,7 +163,7 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 
 <!-- sequential -->
 
-- [ ] T010 [US1] `Term:` parsing in `scripts/check_project.py` — three edits in one pass:
+- [x] T010 [US1] `Term:` parsing in `scripts/check_project.py` — three edits in one pass:
   1. `ATTRIBUTE` (line 61) becomes `^(Status|Parents|Also covers|Related|References|Goal|Term):(.*)$`.
   2. In `check_catalog`'s `for entry in catalog.subtopics` loop (~line 610), read `entry.attribute("term")`. If the key is present, `catalog_names(value)`; **zero aliases → error** `subtopic '{name}': 'Term:' is empty — name the term, or leave the line out`, worded after the invalid-`Status:` error one loop above; otherwise `terms[entry.name] = aliases`.
   3. `check_catalog` returns `subtopics, marked, terms` (line ~673), and `check()` (line 895) unpacks three.
@@ -172,8 +172,8 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 
 <!-- parallel-group: 2 -->
 
-- [ ] T011 [P] [US1] Fix the one external unpack of `check_catalog` in `tests/test_check_project.py:857` (`test_also_covers_is_not_parsed_as_a_subtopic`): `subtopics, marked, terms = check_project.check_catalog(...)`. It is the **only** call site outside `check_project.py` (verified by grep over `scripts/`, `tests/`, `bin/`). Risk 8, CHK114. *(File: `tests/test_check_project.py`)*
-- [ ] T012 [P] [US1] [US2] Add the shared private helpers to `scripts/check_project.py`, module level, all pure, placed next to the other module helpers:
+- [x] T011 [P] [US1] Fix the one external unpack of `check_catalog` in `tests/test_check_project.py:857` (`test_also_covers_is_not_parsed_as_a_subtopic`): `subtopics, marked, terms = check_project.check_catalog(...)`. It is the **only** call site outside `check_project.py` (verified by grep over `scripts/`, `tests/`, `bin/`). Risk 8, CHK114. *(File: `tests/test_check_project.py`)*
+- [x] T012 [P] [US1] [US2] Add the shared private helpers to `scripts/check_project.py`, module level, all pure, placed next to the other module helpers:
 
   ```python
   LIST_HEAD = "#list("
@@ -188,7 +188,7 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 
 <!-- sequential -->
 
-- [ ] T013 [US2] Implement **A-2** in `scripts/check_project.py`: `_check_orphans(where, cards, report)`, called at the end of each file's body in `check_cards`, after the inner card loop, so findings come out per file in card order. Skip any element that is not a mapping or carries no `back` (FR-012a — `check_cards` already reports it as `card {i}: 'front' and 'back' are required`, and one malformed card must never yield two findings). Coerce a non-string `back` with `str()`, as the surrounding loop does. Haystack for card *i* is `front + " " + back` of every **other** card in the file, `topic_key`-normalised (I-5: an item named only on its own card is still an orphan). Message, verbatim per contract:
+- [x] T013 [US2] Implement **A-2** in `scripts/check_project.py`: `_check_orphans(where, cards, report)`, called at the end of each file's body in `check_cards`, after the inner card loop, so findings come out per file in card order. Skip any element that is not a mapping or carries no `back` (FR-012a — `check_cards` already reports it as `card {i}: 'front' and 'back' are required`, and one malformed card must never yield two findings). Coerce a non-string `back` with `str()`, as the surrounding loop does. Haystack for card *i* is `front + " " + back` of every **other** card in the file, `topic_key`-normalised (I-5: an item named only on its own card is still an orphan). Message, verbatim per contract:
 
   ```python
   report.error(
@@ -201,7 +201,7 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 
   `i` is the card's position in the **unfiltered** `cards` list: `enumerate(cards, start=1)` over all of them, with the skip applied *inside* the loop and never as a filter before it. A skipped card still consumes an index, so A-2's `card {i}` always agrees with the `card {i}` of every other `check_cards` message about the same file — otherwise one file answers to two numberings. FR-012, FR-012a, FR-014, I-4, I-5, I-6, I-9, I-11.
 
-- [ ] T014 [US1] Implement **A-1** in `scripts/check_project.py`:
+- [x] T014 [US1] Implement **A-1** in `scripts/check_project.py`:
   - `check_cards`'s signature gains `terms=None` **after** `marked` and before `strict`, so no existing caller breaks;
   - a new accumulator `anchor_text = {}` beside `figure_faces` / `by_subtopic` (~line 727), keyed `(where, subtopic)`;
   - inside the per-card loop, next to the existing `by_subtopic.setdefault` (~line 826), append this card's `front + " " + back`;
@@ -220,7 +220,7 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 
   FR-010, FR-014, FR-014a, FR-015, I-1, I-2.
 
-- [ ] T015 [US1] [US2] Add the helper unit tests to `tests/test_check_project.py`. They belong **here and not in Phase 2** — calling a function that does not exist raises `AttributeError`, which constitution XI rejects as a valid red (plan §4 commit 2, CHK110). Three parametrized tables plus four standalone cases:
+- [x] T015 [US1] [US2] Add the helper unit tests to `tests/test_check_project.py`. They belong **here and not in Phase 2** — calling a function that does not exist raises `AttributeError`, which constitution XI rejects as a valid red (plan §4 commit 2, CHK110). Three parametrized tables plus four standalone cases:
 
   | Test | Shape |
   |---|---|
@@ -234,14 +234,14 @@ All production code lands in **`scripts/check_project.py`** (constitution V, pla
 
   *(File: `tests/test_check_project.py`)*
 
-- [ ] T016 Checkpoint — run and confirm all five:
+- [x] T016 Checkpoint — run and confirm all five:
   1. `pytest tests/test_check_project.py -q` → everything from T004–T007 and T015 passes;
   2. `test_the_demo_project_is_consistent` is now **RED**, and its message names exactly `'Skarn'` and `'Bellhorn'` in `cards/geography.yaml` — **two** findings, no others (CHK019). This is the feature's headline red: a pre-existing invariant broken by a real defect, not by an invented one;
   3. `python3 scripts/check_project.py .` reports **no** orphan in `cards/example.yaml` — all three Kolmogorov items carry a `$…$` span and are skipped by the maths gate (FR-013a, Risk 5);
   4. `lernkarten check cards/example.yaml` still exits 0;
   5. `ruff check . && ruff format --check .` is clean.
 
-- [ ] T017 Commit: `feat: check that every named term is anchored and no list item is orphaned`. Note in the commit body that `test_the_demo_project_is_consistent` is knowingly red and Phase 4 closes it.
+- [x] T017 Commit: `feat: check that every named term is anchored and no list item is orphaned`. Note in the commit body that `test_the_demo_project_is_consistent` is knowingly red and Phase 4 closes it.
 
 **Checkpoint**: both new checks work; the demo fixture is the only thing failing.
 
