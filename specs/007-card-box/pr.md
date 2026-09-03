@@ -102,7 +102,16 @@ lernkarten check cards/example.yaml       ✅  10 cards valid, 4 pages
 python3 scripts/check_docs.py             ✅  7 skills, links fine
 ```
 
-**Manual checklist rows 34–39** (`docs/testing.md`) are **not yet done** — they
-need a printer, a photocopier and the deployed site. Row 37 in particular (a
-black-only photocopy, handed to someone who has not seen the colour version) is
-the direct test of the rule `docs/design.md` closes with.
+**Manual checklist** (`docs/testing.md`):
+
+| Row | | |
+|---|---|---|
+| 35, 36 | print at 100 %, measure the ruler, fold, glue, fill with an A8 deck | ✅ done before this branch existed — the artifact is unchanged since, and the SHA-256 pin says so |
+| 37 | black-only photocopy, handed to someone who has not seen the colour version | ✅ done |
+| 38, 39 | the A7 warning lands in time; `/print` names the box | ⬜ open, cheap |
+| **34** | **follow the download link on the deployed site** | ⬜ **can only be done after merge** — `pages.yml` runs on `main` only |
+
+Row 34 is the one that matters most and is structurally impossible to do first.
+It is the only check that catches a typo in the `cp` path or a YAML error in the
+workflow: both merge green, because CI never executes `pages.yml`. **Please
+follow the link once this is on `main`.**
