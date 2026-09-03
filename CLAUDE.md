@@ -23,9 +23,11 @@ code, comments, docs and commit messages are written in English.
 - **Topic catalog**: `catalog/topics.md` — a hierarchy of topics (`##`) and
   subtopics (`###`), each with a short description and references (links to
   files under `knowledge/`). Optional per subtopic: `Status: gap` |
-  `out of scope`, `Parents:` (every topic it belongs under, primary first) and
-  `Related:`; optional per topic: `Also covers:`. Every one of them absent
-  means the behaviour this repo had before the goal-driven catalog.
+  `out of scope`, `Parents:` (every topic it belongs under, primary first),
+  `Related:` and `Term:` (comma-separated aliases for the concept the subtopic
+  names, one for every language the deck is written in, matched literally and
+  without stemming); optional per topic: `Also covers:`. Every one of them
+  absent means the behaviour this repo had before the goal-driven catalog.
 - **Cards**: `cards/<topic-slug>.yaml` with this schema:
 
   ```yaml
