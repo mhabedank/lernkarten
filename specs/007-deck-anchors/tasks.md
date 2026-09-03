@@ -267,7 +267,7 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
 
 <!-- parallel-group: 3 -->
 
-- [ ] T018 [P] [US1] Add **seven** `Term:` lines to `tests/fixtures/demo-project/catalog/topics.md`, each directly under its subtopic's description and above `References:`, verbatim:
+- [x] T018 [P] [US1] Add **seven** `Term:` lines to `tests/fixtures/demo-project/catalog/topics.md`, each directly under its subtopic's description and above `References:`, verbatim:
 
   | Subtopic | Line to add |
   |---|---|
@@ -280,14 +280,14 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
   | `### The six flags` | `Term: The six flags` |
 
   Add **no** `Term:` line anywhere else. `Settlements` and `Rules of use` are descriptions rather than named concepts — leaving them bare is the fixture's own demonstration of FR-011a. The three subtopics with no cards get none either: the line is inert without cards (I-2) and is added when cards arrive, per FR-027's "at latest" rule. `Tidenrhythmus`, `Tidenhub` and `The six flags` are anchored by the rewords of T019a/T019b at zero card cost — an earlier draft withheld their lines to protect the 32-card budget, which the cross-model review rejected as evasion-by-omission (W2). The aliases are written in the **inflected forms the cards actually use** (`нуля глубин`, not `нуль глубин`; `εύρος`) because `topic_key()` does no stemming — research R4 measured every one of them. FR-021, plan §3(a). *(File: `tests/fixtures/demo-project/catalog/topics.md`)*
-- [ ] T019 [P] [US2] Reword card `ZRKBA`'s `back` in `tests/fixtures/demo-project/cards/geography.yaml` — **one YAML line, no card added, no card removed**:
+- [x] T019 [P] [US2] Reword card `ZRKBA`'s `back` in `tests/fixtures/demo-project/cards/geography.yaml` — **one YAML line, no card added, no card removed**:
 
   ```yaml
       back: 'Torvig Harbour has the only deep-water pier. \ From there the mail boat redistributes goods to Little Kestrel, Ovray, Skarn and Bellhorn.'
   ```
 
   137 characters, well inside the ~400 budget; `\ ` is followed by whitespace so it is a line break and not an escape. This closes **both** A-2 orphans at once and leaves `Torvig`, `Little Kestrel` and `Ovray` anchored as they already were. It is also a better card than the one it replaces: it says where the goods actually go. FR-023, plan §3(b), research R5. *(File: `tests/fixtures/demo-project/cards/geography.yaml`)*
-- [ ] T020 [P] [US1] Add **exactly one** card to `tests/fixtures/demo-project/cards/tides.yaml` — the anchor for `Rhythm of the tide`, the only `(file, subtopic)` pair in the fixture that research R4 measured as unanchored. Append it after card `0TMD9`, before the two figure cards and their comment block:
+- [x] T020 [P] [US1] Add **exactly one** card to `tests/fixtures/demo-project/cards/tides.yaml` — the anchor for `Rhythm of the tide`, the only `(file, subtopic)` pair in the fixture that research R4 measured as unanchored. Append it after card `0TMD9`, before the two figure cards and their comment block:
 
   ```yaml
     - id: R7XQ4
@@ -301,7 +301,7 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
 
 <!-- parallel-group: 10 -->
 
-- [ ] T019a [P] [US1] Two one-line rewords in `tests/fixtures/demo-project/cards/gezeiten-de.yaml` — **no card added, no card removed** (review W2, resolved as "anchor by reword"; plan §3(b2)):
+- [x] T019a [P] [US1] Two one-line rewords in `tests/fixtures/demo-project/cards/gezeiten-de.yaml` — **no card added, no card removed** (review W2, resolved as "anchor by reword"; plan §3(b2)):
   - card `HNHF1`'s back becomes, verbatim (one YAML line, 80 characters — the card already defines the concept; now it also names it, which is what A-1 asks):
 
     ```yaml
@@ -311,7 +311,7 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
   - card `R3WZ4`'s back: replace `Der Hub steigt` with `Der Tidenhub steigt` — one word, nothing else (122 characters after the edit).
 
   Leave card `P1H4B` alone: `Nipptidenhub` and `Springtidenhub` are single tokens and must **not** anchor `Tidenhub` — after this task the shipped fixture itself demonstrates the token-not-substring rule (research R4 finding 2). FR-021, FR-023, plan §3(b2). *(File: `tests/fixtures/demo-project/cards/gezeiten-de.yaml`)*
-- [ ] T019b [P] [US1] One one-line reword in `tests/fixtures/demo-project/cards/signals.yaml` — card `NKQK0`'s front becomes, verbatim (65 characters, still unique among the file's fronts; `the six flags` now appears as a token sequence):
+- [x] T019b [P] [US1] One one-line reword in `tests/fixtures/demo-project/cards/signals.yaml` — card `NKQK0`'s front becomes, verbatim (65 characters, still unique among the file's fronts; `the six flags` now appears as a token sequence):
 
   ```yaml
       front: 'Which two of the six flags call for help, and how do they differ?'
@@ -321,7 +321,7 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
 
 <!-- sequential -->
 
-- [ ] T021 Checkpoint — **the count budget, made checkable**. Run, in this order:
+- [x] T021 Checkpoint — **the count budget, made checkable**. Run, in this order:
   1. `python3 scripts/check_project.py tests/fixtures/demo-project --strict` → exit 0 and the literal line `OK: tests/fixtures/demo-project is consistent (…, 32 cards, 0 warning(s)).` Zero errors **and** zero warnings; anything else stops the phase (CHK116, CHK118).
   2. `grep -h '^  - id:' tests/fixtures/demo-project/cards/*.yaml | wc -l` prints **32**, and `git diff --stat tests/fixtures/demo-project/cards/` shows exactly four files changed: `tides.yaml` `+6/-0`, `geography.yaml` `+1/-1`, `gezeiten-de.yaml` `+2/-2`, `signals.yaml` `+1/-1`. **If the count is not 32, revert and re-plan — do not proceed.** Note the indent is **two** spaces, not four, and `grep -h … | wc -l` is what totals across the six files — `grep -c` prints a count per file and totals nothing. Verified against the tree: the same command prints 31 today.
   3. `pytest tests/test_check_project.py::test_the_demo_project_is_consistent` is green again.
@@ -330,7 +330,7 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
 
 <!-- parallel-group: 4 -->
 
-- [ ] T022 [P] Move the card-count and page-count assertions in `tests/test_e2e.py`, all in one pass so the counts move once:
+- [x] T022 [P] Move the card-count and page-count assertions in `tests/test_e2e.py`, all in one pass so the counts move once:
 
   | Line | Today | Becomes | Why |
   |---|---|---|---|
@@ -339,12 +339,12 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
   | `:255` | `assert pdf_pages(target) == 8, "29 demo cards + …"` | `== 10`, and the message rewritten to *"32 demo cards + the one intact card of the broken file"* | the mixed build is 32 + 1 = 33 cards → 5 sheets |
 
   And correct the four stale prose comments, all of which already said the wrong number before this feature: `:81-82` ("29 cards"), `:415` ("29 demo cards"), `:745` ("29 cards"), `:1106` ("31 cards") → 32 in each. **Do not touch `:1110`** — `assert pdf_pages(target) == 2 * -(-DEMO_CARD_COUNT // 8)` derives from the constant and is correct at 32 (8 pages) without an edit. FR-023, SC-004, plan §3(e)–(f), CHK102. *(File: `tests/test_e2e.py`)*
-- [ ] T023 [P] Change the bare card count in `tests/test_check_project.py:164` (`test_the_demo_project_has_all_four_artifacts`): `assert counts["cards"] == 31` → `== 32`. This is the second of the two count sites FR-023 names; it moves in the same commit as `DEMO_CARD_COUNT`. *(File: `tests/test_check_project.py`)*
-- [ ] T024 [P] Add a section to `tests/fixtures/demo-project/README.md` for the two new failure modes (FR-024). It must name: A-1 and what satisfies it in this fixture (**seven** `Term:` lines; `cards/tides.yaml` gained the `Rhythm of the tide` anchor `R7XQ4`; the `Tidenrhythmus`, `Tidenhub` and `The six flags` rewords of T019a/T019b; `Nipptidenhub`/`Springtidenhub` left as they are, demonstrating that a substring is not a match; `Settlements` and `Rules of use` deliberately carry no `Term:` line because they are descriptions, so A-1 is silent on them; the three card-less subtopics carry none because the line is inert without cards); A-2 and what satisfies it (card `ZRKBA`'s reworded back names `Skarn` and `Bellhorn`); and that **both red cases live in `tmp_path`, not in `broken/`**, because `check_project.py` scans only `<project>/cards/*.yaml` and `<project>/catalog/topics.md` and never sees `broken/`. `broken/README.md` gains **nothing** — research R6 decided this, and a row there would contradict that file's stated premise, which documents reactions of `lernkarten check` and the build. FR-022, FR-024. *(File: `tests/fixtures/demo-project/README.md`)*
+- [x] T023 [P] Change the bare card count in `tests/test_check_project.py:164` (`test_the_demo_project_has_all_four_artifacts`): `assert counts["cards"] == 31` → `== 32`. This is the second of the two count sites FR-023 names; it moves in the same commit as `DEMO_CARD_COUNT`. *(File: `tests/test_check_project.py`)*
+- [x] T024 [P] Add a section to `tests/fixtures/demo-project/README.md` for the two new failure modes (FR-024). It must name: A-1 and what satisfies it in this fixture (**seven** `Term:` lines; `cards/tides.yaml` gained the `Rhythm of the tide` anchor `R7XQ4`; the `Tidenrhythmus`, `Tidenhub` and `The six flags` rewords of T019a/T019b; `Nipptidenhub`/`Springtidenhub` left as they are, demonstrating that a substring is not a match; `Settlements` and `Rules of use` deliberately carry no `Term:` line because they are descriptions, so A-1 is silent on them; the three card-less subtopics carry none because the line is inert without cards); A-2 and what satisfies it (card `ZRKBA`'s reworded back names `Skarn` and `Bellhorn`); and that **both red cases live in `tmp_path`, not in `broken/`**, because `check_project.py` scans only `<project>/cards/*.yaml` and `<project>/catalog/topics.md` and never sees `broken/`. `broken/README.md` gains **nothing** — research R6 decided this, and a row there would contradict that file's stated premise, which documents reactions of `lernkarten check` and the build. FR-022, FR-024. *(File: `tests/fixtures/demo-project/README.md`)*
 
 <!-- sequential -->
 
-- [ ] T025 Checkpoint — `pytest` fully green, and no page-count literal moved that should not have. At 32 cards the a7 and a8 sheet counts are identical to 31 (4 and 2 sheets), so **every** whole-deck assertion research R5 enumerates must still read exactly what it reads today. Confirm all of them, not a sample:
+- [x] T025 Checkpoint — `pytest` fully green, and no page-count literal moved that should not have. At 32 cards the a7 and a8 sheet counts are identical to 31 (4 and 2 sheets), so **every** whole-deck assertion research R5 enumerates must still read exactly what it reads today. Confirm all of them, not a sample:
 
   | Site | Still reads |
   |---|---|
@@ -361,7 +361,7 @@ that is a CI failure). Risk 1, Risk 4, research R8, CHK101–CHK106.
   | `:1110` | `2 * -(-DEMO_CARD_COUNT // 8)` — derived, still 8 |
 
   Only `:27`, `:97`, `:255` and `tests/test_check_project.py:164` are allowed to have moved (T022, T023). Anything else that changed means the deck is not at 32. Then re-run `python3 scripts/check_project.py tests/fixtures/demo-project --strict`.
-- [ ] T026 Commit: `test: the demo deck anchors its terms and orphans no list item`.
+- [x] T026 Commit: `test: the demo deck anchors its terms and orphans no list item`.
 
 **Checkpoint**: the whole suite is green at 32 cards, and the fixture is clean
 under `--strict`. Nothing under `skills/` has been touched yet — verify with

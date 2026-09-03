@@ -7,7 +7,7 @@ cards:
   - id: HNHF1
     subtopic: 'Tidenrhythmus'
     front: 'Was heißt halbtägige (semidiurnale) Tide?'
-    back: 'Zwei Hochwasser und zwei Niedrigwasser pro Tidentag.'
+    back: 'Zwei Hochwasser und zwei Niedrigwasser pro Tidentag — das ist der Tidenrhythmus.'
     source: 'Feldnotizen 2'
   - id: FXTQE
     subtopic: 'Tidenrhythmus'
@@ -22,5 +22,5 @@ cards:
   - id: R3WZ4
     subtopic: 'Tidenhub'
     front: 'Nenne die Zwölftelregel.'
-    back: 'Der Hub steigt in sechs Stunden um $1/12, 2/12, 3/12, 3/12, 2/12, 1/12$. \ Nach drei Stunden ist die Hälfte erreicht.'
+    back: 'Der Tidenhub steigt in sechs Stunden um $1/12, 2/12, 3/12, 3/12, 2/12, 1/12$. \ Nach drei Stunden ist die Hälfte erreicht.'
     source: 'Feldnotizen 2'

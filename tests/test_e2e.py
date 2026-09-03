@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI = ROOT / "bin" / "lernkarten"
 DEMO = ROOT / "tests" / "fixtures" / "demo-project"
 CARDS = sorted(str(p) for p in (DEMO / "cards").glob("*.yaml"))
-DEMO_CARD_COUNT = 31
+DEMO_CARD_COUNT = 32
 
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -78,7 +78,7 @@ def test_build_writes_a_pdf_with_one_sheet_per_eight_cards(tmp_path):
     result = run("build", *CARDS, "-o", str(target))
     assert result.returncode == 0, result.stderr
     assert target.exists()
-    # 29 cards at 8 up -> 4 sheets, each with a front and a back page.
+    # 32 cards at 8 up -> 4 sheets, each with a front and a back page.
     # The count is DEMO_CARD_COUNT; issue #23 inherited '31' from this comment.
     assert pdf_pages(target) == 8
     assert "8 pages, duplex" in result.stdout
@@ -94,7 +94,7 @@ def test_a_topic_filter_narrows_the_build(tmp_path):
     target = tmp_path / "tides.pdf"
     result = run("build", *CARDS, "--topic", "Tides", "-o", str(target))
     assert result.returncode == 0, result.stderr
-    assert "10 cards" in result.stdout, result.stdout
+    assert "11 cards" in result.stdout, result.stdout
     assert pdf_pages(target) == 4
 
 
@@ -252,7 +252,7 @@ def test_a_broken_file_does_not_take_the_healthy_ones_down(tmp_path):
     result = run("build", *CARDS, str(DEMO / "broken" / "missing-fields.yaml"), "-o", str(target))
     assert result.returncode == 0, result.stderr
     assert "ERROR" in result.stderr
-    assert pdf_pages(target) == 8, "29 demo cards + the one intact card of the broken file"
+    assert pdf_pages(target) == 10, "32 demo cards + the one intact card of the broken file"
 
 
 def test_an_impossible_margin_is_refused(tmp_path):
@@ -412,7 +412,7 @@ def test_a_pdftotext_that_returns_bbox_xml_without_pages_also_skips(monkeypatch)
 
 
 def test_a8_puts_sixteen_cards_on_a_sheet(tmp_path):
-    """29 demo cards: 2 x ceil(29/16) = 4 pages, against 8 at the default."""
+    """32 demo cards: 2 x ceil(32/16) = 4 pages, against 8 at the default."""
     target = tmp_path / "a8.pdf"
     result = run("build", *CARDS, "-o", str(target), "--grid", "a8")
     assert result.returncode == 0, result.stderr
@@ -742,7 +742,7 @@ def face_marks_per_page(path):
 def test_simplex_puts_every_front_before_any_back(tmp_path):
     """SC-001, read off the artifact rather than inferred.
 
-    29 cards at 8 up is 4 sheets. Simplex means pages 1-4 are the four fronts
+    32 cards at 8 up is 4 sheets. Simplex means pages 1-4 are the four fronts
     and pages 5-8 the four backs — not front, back, front, back.
     """
     target = tmp_path / "simplex.pdf"
@@ -1103,7 +1103,7 @@ def test_a_picture_lands_on_the_face_that_named_it(tmp_path, face, printed_on, b
 
 
 def test_a_figure_deck_costs_no_extra_page(tmp_path):
-    """31 cards at 8 up is 4 sheets, whether or not two of them carry a picture."""
+    """32 cards at 8 up is 4 sheets, whether or not two of them carry a picture."""
     target = tmp_path / "figures.pdf"
     result = run("build", *CARDS, "-o", str(target))
     assert result.returncode == 0, result.stderr

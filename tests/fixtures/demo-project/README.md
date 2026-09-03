@@ -68,6 +68,53 @@ have no place in a git history, so they are `.gitignore`d and rebuilt from
 their text sources instead — which also means you can read and review every
 byte of the test data as text.
 
+## The two deck-level checks
+
+`scripts/check_project.py` asks two questions of the deck that no schema can
+ask, and the fixture is written so that both of them pass — and so that the
+interesting borderline cases are visible in the material rather than hidden in
+a test.
+
+**A-1, the anchor.** A subtopic whose catalog entry carries a `Term:` line has
+to be named by at least one card in every card file that holds its cards.
+`catalog/topics.md` carries **seven** such lines. What satisfies each of them:
+
+- `Rhythm of the tide` is anchored in `cards/tides.yaml` by card `R7XQ4`, the
+  one card this fixture gained for the check, and in `cards/palirroia-el.yaml`
+  by the Greek alias `παλίρροια`.
+- `Tidenrhythmus` and `Tidenhub` are anchored in `cards/gezeiten-de.yaml`, and
+  `The six flags` in `cards/signals.yaml`, by cards that were **reworded** to
+  name the concept they were already about. Anchoring costs a card only when no
+  card is close enough to reword.
+- Card `P1H4B` is deliberately left alone. Its `Nipptidenhub` and
+  `Springtidenhub` contain `Tidenhub` as a substring, and they do **not**
+  anchor it: matching is by token sequence, and the shipped fixture is where
+  you can see that.
+- The aliases are written in the inflected form the cards actually use —
+  `нуля глубин`, not `нуль глубин`; `εύρος`. There is no stemming.
+- `Settlements` and `Rules of use` carry **no** `Term:` line, on purpose. They
+  are descriptions of a group of facts rather than named concepts, so there is
+  nothing to anchor and A-1 stays silent about them.
+- The three subtopics with no cards — `Relief and the crater`, `Storm surge and
+  the Ashwind warning stages` and `Right of way in the Kestrel Deep` — carry
+  none either. The line is inert without cards, and it is written when the
+  cards arrive.
+
+**A-2, the orphan.** Every item enumerated in a `#list(...)` back has to be
+named by some other card in the same file. Card `Y4H26` in
+`cards/geography.yaml` lists all five islands, and `Skarn` and `Bellhorn` used
+to appear nowhere else in that file. Card `ZRKBA`'s back was reworded to say
+where the mail boat takes the goods, which names both — again without adding a
+card.
+
+**Both failing cases live in `tmp_path`, not in `broken/`.**
+`check_project.py` reads `<project>/cards/*.yaml` and
+`<project>/catalog/topics.md` and nothing else, so it never looks inside
+`broken/`; a card file placed there would not be checked at all. The red cases
+are therefore built in temporary projects by `tests/test_check_project.py`, and
+`broken/README.md` gains no row for either mode — that file documents how
+`lernkarten check` and the build react, which is a different question.
+
 ## Where the content comes from
 
 The subject — the Kestrel Islands, their tide cycle and their flag signals — is

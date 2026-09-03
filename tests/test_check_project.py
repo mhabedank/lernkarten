@@ -161,7 +161,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 31
+    assert counts["cards"] == 32
 
 
 def test_the_demo_project_passes_on_the_command_line():
