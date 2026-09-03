@@ -72,11 +72,19 @@ folders; a single target with unrelated *strands* wants areas.
 
 ## Depth
 
-`depth` sets how far the cards go, so pick it deliberately:
+`depth` is a **ceiling, not a slice**. It names the *highest* kind of card the
+deck carries, and every level includes the ones below it: `expert` implies
+`working` implies `awareness`. An `expert` deck therefore still carries the
+cards that name the concepts and the cards that put them to use — it goes
+further than a `working` deck, it does not start later than one.
 
 - `awareness` — recognise the term and say what it is for
-- `working` — use it unsupervised, decide with it
-- `expert` — argue the edge cases and the trade-offs
+- `working` — all of the above, and use it unsupervised, decide with it
+- `expert` — all of the above, and argue the edge cases and the trade-offs
+
+Pick it deliberately: it decides where the deck *stops*, never where it begins.
+A deck that jumped straight to the edge cases would test judgement about
+concepts it never named.
 
 ## Re-runs
 
