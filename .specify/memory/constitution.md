@@ -297,11 +297,38 @@ attachments — is *generated* from Typst sources in
 whole test corpus stays reviewable as text and the git history stays free of
 blobs.
 
-The one deliberate exception is the brand PNGs under `assets/`, which are
-committed because nobody should have to run a renderer to read the README.
+The exceptions are a **named list**, and this is the whole of it:
+
+| Path | Why it is committed | Regenerable? |
+|---|---|---|
+| `assets/*.png` | the brand renders — nobody should have to run a renderer to read the README | **yes**, `assets/brand/*.typ` → `scripts/render_brand.py` |
+| `assets/fonts/*.ttf` | the three faces the build ships, so a card prints the same everywhere | no, and nothing could generate them — they are redistributable upstream files under the OFL |
+| `assets/card-box.pdf` | the printable card box — nobody should have to run a renderer to print a box either | **no. See below.** |
+
+The first row is the original exception and the weakest one: those PNGs have
+Typst sources in this repository and a script that rebuilds them, so committing
+them trades *regeneration effort* and nothing else. Principle IX can still call
+`assets/brand/*.typ` their source of truth.
+
+**`assets/card-box.pdf` is not that case, and this rule must not be read as
+though it were.** It has no source here at all. It was designed and physically
+folded outside this repository, and nothing in a checkout can reproduce it: the
+exception gives up *regenerability*, not merely convenience. What stands in for a
+source is the physical validation and a checksum pinned in
+`tests/test_repo_hygiene.py`, so "unchanged" is a rule rather than a hope. It
+follows that **Principle IX now has one standing counterexample** — this file is
+a generated artifact that is also the source of truth, because no other exists.
+That is a cost the project accepted knowingly (`specs/007-card-box/spec.md`,
+*Accepted Trade-offs*), not an oversight, and a second one should not be admitted
+by pointing at this one.
+
+The list is checked, not merely written: a committed binary under `assets/` that
+no row names fails `tests/test_repo_hygiene.py`. Nothing else is exempt — the
+test corpus stays generated.
 
 *Source: `.gitignore`, `scripts/make_testdata.py`, `docs/testing.md`
-("generated, not versioned"), `scripts/render_brand.py`.*
+("generated, not versioned"), `scripts/render_brand.py`,
+`tests/test_repo_hygiene.py`.*
 
 ### IX. Sources of truth, never generated artifacts
 
@@ -585,7 +612,24 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.6.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-08-20
+**Version**: 2.7.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-09-01
+
+*2.7.0 — Principle VIII's exception becomes a named list, and admits what it
+costs. VIII said "the one deliberate exception is the brand PNGs" while
+`assets/fonts/*.ttf` had been committed all along — eight binaries in total that
+the rule did not name, so the principle and the repository had been contradicting
+each other silently. A list nothing checks is prose; this one is now asserted by
+`tests/test_repo_hygiene.py`, which fails on any committed binary under `assets/`
+that no row names.
+
+The new entry, `assets/card-box.pdf`, is **not** the same case as the PNGs and
+the list says so. The PNGs have Typst sources and a render script: committing
+them buys convenience. The box has no source in this repository and cannot be
+rebuilt from one, so the exception gives up regenerability — which means
+Principle IX acquires a standing counterexample rather than merely an untidy
+edge. It is recorded here because the alternative was to let a future change cite
+"the brand PNGs precedent" for something the PNG precedent never covered. See
+[specs/007-card-box/spec.md](../../specs/007-card-box/spec.md).*
 
 *2.6.0 — the card is landscape, and the type floor says what it binds. Amendment
 2.5.0, one day old, stated the A8 card as 52.5 × 74.25 mm and called it "the same

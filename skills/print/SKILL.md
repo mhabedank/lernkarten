@@ -104,3 +104,8 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 - The card layout lives in `templates/card.typ`, the press sheet in
   `templates/cards.typ`. Change it there, never in the generated file, and read
   `docs/design.md` first.
+- Once the cards are cut they are a loose stack. Tell the user that
+  `assets/card-box.pdf` is a cut-and-fold box on one A4 sheet — 160–250 gsm,
+  print at 100 %, holds about 90 cards. Say **which deck it fits**: `--grid a8`
+  at the default margin. It does not take an `a7` card, and `a7` is the default,
+  so a user who did not pass `--grid` should not print the box.

@@ -263,6 +263,12 @@ also draw), and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a
 
 | 20 | print | at `--grid a8`, read the card at arm's length | **the type-size question**: A8 renders the whole card at ~0.70, so reading text is 7.67 pt against A7's 11 pt. `docs/design.md` sets the floor because Archivo "survives 11 pt on cheap paper"; this asks whether it survives 7.67. Include the Greek and Cyrillic cards — they fall back to New Computer Modern, whose apertures differ, and will fail first |
 
+Steps 34–39 cover the printable card box. Only 39 needs a Claude session; 34
+needs the deployed site rather than a checkout, and 35–38 need a printer, a
+photocopier and about twenty minutes. They are the whole verification of an
+artifact that has no source in this repository — see
+[design.md, *The box*](design.md#the-box).
+
 Steps 1–14 need a Claude session in the demo folder; 15–20 only need the
 command. If a printer is not at hand, 16–18 can be judged from the PDF: hold
 page 1 and page 2 against each other in a viewer at 100 %. Step 20 can be read
@@ -296,6 +302,12 @@ Open `docs/index.html` straight off disk. No server, no build.
 | 31 | Chromium, Firefox, Safari | repeat rows 20, 23 and 25 in each | the same in all three. CI has no browser leg, so this is the only place the claim is checked |
 | 32 | above 1080 px and at 360 px | the section notes, the anatomy list, the printing descriptions, the rules list and the three principles, after the type floor was raised to 15 px | nothing reflows into a heading row, no column loses its measure, and the three heading rows of row 25 are still equal. The size itself is asserted by `test_reading_text_is_never_below_the_screen_floor`; what a test cannot see is whether the extra line a paragraph gained landed somewhere ugly |
 | 33 | github.com, an ordinary laptop window | the `README.md` opening block, rendered — then follow the link | the link to the live page is visible without scrolling past the intro paragraph; it reads as an invitation to *look*, not one more thing to read; and `https://mhabedank.github.io/lernkarten/` loads. `test_the_readme_points_a_newcomer_at_the_landing_page` asserts that the link is in the opening block and where in it — it cannot tell you whether anybody sees it, whether the wording invites, or whether the page is still there |
+| 34 | the deployed landing page | follow the box download link on `https://mhabedank.github.io/lernkarten/` | a PDF downloads. **This is the only check that the box is reachable at all.** `test_the_pages_workflow_publishes_the_box` reads `pages.yml` as text; CI never runs the workflow, so a YAML error or a wrong path merges green and shows up here and nowhere else |
+| 35 | a printer, 160–250 gsm card stock | print `assets/card-box.pdf` at 100 % — scaling off, "actual size" — then measure the printed ruler | it reads the length it states. Print it again with "fit to page" on and the same bar is visibly short: that is the guard working, and it is the one failure a home printer reliably produces |
+| 36 | scissors, a bone folder or a ruler, a glue stick | cut the solid lines, pre-crease the dashed folds, glue the labelled tabs in the printed order, then fill it with a deck built at `--grid a8` | a box that closes, with the cards in it. Nothing in the suite can tell you a folded box is square — the SHA-256 pin only says the sheet has not changed since the last time somebody did this |
+| 37 | a black-only photocopy of the sheet, and someone who has not seen the colour version | ask them to point out every cut and every fold | they get all of them, from the legend and the dash patterns alone. This is `docs/design.md`'s closing rule at its most literal: get it wrong here and a reader cuts where they should have folded |
+| 38 | the landing page and the README | read the box paragraph as somebody who ran `lernkarten build` without `--grid` | it is clear *before* any cutting that this box does not fit their A7 deck. `test_the_box_download_says_which_deck_it_fits` asserts the words are present; only a reader can say whether they land in time |
+| 39 | a Claude session that has just run `/print` | read what it says about the cut cards | it names the box and says which grid it fits. Run output leaves nothing on disk, so no check in `check_project.py` can assert this (constitution XI) — it is named here instead of being left implicit |
 
 Row 33 is the odd one out. It is read on github.com rather than off disk, and
 its subject is `README.md`, not the page. It sits here because what it checks
