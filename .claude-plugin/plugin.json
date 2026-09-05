@@ -2,7 +2,7 @@
   "name": "lernkarten",
   "displayName": "Lernkarten",
   "description": "Turn folders, PDFs, a Zotero library or web pages into printable flashcards",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "author": { "name": "Martin Habedank", "url": "https://github.com/mhabedank" },
   "homepage": "https://github.com/mhabedank/lernkarten",
   "repository": "https://github.com/mhabedank/lernkarten",
