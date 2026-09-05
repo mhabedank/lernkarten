@@ -95,6 +95,68 @@ branches use: `fix:`, `feat:`, `skill:`, `build:`, `docs:`, `ci:`, `test:`,
 build: make the page margin configurable
 ```
 
+## Releases
+
+Versions are [semantic](https://semver.org). The number describes what changed
+for **someone using the plugin**, not how much work it was to write. The commit
+prefix does not decide it — a `feat:` commit can ship in a patch, and has.
+
+One question settles it: **did the documentation already promise this?**
+
+- **Patch** — the tool said it did something and did not actually do it.
+  Fixing that is a patch however much code it takes, and whatever new machinery
+  the fix needs in order to work.
+- **Minor** — the tool can now do something it never claimed it could. A key
+  you can write, a flag you can pass, an artifact you get back.
+- **Major** — not yet. Before `1.0.0` a breaking change rides in a minor, and
+  the release notes say plainly what breaks.
+
+Every release so far, decided by that question:
+
+| | What shipped | |
+|---|---|---|
+| `0.7.0` | pictures on a card | nothing ever offered pictures — **minor** |
+| `0.7.1` | `fetch` could not reach the web | it was supposed to — **patch** |
+| `0.7.2` | the card box published | the tool itself behaves identically — **patch** |
+| `0.7.3` | `depth` read as a slice, not a ceiling | `depth` was *documented* as a ceiling — **patch** |
+
+`0.7.3` is the one to remember, because it looks like a minor and is not. It
+added an optional `Term:` key to the catalog format and two new checks to
+`check_project.py` — but the key exists only so the fix can work, and the
+behaviour it restores was already written down. **New machinery in service of a
+fix is still a fix.** It was released as `0.8.0` first and the tag had to be
+withdrawn.
+
+Something optional whose absence means the previous behaviour never forces a
+minor by itself. Ask what a user can do now that they could not do before. If
+the answer is "nothing — it just works the way it said it did", it is a patch.
+
+### Cutting one
+
+A release is its own pull request, `build/release-X-Y-Z`, bumping the version
+and nothing else; a feature branch never carries the bump. Three files hold the
+version, and `scripts/check_docs.py` fails the *Skills & docs* job if they drift
+apart:
+
+- `pyproject.toml`
+- `.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`
+
+Once that is merged, tag `main` and publish:
+
+```bash
+git tag -a v0.7.3 -m "v0.7.3 — one line on what changed"
+git push origin v0.7.3
+gh release create v0.7.3 --verify-tag --notes-file <notes>
+```
+
+Push the tag before creating the release: `--target <sha>` fails with
+`Release.target_commitish is invalid`.
+
+Write the notes for someone who has never used the tool. Say what went wrong in
+their terms and what it cost them — the ticket and the pull request are where
+the mechanism belongs.
+
 ## What to aim for
 
 - **Language**: English, everywhere — code, comments, docstrings, docs and
