@@ -12,6 +12,7 @@ The archipelago itself — islands, relief and settlements.
 ### The five islands
 Names, sizes and populations of the inhabited islands, and what makes Torvig
 the gateway to the archipelago.
+Term: The five islands, five inhabited islands
 References: [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
 
 ### Relief and the crater
@@ -33,15 +34,18 @@ Also covers: Right of way in the Kestrel Deep (cards in cards/signals.yaml)
 ### Rhythm of the tide
 Semidiurnal tide, the length of the tidal day and the daily shift of high
 water.
+Term: Rhythm of the tide, Tidenrhythmus, παλίρροια
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
 ### Range and the rule of twelfths
 Tidal range, spring and neap values, and how the rise is distributed over the
 six hours of the flood.
+Term: Tidal range, rule of twelfths, εύρος, правило двенадцатых
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
 ### Chart datum and the Ovray rule
 What the charted heights refer to, and when Ovray Cove can be entered.
+Term: Chart datum, нуля глубин
 Related: Right of way in the Kestrel Deep
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md),
 [kestrel-islands](../knowledge/field-notes/kestrel-islands.md)
@@ -58,10 +62,12 @@ PDF, and `/cards` follows the catalog, so the German subtopics belong here too.
 
 ### Tidenrhythmus
 Halbtägige Tide, Länge des Tidentags, tägliche Verschiebung des Hochwassers.
+Term: Tidenrhythmus
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
 ### Tidenhub
 Spring- und Nipptidenhub in Torvig Harbour und die Zwölftelregel.
+Term: Tidenhub
 References: [tide-cycle](../knowledge/field-notes/tide-cycle.md)
 
 ## Signals, flags and the radio
@@ -69,6 +75,7 @@ The flag code of the harbours, for the days the radio is down.
 
 ### The six flags
 What each of the six flags means.
+Term: The six flags
 References: [signal-code](../knowledge/field-notes/signal-code.md)
 
 ### Rules of use

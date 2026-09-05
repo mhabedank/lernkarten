@@ -161,7 +161,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 31
+    assert counts["cards"] == 32
 
 
 def test_the_demo_project_passes_on_the_command_line():
@@ -854,7 +854,7 @@ def test_a_two_parent_subtopic_counts_once(tmp_path):
 
 def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
     """C-9 again: an `Also covers:` line is a topic attribute, not a heading."""
-    subtopics, marked = check_project.check_catalog(
+    subtopics, marked, terms = check_project.check_catalog(
         project(tmp_path, catalog=GRAPH_CATALOG), check_project.Report()
     )
     assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
@@ -1383,3 +1383,232 @@ def test_a_subtopic_with_both_kinds_is_not_warned_about(tmp_path):
     )
     report = check(with_figure(project(tmp_path, cards=cards)))
     assert not [w for w in report.warnings if "text-only card" in w], report.warnings
+
+
+# --- deck anchors and orphaned list items (007-deck-anchors) ----------------
+
+TERM_CATALOG = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+Term: Rhythm of the tide
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+TERM_CATALOG_TWO_SUBTOPICS = (
+    TERM_CATALOG
+    + """
+### Slack water
+The pause at the turn of the tide.
+References: [a](../knowledge/field-notes/a.md)
+"""
+)
+
+ANCHORED_CARDS = (
+    GOOD_CARDS
+    + """  - subtopic: 'Rhythm of the tide'
+    front: 'What is the rhythm of the tide?'
+    back: 'Two high and two low waters in a tidal day, each about 50 minutes later.'
+    source: 'Field notes'
+"""
+)
+
+CARDS_ANCHORED_UNDER_ANOTHER_SUBTOPIC = (
+    GOOD_CARDS
+    + """  - subtopic: 'Slack water'
+    front: 'What is the rhythm of the tide?'
+    back: 'Two high and two low waters in a tidal day, each about 50 minutes later.'
+    source: 'Field notes'
+"""
+)
+
+LIST_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the four Ashwind warning stages.'
+    back: '#list([Green], [Amber], [Ashwind], [Full Ashwind])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What does the green stage mean?'
+    back: 'Nothing unusual — the predicted tide holds.'
+    source: 'Field notes'
+"""
+
+
+def test_a_subtopic_with_a_term_and_no_anchor_is_reported(tmp_path):
+    report = check(project(tmp_path, catalog=TERM_CATALOG))
+    said = messages(report)
+    assert "cards/tides.yaml" in said, said
+    assert "Rhythm of the tide" in said, said
+    assert "no card names the term" in said, said
+
+
+def test_an_anchor_card_silences_the_check(tmp_path):
+    """One card in the file names the term, so nothing is reported."""
+    report = check(project(tmp_path, catalog=TERM_CATALOG, cards=ANCHORED_CARDS))
+    assert not report.errors, messages(report)
+
+
+def test_a_card_under_another_subtopic_does_not_anchor_it(tmp_path):
+    """The haystack is the file's cards *under that subtopic* and nothing else."""
+    report = check(
+        project(
+            tmp_path,
+            catalog=TERM_CATALOG_TWO_SUBTOPICS,
+            cards=CARDS_ANCHORED_UNDER_ANOTHER_SUBTOPIC,
+        )
+    )
+    said = messages(report)
+    assert "cards/tides.yaml" in said, said
+    assert "Rhythm of the tide" in said, said
+    assert "no card names the term" in said, said
+
+
+def test_an_orphan_in_a_list_back_is_reported(tmp_path):
+    """An item enumerated on one card and named by no other card in the file."""
+    report = check(project(tmp_path, cards=LIST_CARDS))
+    said = messages(report)
+    assert "Amber" in said, said
+    assert "card 1" in said, said
+    assert "Green" not in said, said
+
+
+def test_a_subtopic_without_a_term_line_is_silent(tmp_path):
+    """No `Term:` line means the pre-feature behaviour: neither error nor warning."""
+    report = check(project(tmp_path))
+    assert not report.errors, messages(report)
+    assert not report.warnings, report.warnings
+
+
+def test_the_shipped_example_deck_has_no_orphan(tmp_path):
+    """The one automated guard on the maths gate (FR-013a)."""
+    example = (ROOT / "cards" / "example.yaml").read_text(encoding="utf-8")
+    root = with_figure(project(tmp_path, cards=example), "assets/example-figure.svg")
+    report = check(root)
+    assert not report.errors, messages(report)
+
+
+EMPTY_TERM_CATALOG = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+{line}
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+STRAY_COMMA_CATALOG = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+Term: Tidal day,,Tidenrhythmus
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+SELF_NAMING_LIST_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the Amber stage.'
+    back: '#list([Amber])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+    source: 'Field notes'
+"""
+
+
+@pytest.mark.parametrize(
+    ("back", "expected"),
+    [
+        ("#list([a], [b])", ["a", "b"]),
+        ("#list([a [b] c])", ["a [b] c"]),
+        (
+            "#list([$P(A) >= 0$ for every event $A$])",
+            ["$P(A) >= 0$ for every event $A$"],
+        ),
+        ("#list([a], [b]", None),
+        ("Two high and two low waters in a tidal day.", []),
+    ],
+)
+def test_list_items_extracts_what_is_between_the_brackets(back, expected):
+    """The scan is by bracket depth, so a nested `[...]` comes out whole."""
+    assert check_project._list_items(back) == expected
+
+
+@pytest.mark.parametrize(
+    ("item", "expected"),
+    [
+        ("$P(Omega) = 1$", None),
+        ("$sigma$-additivity for disjoint events", None),
+        ("Parallelisation — sectioning and voting", "parallelisation"),
+        ("Parallelisation – sectioning and voting", "parallelisation"),
+        ("Amber, the middle stage", "amber"),
+        ("Amber: the middle stage", "amber"),
+        ("Amber; the middle stage", "amber"),
+        ("Amber (the middle stage)", "amber"),
+        ("Amber - the middle stage", "amber"),
+        ("Half-mast signal", "half mast signal"),
+        ("Amber", "amber"),
+        ("нуля глубин", "нуля глубин"),
+    ],
+)
+def test_item_key_applies_the_maths_gate_then_the_head_term(item, expected):
+    """Any `$` skips the item; otherwise the head term is what gets matched."""
+    assert check_project._item_key(item) == expected
+
+
+@pytest.mark.parametrize(
+    ("haystack", "needle", "expected"),
+    [
+        ("what is the rhythm of the tide", "rhythm of the tide", True),
+        ("nipptidenhub", "tidenhub", False),
+        ("settlement", "settlements", False),
+        ("the chart datum is the reference level", "chart datum", True),
+    ],
+)
+def test_mentions_matches_a_token_sequence_not_a_substring(haystack, needle, expected):
+    """A substring is not a mention — only a whole run of tokens is."""
+    assert check_project._mentions(haystack, needle) is expected
+
+
+def test_an_empty_term_line_is_reported(tmp_path):
+    """Present but useless is not the same as absent (FR-011b, I-7)."""
+    blank = check(project(tmp_path, catalog=EMPTY_TERM_CATALOG.format(line="Term:")))
+    assert [e for e in blank.errors if "'Term:' is empty" in e], messages(blank)
+    second = tmp_path / "second"
+    second.mkdir()
+    parenthetical = check(
+        project(second, catalog=EMPTY_TERM_CATALOG.format(line="Term: (see above)"))
+    )
+    assert [e for e in parenthetical.errors if "'Term:' is empty" in e], messages(parenthetical)
+
+
+def test_a_term_line_with_a_stray_comma_still_parses(tmp_path):
+    """`catalog_names` drops the empty element, so `A,,B` is two aliases."""
+    report = check(project(tmp_path, catalog=STRAY_COMMA_CATALOG))
+    assert not report.errors, messages(report)
+
+
+def test_an_anchor_in_one_file_does_not_satisfy_another(tmp_path):
+    """A subtopic split over two files has to be anchored in both (FR-010)."""
+    root = project(tmp_path, catalog=TERM_CATALOG, cards=ANCHORED_CARDS)
+    (root / "cards" / "more-tides.yaml").write_text(GOOD_CARDS, encoding="utf-8")
+    report = check(root)
+    assert len(report.errors) == 1, messages(report)
+    assert report.errors[0].startswith("cards/more-tides.yaml"), messages(report)
+    assert "no card names the term" in report.errors[0], messages(report)
+
+
+def test_an_item_named_only_on_its_own_card_is_still_an_orphan(tmp_path):
+    """The haystack excludes the enumerating card (I-5)."""
+    report = check(project(tmp_path, cards=SELF_NAMING_LIST_CARDS))
+    said = messages(report)
+    assert "card 1: 'Amber' is enumerated and never named" in said, said
