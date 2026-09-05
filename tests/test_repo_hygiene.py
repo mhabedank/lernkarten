@@ -506,3 +506,37 @@ def test_contributing_names_the_files_that_carry_the_version():
     )
     missing = [name for name in checked if name not in text]
     assert not missing, f"CONTRIBUTING.md does not name every file carrying the version: {missing}"
+
+
+def test_whole_deck_page_counts_are_derived_not_typed():
+    """A typed page count is why the demo deck could not grow.
+
+    `tests/test_e2e.py` asserts how many pages the whole demo deck fills. Written
+    as a literal, every one of those assertions goes silently wrong the moment a
+    card is added — which is what pinned the deck at 32 cards while #49 was
+    built, and made a test-file inconvenience decide what the fixture could
+    contain. Derived from DEMO_CARD_COUNT, adding a card updates them by itself.
+    """
+    text = (ROOT / "tests" / "test_e2e.py").read_text(encoding="utf-8")
+    for name in ("DEMO_A7_PAGES", "DEMO_A8_PAGES"):
+        assert name in text, f"{name} is not defined — whole-deck page counts are still typed"
+
+    # Literal comparisons that remain must be about a locally built deck, never
+    # about *CARDS. These are the only ones allowed, each named by its subject.
+    allowed = {
+        "12 cards at 4 x 4",
+        "12 cards at 2 x 4",
+        "14 cards at 4 x 4",
+        "signals.yaml",
+        "one_figure_card",
+        "one_deck",
+    }
+    offenders = []
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if not re.search(r"pdf_pages\([a-z_]+\)\s*==\s*\d+", line):
+            continue
+        window = "\n".join(lines[max(0, i - 12) : i + 1])
+        if "*CARDS" in window and not any(a in window for a in allowed):
+            offenders.append(f"{i + 1}: {line.strip()}")
+    assert not offenders, "whole-deck page counts typed as literals:\n" + "\n".join(offenders)
