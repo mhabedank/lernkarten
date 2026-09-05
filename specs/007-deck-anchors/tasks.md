@@ -429,22 +429,22 @@ CHK125).
 
 <!-- parallel-group: 7 -->
 
-- [ ] T034 [P] `ruff check . && ruff format --check .` — no per-file ignore added, ruff not loosened (constitution XII). Read-only.
-- [ ] T035 [P] `pytest` — the full suite, green. Read-only.
-- [ ] T036 [P] `lernkarten check cards/example.yaml` — exit 0. `cards/example.yaml` is **unchanged** by this feature, so this is the ordinary schema-and-typeset gate and nothing more. It is **not** the FR-013a detector: `bin/lernkarten` imports `engine`, `deps`, `cardid` and `build_pdf` and never `check_project`, so `lernkarten check` cannot report an orphan whatever the maths gate does. The detectors are T007a (automated) and T039 (by hand). Read-only.
+- [x] T034 [P] `ruff check . && ruff format --check .` — no per-file ignore added, ruff not loosened (constitution XII). Read-only.
+- [x] T035 [P] `pytest` — the full suite, green. Read-only.
+- [x] T036 [P] `lernkarten check cards/example.yaml` — exit 0. `cards/example.yaml` is **unchanged** by this feature, so this is the ordinary schema-and-typeset gate and nothing more. It is **not** the FR-013a detector: `bin/lernkarten` imports `engine`, `deps`, `cardid` and `build_pdf` and never `check_project`, so `lernkarten check` cannot report an orphan whatever the maths gate does. The detectors are T007a (automated) and T039 (by hand). Read-only.
 
 <!-- parallel-group: 8 -->
 
-- [ ] T037 [P] `python3 scripts/check_docs.py` — exit 0. Read-only.
-- [ ] T038 [P] `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exit 0, `32 cards, 0 warning(s)`. This is the CI invocation verbatim (`.github/workflows/ci.yml:120`), where a warning fails the build. Read-only.
-- [ ] T039 [P] `python3 scripts/check_project.py .` — exit 0 over the repo itself, confirming no orphan is reported in `cards/example.yaml` (quickstart §5). This is the FR-013a check run by hand; T007a is the same question asked by `pytest`, which is what makes it a gate rather than a habit. Expect one pre-existing warning, `sources.yaml: no source register yet` — it is not an error and exit stays 0. Read-only.
+- [x] T037 [P] `python3 scripts/check_docs.py` — exit 0. Read-only.
+- [x] T038 [P] `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exit 0, `32 cards, 0 warning(s)`. This is the CI invocation verbatim (`.github/workflows/ci.yml:120`), where a warning fails the build. Read-only.
+- [x] T039 [P] `python3 scripts/check_project.py .` — exit 0 over the repo itself, confirming no orphan is reported in `cards/example.yaml` (quickstart §5). This is the FR-013a check run by hand; T007a is the same question asked by `pytest`, which is what makes it a gate rather than a habit. Expect one pre-existing warning, `sources.yaml: no source register yet` — it is not an error and exit stays 0. Read-only.
 
 <!-- sequential -->
 
-- [ ] T040 `python3 scripts/make_testdata.py`, then `LERNKARTEN_E2E=1 pytest tests/test_e2e.py`. Run once before the PR. Sequential because `make_testdata.py` **writes** into `tests/fixtures/` and must not race the read-only gates above. Expect `DEMO_CARD_COUNT = 32` and every page-count assertion satisfied. SC-004, quickstart §7.
-- [ ] T041 Confirm no dependency moved: `git diff pyproject.toml requirements-dev.txt scripts/deps.py` is empty (FR-017, CHK126), and `git diff --stat` under `scripts/` touches `check_project.py` and nothing else (constitution V, VI).
-- [ ] T042 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. The fixture under `tests/fixtures/demo-project` is the one carve-out and every word added to it is invented Kestrel-archipelago material (constitution VII, CHK107).
-- [ ] T043 Push the branch and open the pull request against `main` (`main` rejects direct pushes). The description carries: the two pasted red failures from T008, the 31 → 32 count note, and the constitution VII note that the demo fixture changed.
+- [x] T040 `python3 scripts/make_testdata.py`, then `LERNKARTEN_E2E=1 pytest tests/test_e2e.py`. Run once before the PR. Sequential because `make_testdata.py` **writes** into `tests/fixtures/` and must not race the read-only gates above. Expect `DEMO_CARD_COUNT = 32` and every page-count assertion satisfied. SC-004, quickstart §7.
+- [x] T041 Confirm no dependency moved: `git diff pyproject.toml requirements-dev.txt scripts/deps.py` is empty (FR-017, CHK126), and `git diff --stat` under `scripts/` touches `check_project.py` and nothing else (constitution V, VI).
+- [x] T042 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. The fixture under `tests/fixtures/demo-project` is the one carve-out and every word added to it is invented Kestrel-archipelago material (constitution VII, CHK107).
+- [x] T043 Push the branch and open the pull request against `main` (`main` rejects direct pushes). The description carries: the two pasted red failures from T008, the 31 → 32 count note, and the constitution VII note that the demo fixture changed.
 
 ---
 
@@ -456,7 +456,7 @@ apply. What is left is the prompt half.
 
 <!-- parallel-group: 9 -->
 
-- [ ] T044 [P] `docs/testing.md` rows `8l` and `11d`: read `skills/learning-goal/SKILL.md` § Depth and `skills/cards/SKILL.md` cold, and say the three things SC-006 asks for. Read-only.
+- [x] T044 [P] `docs/testing.md` rows `8l` and `11d`: read `skills/learning-goal/SKILL.md` § Depth and `skills/cards/SKILL.md` cold, and say the three things SC-006 asks for. Read-only.
 - [ ] T045 [P] `docs/testing.md` row `12-iii`: `python3 scripts/demo.py ~/lernkarten-demo --raw`, drive `/cards` in a real Claude session, and watch the new step run `python3 scripts/check_project.py .` and report (SC-008). Writes only into the scratch folder.
 
 ---
