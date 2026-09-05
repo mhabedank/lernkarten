@@ -45,16 +45,36 @@ after they were drawn:
   page exists for.
 - The wording of the four house rules, and of the daily loop.
 
-## Why the dividers are not larger than a card
+## How big a divider may be
 
-Worth recording, because "make them 1–2 mm bigger so you can feel them" is the
-obvious first idea and it fails on two independent counts.
+Recorded because the arithmetic is what settled it, and it is easy to redo
+wrong.
 
 The box (`docs/design.md` § The box) is **73 × 52 mm** inside against a
-**71.75 × 50 mm** A8 card: 1.25 mm of clearance across, 2 mm up. A divider 2 mm
-larger does not go in on either axis, and one grown only in height reaches
-51.5 mm against a 52 mm opening — a jam, for a protrusion too small to feel.
+**71.75 × 50 mm** A8 card: 1.25 mm of clearance across, 2 mm up. So 2 mm larger
+on both axes does not go in at all, and width has nothing to gain anyway —
+cards stand on their long edge and the box is looked into from above.
 
-And `card_size()` in `scripts/build_pdf.py:169` is `(sheet - 2 * margin) / grid`.
-Cards tile the print area with **no gutter**: a card's edge is its neighbour's
-edge, one cut line serves both, and there is no spare millimetre to grow into.
+**1.5 mm of extra height** reaches 51.5 mm against a 52 mm opening, which still
+slides and still sits below the rim.
+
+The sheet permits exactly that and nothing more. `card_size()` in
+`scripts/build_pdf.py:169` is `(sheet - 2 * margin) / grid`: cards tile the
+print area with **no gutter**, so a wider divider collides with the card beside
+it, while a taller one collides only with the row above or below — and below the
+bottom row there is already a gutter, the page margin. Hence: bottom row, growing
+down, no second grid.
+
+At `--margin 0` there is no margin to grow or bleed into, and dividers fall back
+to exact card size.
+
+## What simplex costs
+
+`templates/cards.typ:63-70` mirrors **columns** for the back pages, never rows,
+so "down" is the same paper edge on both faces at either `--sides` value.
+
+What changes under `--sides simplex` is registration: the stack is turned by
+hand and re-fed, which is routinely 1–2 mm off and may be skewed. The colour
+band has to stay at every cut edge under a 2 mm back-face offset — that is a
+floor under its width — and the bleed runs as far as the page margin allows
+rather than only as far as the 1.5 mm of growth.
