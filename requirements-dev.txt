@@ -6,7 +6,7 @@ pytest>=9.1.1
 ruff==0.16.2
 # Writes the one JPEG in the test fixture (scripts/make_testdata.py). Replaces a
 # sips/magick/convert lottery that only ever paid out on macOS.
-pillow>=11,<13
+pillow>=12.3.0,<13
 # The runtime dependency, listed here too so a checkout can run the tests without
 # waiting for scripts/deps.py to fetch it. scripts/deps.py holds the real pin.
 pyyaml==6.0.3
