@@ -475,3 +475,34 @@ def test_the_readme_names_the_box():
         "README.md does not name the box — it is a shipped artifact and the readme "
         "describes what the project produces"
     )
+
+
+def test_contributing_says_how_the_version_is_chosen():
+    """The rule lived only in git history, and inferring it went wrong once.
+
+    v0.7.3 was first released as v0.8.0 because the pull request carried a
+    `feat:` prefix, and the tag had to be withdrawn. The prefix describes the
+    commit; the version describes what changed for a user. If that is not
+    written down, the next release decides it by archaeology again.
+    """
+    text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    assert "## Releases" in text, "CONTRIBUTING.md does not say how a release is versioned"
+    for word in ("patch", "minor"):
+        assert word in text.lower(), f"the versioning rule does not mention {word}"
+
+
+def test_contributing_names_the_files_that_carry_the_version():
+    """A fourth version file would leave the instructions quietly wrong.
+
+    `scripts/check_docs.py` fails CI when the three drift apart, so a
+    contributor who bumps only the ones CONTRIBUTING.md happens to name gets a
+    red build and no idea why.
+    """
+    text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    checked = {"pyproject.toml", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json"}
+    docs = (ROOT / "scripts" / "check_docs.py").read_text(encoding="utf-8")
+    assert all(name in docs for name in checked), (
+        "check_docs.py no longer compares these three files — this test is stale"
+    )
+    missing = [name for name in checked if name not in text]
+    assert not missing, f"CONTRIBUTING.md does not name every file carrying the version: {missing}"
