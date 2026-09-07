@@ -301,9 +301,9 @@ lernkarten build cards/*.yaml -o output/cards.pdf
 Then print at **100 % scale**. On a printer that does both sides: **duplex,
 "flip on long edge"**. On a one-sided one, build it again with `--sides
 simplex` and print the two page ranges the build names, turning the stack over
-on the long edge in between. Either way, cut the long line down the middle
-first, then the three across — the card frames and the crop marks in the margin
-show you where. Front and back end up exactly on top of each other.
+on the long edge in between. Either way, cut where the crop marks point:
+three lines down and three across at the default `a8` grid, one down and three
+across at `a7`. The card frames show you where. Front and back end up exactly on top of each other.
 
 What comes out is described band by band in [design.md](design.md): topic and
 subtopic in the header, one prompt in the field, the card id and `1/2` or `2/2`
@@ -325,7 +325,7 @@ lernkarten build cards/*.yaml --topic 'Statistics' --subtopic 'Bayes'
 # Validate only, write no PDF (this is what CI uses)
 lernkarten check cards/*.yaml
 
-# Borderless printing: full A7 cards instead of 100 × 71.75 mm
+# Borderless printing: 74.25 × 52.5 mm at a8, 105 × 74.25 at a7
 lernkarten build cards/*.yaml --margin 0
 
 # Override the language of files that do not declare one

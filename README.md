@@ -152,7 +152,8 @@ sheet's front and back sit on consecutive pages:
    which does not change when the `a8` grid turns the page. Short edge puts every back upside
    down. A one-sided printer wants `--sides simplex` instead, below
 2. **100 % scale** — not "fit to page", which shifts fronts off their backs
-3. Cut the long line down the middle first, then the three across
+3. Cut the three lines down and the three across — that is the default `a8`
+   grid; at `a7` it is one line down and three across
 
 **On a one-sided printer**, ask for the other order and print it in two passes:
 
@@ -178,9 +179,10 @@ long edge, put it back in the tray and print the second — at 100 % scale both
 times. If your printer stacks pages face-up, print the second range in reverse
 page order; every print dialog offers it.
 
-By default a 5 mm page margin is left free (cards: 100 × 71.75 mm) so printers
-with a non-printable edge do not clip anything, and crop marks in that margin
-show you where to cut. Borderless printers get the full 105 × 74.25 mm (≈ A7)
+By default a 5 mm page margin is left free (cards: 71.75 × 50 mm at the default
+`a8` grid, 100 × 71.75 mm at `a7`) so printers with a non-printable edge do not
+clip anything, and crop marks in that margin show you where to cut. Borderless
+printers get the full 74.25 × 52.5 mm at `a8`, or 105 × 74.25 mm (≈ A7) at `a7`,
 with `--margin 0`; any other value works too, via `--margin <mm>`. `--no-logo`
 prints the cards without the mark and the wordmark.
 
@@ -192,8 +194,9 @@ check the printed ruler, cut, fold, glue. It holds about 90 cards, and it is
 also on the [landing page](https://mhabedank.github.io/lernkarten/).
 
 It fits a deck printed at `--grid a8` with the **default margin** (cards
-71.75 × 50 mm). An `a7` card is 100 mm wide and will not go in — and `a7` is the
-default grid, so check which one you printed before you cut the box out.
+71.75 × 50 mm). An `a7` card is 100 mm wide and will not go in, so check
+which grid you printed at before you cut the box out. The default is `a8`; a
+deck that pins `a7` prints the larger card, which this box will not take.
 
 ### Compartments, so the box does the scheduling
 

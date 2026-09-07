@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Flashcard build: YAML card files -> print-ready PDF.
 
-A4 with 8 cards per page by default (2 x 4, 105 x 74.25 mm — DIN A7), or 16
-with --grid a8 (4 x 4, 74.25 x 52.5 mm — DIN A8, on a landscape sheet). The
+A4 with 16 cards per page by default (4 x 4, 74.25 x 52.5 mm — DIN A8, on a
+landscape sheet), or 8 with --grid a7 (2 x 4, 105 x 74.25 mm — DIN A7). The
 card is landscape at both, and a8 renders the whole card at a uniform scale.
 Backs are column-mirrored, so turning a sheet on its long edge puts each back
 behind its front. --sides decides the page order: duplex (the default) pairs
@@ -792,7 +792,7 @@ def main():
         metavar="COLSxROWS",
         help="cards per A4 sheet: 2x4 (A7, 8 up) or 4x4 (A8, 16 up); the aliases a7 and a8 "
         "work too. Overrides the 'grid' key in the card files "
-        "(default: what they say, else 2x4)",
+        "(default: what they say, else 4x4)",
     )
     p.add_argument(
         "--sides",
