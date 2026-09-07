@@ -936,3 +936,54 @@ def test_the_block_is_always_placeable():
         for count in (3, 4):
             page, positions = build_pdf.divider_block(cards, count, A8, 5.0)
             assert page >= 0 and len(positions) == count
+
+# --- A8 as the default grid (#84) -------------------------------------------
+
+
+def test_the_scale_reference_is_the_a7_card_and_not_the_default_grid():
+    """FR-002 — the one thing this change can break silently.
+
+    `card_scale` measures every grid against a reference. If that reference is
+    spelled `DEFAULT_GRID`, moving the default moves it too, and every A7 card
+    grows by 39 % at the default margin (1.394) and 41 % at `--margin 0`
+    (1.414) — type, bands, insets and note rules with it. `grid: a7` in the
+    file would not protect against it, because the file names the grid, not the
+    reference.
+
+    The numbers below are today's and must survive the default moving.
+    """
+    a7, a8 = build_pdf.GRIDS["2x4"], build_pdf.GRIDS["4x4"]
+    expected = {0.0: 0.7071, 5.0: 0.6970, 10.0: 0.6857}
+    for margin, a8_scale in expected.items():
+        assert build_pdf.card_scale(a7, margin) == pytest.approx(1.0), (
+            f"the A7 card is the reference, so it is 1.0 at margin {margin}"
+        )
+        assert build_pdf.card_scale(a8, margin) == pytest.approx(a8_scale, abs=5e-4), (
+            f"A8 at margin {margin} must keep the factor it has today"
+        )
+
+
+def test_the_default_and_the_reference_are_two_different_constants():
+    """They were one name, which is how the trap above was set."""
+    assert build_pdf.REFERENCE_GRID == build_pdf.GRIDS["2x4"], (
+        "the card design is drawn at A7 and 11 pt is defined there"
+    )
+    assert build_pdf.DEFAULT_GRID == build_pdf.GRIDS["4x4"], (
+        "an absent grid: key means A8 — the size the card box fits"
+    )
+
+
+def test_an_absent_grid_key_means_a8():
+    """FR-001. resolve_grid() falls back to the default when nothing says."""
+    assert build_pdf.resolve_grid([("deck.yaml", None)]) == build_pdf.GRIDS["4x4"]
+    assert build_pdf.resolve_grid([]) == build_pdf.GRIDS["4x4"]
+
+
+def test_a_stated_grid_and_a_flag_still_win_over_the_default():
+    """FR-004/FR-005 — unchanged, and asserted because the default moved."""
+    a7 = build_pdf.GRIDS["2x4"]
+    assert build_pdf.resolve_grid([("deck.yaml", a7)]) == a7
+    assert build_pdf.resolve_grid([("deck.yaml", None)], "a7") == a7
+    with pytest.raises(ValueError):
+        build_pdf.resolve_grid([("a.yaml", a7), ("b.yaml", build_pdf.GRIDS["4x4"])])
+
