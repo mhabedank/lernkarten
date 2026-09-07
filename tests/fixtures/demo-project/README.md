@@ -68,10 +68,10 @@ have no place in a git history, so they are `.gitignore`d and rebuilt from
 their text sources instead — which also means you can read and review every
 byte of the test data as text.
 
-## The two deck-level checks
+## The three deck-level checks
 
-`scripts/check_project.py` asks two questions of the deck that no schema can
-ask, and the fixture is written so that both of them pass — and so that the
+`scripts/check_project.py` asks three questions of the deck that no schema can
+ask, and the fixture is written so that all of them pass — and so that the
 interesting borderline cases are visible in the material rather than hidden in
 a test.
 
@@ -107,12 +107,27 @@ to appear nowhere else in that file. Card `ZRKBA`'s back was reworded to say
 where the mail boat takes the goods, which names both — again without adding a
 card.
 
-**Both failing cases live in `tmp_path`, not in `broken/`.**
+**E-1, the counted front.** A front that announces a count — "name the five
+islands" — promises a back with five items, and a `#list(...)` back that
+enumerates another number is an error. Card `Y4H26` in `cards/geography.yaml`
+is the passing case: five announced, five enumerated. Two cards sit on the
+borderline and are silent on purpose:
+
+- `NKQK0` in `cards/signals.yaml` announces **two** counts — *"which two of the
+  six flags"* — so no rule can say which number a back would answer to. Its
+  back is prose anyway. A front like this has a different problem, and it is
+  the double question rather than the count.
+- `F3M2Q` in `cards/tides.yaml` says *"the six hours of the flood"* and answers
+  in prose that itself counts (*"One twelfth, two, three, three, two, one"*).
+  With no `#list(...)` there is no second number to compare, and whether that
+  back should have been an enumeration is a judgement this check does not make.
+
+**All three failing cases live in `tmp_path`, not in `broken/`.**
 `check_project.py` reads `<project>/cards/*.yaml` and
 `<project>/catalog/topics.md` and nothing else, so it never looks inside
 `broken/`; a card file placed there would not be checked at all. The red cases
 are therefore built in temporary projects by `tests/test_check_project.py`, and
-`broken/README.md` gains no row for either mode — that file documents how
+`broken/README.md` gains no row for any of them — that file documents how
 `lernkarten check` and the build react, which is a different question.
 
 ## Where the content comes from

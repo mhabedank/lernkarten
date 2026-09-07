@@ -133,6 +133,12 @@ code, comments, docs and commit messages are written in English.
 ## Card style
 
 - One card = one fact/concept. No double questions.
+- **A counted front promises an enumerated back.** A front announcing a count
+  ("the four types", "the six steps") gets a `#list([…])` with exactly that
+  many items; `check_project.py` reports a mismatch as an error, reading digits
+  in every deck and number words in the deck's own `language:`. Commentary that
+  belongs to no item becomes its own card. There is no cap on the number of
+  items — the ~400 character back budget bounds it.
 - Front short (max. ~2 lines), back max. ~6 lines. Two cards beat one
   overloaded card.
 - **The budget is the same at every grid.** A denser grid renders the same card

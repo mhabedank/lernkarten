@@ -91,6 +91,29 @@ LIST_HEAD = "#list("
 # spaced (`Amber - the middle stage`) and not unspaced, or `sigma-additivity`
 # would be torn in half.
 ITEM_SEPARATOR = re.compile(r"[—–,:;]|\s\(|\s-\s")
+# A front that says "the four types" promises a back with four of them. The
+# number words are per language and never pooled: `elf` is eleven in a German
+# deck and a creature in an English one, and a check that reports an error
+# cannot afford a word that means a number in a deck that does not use it. A
+# language absent from the table is checked on digits alone, which is the
+# honest reach of a table nobody has written yet.
+COUNT_WORDS = {
+    "english": "two three four five six seven eight nine ten eleven twelve "
+    "thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty",
+    "german": "zwei drei vier fünf sechs sieben acht neun zehn elf zwölf "
+    "dreizehn vierzehn fünfzehn sechzehn siebzehn achtzehn neunzehn zwanzig",
+}
+COUNT_WORDS = {
+    language: {word: n for n, word in enumerate(words.split(), start=2)}
+    for language, words in COUNT_WORDS.items()
+}
+# Digits mean the same in every language, so they sit outside the table. The
+# range starts at two — a one-item `#list` is not an enumeration — and stops at
+# twenty, which keeps a year out of the reckoning without a rule about years.
+COUNT_DIGITS = {str(n): n for n in range(2, 21)}
+# Only a whole token announces a count. Nothing word-like and no hyphen may
+# touch it, so `three-body` and `Zwölftelregel` announce nothing at all.
+COUNT_TOKEN = re.compile(r"(?<![\w-])\w+(?![\w-])")
 
 
 class Report:
@@ -805,6 +828,64 @@ def _check_ids(cards, where, ids_seen, report, strict):
             )
 
 
+def _announced_count(front, language):
+    """The count a front promises — verbatim and as a number — or `None`.
+
+    Three ways to promise nothing. A front carrying a `$` is skipped outright:
+    the same maths gate `_item_key` applies, any `$` rather than a balanced
+    span, because `$S = {1, 2, 3}$` is full of numerals that count nothing.
+    A numeral touching a hyphen or a letter is not a token and is not read.
+    And a front announcing **two different** counts — "which two of the six
+    flags" — is left alone, because no rule can say which of them the back
+    answers to; that front has a different problem, and it is a double
+    question rather than a miscount.
+    """
+    text = str(front)
+    if "$" in text:
+        return None
+    words = COUNT_WORDS.get(language, {})
+    found = []
+    for match in COUNT_TOKEN.finditer(text):
+        token = match.group()
+        number = COUNT_DIGITS.get(token, words.get(token.lower()))
+        if number is not None:
+            found.append((token, number))
+    # The same count twice is still one promise; two different ones are none.
+    if not found or len({number for _, number in found}) != 1:
+        return None
+    return found[0]
+
+
+def _check_counts(where, cards, language, report):
+    """E-1: a front announces a count and its back enumerates another number.
+
+    The deterministic half of the promise, and only that half. A counted front
+    over a *prose* back is not reported here: with no enumeration there is no
+    second number to compare, and whether that back should have been a list is
+    a judgement this file does not make.
+
+    `i` is the card's position in the **unfiltered** list, for the reason
+    `_check_orphans` gives: one file answers to one numbering.
+    """
+    for i, card in enumerate(cards, start=1):
+        if not isinstance(card, dict) or "back" not in card:
+            continue
+        # `None` (unbalanced markup) and `[]` (no enumeration) are both "no
+        # list to count", exactly as A-2 reads them.
+        items = _list_items(str(card["back"]))
+        if not items:
+            continue
+        announced = _announced_count(card.get("front", ""), language)
+        if announced is None or announced[1] == len(items):
+            continue
+        report.error(
+            where,
+            f"card {i}: the front announces '{announced[0]}' and the back "
+            f"enumerates {len(items)} — a counted front is a promise about "
+            "the back, and the learner grades against it",
+        )
+
+
 def _check_orphans(where, cards, report):
     """A-2: nothing is introduced only inside a `#list(...)` back.
 
@@ -910,11 +991,14 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
             continue
         if not data.get("topic"):
             report.warn(where, "'topic' missing — the file name is used instead")
+        # Kept, not just validated: E-1 reads its number words per language,
+        # and an absent key prints in english, so it counts in english too.
+        language = "english"
         if not data.get("language"):
             report.warn(where, "'language' missing — printing falls back to english")
         else:
             try:
-                build_pdf.resolve_language(data["language"])
+                language = build_pdf.resolve_language(data["language"])
             except ValueError as e:
                 report.error(where, str(e))
         # The grid is optional and absent means A7, so only a value that is
@@ -1009,6 +1093,7 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)
+        _check_counts(where, data["cards"] or [], language, report)
         _check_orphans(where, data["cards"] or [], report)
     _note_pictures_at_a8(dense_with_pictures, report)
     for (where, picture, face), cards in figure_faces.items():
