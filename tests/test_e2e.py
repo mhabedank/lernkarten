@@ -760,9 +760,7 @@ def crop_marks_per_edge(path, index=0, margin=5.0, scale=8):
     def guide_pixels(box):
         patch = image.crop(tuple(int(v) for v in box)).getdata()
         return sum(
-            1
-            for p in patch
-            if sum((a - b) ** 2 for a, b in zip(p, GUIDE, strict=True)) <= 60**2
+            1 for p in patch if sum((a - b) ** 2 for a, b in zip(p, GUIDE, strict=True)) <= 60**2
         )
 
     return {
