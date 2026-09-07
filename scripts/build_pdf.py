@@ -195,13 +195,70 @@ def card_scale(grid, margin):
 
 
 def divider_block(card_count, count, grid, margin):
-    """Stub."""
-    return (0, [])
+    """Where the dividers go: (page index, one (x, y) in mm per divider).
+
+    Dividers are **not** grid cells. Two cells in one row share a cut line, and
+    two colours cannot both bleed across it — a divider would carry a strip of
+    its neighbour's colour on the edge they share. So the block is free-placed,
+    with `leitner.GAP_MM` between every pair of cut lines and between the block
+    and the paper edge, and then nothing is ever adjacent to a divider.
+
+    It sits in the free height below the cards where that fits, and opens a
+    further page where it does not. A fresh page always fits, so the block is
+    always placeable.
+
+    Positions are millimetres from the paper edge, which is what makes the
+    back-page reflection `sheet_w - x - w` (`templates/cards.typ` mirrors a
+    *card* by recomputing its column, and a free-placed divider has none).
+    """
+    rows = leitner.LAYOUT[count]
+    card_w, card_h = card_size(grid, margin)
+    gap = leitner.GAP_MM
+    sheet_w, sheet_h = sheet(grid)
+    block_h = len(rows) * (card_h + leitner.GROWTH_MM) + (len(rows) - 1) * gap
+
+    per_page = grid[0] * grid[1]
+    used_rows = min(-(-(card_count % per_page or per_page) // grid[0]), grid[1])
+    if card_count == 0:
+        used_rows = 0
+    filled_to = margin + used_rows * card_h
+    page = (card_count - 1) // per_page if card_count else 0
+    if card_count and filled_to + gap + block_h + gap > sheet_h:
+        page, filled_to = page + 1, 0.0
+    top = max(filled_to + gap, gap)
+
+    positions = []
+    for row, in_row in enumerate(rows):
+        width = in_row * card_w + (in_row - 1) * gap
+        left = (sheet_w - width) / 2
+        y = top + row * (card_h + leitner.GROWTH_MM + gap)
+        positions.extend((left + i * (card_w + gap), y) for i in range(in_row))
+    return page, positions
 
 
 def divider_record(number, of, x, y, grid, margin):
-    """Stub."""
-    return {}
+    """One divider, carrying its own text *and* its own geometry.
+
+    The geometry travels in the record rather than as template constants so
+    `templates/divider.typ` reads numbers and defines none — there is then one
+    place where a millimetre can be wrong.
+    """
+    card_w, card_h = card_size(grid, margin)
+    scale = card_scale(grid, margin)
+    return {
+        "kind": "divider",
+        "number": number,
+        "of": of,
+        "interval": leitner.INTERVALS[of][number - 1],
+        "rule": leitner.rules(of)[number - 1],
+        "colour": leitner.COLOURS[number - 1],
+        "x": x,
+        "y": y,
+        "w": card_w,
+        "h": card_h + leitner.GROWTH_MM,
+        "band": leitner.BAND_MM * scale,
+        "bleed": leitner.BLEED_MM * scale,
+    }
 
 
 def pages(count, grid):

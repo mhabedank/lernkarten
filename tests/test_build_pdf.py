@@ -14,9 +14,9 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import build_pdf
-import engine
-import leitner
+import build_pdf  # noqa: E402
+import engine  # noqa: E402
+import leitner  # noqa: E402
 
 
 def write(tmp_path, name, content):
@@ -841,6 +841,7 @@ def test_the_engine_set_and_the_network_set_are_not_the_same():
     assert set(build_pdf.IMAGE_FORMATS) < set(network), (
         "everything printable is downloadable, and the network set is strictly wider"
     )
+
 
 # --- the divider block (feat/leitner-compartments) --------------------------
 
