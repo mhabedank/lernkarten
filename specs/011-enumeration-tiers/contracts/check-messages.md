@@ -60,10 +60,13 @@ report.warn(
 are not all groups (data-model I-2).
 
 ```
-WARNING: cards/process.yaml: card 2: seven items in a flat list — past six,
-         group them into two or three labelled groups so recall has a
-         hierarchy rather than a queue
+WARNING: cards/process.yaml: card 2: 7 items in a flat list — past 5, group them
+         into two or three labelled groups so recall has a hierarchy rather than
+         a queue
 ```
+
+The count and the boundary are rendered as digits from `_enumeration_size` and
+`FLAT_MAX`, so the message cannot disagree with the constant the check used.
 
 ## E-3b — an enumeration that belongs on more than one card
 
@@ -71,8 +74,8 @@ WARNING: cards/process.yaml: card 2: seven items in a flat list — past six,
 grouped (data-model I-6).
 
 ```
-WARNING: cards/process.yaml: card 5: ten items on one card — write an anchor
-         card naming the groups and the total, and one card per group
+WARNING: cards/process.yaml: card 5: 10 items on one card — write an anchor card
+         naming the groups and the total, and one card per group
 ```
 
 **Only one of E-3a and E-3b ever fires for a card**: the tiers do not overlap.
@@ -100,7 +103,7 @@ item A-2 reports an unnamed **member**, never the label.
 
 ```
 back: '#list([*Discover*: alpha, beta])'   # nothing else names beta
-before → ERROR: card 1: 'alpha, beta' … (the head-term cut lands on 'discover')
+before → ERROR: card 1: '*Discover*: alpha, beta' is enumerated and never named
 after  → ERROR: card 1: 'beta' is enumerated and never named — no other card
          in this file mentions it
 ```
