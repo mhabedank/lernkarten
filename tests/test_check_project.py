@@ -1491,6 +1491,144 @@ def test_the_shipped_example_deck_has_no_orphan(tmp_path):
     assert not report.errors, messages(report)
 
 
+MISCOUNTED_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the four Ashwind warning stages.'
+    back: '#list([Green], [Amber], [Ashwind])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What do the stages below Full Ashwind mean?'
+    back: 'Green is quiet, Amber is a watch, Ashwind is a warning.'
+    source: 'Field notes'
+"""
+
+MISCOUNTED_GERMAN_CARDS = """topic: 'Signale'
+language: german
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Nenne die vier Ashwind-Warnstufen.'
+    back: '#list([Gruen], [Gelb], [Ashwind])'
+    source: 'Feldnotizen'
+  - subtopic: 'Rhythm of the tide'
+    front: 'Was bedeuten die Stufen unterhalb von Full Ashwind?'
+    back: 'Gruen ist ruhig, Gelb ist eine Wache, Ashwind ist eine Warnung.'
+    source: 'Feldnotizen'
+"""
+
+COUNTED_PROSE_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the four Ashwind warning stages.'
+    back: 'Green, Amber, Ashwind and Full Ashwind, in that order.'
+    source: 'Field notes'
+"""
+
+MATHS_FRONT_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'What is the stage set $S = {1, 2, 3, 4}$?'
+    back: '#list([Green], [Amber], [Ashwind])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What do the stages below Full Ashwind mean?'
+    back: 'Green is quiet, Amber is a watch, Ashwind is a warning.'
+    source: 'Field notes'
+"""
+
+TWO_COUNTS_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Which two of the six stages call for help?'
+    back: '#list([Ashwind], [Full Ashwind], [Green])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What do the stages below Full Ashwind mean?'
+    back: 'Green is quiet, Amber is a watch, Ashwind is a warning.'
+    source: 'Field notes'
+"""
+
+
+def test_a_counted_front_whose_list_is_short_is_reported(tmp_path):
+    """E-1: the front promises four items and the back enumerates three."""
+    report = check(project(tmp_path, cards=MISCOUNTED_CARDS))
+    said = messages(report)
+    assert "card 1" in said, said
+    assert "'four'" in said, said
+    assert "3" in said, said
+    # The second card names every item, so A-2 has nothing to say and this
+    # test cannot pass for the wrong reason.
+    assert "is enumerated and never named" not in said, said
+
+
+def test_a_counted_front_matching_its_list_is_silent(tmp_path):
+    """Four announced, four enumerated — the promise is kept."""
+    report = check(project(tmp_path, cards=LIST_CARDS))
+    assert "the front announces" not in messages(report), messages(report)
+
+
+def test_a_counted_front_in_german_is_reported(tmp_path):
+    """The number words follow the deck's own `language:` key."""
+    report = check(project(tmp_path, cards=MISCOUNTED_GERMAN_CARDS))
+    said = messages(report)
+    assert "card 1" in said, said
+    assert "'vier'" in said, said
+
+
+def test_a_counted_front_over_a_prose_back_is_not_a_count_finding(tmp_path):
+    """E-2 is not this check: with no enumeration there is no count to compare."""
+    report = check(project(tmp_path, cards=COUNTED_PROSE_CARDS))
+    assert "the front announces" not in messages(report), messages(report)
+
+
+def test_a_front_carrying_maths_is_never_counted(tmp_path):
+    """The same maths gate A-2 uses: any `$` and the front is left alone."""
+    report = check(project(tmp_path, cards=MATHS_FRONT_CARDS))
+    assert "the front announces" not in messages(report), messages(report)
+
+
+def test_a_front_announcing_two_counts_is_left_alone(tmp_path):
+    """Which of the two numbers the list answers to is not decidable."""
+    report = check(project(tmp_path, cards=TWO_COUNTS_CARDS))
+    assert "the front announces" not in messages(report), messages(report)
+
+
+@pytest.mark.parametrize(
+    ("front", "language", "expected"),
+    [
+        ("Name the four Ashwind warning stages.", "english", ("four", 4)),
+        ("Name the 4 Ashwind warning stages.", "english", ("4", 4)),
+        ("State the three Kolmogorov axioms.", "english", ("three", 3)),
+        ("Nenne die vier Warnstufen.", "german", ("vier", 4)),
+        ("Nenne die zwoelf Warnstufen.", "german", None),
+        ("Name the twelve warning stages.", "english", ("twelve", 12)),
+        # A German number word in an English deck is a word, not a count.
+        ("What is an elf?", "english", None),
+        ("Was ist ein Elf?", "german", ("Elf", 11)),
+        # Not a token: a hyphenated compound and a number inside a word.
+        ("What is the three-body problem?", "english", None),
+        ("What does Zwoelftelregel mean?", "german", None),
+        # Nothing to count.
+        ("How long is a tidal day?", "english", None),
+        ("What happened in 1990?", "english", None),
+        ("Name one warning stage.", "english", None),
+        # Two counts, and maths.
+        ("Which two of the six flags call for help?", "english", None),
+        ("What is the set $S = {1, 2, 3}$?", "english", None),
+        # The same count twice is still one count.
+        ("Name the three stages, all three of them.", "english", ("three", 3)),
+        # A language with no number table falls back to digits only.
+        ("Name the 5 stages.", "greek", ("5", 5)),
+        ("Name the five stages.", "greek", None),
+    ],
+)
+def test_announced_count_reads_the_front(front, language, expected):
+    assert check_project._announced_count(front, language) == expected
+
 EMPTY_TERM_CATALOG = """# Topics
 
 ## Tides
