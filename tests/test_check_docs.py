@@ -351,6 +351,7 @@ def test_the_shipped_page_agrees_with_the_module():
     check_docs.check_leitner_intervals(errors)
     assert not errors, errors
 
+
 def test_the_print_skill_offers_the_setup_command(monkeypatch):
     """Principle XI for a prompt change: the only assertable artifact.
 
@@ -364,7 +365,7 @@ def test_the_print_skill_offers_the_setup_command(monkeypatch):
     assert errors, "a print skill that never mentions the setup command must be reported"
     assert "lernkarten setup" in " ".join(errors)
 
+    monkeypatch.undo()
     errors = []
     check_docs.check_print_skill_relays_setup(errors)
     assert not errors, errors
-
