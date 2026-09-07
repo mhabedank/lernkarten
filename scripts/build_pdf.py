@@ -32,6 +32,7 @@ from pathlib import Path
 
 import cardid
 import engine
+import leitner
 import yamlio
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -191,6 +192,16 @@ def card_scale(grid, margin):
     cw, ch = card_size(grid, margin)
     ref_w, ref_h = card_size(DEFAULT_GRID, margin)
     return min(cw / ref_w, ch / ref_h)
+
+
+def divider_block(card_count, count, grid, margin):
+    """Stub."""
+    return (0, [])
+
+
+def divider_record(number, of, x, y, grid, margin):
+    """Stub."""
+    return {}
 
 
 def pages(count, grid):
