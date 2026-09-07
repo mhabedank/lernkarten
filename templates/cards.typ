@@ -72,7 +72,10 @@
 // One sheet, up to columns x rows cards. `mirror` flips the columns for the
 // back pages, which is what makes duplex line up at any grid.
 #let sheet(block-of-cards, render, mirror) = {
-  cropmarks
+  // Grid crop marks only where a card actually meets that line. A page holding
+  // only dividers gets none: the grid's marks would sit 4 mm inside a divider
+  // and invite a cut straight through it.
+  if block-of-cards.len() > 0 { cropmarks }
   for (position, one) in block-of-cards.enumerate() {
     let column = calc.rem(position, columns)
     let row = calc.quo(position, columns)

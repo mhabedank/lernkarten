@@ -32,6 +32,19 @@
     ))
     place(dx: band, dy: band, rect(width: w - 2 * band, height: h - 2 * band, fill: paper))
 
+    // The cut line, drawn *on* the divider at its own boundary.
+    //
+    // Without it there is nothing to cut to. The band bleeds `bleed` past the
+    // trim, so the visible colour edge is 3 mm too far out on every side — cut
+    // there and the divider comes out 6 mm too wide, which no longer enters a
+    // 73 mm box. Marks in the sheet margin only help someone with a guillotine
+    // and a straight edge; scissors need the line on the piece.
+    //
+    // This is the rule `assets/card-box.pdf` already follows and docs/design.md
+    // already states: cut is a solid stroke. You cut *on* the line, so what is
+    // left of it afterwards is a hairline at the very edge.
+    place(rect(width: w, height: h, stroke: 0.4pt * scale + on-band, fill: none))
+
     // The numeral, and the count it belongs to.
     place(dx: band + 3mm * scale, dy: band + 2mm * scale, text(
       font: display,
