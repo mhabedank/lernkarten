@@ -313,7 +313,7 @@ Open `docs/index.html` straight off disk. No server, no build.
 | 21 | 360 px wide | tap `install` | you land on the install section |
 | 22 | 360 px wide | keyboard only: tab to the control, press Enter | it opens; the links take focus in order |
 | 23 | 360 px, **JavaScript off** | repeat rows 20 and 21 | unchanged — the disclosure is CSS and markup, and nothing here needs script |
-| 24 | above 760 px | widen | the bar is one line: wordmark, four inline links, github. No control, no menu |
+| 24 | above 760 px | widen | the bar is one line: wordmark, four inline links, github. No control, no menu. **The four links sit on the same centre line as the wordmark and `github`** — check this against the previous commit rendered beside it, not from memory. It is the one thing row 24 did not name, and it is what [BUG-011](../specs/002-landing-page-fixes/bugs/BUG-011.md) shipped: the `<details>` wrapper swallowed the bar's height and the links hung 23 px too high, past this row, past three engines and past review |
 | 25 | above 1080 px | sections `01`, `03`, `04` | the three heading rows are the same height, none taller than its heading needs; each note is a full-width block under its band |
 | 26 | above 1080 px | the rules around each note | single everywhere — no doubled 4 px rule where band meets note, none missing |
 | 27 | above 1080 px | section `04 install` | the note is still light on ink, and the rule under it is `--sand`, not the default dark |
