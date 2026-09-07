@@ -254,16 +254,29 @@ it does, the commands that invoke it, and why it exists.
 travel is:
 
 ```
-deps, engine               ← leaves, import nothing local
-yamlio                     → deps (only to bootstrap PyYAML)
-build_pdf                  → engine, yamlio
-check_project              → build_pdf, yamlio
-check_docs                 → yamlio
-make_testdata              → engine
-demo                       → make_testdata
-render_brand               → engine
-zotero_ingest, zotero_stub → (no local imports)
+deps, engine, leitner              ← leaves, import nothing local
+zotero_ingest, zotero_stub         ←
+yamlio                             → deps (only to bootstrap PyYAML)
+cardid                             → yamlio
+figures                            → deps
+settings                           → leitner, yamlio
+setup_cmd                          → leitner, settings
+build_pdf                          → cardid, engine, leitner, settings, yamlio
+check_project                      → build_pdf, cardid, yamlio
+check_docs                         → leitner, yamlio
+make_testdata                      → engine
+demo                               → make_testdata
+render_brand                       → engine
 ```
+
+**This block is checked, not merely written.** `scripts/check_docs.py` derives
+the real graph from the import statements and fails the *Skills & docs* gate if
+the two disagree, in either direction. It had drifted before that check existed:
+`cardid` and `figures` were imported for several releases without appearing
+here, and so was `build_pdf → cardid`. A contributor writing an acyclicity test
+against *this document* would have produced a test that passed while the
+repository disagreed with it, which is precisely the failure the governance rule
+below is about.
 
 No cycles, and no import from `scripts/` into `tests/`. Whatever sits at the
 bottom of this graph must stay a leaf, because everything depends on it — today
@@ -369,11 +382,24 @@ committed failing, for the *right reason*, before the implementation. "Fails
 with ImportError" does not count as red; make it fail on the assertion.
 
 **In the model-driven half** (`skills/`): a prompt has no unit test, so the
-test-first artifact is a **check in `scripts/check_project.py` plus a case in
-`tests/test_check_project.py`** that fails against what the current prompt
+test-first artifact is a check that fails against what the current prompt
 produces. Then change the prompt until it passes. If no failing check can be
 written, the requirement is not yet specified sharply enough — go back to the
 spec, do not go forward to the prompt.
+
+**Which gate the check belongs in follows from what the rule is about**, and the
+two are easy to confuse because both read files a skill is responsible for:
+
+| The rule is about | The check goes in |
+|---|---|
+| what a skill **writes into a user's project** — a key in `sources.yaml`, a heading in `catalog/topics.md` | `scripts/check_project.py` + `tests/test_check_project.py` |
+| what a skill **says to the user**, or what its own `SKILL.md` must contain | `scripts/check_docs.py` + `tests/test_check_docs.py` |
+
+`check_project.py` validates a folder that belongs to the user and knows nothing
+about this repository; `check_docs.py` already owns `skills/*/SKILL.md`. Putting
+a rule about the prompt's own text into the project gate produces a check that
+can never see what it is checking — an assertion green by construction, which is
+the shape this principle exists to forbid.
 
 **Bug fixes**: reproduce first. The failing test names the culprit and stays in
 the suite forever.

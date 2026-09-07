@@ -369,3 +369,29 @@ def test_the_print_skill_offers_the_setup_command(monkeypatch):
     errors = []
     check_docs.check_print_skill_relays_setup(errors)
     assert not errors, errors
+
+
+def test_the_constitutions_import_graph_matches_the_real_imports():
+    """Principle VI documents the graph; nothing checked that it was true.
+
+    It drifted: `cardid` and `figures` existed and were imported for releases
+    without appearing in it, and `build_pdf -> cardid` with them. A contributor
+    writing an acyclicity test against the *document* would have produced a
+    test that passed while the repository disagreed with it — which is the
+    failure Principle VI's own governance clause is about.
+    """
+    errors = []
+    check_docs.check_import_graph(errors)
+    assert not errors, errors
+
+
+def test_a_module_missing_from_the_graph_is_reported(monkeypatch):
+    documented = check_docs.documented_graph()
+    dropped = dict(documented)
+    dropped.pop("build_pdf", None)
+    monkeypatch.setattr(check_docs, "documented_graph", lambda: dropped)
+
+    errors = []
+    check_docs.check_import_graph(errors)
+    assert errors, "a module the graph forgets must be reported"
+    assert "build_pdf" in " ".join(errors)
