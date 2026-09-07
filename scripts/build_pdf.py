@@ -572,16 +572,28 @@ def engine_inputs(margin, logo, grid, sides=DEFAULT_SIDES):
     ]
 
 
-def typeset(cards, target, margin, logo, grid, binary, workdir, sides=DEFAULT_SIDES):
-    """Runs the engine over `cards`. Returns (ok, message).
+def typeset(cards, target, margin, logo, grid, binary, workdir, sides=DEFAULT_SIDES, dividers=()):
+    """Runs the engine over `cards`, and over `dividers` beside them.
 
     `sides` defaults because offending_card() typesets one card at a time to
     find a culprit, and the order of a one-card document is not a question.
+
+    Cards and dividers stay two separate lists all the way to the engine. Six
+    places here read a card's own fields — `advise_about_ids`, `main_language`,
+    `payload`, `offending_card`, the page count and the closing summary — and
+    every one of them would raise on a divider, which has no `id` and no
+    `language`. A divider is not a card with extra keys; it is a different
+    thing that happens to be the same width.
     """
     for template in TEMPLATES.glob("*.typ"):
         shutil.copy(template, workdir / template.name)
     staged = stage_figures(cards, workdir)
-    (workdir / "cards.json").write_text(json.dumps(payload(cards, staged)), encoding="utf-8")
+    # A plain list when there are no dividers, so a deck that never asks for
+    # them hands the engine exactly the bytes it always did.
+    document = payload(cards, staged)
+    if dividers:
+        document = {"cards": document, "dividers": list(dividers)}
+    (workdir / "cards.json").write_text(json.dumps(document), encoding="utf-8")
     output = workdir / "cards.pdf"
     result = subprocess.run(
         [
