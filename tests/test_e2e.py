@@ -1254,9 +1254,8 @@ def test_a_back_whose_text_and_picture_do_not_fit_is_named(tmp_path):
     assert result.returncode == 0, "an overlong card still builds"
     assert "F3M2Q" in result.stderr and "does not fit" in result.stderr, result.stderr
 
-# --- the dividers through the real command (feat/leitner-compartments) -------
 
-DEMO_A8_PAGES = 4  # 31 cards at 16 up
+# --- the dividers through the real command (feat/leitner-compartments) -------
 
 
 def test_dividers_refuses_a_count_it_does_not_have(tmp_path):
@@ -1285,7 +1284,8 @@ def test_four_dividers_open_a_further_page_on_the_demo_deck(tmp_path):
     """SC-001: 31 cards fill three-and-a-bit rows of sheet 2.
 
     Far less than the 2.44 free card rows a two-row block needs, so the block
-    cannot share the sheet and opens page 3 — six pages against four.
+    cannot share the sheet and opens a further one. Both counts follow from
+    DEMO_CARD_COUNT; typing them would be the drift test_repo_hygiene forbids.
     """
     plain, with_dividers = tmp_path / "plain.pdf", tmp_path / "leitner.pdf"
     assert run("build", *CARDS, "-o", str(plain), "--grid", "a8").returncode == 0
@@ -1293,28 +1293,28 @@ def test_four_dividers_open_a_further_page_on_the_demo_deck(tmp_path):
 
     result = run("build", *CARDS, "-o", str(with_dividers), "--grid", "a8", "--dividers", "4")
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(with_dividers) == DEMO_A8_PAGES + 2
+    assert pdf_pages(with_dividers) == DEMO_A8_PAGES + 2, "one further sheet, so two pages"
 
 
 def test_three_dividers_share_a_sheet_with_a_short_deck(tmp_path):
     """FR-004/FR-012, the other branch, from the same corpus.
 
-    Seven cards is two rows at 16 up, which leaves more than the 1.25 rows a
-    one-row block of three needs — so the block costs no paper at all.
+    The Signals topic is two rows at 16 up, which leaves more than the 1.25
+    rows a one-row block of three needs — so the block costs no paper at all.
+    Compared against the same deck built without dividers, never against a
+    typed number: signals.yaml may grow.
     """
-    target = tmp_path / "short.pdf"
-    result = run(
-        "build", *CARDS, "-o", str(target), "--grid", "a8", "--topic", "Signals", "--dividers", "3"
-    )
+    plain, shared = tmp_path / "plain.pdf", tmp_path / "shared.pdf"
+    common = ("build", *CARDS, "--grid", "a8", "--topic", "Signals")
+    assert run(*common, "-o", str(plain)).returncode == 0
+    result = run(*common, "-o", str(shared), "--dividers", "3")
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(target) == 2, "the block shares the last sheet"
+    assert pdf_pages(shared) == pdf_pages(plain), "the block shares the last sheet"
 
 
 def test_the_run_counts_dividers_apart_from_cards(tmp_path):
     """FR-012a: a divider must never inflate the number the user wrote."""
-    result = run(
-        "build", *CARDS, "-o", str(tmp_path / "c.pdf"), "--grid", "a8", "--dividers", "4"
-    )
+    result = run("build", *CARDS, "-o", str(tmp_path / "c.pdf"), "--grid", "a8", "--dividers", "4")
     assert result.returncode == 0, result.stderr
     assert f"{DEMO_CARD_COUNT} cards" in result.stdout, result.stdout
     assert "4 dividers" in result.stdout, result.stdout
@@ -1324,10 +1324,18 @@ def test_the_run_says_which_paper_case_it_is_in(tmp_path):
     """FR-012: 'they cost no paper' is true only when the last sheet has room."""
     added = run("build", *CARDS, "-o", str(tmp_path / "a.pdf"), "--grid", "a8", "--dividers", "4")
     shared = run(
-        "build", *CARDS, "-o", str(tmp_path / "b.pdf"), "--grid", "a8",
-        "--topic", "Signals", "--dividers", "3",
+        "build",
+        *CARDS,
+        "-o",
+        str(tmp_path / "b.pdf"),
+        "--grid",
+        "a8",
+        "--topic",
+        "Signals",
+        "--dividers",
+        "3",
     )
-    assert "page" in added.stderr.lower(), added.stderr
+    assert "further sheet" in added.stderr.lower(), added.stderr
     assert added.stderr.count("NOTE:") >= 1, "advisories carry the NOTE: prefix"
     assert "no extra" in shared.stderr.lower() or "shares" in shared.stderr.lower(), shared.stderr
 
@@ -1339,4 +1347,3 @@ def test_dividers_do_not_change_a_deck_that_does_not_ask_for_them(tmp_path):
     assert run("build", *CARDS, "-o", str(after), "--grid", "a8").returncode == 0
     assert pdf_pages(before) == pdf_pages(after) == DEMO_A8_PAGES
     assert pdf_page_size_mm(before) == pdf_page_size_mm(after)
-

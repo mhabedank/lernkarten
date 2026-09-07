@@ -683,6 +683,28 @@ def warn_about_overflow(ids):
         )
 
 
+def advise_about_dividers(count, divider_page, card_pages, sides):
+    """Say which paper case the run is in, rather than implying the cheap one.
+
+    "The dividers cost no paper" is true only when the last sheet had room for
+    the block. When it did not, they open a further sheet — and under simplex
+    that sheet goes through the printer twice, which is the part a user plans
+    around rather than discovers.
+    """
+    if 2 * (divider_page + 1) <= card_pages:
+        print(
+            f"NOTE: the {count} dividers share the last sheet — no extra paper.",
+            file=sys.stderr,
+        )
+        return
+    fed = " and under --sides simplex it is fed twice" if sides == "simplex" else ""
+    print(
+        f"NOTE: the {count} dividers open a further sheet, because the last one "
+        f"had no room for the block{fed}.",
+        file=sys.stderr,
+    )
+
+
 def main():
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -733,11 +755,23 @@ def main():
         help="language of the cards, e.g. german or de — overrides what the card files say "
         f"(default: what they say, else {DEFAULT_LANGUAGE})",
     )
+    p.add_argument(
+        "--dividers",
+        type=int,
+        default=None,
+        metavar="N",
+        help="print N Leitner compartment dividers beside the cards: "
+        f"{' or '.join(str(n) for n in leitner.COMPARTMENT_COUNTS)}. Needs --grid a8, "
+        "because the card box fits nothing else",
+    )
     p.add_argument("--no-logo", action="store_true", help="print the cards without the logo mark")
     args = p.parse_args()
 
     if not 0 <= args.margin <= 20:
         p.error("--margin must be between 0 and 20 mm")
+    if args.dividers is not None and args.dividers not in leitner.COMPARTMENT_COUNTS:
+        allowed = " or ".join(str(n) for n in leitner.COMPARTMENT_COUNTS)
+        p.error(f"--dividers takes {allowed}, not {args.dividers}")
     override = None
     if args.language:
         try:
@@ -770,6 +804,16 @@ def main():
         grid = resolve_grid(declared, args.grid)
     except ValueError as e:
         sys.exit(f"ERROR: {e}")
+
+    # The dividers exist for the card box, and the box is 73 x 52 mm inside. An
+    # A7 card is 100 mm wide and can never be made to fit, so a flag asking for
+    # both is refused rather than quietly dropped: a flag is a request the user
+    # just made and can correct.
+    if args.dividers is not None and grid != GRIDS["4x4"]:
+        sys.exit(
+            f"ERROR: --dividers needs --grid a8, not {grid_name(grid)}; the card box "
+            "fits nothing else (docs/design.md, 'The box')"
+        )
     if override:
         for c in cards:
             c["language"] = override
@@ -779,27 +823,47 @@ def main():
     except engine.EngineError as e:
         sys.exit(f"ERROR: {e}")
 
+    dividers = ()
+    divider_page = None
+    if args.dividers is not None:
+        divider_page, positions = divider_block(len(cards), args.dividers, grid, args.margin)
+        dividers = [
+            dict(divider_record(n + 1, args.dividers, x, y, grid, args.margin), page=divider_page)
+            for n, (x, y) in enumerate(positions)
+        ]
+
     target = None if args.check else Path(args.output)
     with tempfile.TemporaryDirectory() as td:
         workdir = Path(td)
         ok, message = typeset(
-            cards, target, args.margin, not args.no_logo, grid, binary, workdir, args.sides
+            cards,
+            target,
+            args.margin,
+            not args.no_logo,
+            grid,
+            binary,
+            workdir,
+            args.sides,
+            dividers=dividers,
         )
         if not ok:
             report_failure(cards, message, args.margin, grid, binary, workdir)
             sys.exit(1)
         warn_about_overflow(overflowing(binary, workdir, args.margin, not args.no_logo, grid))
 
+    # Cards and dividers are counted apart. The card total is what the user
+    # wrote; a divider is generated and must never inflate it.
     page_count = pages(len(cards), grid)
+    if dividers:
+        page_count = max(page_count, 2 * (divider_page + 1))
+        advise_about_dividers(len(dividers), divider_page, pages(len(cards), grid), args.sides)
     languages = ", ".join(sorted({c["language"] for c in cards}))
+    made = f"{len(cards)} cards" + (f", {len(dividers)} dividers" if dividers else "")
     if args.check:
-        print(
-            f"OK: {len(cards)} cards valid ({languages}), "
-            f"test build succeeded ({page_count} pages)."
-        )
+        print(f"OK: {made} valid ({languages}), test build succeeded ({page_count} pages).")
     else:
         print(
-            f"OK: {len(cards)} cards ({languages}) -> {target} "
+            f"OK: {made} ({languages}) -> {target} "
             f"({page_count} pages, {print_order_note(page_count, args.sides)})."
         )
 
