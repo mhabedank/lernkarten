@@ -266,23 +266,42 @@ def test_the_desktop_bar_carries_its_height_down_to_the_link_row():
     re-breaks the moment the bar's own height changes. Each link in the chain has
     to be a flex container for the stretch to reach the row.
     """
+
     # Exact selectors, not `rules_for`'s substring match: a rule for something
     # *inside* `.nav__menu` would satisfy a fragment search while leaving the
     # wrapper itself a block, which is the defect rather than the fix.
-    desktop = {
-        selector.strip(): body.replace(" ", "")
-        for selector, body in _innermost_rules(media_block("min-width: 761px"))
-    }
-    for selector in (".nav__menu", ".nav__menu::details-content"):
-        body = desktop.get(selector, "")
-        # `display: flex` only. `flex: 1` is a flex *item* property — it says how
-        # the box behaves in its own parent, nothing about what it does to its
-        # children, and accepting it here would pass the exact defect BUG-011 is.
-        assert "display:flex" in body or "display:inline-flex" in body, (
-            f"{selector} is not a flex container above the breakpoint, so the bar's "
-            "height stops there and the nav links hang from the top edge instead of "
-            f"sitting on its centre line (FR-005, FR-018). Rule found: {body!r}"
-        )
+    def exact(css):
+        # Comments first: `_innermost_rules` does not know about them, so a rule
+        # with an explanation above it arrives with the whole comment glued to
+        # the front of its selector and matches nothing.
+        css = CSS_COMMENT.sub("", css)
+        return {selector.strip(): body.replace(" ", "") for selector, body in _innermost_rules(css)}
+
+    # `display: flex` only. `flex: 1` is a flex *item* property — it says how the
+    # box behaves in its own parent, nothing about what it does to its children,
+    # and accepting it here would pass the exact defect BUG-011 is.
+    def is_flex_container(body):
+        return "display:flex" in body or "display:inline-flex" in body
+
+    # `.nav__menu` is checked outside any media query, because the wrapper holds
+    # two things that both need the bar's height: the link row above the
+    # breakpoint, and the `menu` control below it. Scoping this to the desktop
+    # block is what left the control hanging from the ceiling on a phone.
+    unscoped = exact(re.sub(r"@media[^{]*\{.*?\n  \}", "", stylesheet(), flags=re.S))
+    assert is_flex_container(unscoped.get(".nav__menu", "")), (
+        ".nav__menu is not a flex container at every width, so the bar's height "
+        "stops at the wrapper. Above the breakpoint that drops the link row to the "
+        "top edge; below it, the `menu` control (FR-005, FR-018). "
+        f"Rule found: {unscoped.get('.nav__menu', '')!r}"
+    )
+
+    desktop = exact(media_block("min-width: 761px"))
+    assert is_flex_container(desktop.get(".nav__menu::details-content", "")), (
+        "::details-content is not a flex container above the breakpoint, so the "
+        "height stops one box short of the link row and the links hang from the top "
+        "edge instead of sitting on the bar's centre line (FR-005, FR-018). "
+        f"Rule found: {desktop.get('.nav__menu::details-content', '')!r}"
+    )
 
     # FR-018: the chain, never a hard-coded size on the row itself.
     banned = ("height", "padding-block", "padding-top", "line-height")

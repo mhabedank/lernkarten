@@ -310,9 +310,12 @@ typesetter, card text or a file on a user's disk. What does apply:
   text" means, which is what produced three incompatible readings inside this
   one spec.
 - **FR-018**: *(added 2026-09-08 by [BUG-011](bugs/BUG-011.md), giving FR-005 a
-  checkable form)* The nav's link row MUST derive its height from the bar rather
-  than from its own content, so that `align-items: center` has the bar's full
-  height to centre in. `.nav` is `align-items: stretch`, and before this feature
+  checkable form; **widened the same day** — see the note at the end)* Whatever
+  the nav's disclosure wrapper contains MUST derive its height from the bar
+  rather than from its own content, so that `align-items: center` has the bar's
+  full height to centre in. That is the **link row** above the breakpoint and the
+  **`menu` control** below it — one requirement, because it is one box swallowing
+  one property. `.nav` is `align-items: stretch`, and before this feature
   `.nav__links` was a direct flex child carrying `flex: 1`, which is where the
   centring came from. Wrapping it in `<details class="nav__menu">` (T009) moved
   `flex: 1` up to the wrapper and broke the chain: a `<details>` is a block
@@ -324,6 +327,15 @@ typesetter, card text or a file on a user's disk. What does apply:
   bands. This is the second time this feature has had to override
   `::details-content` for a property the wrapper silently swallowed; the first is
   recorded in the comment at `docs/index.html:340-346`.
+  **Widened 2026-09-08, during the cross-browser verification this bug reopened**:
+  measuring the *mobile* bar in Safari to close T039 showed the `menu` control
+  off its centre line by **21 px**, for the same reason and from the same commit.
+  T010 asked for the control to get "the same label treatment the existing nav
+  links have", and the existing links were centred — so this fails that task's own
+  intent, not merely this requirement. Scoping the fix to the desktop media query
+  would have fixed the half that was reported and shipped the half that was not.
+  The declaration therefore belongs on `.nav__menu` unscoped, and only
+  `::details-content` stays in the `min-width: 761px` block.
 
 ### Format Contracts *(mandatory — state "none" if untouched)*
 
@@ -407,12 +419,14 @@ strip's own geometry.
 - **SC-010**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md))* No rule in
   `docs/index.html` setting Archivo running prose declares a `font-size` below
   15 px, and `tests/test_landing_page.py` fails if one is added.
-- **SC-011**: *(added 2026-09-08 by [BUG-011](bugs/BUG-011.md))* Above 760 px
-  the nav link row is vertically centred in the bar: its top offset inside
-  `.nav__menu` equals `(bar height − row height) / 2` to within a pixel, matching
-  `.nav__home` and `.nav__gh`. Measured today it is **0 px against an expected
-  23 px** — an 18 px row at the top of a 63 px box. `tests/test_landing_page.py`
-  fails if the stretch chain FR-018 describes is broken again.
+- **SC-011**: *(added 2026-09-08 by [BUG-011](bugs/BUG-011.md), widened the same
+  day)* The contents of the nav's disclosure sit on the same centre line as
+  `.nav__home` and `.nav__gh`, on **both** sides of the breakpoint — the link row
+  above it, the `menu` control below it. Measured before the fix, in three
+  engines: the link row **−23 px** (an 18 px box in a 63 px bar) and the control
+  **−21 px** (17 px in 59 px). After it, 0 px in all three.
+  `tests/test_landing_page.py` fails if the stretch chain FR-018 describes is
+  broken again at either width.
 - **SC-009**: The four gates are green: `ruff check . && ruff format --check .`,
   `pytest`, `lernkarten check cards/example.yaml`,
   `python3 scripts/check_docs.py`.

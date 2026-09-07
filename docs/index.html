@@ -109,7 +109,15 @@
      sideways instead, with the scrollbar hidden — which meant links existed
      that nobody could see. So the links now collapse behind a control below the
      breakpoint, and the bar is still one line at rest. */
-  .nav__menu { min-width: 0; }
+  /* A flex container at every width, and the reason is the same on both sides
+     of the breakpoint: `.nav` is `align-items: stretch`, so this box is drawn
+     the full height of the bar — but a <details> is a block container, so it
+     swallows that height instead of passing it on. Above the breakpoint the
+     victim is the link row; below it, the `menu` control, which hung 21 px
+     too high for exactly as long as the links did. Whatever sits inside has
+     to be a flex item for `align-items: center` to have a full-height box to
+     centre in. */
+  .nav__menu { min-width: 0; display: flex; }
   .nav__menu > summary {
     display: flex; align-items: center; padding: 0 22px;
     list-style: none; cursor: pointer;
@@ -345,19 +353,17 @@
      lays the panel out at zero width. An engine that has never heard of the
      pseudo-element just drops that line, so no feature query is needed.
 
-     The `display: flex` on both is not decoration and is not redundant with the
-     `flex: 1` beside it — that one is a flex *item* property and says nothing
-     about what the box does to its children. `.nav` is `align-items: stretch`,
-     and the links are centred by giving `align-items: center` a full-height box
-     to work in. A <details> is a block container, so it swallows the stretched
-     height the way it swallowed the display above: without these two the row is
-     an 18 px line box at the top of a 63 px bar, which is how the links came to
-     hang from the ceiling once the disclosure was introduced. Each link in the
-     chain has to be a flex container for the height to reach the next one.
-     Never fix this with a height, a padding-block or a line-height on
-     `.nav__links` — those fake it at one bar height and break at the next. */
+     `::details-content` needs `display: flex` for the same reason `.nav__menu`
+     does one rule up — it is the second block box between the bar and the link
+     row, and the height has to cross both. It is not redundant with the `flex: 1`
+     beside it: that is a flex *item* property and says nothing about what a box
+     does to its children. Without this the row is an 18 px line box at the top of
+     a 63 px bar, which is how the links came to hang from the ceiling once the
+     disclosure was introduced. Never fix it with a height, a padding-block or a
+     line-height on `.nav__links` — those fake the centring at one bar height and
+     break at the next. */
   @media (min-width: 761px) {
-    .nav__menu { flex: 1; min-width: 0; display: flex; }
+    .nav__menu { flex: 1; min-width: 0; }
     .nav__menu > summary { display: none; }
     .nav__menu::details-content {
       content-visibility: visible !important;
