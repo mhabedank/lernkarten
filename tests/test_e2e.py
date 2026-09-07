@@ -26,6 +26,28 @@ DEMO = ROOT / "tests" / "fixtures" / "demo-project"
 CARDS = sorted(str(p) for p in (DEMO / "cards").glob("*.yaml"))
 DEMO_CARD_COUNT = 32
 
+# How many cards a press sheet holds, per grid.
+A7_UP, A8_UP = 8, 16
+
+
+def sheet_pages(cards, per_sheet=A7_UP):
+    """Pages a deck of `cards` fills: one sheet is two pages, and a part-full
+    sheet still prints both of them. 33 cards at 8 up is five sheets, not four
+    and a bit — which is the arithmetic every assertion below used to spell out
+    as a literal, and the reason the demo deck could not grow by one card."""
+    return 2 * -(-cards // per_sheet)
+
+
+DEMO_A7_PAGES = sheet_pages(DEMO_CARD_COUNT)
+DEMO_A8_PAGES = sheet_pages(DEMO_CARD_COUNT, A8_UP)
+
+# A sheet is two pages, so the sheet count is what the simplex order is built on.
+DEMO_A7_SHEETS = DEMO_A7_PAGES // 2
+DEMO_A8_SHEETS = DEMO_A8_PAGES // 2
+
+# cards/tides.yaml on its own, which is what `--topic Tides` selects.
+TIDES_CARD_COUNT = 11
+
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import engine  # noqa: E402
@@ -60,6 +82,31 @@ def pdf_pages(path):
     return max(int(c) for c in counts)
 
 
+# --- the arithmetic the assertions below rely on --------------------------
+
+
+@pytest.mark.parametrize(
+    "cards, per_sheet, pages",
+    [
+        (1, A7_UP, 2),  # one card still costs a whole sheet, front and back
+        (8, A7_UP, 2),  # exactly full
+        (9, A7_UP, 4),  # one over, and the second sheet is whole
+        (32, A7_UP, 8),  # the demo deck today
+        (33, A7_UP, 10),  # one more card is two more pages, not none
+        (32, A8_UP, 4),  # the same deck, denser grid
+        (16, A8_UP, 2),
+        (17, A8_UP, 4),
+    ],
+)
+def test_sheet_pages_rounds_a_part_full_sheet_up(cards, per_sheet, pages):
+    """The rule the page-count assertions are derived from.
+
+    The 32/33 pair is the one that matters: it is why adding a single card to
+    the demo project used to mean hand-editing a dozen assertions.
+    """
+    assert sheet_pages(cards, per_sheet) == pages
+
+
 # --- the happy path -------------------------------------------------------
 
 
@@ -78,10 +125,10 @@ def test_build_writes_a_pdf_with_one_sheet_per_eight_cards(tmp_path):
     result = run("build", *CARDS, "-o", str(target))
     assert result.returncode == 0, result.stderr
     assert target.exists()
-    # 32 cards at 8 up -> 4 sheets, each with a front and a back page.
-    # The count is DEMO_CARD_COUNT; issue #23 inherited '31' from this comment.
-    assert pdf_pages(target) == 8
-    assert "8 pages, duplex" in result.stdout
+    # Both counts follow from DEMO_CARD_COUNT. This comment used to state the
+    # deck size itself, and issue #23 inherited a stale '31' from it.
+    assert pdf_pages(target) == DEMO_A7_PAGES
+    assert f"{DEMO_A7_PAGES} pages, duplex" in result.stdout
 
 
 def test_check_writes_no_pdf(tmp_path):
@@ -94,8 +141,8 @@ def test_a_topic_filter_narrows_the_build(tmp_path):
     target = tmp_path / "tides.pdf"
     result = run("build", *CARDS, "--topic", "Tides", "-o", str(target))
     assert result.returncode == 0, result.stderr
-    assert "11 cards" in result.stdout, result.stdout
-    assert pdf_pages(target) == 4
+    assert f"{TIDES_CARD_COUNT} cards" in result.stdout, result.stdout
+    assert pdf_pages(target) == sheet_pages(TIDES_CARD_COUNT)
 
 
 def test_a_subtopic_filter_narrows_the_build(tmp_path):
@@ -115,7 +162,7 @@ def test_the_layout_options_reach_the_typesetter(tmp_path):
     borderless = tmp_path / "borderless.pdf"
     assert run("build", *CARDS, "-o", str(plain)).returncode == 0
     assert run("build", *CARDS, "--margin", "0", "--no-logo", "-o", str(borderless)).returncode == 0
-    assert pdf_pages(plain) == pdf_pages(borderless) == 8
+    assert pdf_pages(plain) == pdf_pages(borderless) == DEMO_A7_PAGES
     assert plain.read_bytes() != borderless.read_bytes(), (
         "--margin/--no-logo changed nothing in the output"
     )
@@ -252,7 +299,9 @@ def test_a_broken_file_does_not_take_the_healthy_ones_down(tmp_path):
     result = run("build", *CARDS, str(DEMO / "broken" / "missing-fields.yaml"), "-o", str(target))
     assert result.returncode == 0, result.stderr
     assert "ERROR" in result.stderr
-    assert pdf_pages(target) == 10, "32 demo cards + the one intact card of the broken file"
+    assert pdf_pages(target) == sheet_pages(DEMO_CARD_COUNT + 1), (
+        "the demo cards plus the one intact card of the broken file"
+    )
 
 
 def test_an_impossible_margin_is_refused(tmp_path):
@@ -416,8 +465,8 @@ def test_a8_puts_sixteen_cards_on_a_sheet(tmp_path):
     target = tmp_path / "a8.pdf"
     result = run("build", *CARDS, "-o", str(target), "--grid", "a8")
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(target) == 4
-    assert "4 pages, duplex" in result.stdout
+    assert pdf_pages(target) == DEMO_A8_PAGES
+    assert f"{DEMO_A8_PAGES} pages, duplex" in result.stdout
 
 
 def test_the_a_series_alias_is_the_same_grid(tmp_path):
@@ -425,7 +474,7 @@ def test_the_a_series_alias_is_the_same_grid(tmp_path):
     explicit = tmp_path / "explicit.pdf"
     assert run("build", *CARDS, "-o", str(alias), "--grid", "a8").returncode == 0
     assert run("build", *CARDS, "-o", str(explicit), "--grid", "4x4").returncode == 0
-    assert pdf_pages(alias) == pdf_pages(explicit) == 4
+    assert pdf_pages(alias) == pdf_pages(explicit) == DEMO_A8_PAGES
     # Not a byte comparison: the engine stamps a CreationDate, so two builds of
     # the same input already differ. The layout is what has to match.
     assert card_grid_per_page(alias) == card_grid_per_page(explicit), (
@@ -438,8 +487,8 @@ def test_no_grid_flag_leaves_the_default_untouched(tmp_path):
     target = tmp_path / "default.pdf"
     result = run("build", *CARDS, "-o", str(target))
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(target) == 8
-    assert "8 pages, duplex" in result.stdout
+    assert pdf_pages(target) == DEMO_A7_PAGES
+    assert f"{DEMO_A7_PAGES} pages, duplex" in result.stdout
 
 
 def test_the_backs_are_mirrored_across_the_requested_columns(tmp_path):
@@ -482,7 +531,7 @@ def test_a_zero_margin_cuts_to_the_a_series_sizes(tmp_path):
         )
         sizes[flag] = pdf_pages(target)
     # A7 is 8 up and A8 is 16 up, so the same deck halves its sheets.
-    assert sizes["a7"] == 8 and sizes["a8"] == 4
+    assert sizes["a7"] == DEMO_A7_PAGES and sizes["a8"] == DEMO_A8_PAGES
 
 
 def test_an_unsupported_grid_is_refused(tmp_path):
@@ -742,17 +791,19 @@ def face_marks_per_page(path):
 def test_simplex_puts_every_front_before_any_back(tmp_path):
     """SC-001, read off the artifact rather than inferred.
 
-    32 cards at 8 up is 4 sheets. Simplex means pages 1-4 are the four fronts
-    and pages 5-8 the four backs — not front, back, front, back.
+    The demo deck at 8 up is DEMO_A7_SHEETS sheets. Simplex means the first
+    half of the pages are the fronts and the second half the backs — not
+    front, back, front, back.
     """
     target = tmp_path / "simplex.pdf"
     result = run("build", *CARDS, "-o", str(target), "--sides", "simplex")
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(target) == 8
+    assert pdf_pages(target) == DEMO_A7_PAGES
 
     marks = face_marks_per_page(target)
-    assert marks[:4] == [{"1/2"}] * 4, f"pages 1-4 must be fronts only: {marks}"
-    assert marks[4:] == [{"2/2"}] * 4, f"pages 5-8 must be backs only: {marks}"
+    s = DEMO_A7_SHEETS
+    assert marks[:s] == [{"1/2"}] * s, f"pages 1-{s} must be fronts only: {marks}"
+    assert marks[s:] == [{"2/2"}] * s, f"pages {s + 1}-{2 * s} must be backs only: {marks}"
 
 
 def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
@@ -765,7 +816,7 @@ def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
     assert run("build", *CARDS, "-o", str(target), "--sides", "simplex").returncode == 0
     pages = card_grid_per_page(target)
     sheets = len(pages) // 2
-    assert sheets == 4, f"expected 4 sheets, got {len(pages)} pages"
+    assert sheets == DEMO_A7_SHEETS, f"expected {DEMO_A7_SHEETS} sheets, got {len(pages)} pages"
     for n in range(sheets):
         front, back = pages[n], pages[sheets + n]
         assert front, f"no ids read off front page {n}"
@@ -779,12 +830,13 @@ def test_simplex_groups_the_faces_at_the_denser_grid_too(tmp_path):
     target = tmp_path / "a8.pdf"
     result = run("build", *CARDS, "-o", str(target), "--sides", "simplex", "--grid", "a8")
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(target) == 4
-    assert face_marks_per_page(target) == [{"1/2"}, {"1/2"}, {"2/2"}, {"2/2"}]
+    assert pdf_pages(target) == DEMO_A8_PAGES
+    s = DEMO_A8_SHEETS
+    assert face_marks_per_page(target) == [{"1/2"}] * s + [{"2/2"}] * s
 
     pages = card_grid_per_page(target)
-    for n in range(2):
-        front, back = pages[n], pages[2 + n]
+    for n in range(s):
+        front, back = pages[n], pages[s + n]
         assert all(len(row) <= 4 for row in front), f"a row holds more than 4 cards: {front}"
         assert back == [list(reversed(row)) for row in front], (
             f"sheet {n}: a8 backs are not mirrored across four columns"
@@ -842,15 +894,18 @@ def test_the_simplex_build_says_which_pages_to_print(tmp_path):
     """SC-004: the ranges are computed from the sheets, and add up to the count."""
     result = run("build", *CARDS, "-o", str(tmp_path / "s.pdf"), "--sides", "simplex")
     assert result.returncode == 0, result.stderr
-    assert "8 pages, simplex" in result.stdout, result.stdout
-    assert "pages 1-4" in result.stdout and "pages 5-8" in result.stdout, result.stdout
+    assert f"{DEMO_A7_PAGES} pages, simplex" in result.stdout, result.stdout
+    s = DEMO_A7_SHEETS
+    assert f"pages 1-{s}" in result.stdout and f"pages {s + 1}-{2 * s}" in result.stdout, (
+        result.stdout
+    )
 
 
 def test_the_duplex_build_still_says_flip_on_long_edge(tmp_path):
     """FR-008: the default path's wording is what existing projects rely on."""
     result = run("build", *CARDS, "-o", str(tmp_path / "d.pdf"))
     assert result.returncode == 0, result.stderr
-    assert "8 pages, duplex, flip on long edge" in result.stdout, result.stdout
+    assert f"{DEMO_A7_PAGES} pages, duplex, flip on long edge" in result.stdout, result.stdout
 
 
 # --- the id on the printed card (feat/card-id) -------------------------------
@@ -1107,7 +1162,7 @@ def test_a_figure_deck_costs_no_extra_page(tmp_path):
     target = tmp_path / "figures.pdf"
     result = run("build", *CARDS, "-o", str(target))
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(target) == 2 * -(-DEMO_CARD_COUNT // 8)
+    assert pdf_pages(target) == DEMO_A7_PAGES
 
 
 def test_a_picture_scales_with_the_card_at_a8(tmp_path):
