@@ -408,6 +408,103 @@ def test_the_hidden_attribute_outranks_any_display_a_class_sets():
 
 
 # ---------------------------------------------------------------------------
+# Feature 012 — the two-column sections carry their weight.
+#
+# These four assert *arrangement*, never proportion. A column that is half empty
+# is geometry, and this module never lays the page out. What it can reach is the
+# arrangement that causes the proportion — the same trade FR-008 of feature 002
+# made for the bands, where the fix was not asserting a heading row's height but
+# asserting that no note is a child of a band.
+# ---------------------------------------------------------------------------
+
+
+def test_both_card_faces_stand_and_no_control_hides_one():
+    """A11 — section 02 shows the card it is talking about (FR-001, FR-002).
+
+    Asserts absence twice, and the two halves are not the same kind of claim:
+
+    - **The toggle half is red today** and is what this feature turns green.
+    - **The `hidden` half is green today** and is a regression guard, like A8.
+      It cannot be red, because no card carries `hidden` in the *markup* — the
+      deleted script applied it at runtime, and this module never runs one. What
+      it guards is the next contributor writing the attribute into the source by
+      hand.
+
+    Saying which is which matters: a suite where every assertion is presented as
+    red evidence, and one of them never could be, is a suite that has stopped
+    meaning what constitution XI asks it to mean.
+
+    The two halves are still written together because either alone passes a
+    half-done removal: delete the button while something still sets `hidden` and
+    one card is gone with no way back; delete the script while the button stays
+    and the page carries a dead control. The runtime route is closed by A14,
+    which drops the script count to zero — with no script on the page, `hidden`
+    can only arrive the way this assertion checks.
+    """
+    cards = one(tree(), cls="anatomy__cards")
+    hidden = [
+        node.tag for node in find(cards) if "hidden" in node.attrs
+    ]
+    assert not hidden, (
+        f"these elements in the card column carry `hidden`: {hidden}. Both faces "
+        "have to stand — the explanations beside them name parts that differ "
+        "between front and back"
+    )
+
+    toggles = find(tree(), cls="toggle")
+    assert not toggles, (
+        f"the page still declares {len(toggles)} toggle control(s). The button and "
+        "the script that drove it go together; one without the other is either a "
+        "dead control or a hidden card"
+    )
+
+
+def test_the_card_box_is_not_buried_in_the_printing_rules():
+    """A12 — the box leaves the column it did not belong to (FR-003).
+
+    Written in the idiom of `test_no_band_note_is_a_child_of_its_band` and
+    `test_every_band_note_follows_its_band`, because it is the same move: a
+    self-contained block sitting inside a container it out-measures, lifted to a
+    full-width sibling. US2 of feature 002 did it for the section notes; this
+    does it for the card box, which had grown to 410 px inside a 420 px column.
+    """
+    columns = one(tree(), cls="print")  # the two-column flex row
+    rules = one(columns, cls="print__rules")
+    boxes = find(tree(), cls="print__box")
+    assert boxes, "the printing section no longer has a card box block at all"
+    for box in boxes:
+        assert rules not in ancestors(box), (
+            "the card box is still inside .print__rules. It is a different subject "
+            "from the three printing rules — what you keep the cards in, not how "
+            "you print them — and it is what tipped that column to 3.6x the one "
+            "beside it"
+        )
+
+    assert next_element_sibling(columns) is boxes[0], (
+        "the card box must follow .print as its next sibling, so it spans the "
+        "full width beneath both columns rather than trailing one of them"
+    )
+
+
+def test_the_cutting_diagram_sits_with_the_sheets_it_draws():
+    """A13 — pictures with pictures (FR-004).
+
+    The diagram is a drawing of a sheet with cut lines on it. It belongs beside
+    the two drawings of sheets, not stranded under 400 px of prose about printer
+    settings — and moving it is what takes the sheets column from 327 px of
+    content in a 1176 px column to 547 px in 627 px.
+    """
+    sheets = one(tree(), cls="print__sheets")
+    cuts = find(tree(), cls="print__cut")
+    assert cuts, "the cutting diagram is gone from the page entirely"
+    for cut in cuts:
+        assert sheets in ancestors(cut), (
+            "the cutting diagram is not in the sheets column. It is the third "
+            "picture in a section whose other two pictures are there"
+        )
+
+
+# ---------------------------------------------------------------------------
 # Cross-cutting — the page stays what docs/design.md says it is
 # ---------------------------------------------------------------------------
 
@@ -469,20 +566,35 @@ def test_reading_text_is_never_below_the_screen_floor():
 
 
 def test_the_page_stays_one_self_contained_file():
-    """A8 — a regression guard, green from the start.
+    """A8, restated as A14 by feature 012 — a regression guard, green from the start.
 
     Unlike the seven assertions above this one was never red, and it could not
     be without breaking the page on purpose. It is here because "one
     self-contained file with almost no script" is a design rule
     (`docs/design.md`, *The screen surfaces*) that no other check defends.
+
+    **It counted *exactly* one script until feature 012 removed the card
+    toggle**, which was the only one. That count would have failed for the worst
+    possible reason: a passing test going red because the code got better. It
+    now reads *at most* one, which supersedes SC-007 and FR-014 of feature 002.
+
+    Not "any number". Zero satisfies the design rule more completely than one
+    did; two does not satisfy it at all, and a page that grows a second script
+    has left the rule whether or not the first one was ever removed. The ceiling
+    is the whole point of the assertion — dropping it to keep the test passing
+    would throw away the guard along with the count.
     """
     source = page_source()
 
     scripts = re.findall(r"<script\b[^>]*>", source)
-    assert len(scripts) == 1, (
-        f"expected exactly one <script> block, found {len(scripts)}: {scripts}"
+    assert len(scripts) <= 1, (
+        f"expected at most one <script> block, found {len(scripts)}: {scripts}. "
+        "The page is one self-contained file with almost no behaviour; a second "
+        "script leaves that rule regardless of what the first one does"
     )
-    assert "src=" not in scripts[0], f"the script must stay inline: {scripts[0]}"
+    assert all("src=" not in tag for tag in scripts), (
+        f"any script must stay inline: {scripts}"
+    )
 
     loaded = {
         url.split("?")[0]

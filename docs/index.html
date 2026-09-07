@@ -41,7 +41,15 @@
   /* !important, and on purpose: `hidden` says the element is not relevant, which
      is not a preference for a class to outrank. Without it this loses to any
      rule that declares display — [hidden] and .card both weigh (0,1,0), and
-     .card comes later, which is why the card toggle did nothing for so long. */
+     .card comes later.
+
+     Nothing on the page uses `hidden` any more: the card toggle this was added
+     for is gone, and with it the page's only script. The rule stays anyway. It
+     was written against a *class* of bug — an author `display` quietly beating
+     the user-agent default — not against the one element that hit it, and the
+     next element given `hidden` would hit it again in exactly the same way.
+     Deleting a guard because its first casualty has left is how the casualty
+     comes back. */
   [hidden] { display: none !important; }
 
   body {
@@ -312,20 +320,7 @@
   .foot__swatches { display: flex; }
   .foot__swatches span { width: 22px; height: 22px; }
 
-  .toggle {
-    flex: none; border: 0; border-left: var(--rule); padding: 0 30px; background: var(--yellow);
-    font-family: var(--display); font-weight: 500; font-size: 12px; letter-spacing: 0.2em;
-    text-transform: uppercase; cursor: pointer; color: var(--ink);
-  }
-  .toggle:hover { background: var(--ink); color: var(--sand); }
-
   @media (max-width: 1080px) {
-    /* The toggle goes full width, so the band has to wrap in the same breath —
-       a 100 % item in a non-wrapping row just pushes the page sideways. Only
-       section 02 still has a child that needs this; the notes left the band. */
-    .band { flex-wrap: wrap; }
-    .band h2 { flex-basis: calc(100% - 72px); }
-    .toggle { border-left: 0; border-top: var(--rule); width: 100%; padding: 14px; }
     .print__rules { width: 100%; }
     .hero__grid, .anatomy, .yaml, .install__grid { grid-template-columns: minmax(0, 1fr); }
     .hero__text, .anatomy__cards, .yaml > div:first-child, .install__main { border-right: 0; border-bottom: var(--rule); }
@@ -570,7 +565,6 @@
     <div class="band">
       <div class="band__no" style="background:var(--red);color:var(--sand)">02</div>
       <h2>one card, one idea</h2>
-      <button type="button" class="toggle" id="flip" aria-controls="card-front card-back" hidden>show the back</button>
     </div>
 
     <div class="anatomy">
@@ -805,24 +799,5 @@
 
 </div>
 
-<script>
-  // The one piece of behaviour on the page: turn the card over. Without JS
-  // both sides stand side by side and the button never appears — the same
-  // information, one scroll longer.
-  (function () {
-    var button = document.getElementById("flip");
-    var front = document.getElementById("card-front");
-    var back = document.getElementById("card-back");
-    if (!button || !front || !back) return;
-    back.hidden = true;
-    button.hidden = false;
-    button.addEventListener("click", function () {
-      var showingFront = !front.hidden;
-      front.hidden = showingFront;
-      back.hidden = !showingFront;
-      button.textContent = showingFront ? "show the front" : "show the back";
-    });
-  })();
-</script>
 </body>
 </html>
