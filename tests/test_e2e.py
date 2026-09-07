@@ -1482,3 +1482,36 @@ def test_a_file_driven_count_at_a7_skips_instead_of_refusing(tmp_path):
     assert result.returncode == 0, "a file must not make an A7 build impossible"
     assert "a8" in result.stderr.lower(), result.stderr
     assert "dividers" not in result.stdout, result.stdout
+
+# --- the card box beside the cards (US3) -----------------------------------
+
+
+def test_box_writes_the_pdf_beside_the_target_and_names_the_stock(tmp_path):
+    """FR-010/FR-011/SC-007.
+
+    Beside the `-o` target, not at a fixed `output/box.pdf`: a fixed path would
+    put the file somewhere the user did not ask for whenever -o points
+    elsewhere. Never merged into the card PDF -- merging would need a PDF
+    library, and the two want different paper anyway.
+    """
+    target = tmp_path / "deck.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--grid", "a8", "--box")
+    assert result.returncode == 0, result.stderr
+
+    box = tmp_path / "box.pdf"
+    assert box.exists(), "no box beside the target"
+    assert box.read_bytes() == (ROOT / "assets" / "card-box.pdf").read_bytes()
+    assert pdf_pages(target) == DEMO_A8_PAGES, "the card PDF is untouched by --box"
+
+    assert "160" in result.stderr and "250" in result.stderr, result.stderr
+    assert "box" in result.stderr.lower()
+
+
+def test_box_as_a_flag_refuses_a_grid_it_does_not_fit(tmp_path):
+    """US3 scenario 3, per FR-009 — the same rule the dividers follow."""
+    target = tmp_path / "no.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--grid", "a7", "--box")
+    assert result.returncode != 0
+    assert "a8" in result.stderr.lower(), result.stderr
+    assert not (tmp_path / "box.pdf").exists()
+
