@@ -183,7 +183,7 @@ Rules that hold for all three:
 ```yaml
 topic: 'Display name'
 language: german               # language of these cards, plain name or ISO code
-grid: a7                       # the card size these cards are written for
+grid: a8                       # the card size these cards are written for
 cards:
   - id: A45DK                   # five characters, assigned once, never changed
     subtopic: 'Subtopic'
@@ -198,10 +198,12 @@ Always write `language:` — it is the language of the source material, and
 
 Always write `grid:` too, for the same reason: it records the card size the
 text was sized for, and `/print` reads it so nobody has to remember a flag.
-`a7` (2 x 4 per sheet, 105 x 74 mm) unless the user asks for A8; `a8` (4 x 4,
-52.5 x 74 mm) halves the paper and halves the width every line has. Omitting
-the key still prints at A7, so nothing breaks — but say it rather than imply
-it, and `check_project.py --strict` will ask for it.
+`a8` (4 x 4 per sheet, 74.25 x 52.5 mm) unless the user asks for A7; `a7`
+(2 x 4, 105 x 74.25 mm) is the older, larger card, and fits neither the box this
+project ships nor the Leitner dividers. The text budget is the same either way —
+a denser grid renders the same card at a uniform scale. Omitting the key still
+prints at A8, so nothing breaks — but say it rather than imply it, and
+`check_project.py --strict` will ask for it.
 
 **Write an `id:` on every card you create, and never change one you did not.**
 It is the handle a user reads off the printed card and says out loud —

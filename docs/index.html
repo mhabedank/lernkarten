@@ -427,7 +427,7 @@
           <a class="button button--ghost" href="https://github.com/mhabedank/lernkarten">read the source</a>
         </div>
         <p class="hero__facts">
-          <span>8 cards / A4 page</span><span>105 × 74.25 mm</span><span>30+ languages</span><span>no setup step</span>
+          <span>16 cards / A4 page</span><span>74.25 × 52.5 mm</span><span>30+ languages</span><span>no setup step</span>
         </p>
       </div>
       <div class="hero__side">
@@ -672,23 +672,27 @@
         <div class="rule-item">
           <span class="rule-item__no" style="background:var(--blue);color:var(--sand)">3</span>
           <div>
-            <h3>Cut the long line first</h3>
-            <p>One vertical cut down the middle, then three horizontal ones: eight cards, twelve seconds.</p>
+            <h3>Three cuts down, three across</h3>
+            <p>Three vertical cuts, then three horizontal: sixteen cards, twenty seconds.</p>
           </div>
         </div>
         <div class="print__cut">
-          <svg viewBox="0 0 200 150" width="200" height="150" role="img" aria-label="Cutting order: one vertical cut down the middle, then three horizontal cuts">
-            <rect x="10" y="8" width="180" height="134" fill="#fbfaf6" stroke="#141414" stroke-width="2"/>
-            <line x1="100" y1="8" x2="100" y2="142" stroke="#c2251b" stroke-width="3"/>
-            <line x1="10" y1="41.5" x2="190" y2="41.5" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
-            <line x1="10" y1="75" x2="190" y2="75" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
-            <line x1="10" y1="108.5" x2="190" y2="108.5" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+          <svg viewBox="0 0 200 150" width="200" height="150" role="img" aria-label="Cutting order: three vertical cuts, then three horizontal cuts">
+            <rect x="10" y="8" width="180" height="127" fill="#fbfaf6" stroke="#141414" stroke-width="2"/>
+            <line x1="55" y1="8" x2="55" y2="135" stroke="#c2251b" stroke-width="3"/>
+            <line x1="100" y1="8" x2="100" y2="135" stroke="#c2251b" stroke-width="3"/>
+            <line x1="145" y1="8" x2="145" y2="135" stroke="#c2251b" stroke-width="3"/>
+            <line x1="10" y1="39.75" x2="190" y2="39.75" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+            <line x1="10" y1="71.5" x2="190" y2="71.5" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+            <line x1="10" y1="103.25" x2="190" y2="103.25" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+            <circle cx="55" cy="8" r="5" fill="#c2251b"/>
             <circle cx="100" cy="8" r="5" fill="#c2251b"/>
-            <circle cx="190" cy="41.5" r="4" fill="#0a3f8f"/>
-            <circle cx="190" cy="75" r="4" fill="#0a3f8f"/>
-            <circle cx="190" cy="108.5" r="4" fill="#0a3f8f"/>
+            <circle cx="145" cy="8" r="5" fill="#c2251b"/>
+            <circle cx="190" cy="39.75" r="4" fill="#0a3f8f"/>
+            <circle cx="190" cy="71.5" r="4" fill="#0a3f8f"/>
+            <circle cx="190" cy="103.25" r="4" fill="#0a3f8f"/>
           </svg>
-          <p>A 5 mm free margin is kept by default (cards 100 × 71.75 mm) so printers with a non-printable edge clip nothing, and crop marks in that margin show where to cut. Borderless printers get the full A7 with <span class="mono">--margin 0</span>.</p>
+          <p>A 5 mm free margin is kept by default (cards 71.75 × 50 mm at the <span class="mono">a8</span> grid) so printers with a non-printable edge clip nothing, and crop marks in that margin show where to cut. Borderless printers get the full 74.25 × 52.5 mm with <span class="mono">--margin 0</span>.</p>
         </div>
         <!--
           The href is relative because pages.yml copies the PDF next to this

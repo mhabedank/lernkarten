@@ -1,5 +1,14 @@
 # Contract: `cards/*.yaml` — new optional key `grid`
 
+> **Superseded in part, 2026-09-07.** "Absent means `a7`" was true when this
+> contract was written and stopped being true in v0.9.0: an absent `grid:` key
+> now means **`a8`** (009-a8-default-grid, FR-001). Everything else here still
+> holds — the key's syntax, its vocabulary, the refusal to guess between decks
+> that disagree, and `--grid` overriding the file. Left standing rather than
+> rewritten, because it records what the key meant at the time. Found while
+> fixing [BUG-010](../../009-a8-default-grid/bugs/BUG-010.md), which is what
+> happens to a description of a default that nothing checks.
+
 **Written by**: `/cards` · **Read by**: `lernkarten build` / `check`
 (`load_cards()` in `scripts/build_pdf.py`), `check_cards()` in
 `scripts/check_project.py`

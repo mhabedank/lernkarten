@@ -19,6 +19,7 @@ import sys
 import tomllib
 from pathlib import Path
 
+import build_pdf
 import leitner
 import yamlio
 
@@ -199,6 +200,55 @@ SHEET_CAPACITY = re.compile(
 QUALIFIED = re.compile(r"grid|a7|a8|2\s*[x\u00d7]\s*4|4\s*[x\u00d7]\s*4", re.I)
 
 
+# --- A7 is no longer the default, and saying so is now a gate (BUG-010) ----
+#
+# The third check of this shape in this file, and the second one's comment
+# already explains why: a --grid sweep enforced by a hand-written grep missed
+# lines and shipped them. This time the sweep was the *default's own*, and it
+# left seventeen sites calling A7 the default across nine files — including the
+# --grid help string, which is what a user reads at the moment they care.
+A7_TOKEN = re.compile(
+    r"\bA7\b|`?\ba7\b`?|\b2\s*[x\u00d7]\s*4\b|\b105\s*[x\u00d7]\s*74\.25\b"
+    r"|\b100\s*[x\u00d7]\s*71\.75\b|\b(?:8|eight)\s+(?:cards?|up)\b",
+    re.I,
+)
+A8_TOKEN = re.compile(
+    r"\bA8\b|`?\ba8\b`?|\b4\s*[x\u00d7]\s*4\b|\b74\.25\s*[x\u00d7]\s*52\.5\b"
+    r"|\b71\.75\s*[x\u00d7]\s*50\b|\b(?:16|sixteen)\s+(?:cards?|up)\b",
+    re.I,
+)
+DEFAULT_WORD = re.compile(r"\bdefaults?\b|\babsent\b|\bomitting\b|\bomit\b|\bsilent\b", re.I)
+# Three places an A7 token may legitimately sit beside the word "default", read
+# from the surrounding lines: the scale *reference* stays A7 forever and FR-002
+# exists precisely to keep it separate from the default; history may say what
+# the default used to be; and the mixed-build refusal is about decks
+# disagreeing, not about what silence means.
+NOT_A_DEFAULT_CLAIM = re.compile(
+    r"\breference\b|\bwas\b|\buntil\b|since v|no longer|disagree|refus", re.I
+)
+# The fourth is the *margin*, which has a default of its own — and this one is
+# read off the occurrence rather than the surroundings. README's card-box
+# paragraph names the default margin one sentence before it calls A7 the
+# default grid; a context-wide exemption swallows the second with the first.
+DEFAULT_OF_SOMETHING_ELSE = re.compile(r"\s*(?:margin|sheet size|page size)", re.I)
+CLAIM_WINDOW = 45  # how far apart the two may sit and still be one claim
+JOIN = 1  # lines joined for detection: a claim may wrap
+CONTEXT = 2  # lines either side that may carry the exemption
+
+# The cutting instruction, which follows the grid the same way the sheet
+# capacity does: one interior vertical cut at 2x4 and three at 4x4. Narrow on
+# purpose — "3 vertical, 5 horizontal cut lines" in a table whose header names
+# the grid is correct, and so is design.md's "*not* the A7 card cut down the
+# middle", which is about orientation rather than about cutting.
+CUT_INSTRUCTION = re.compile(r"down the middle", re.I)
+CUT_COUNT = re.compile(r"three (?:across|horizontal)", re.I)
+
+# What borderless printing gives you also follows the grid: `--margin 0` cuts to
+# 105 x 74.25 at 2x4 and 74.25 x 52.5 at 4x4. Two sites said the A7 pair without
+# saying which grid they meant, which reads as a promise about the default.
+BORDERLESS = re.compile(r"--margin 0|\bborderless\b", re.I)
+
+
 LEITNER_PAGE = ROOT / "docs" / "leitner.html"
 # Anything shaped like one of our intervals. Wide enough to catch an invented
 # "every 5 days" that the module never defined, which is the direction a
@@ -361,6 +411,169 @@ def check_print_skill_relays_setup(errors):
         )
 
 
+# The A-series name of the grid an absent `grid:` key means — read from the
+# constant, never spelled out, because a literal here would go stale the same
+# way the fourteen sites of BUG-010 did.
+def default_grid_alias():
+    key = {size: name for name, size in build_pdf.GRIDS.items()}[build_pdf.DEFAULT_GRID]
+    return {target: alias for alias, target in build_pdf.GRID_ALIASES.items()}.get(key, key)
+
+
+SCHEMA_GRID = re.compile(r"^grid:\s*([a-z0-9]+)", re.M)
+
+
+def check_cards_skill_writes_the_default_grid(errors):
+    """`/cards` writes a value into the user's file, so it cannot be a stale one.
+
+    Every other claim this file gates is a sentence a reader can discount. This
+    one is a literal the model copies into `cards/*.yaml`, where `--grid` at
+    print time becomes the only way past it: the deck is pinned to a size the
+    card box does not fit and the Leitner dividers refuse — the two problems the
+    default was moved to solve (BUG-010, FR-010).
+    """
+    expected = default_grid_alias()
+    for value in SCHEMA_GRID.findall(read_skill("cards")):
+        if value != expected:
+            errors.append(
+                f"skills/cards/SKILL.md: the schema block hands the model 'grid: {value}', "
+                f"but an absent key means '{expected}' — /cards would pin every new deck "
+                "to the non-default size"
+            )
+
+
+def gated_files():
+    """Everything the A7 claims live in — wider than markdown_files().
+
+    Six of BUG-010's sites were a docstring, a comment, a Typst header and the
+    --grid help string. A gate that cannot see the file is no better than the
+    grep it replaces. `check_docs.py` itself is left out: it is the file that
+    *defines* these claims in order to forbid them, the way a linter does not
+    lint its own rule table.
+    """
+    return (
+        markdown_files()
+        + [f for f in sorted(SCRIPTS.glob("*.py")) if f.name != "check_docs.py"]
+        + sorted((ROOT / "templates").glob("*.typ"))
+    )
+
+
+def windows(path):
+    """(claim, context, lookahead, wide context, offsets, line number) per line.
+
+    Detection joins a line with the next, because a claim wraps — "`a7` is the /
+    default grid" spans a line break in README.md, and a line-scoped rule would
+    make the fix depend on where the text happens to wrap. The exemption reads
+    wider still: a comment says "the scale reference" a line or two above the
+    sentence the exemption is for. `offsets` maps a position in the joined text
+    back to the line it came from, so an error names the line a reader has to
+    open rather than the one the window happened to start on.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for i, _ in enumerate(lines):
+        joined = lines[i : i + 1 + JOIN]
+        offsets, at = [], 0
+        for n, line in enumerate(joined):
+            offsets.append((at, i + 1 + n))
+            at += len(line) + 1
+        context = " ".join(lines[max(0, i - CONTEXT) : i + 1 + CONTEXT])
+        # One line further than the claim, and only for DEFAULT_OF_SOMETHING_ELSE:
+        # "the default / margin only" wraps, and without the lookahead the window
+        # that starts one line earlier reports what the next window exempts.
+        ahead = " ".join(lines[i : i + 2 + JOIN])
+        # The borderless claim needs a wider read: card_scale()'s docstring
+        # spends four lines on --margin 0 before it says the word "reference".
+        wide = " ".join(lines[max(0, i - 2 * CONTEXT) : i + 1 + 2 * CONTEXT])
+        yield " ".join(joined), context, ahead, wide, offsets, i + 1
+
+
+def line_of(position, offsets):
+    """Which source line a position in a joined window came from."""
+    line = offsets[0][1]
+    for start, number in offsets:
+        if position >= start:
+            line = number
+    return line
+
+
+def nearest_a7(text, word):
+    """The A7 token within the window of `word`, if no A8 token stands between."""
+    for token in A7_TOKEN.finditer(text):
+        low, high = sorted([word.span(), token.span()])
+        if low[1] > high[0] or high[0] - low[1] > CLAIM_WINDOW:
+            continue
+        if A8_TOKEN.search(text, low[1], high[0]):
+            continue
+        return token
+    return None
+
+
+def check_a7_is_not_the_default(errors):
+    """No file outside specs/ may call A7 what an absent `grid:` key means.
+
+    The default moved in v0.9.0 and its description did not (BUG-010, FR-011).
+    """
+    for path in gated_files():
+        reported = set()
+        for claim, context, ahead, _, offsets, _ in windows(path):
+            if NOT_A_DEFAULT_CLAIM.search(context):
+                continue
+            for word in DEFAULT_WORD.finditer(claim):
+                if DEFAULT_OF_SOMETHING_ELSE.match(ahead, word.end()):
+                    continue
+                token = nearest_a7(claim, word)
+                if not token:
+                    continue
+                line = line_of(token.start(), offsets)
+                if line not in reported:
+                    reported.add(line)
+                    errors.append(
+                        f"{path.relative_to(ROOT)}:{line}: '{token.group()}' is given as "
+                        f"the default near '{word.group()}' — an absent grid key means "
+                        f"'{default_grid_alias()}' since v0.9.0"
+                    )
+                break
+
+
+def check_cut_count(errors):
+    """The cutting instruction follows the grid, the way the capacity does."""
+    for path in gated_files():
+        reported = set()
+        for claim, _, _, _, offsets, _ in windows(path):
+            instruction = CUT_INSTRUCTION.search(claim)
+            if not instruction or not CUT_COUNT.search(claim) or QUALIFIED.search(claim):
+                continue
+            line = line_of(instruction.start(), offsets)
+            if line not in reported:
+                reported.add(line)
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{line}: the cutting instruction gives one "
+                    "vertical cut and three across as a fixed fact — that is the 2x4 "
+                    "sheet, and the cut count follows --grid, so name the grid"
+                )
+
+
+def check_borderless_size(errors):
+    """`--margin 0` gives an A7 card only at 2x4; say so or say nothing."""
+    for path in gated_files():
+        reported = set()
+        for claim, _, _, wide, offsets, _ in windows(path):
+            edge = BORDERLESS.search(claim)
+            if not edge or A8_TOKEN.search(claim) or NOT_A_DEFAULT_CLAIM.search(wide):
+                continue
+            token = nearest_a7(claim, edge)
+            if not token:
+                continue
+            line = line_of(token.start(), offsets)
+            if line not in reported:
+                reported.add(line)
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{line}: '{token.group()}' is given as what "
+                    "borderless printing produces — that is the 2x4 card, and --margin 0 "
+                    f"follows --grid, so name the grid (the default is "
+                    f"'{default_grid_alias()}')"
+                )
+
+
 def check_sheet_capacity(errors):
     for path in markdown_files():
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -403,6 +616,10 @@ def main():
     check_skills(errors)
     check_links(errors)
     check_sheet_capacity(errors)
+    check_cards_skill_writes_the_default_grid(errors)
+    check_a7_is_not_the_default(errors)
+    check_cut_count(errors)
+    check_borderless_size(errors)
     check_leitner_intervals(errors)
     check_enumeration_tiers(errors)
     check_print_skill_relays_setup(errors)
