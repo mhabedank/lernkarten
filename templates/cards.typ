@@ -45,18 +45,22 @@
 
 // Crop marks reach into the free margin at every cut. With no margin the card
 // frames sit on the paper edge and there is nothing left to mark.
+//
+// The far edges are `sheet-w` and `sheet-h`, never A4's literal 210 and 297:
+// the 4 x 4 grid tiles a *landscape* A4, so a literal puts the bottom marks off
+// the paper and the right-hand ones in the middle of the sheet.
 #let cropmarks = if margin != 0mm {
   let arm = calc.min(margin * 0.7, 3mm)
   let stroke = 0.3pt + guide
   for i in range(0, columns + 1) {
     let x = margin + i * cw
     place(dx: x, dy: margin - arm, line(end: (0mm, arm), stroke: stroke))
-    place(dx: x, dy: 297mm - margin, line(end: (0mm, arm), stroke: stroke))
+    place(dx: x, dy: sheet-h - margin, line(end: (0mm, arm), stroke: stroke))
   }
   for j in range(0, rows + 1) {
     let y = margin + j * ch
     place(dx: margin - arm, dy: y, line(end: (arm, 0mm), stroke: stroke))
-    place(dx: 210mm - margin, dy: y, line(end: (arm, 0mm), stroke: stroke))
+    place(dx: sheet-w - margin, dy: y, line(end: (arm, 0mm), stroke: stroke))
   }
 }
 
