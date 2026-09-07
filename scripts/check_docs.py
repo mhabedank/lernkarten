@@ -238,6 +238,43 @@ def check_leitner_intervals(errors):
             )
 
 
+CARDS_SKILL = SKILLS / "cards" / "SKILL.md"
+# The tier table's header row — a shape, not a wording, so the table can be
+# rewritten without breaking the build. The numbers themselves live in
+# `check_project.FLAT_MAX`/`GROUPED_MAX`, and this module may not import that
+# one (constitution VI documents the import graph and check_import_graph
+# enforces it), so `tests/test_check_docs.py` holds the two to each other and
+# this check asks only whether the table is there at all.
+TIER_TABLE = re.compile(r"^\|\s*items\s*\|\s*shape\s*\|", re.I | re.M)
+GROUP_SHAPE = "#list([*"
+
+
+def check_enumeration_tiers(errors):
+    """`/cards` can only follow a length rule that is written down.
+
+    The four-item cap this replaced lived as a parenthetical inside a Typst
+    syntax note and was carried forward unexamined for four releases — which is
+    what happens to a rule nothing checks. `check_project.py` reports the shape
+    of a deck somebody wrote; this reports whether the skill that writes decks
+    still says what the shape should be.
+    """
+    if not CARDS_SKILL.exists():
+        errors.append("skills/cards/SKILL.md: the cards skill is missing")
+        return
+    text = CARDS_SKILL.read_text(encoding="utf-8")
+    if not TIER_TABLE.search(text):
+        errors.append(
+            "skills/cards/SKILL.md: no enumeration tier table — /cards has no rule for "
+            "how long a `#list(...)` may be, and check_project.py reports decks against one"
+        )
+    if GROUP_SHAPE not in text:
+        errors.append(
+            "skills/cards/SKILL.md: never shows the grouped shape "
+            "`#list([*Label*: a, b])` — the tiers ask for grouping the file "
+            "does not demonstrate"
+        )
+
+
 CONSTITUTION = ROOT / ".specify" / "memory" / "constitution.md"
 SCRIPTS = ROOT / "scripts"
 # `A → b, c` or `A, B ← leaves…`; anything after an unbracketed `(` is prose.
@@ -367,6 +404,7 @@ def main():
     check_links(errors)
     check_sheet_capacity(errors)
     check_leitner_intervals(errors)
+    check_enumeration_tiers(errors)
     check_print_skill_relays_setup(errors)
     check_import_graph(errors)
     check_print_order(errors)

@@ -138,7 +138,12 @@ code, comments, docs and commit messages are written in English.
   many items; `check_project.py` reports a mismatch as an error, reading digits
   in every deck and number words in the deck's own `language:`. Commentary that
   belongs to no item becomes its own card. There is no cap on the number of
-  items — the ~400 character back budget bounds it.
+  items, but the length decides the shape: 3–5 a flat list, 6–8 one card
+  grouped into 2–3 labelled groups (`#list([*Discover*: a, b])`), 9 or more an
+  anchor card naming the groups and the total plus one card per group.
+  `check_project.py` warns past each boundary. A group label is structure: it
+  is exempt from the "nothing is introduced only inside a list" rule, and the
+  orphan check reads the members instead.
 - Front short (max. ~2 lines), back max. ~6 lines. Two cards beat one
   overloaded card.
 - **The budget is the same at every grid.** A denser grid renders the same card
