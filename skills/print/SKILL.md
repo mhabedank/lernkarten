@@ -109,6 +109,10 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
   **which deck it fits**: `--grid a8` at the default margin. It does not take an
   `a7` card. Since v0.9.0 `a8` is the default, so a deck that says nothing fits
   the box — but one carrying `grid: a7` does not.
+- **Do not suggest a flag the user has already answered for.** If a run reports
+  that it is printing simplex because the machine settings say so, that is
+  settled — do not offer `--sides`. `lernkarten setup --sides simplex` is how
+  someone answers for their printer once, on this computer, for every project.
 - **Relay what the build says, and offer `lernkarten setup`.** When the run
   reports that the Leitner setup is unanswered, pass that on and offer to run
   `lernkarten setup --project <root>` — it asks how many compartments (3, 4 or

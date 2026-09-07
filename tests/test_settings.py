@@ -142,3 +142,79 @@ def test_write_back_only_touches_an_answered_file(tmp_path):
     settings.mark_printed(answered, dividers=True, box=True)
     s = settings.load(deck)
     assert s.dividers_printed and s.box_printed
+
+
+# --- settings that belong to the machine, not the project (#67) -------------
+
+
+def test_the_machine_file_lives_in_the_config_home_not_the_cache(tmp_path, monkeypatch):
+    """FR-001/FR-002. A cache is something a user may delete without losing
+    anything; an answer is not a cache, so it does not live beside the engine."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    assert settings.machine_path() == tmp_path / "lernkarten" / "settings.yaml"
+
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path / "home"))
+    assert settings.machine_path() == tmp_path / "home" / ".config" / "lernkarten" / "settings.yaml"
+    assert ".cache" not in str(settings.machine_path())
+
+
+def test_sides_comes_from_the_machine_when_nothing_else_says(tmp_path, monkeypatch):
+    """FR-004: flag -> project -> machine -> default, resolved per key."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    assert settings.resolve_sides(None) == ("duplex", None), "absent means today"
+
+    settings.save_machine(sides="simplex")
+    value, origin = settings.resolve_sides(None)
+    assert value == "simplex"
+    assert origin is not None and "settings.yaml" in str(origin), "the origin is named"
+
+    assert settings.resolve_sides("duplex") == ("duplex", None), "a flag beats the file"
+
+
+def test_a_machine_key_in_a_project_file_is_reported_not_obeyed(tmp_path, monkeypatch):
+    """FR-005, one direction. Two places one value can live is the failure
+    #67 spends half its text warning about; making it impossible is cheap."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    deck = project(tmp_path, "compartments: 4\nsides: simplex\n")
+    s = settings.load(deck)
+    assert s.compartments == 4
+    assert any("sides" in w for w in s.warnings), s.warnings
+    assert settings.resolve_sides(None)[0] == "duplex", "it must not take effect"
+
+
+def test_a_project_key_in_the_machine_file_is_reported_too(tmp_path, monkeypatch):
+    """FR-005, the other direction."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    path = settings.machine_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("sides: simplex\ncompartments: 4\n", encoding="utf-8")
+    machine = settings.load_machine()
+    assert machine.sides == "simplex"
+    assert any("compartments" in w for w in machine.warnings), machine.warnings
+
+
+def test_an_invalid_sides_value_names_the_accepted_set(tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    path = settings.machine_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("sides: sideways\n", encoding="utf-8")
+    with pytest.raises(settings.SettingsError) as e:
+        settings.load_machine()
+    assert "duplex" in str(e.value) and "simplex" in str(e.value)
+
+
+def test_an_unwritable_config_home_warns_rather_than_failing(tmp_path, monkeypatch):
+    """FR-008: a settings file must never be the reason a build does not happen.
+
+    A config home that is a *file* is the realistic shape — an env var pointing
+    at the wrong thing — and it is what a read-only home degrades to as well.
+    """
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("", encoding="utf-8")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(blocked))
+    warning = settings.save_machine(sides="simplex")
+    assert warning is not None and "settings" in warning.lower()
+
+    # ...and reading one is just as harmless.
+    assert settings.load_machine().sides is None

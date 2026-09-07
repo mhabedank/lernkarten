@@ -797,10 +797,11 @@ def main():
     p.add_argument(
         "--sides",
         choices=SIDES,
-        default=DEFAULT_SIDES,
+        default=None,
         help="how the two faces of a sheet are sequenced: duplex interleaves them for a "
         "printer that turns the paper; simplex puts every front first, then every back, "
-        f"for one that cannot (default: {DEFAULT_SIDES})",
+        f"for one that cannot (default: {DEFAULT_SIDES}, or what `lernkarten setup --sides` "
+        "answered for this machine)",
     )
     p.add_argument(
         "--language",
@@ -882,10 +883,22 @@ def main():
     # rather than failing -- the asymmetry with the flag above is the point.
     try:
         saved = project_settings.load(args.files[0])
+        machine = project_settings.load_machine()
     except project_settings.SettingsError as e:
         sys.exit(f"ERROR: {e}")
-    for warning in saved.warnings:
+    for warning in (*saved.warnings, *machine.warnings):
         print(f"NOTE: {warning}", file=sys.stderr)
+
+    # Flag beats machine beats the built-in default, and the origin is named:
+    # a value that changes the printed page order must never be invisible in
+    # where it came from.
+    args.sides, sides_from = project_settings.resolve_sides(args.sides)
+    if sides_from is not None:
+        print(
+            f"NOTE: printing {args.sides} because {sides_from} says so. "
+            "Pass --sides to override it for this run.",
+            file=sys.stderr,
+        )
 
     want_box = args.box or (saved.compartments is not None and not saved.box_printed)
     divider_count = args.dividers

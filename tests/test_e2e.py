@@ -1550,3 +1550,62 @@ def test_a_deck_that_states_no_grid_is_told_once(tmp_path):
     )
     still = run("check", str(pinned))
     assert "state no `grid:` key" not in still.stderr, "a deck that states its grid is not nagged"
+
+
+def test_the_suite_is_not_at_the_mercy_of_the_developers_own_machine(tmp_path):
+    """FR-009/SC-006. Every command the suite runs must see a known config.
+
+    Without this the tests pass or fail depending on whether whoever runs them
+    once typed `lernkarten setup --sides simplex` — and they would pass on CI,
+    which has no home directory to speak of, and fail on exactly one laptop.
+    """
+    assert os.environ.get("XDG_CONFIG_HOME"), (
+        "conftest must point XDG_CONFIG_HOME somewhere empty for the whole run"
+    )
+    home = Path(os.environ["XDG_CONFIG_HOME"]) / "lernkarten" / "settings.yaml"
+    assert not home.exists(), f"the suite is reading a real machine file: {home}"
+
+    deck = scratch_project(tmp_path)
+    result = run("build", str(deck), "-o", str(tmp_path / "o.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert "says so" not in result.stderr, "no machine file, so nothing to report"
+
+
+def test_the_machine_answers_for_every_project_until_a_flag_says_otherwise(tmp_path):
+    """SC-002/SC-003. The point of #67: a printer is answered once, not per project.
+
+    Two projects that have never heard of each other, one answer.
+    """
+    config = Path(os.environ["XDG_CONFIG_HOME"]) / "machine-test"
+    env = dict(os.environ, XDG_CONFIG_HOME=str(config))
+
+    def cmd(*args):
+        return subprocess.run(
+            [sys.executable, str(CLI), *args], capture_output=True, text=True, cwd=ROOT, env=env
+        )
+
+    assert cmd("setup", "--sides", "simplex").returncode == 0
+    assert (config / "lernkarten" / "settings.yaml").exists()
+
+    for name in ("one", "two"):
+        room = tmp_path / name
+        room.mkdir()
+        deck = scratch_project(room)
+        assert not (room / "lernkarten.yaml").exists(), "a machine answer touches no project"
+
+        result = cmd("build", str(deck), "-o", str(room / "out.pdf"))
+        assert result.returncode == 0, result.stderr
+        assert "simplex" in result.stdout, f"{name}: the machine answer did not reach it"
+        assert "says so" in result.stderr, f"{name}: the origin must be named"
+
+        forced = cmd("build", str(deck), "-o", str(room / "flag.pdf"), "--sides", "duplex")
+        assert "duplex" in forced.stdout, "a flag beats the machine"
+
+
+def test_a_setting_written_into_the_wrong_file_is_named_not_obeyed(tmp_path):
+    """SC-004, both directions. Two places one value can live is what #67 forbids."""
+    deck = scratch_project(tmp_path, "compartments: none\nsides: simplex\n")
+    result = run("build", str(deck), "-o", str(tmp_path / "o.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert "sides" in result.stderr and "machine setting" in result.stderr, result.stderr
+    assert "duplex" in result.stdout, "the misplaced key must not take effect"
