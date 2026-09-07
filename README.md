@@ -148,7 +148,8 @@ exactly behind its front.
 **On a printer that prints both sides**, the default is what you want — each
 sheet's front and back sit on consecutive pages:
 
-1. Choose **duplex, flip on long edge** — short edge puts every back upside
+1. Choose **duplex, flip on long edge** — that is the 297 mm edge of the *paper*,
+   which does not change when the `a8` grid turns the page. Short edge puts every back upside
    down. A one-sided printer wants `--sides simplex` instead, below
 2. **100 % scale** — not "fit to page", which shifts fronts off their backs
 3. Cut the long line down the middle first, then the three across
