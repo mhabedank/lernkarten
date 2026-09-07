@@ -91,6 +91,27 @@ LIST_HEAD = "#list("
 # spaced (`Amber - the middle stage`) and not unspaced, or `sigma-additivity`
 # would be torn in half.
 ITEM_SEPARATOR = re.compile(r"[—–,:;]|\s\(|\s-\s")
+# How long an enumeration may be before its shape has to change. Counted in
+# items, because the physical half is already checked: MAX_BACK warns at ~400
+# characters and the build warns when text runs off the card. What is not
+# otherwise checked is whether a flat queue can be recalled at all, and that is
+# a property of the count. The other place these two numbers live is the tier
+# table in `skills/cards/SKILL.md`; `tests/test_check_docs.py` holds them to
+# each other, because `check_docs` may not import this module (constitution VI).
+FLAT_MAX = 5
+GROUPED_MAX = 8
+# A grouped item: an emphasised label, a colon, then the members. The label is
+# structure rather than content, so it is exempt from the orphan rule.
+GROUP_ITEM = re.compile(r"^\s*\*([^*]+)\*\s*:\s*(.+)$")
+# The openings that turn a numeral into a request for a list. Per language and
+# never pooled, the same rule COUNT_WORDS follows: a language with no set here
+# is checked on nothing, which is quieter than guessing.
+ENUM_CUES = {
+    "english": ("what are", "name", "list", "state", "give", "which are", "which"),
+    "german": ("was sind", "nenne", "nennen sie", "liste", "zähle", "welche"),
+}
+# Allowed to sit between the cue and the numeral, and nothing else may.
+ARTICLES = ("the", "die", "der", "das")
 # A front that says "the four types" promises a back with four of them. The
 # number words are per language and never pooled: `elf` is eleven in a German
 # deck and a creature in an English one, and a check that reports an error
@@ -876,14 +897,128 @@ def _check_counts(where, cards, language, report):
         if not items:
             continue
         announced = _announced_count(card.get("front", ""), language)
-        if announced is None or announced[1] == len(items):
+        # The *size*, never `len(items)`: a grouped back holds four members in
+        # two items, and four is the number the front promised.
+        size = _enumeration_size(items)
+        if announced is None or announced[1] == size:
             continue
         report.error(
             where,
             f"card {i}: the front announces '{announced[0]}' and the back "
-            f"enumerates {len(items)} — a counted front is a promise about "
+            f"enumerates {size} — a counted front is a promise about "
             "the back, and the learner grades against it",
         )
+
+
+def _groups(items):
+    """The `(label, [member, ...])` pairs of a grouped enumeration, or `None`.
+
+    Grouped means **every** item carries a label. A half-grouped list offers no
+    hierarchy, and "three of your five items are groups" is not something a
+    reader can act on, so `None` here means "read this as a flat list" rather
+    than "this is broken".
+    """
+    if not items:
+        return None
+    groups = []
+    for item in items:
+        match = GROUP_ITEM.match(item)
+        if not match:
+            return None
+        members = [member.strip() for member in match.group(2).split(",")]
+        members = [member for member in members if member]
+        if not members:
+            return None
+        groups.append((match.group(1).strip(), members))
+    return groups
+
+
+def _enumeration_size(items):
+    """How many things a back enumerates — the one definition of "how many".
+
+    Members when the list is grouped, items when it is flat. E-1, E-3 and the
+    tier table all read this one helper, and that is the point: the two
+    definitions drifted once already. `_check_counts` shipped counting items,
+    so a grouped back looked to it like a miscount of the number the front had
+    promised — an *error*, on a shape this project recommends.
+    """
+    if items is None:
+        return None
+    groups = _groups(items)
+    if groups is None:
+        return len(items)
+    return sum(len(members) for _, members in groups)
+
+
+def _enumeration_prompt(front, language):
+    """The count a front asks to have *listed*, or `None`.
+
+    A numeral is not by itself a request for a list. "…distributed over the six
+    hours of the flood" names a span; "What are the four types" names a
+    promise. What separates them is that the numeral follows an enumeration
+    cue, with at most an article in between — measured against every counted
+    front in this repository. Without the adjacency the check fires on a
+    correct card; with a leading-verb-only rule it misses "What are the four
+    types of work?", which is the card the bug was reported for.
+    """
+    announced = _announced_count(front, language)
+    if announced is None:
+        return None
+    text = str(front).strip().lower()
+    for cue in ENUM_CUES.get(language, ()):
+        if not text.startswith(cue + " "):
+            continue
+        rest = text[len(cue) :].lstrip()
+        for article in ARTICLES:
+            if rest.startswith(article + " "):
+                rest = rest[len(article) :].lstrip()
+                break
+        if rest.startswith(announced[0].lower()):
+            return announced
+    return None
+
+
+def _check_shape(where, cards, language, report):
+    """E-2 and E-3: does the back have the shape its front and its length ask for?
+
+    Every finding here is a **warning**. Whether a particular back should have
+    been a list, and how a long one ought to be grouped, are judgements; E-1
+    stays the only error in this family because comparing a numeral with a
+    length is the only question in it with one answer.
+
+    `i` is the card's position in the unfiltered list, as everywhere else in
+    this file, so one file answers to one numbering.
+    """
+    for i, card in enumerate(cards, start=1):
+        if not isinstance(card, dict) or "back" not in card:
+            continue
+        items = _list_items(str(card["back"]))
+        if items is None:  # unbalanced markup; `check_markup` has that job
+            continue
+        if not items:
+            announced = _enumeration_prompt(card.get("front", ""), language)
+            if announced is not None and announced[1] >= 3:
+                report.warn(
+                    where,
+                    f"card {i}: the front asks for '{announced[0]}' and the back "
+                    "answers in prose — an enumerated back is graded item by item, "
+                    "and a sentence has to be segmented and counted first",
+                )
+            continue
+        size = _enumeration_size(items)
+        if size > GROUPED_MAX:
+            report.warn(
+                where,
+                f"card {i}: {size} items on one card — write an anchor card naming "
+                "the groups and the total, and one card per group",
+            )
+        elif size > FLAT_MAX and _groups(items) is None:
+            report.warn(
+                where,
+                f"card {i}: {size} items in a flat list — past {FLAT_MAX}, group them "
+                "into two or three labelled groups so recall has a hierarchy rather "
+                "than a queue",
+            )
 
 
 def _check_orphans(where, cards, report):
@@ -912,6 +1047,15 @@ def _check_orphans(where, cards, report):
         items = _list_items(str(card["back"]))
         if not items:
             continue
+        groups = _groups(items)
+        if groups is not None:
+            # The members, never the label: a label is structure, and the card
+            # that teaches a group name is the anchor card of the top tier.
+            # The head-term cut this replaces did not merely check the wrong
+            # thing, it was arbitrarily satisfied — in the demo fixture
+            # `*Help*` passed because an unrelated front says "call for help",
+            # while `*Traffic*` and `*Closure*` failed.
+            items = [member for _, members in groups for member in members]
         for item in items:
             key = _item_key(item)
             if key is None:
@@ -1094,6 +1238,7 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)
         _check_counts(where, data["cards"] or [], language, report)
+        _check_shape(where, data["cards"] or [], language, report)
         _check_orphans(where, data["cards"] or [], report)
     _note_pictures_at_a8(dense_with_pictures, report)
     for (where, picture, face), cards in figure_faces.items():
