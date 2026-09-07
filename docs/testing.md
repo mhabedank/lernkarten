@@ -142,7 +142,8 @@ tool.
 `scripts/check_project.py` reads a whole project folder and reports what the
 next step would trip over — a source without an `id`, an ingested file whose
 frontmatter is missing, a catalog reference pointing nowhere, two cards with
-the same front, a language nothing can hyphenate:
+the same front, a subtopic whose declared term no card names, a list item no
+other card explains, a language nothing can hyphenate:
 
 ```bash
 python3 scripts/check_project.py                        # the current folder
@@ -211,6 +212,7 @@ python3 scripts/zotero_stub.py
 | 8i | `/learning-goal` | run it again with a brief that only **adds** | merges without a single question, `updated` moves to today |
 | 8j | `/learning-goal` | run it again with a **contradictory** brief | every contradiction listed and put to you; nothing written until answered |
 | 8k | `/learning-goal` | make a required topic out-of-scope on a re-run | names the catalog subtopics and card files that would be affected |
+| 8l | `/learning-goal` | read § *Depth* cold | you can say that `depth: expert` carries `working` and `awareness` cards too — the level is a ceiling, not a slice |
 | 9 | `/catalog` | `/catalog` | `catalog/topics.md` with topics, subtopics and references that resolve |
 | 9-i | `/catalog` | a topic whose name contains a comma, named from `Parents:`, `Related:` and `Also covers:` | validates clean, and the name comes back as it was written — `/catalog` has been seen renaming the topic to get past the splitter and telling the user afterwards |
 | 9-ii | `/catalog` | a subtopic whose only reference is a `content: sparse` document | it is reported, and the honest outcome is `Status: gap` rather than coverage built on a cover sheet |
@@ -227,9 +229,11 @@ python3 scripts/zotero_stub.py
 | 11a | `/cards` | `/cards` with gaps in the catalog | out-of-scope reported as a bare count; gaps as a warning naming each one |
 | 11b | `/cards` | `/cards` naming an out-of-scope subtopic | generated anyway — the mark is a default, not a lock |
 | 11c | `/cards` | `/cards` naming a **secondary** parent | generated once, and the file its cards went into is reported |
+| 11d | `/cards` | read `skills/cards/SKILL.md` cold | you can state the anchor rule — every subtopic that gets cards gets one that names its concept — **and** the "anchor, not coverage" caution that forbids a definition card for every term |
 | 12 | `/cards` | `/cards Tides` again | new cards appended, no duplicated fronts |
 | 12-i | `/cards` | ask for a card that emphasises a word | `*bold*`, never `**bold**` — the second typesets and prints flat, so only `check_project.py` can tell you |
 | 12-ii | `/cards` | ask for a card with a line break followed by emphasis | `'... \\ *bold* ...'` with the space. Without it the backslash escapes the star and the build fails on "unclosed delimiter", which does not say so |
+| 12-iii | `/cards` | run `/cards` end to end in a scratch project | a numbered step runs `python3 scripts/check_project.py .` after the merge, and the session says what it did about anything it reported |
 | 13 | `/cards` | ask for cards in another language | `language:` follows, umlauts and quotes come out right in the PDF |
 | 13b | `/print` | look at the Greek and Cyrillic cards in the PDF | letters, not empty boxes — the engine does not warn when a glyph is missing |
 | 14 | any | `python3 scripts/check_project.py .` | no errors |

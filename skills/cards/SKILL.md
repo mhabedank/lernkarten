@@ -17,18 +17,62 @@ Creates flashcards from the topic catalog and the references under
    whole catalog **except the subtopics the catalog marks** — see *Scope*.
    When ambiguous, name the matches and ask briefly.
 3. **Per subtopic**: read the referenced files (not just the catalog bullet
-   points!) and write cards. Aim for 3–8 cards per subtopic, depending on how
-   dense the material is. With > 5 subtopics, parallelise generation via an
-   agent fan-out (one agent per topic; put the reference paths and the style
-   rules in the prompt).
+   points!) and write cards. Read `goal.md` too if the project has one: its
+   `depth` is a **ceiling, not a slice**, so it names the highest kind of card
+   the deck carries and every level below it comes along. An `expert` deck
+   still carries the `awareness` card that names the concept and the `working`
+   card that puts it to use; `depth` says how far the cards go, never where
+   they start. Aim for 3–8 cards per subtopic, depending on how dense the
+   material is. **One of those cards is the anchor**: every subtopic that
+   produces cards produces at least one card that names the concept the
+   subtopic is about and says what it is. The anchor is *one of* the 3–8, not a
+   card on top of them — it does not raise the count. See *The anchor card*
+   below for what it has to contain. With > 5 subtopics, parallelise generation
+   via an agent fan-out (one agent per topic; put the reference paths and the
+   style rules in the prompt).
 4. **Merge into existing files**: if `cards/<topic-slug>.yaml` exists, append
    the new cards; do not duplicate cards whose `front` already exists in
    substance. Replace only on an explicit request ("regenerate").
 5. Validate after writing: `lernkarten check cards/*.yaml`
    (checks the schema and test-compiles). Fix errors right away.
-6. Summary: number of cards per topic/subtopic, **how many of them carry a
+6. **Check the project**: `python3 scripts/check_project.py .` — it reads
+   `catalog/topics.md` as well as the cards, which `lernkarten check` never
+   does, so this is the step that sees the anchors and the enumerations. Act
+   on what it reports rather than noting it:
+   - *no card names the term* — the subtopic declares a concept and no card in
+     that file names it. Write the card that names it and says what it is.
+     **Or**, when a card in that file already names the concept in that file's
+     own language, the deck is fine and the catalog is stale: add that
+     language's alias to the subtopic's `Term:` line in `catalog/topics.md`.
+     A `Term:` line binds per card file, so a German deck needs the German
+     alias whatever the English deck already says.
+   - *is enumerated and never named* — a `#list([…])` back introduces
+     something no other card in the file explains. Write, or reword, a card
+     that names it. Never delete the item from the enumeration to quieten the
+     check: the enumeration is not the problem, the missing card is.
+7. Summary: number of cards per topic/subtopic, **how many of them carry a
    picture** (the deck now depends on files outside `cards/`), then the scope
    report below, then point at `/print`.
+
+## The anchor card
+
+The anchor is the card that names the concept a subtopic is about. It is what
+makes the rest of the file readable: every other card may then use the term,
+because one card in the same file has established it.
+
+Write it as a **functional definition** — what the concept changes, what it
+costs, and what it does not fix. Not a dictionary gloss: *"X is a method for
+Y"* restates the name and leaves the learner able to do nothing they could not
+do before, and it will come back for review for as long as the deck is used.
+The anchor earns its place exactly the way every other card does.
+
+**Anchor, not coverage.** One card per *named* concept — never a definitional
+layer underneath everything. Do **not** add a definition card for every term
+you mention. Spaced repetition is a fixed-budget instrument: every card is a
+review cost that recurs forever, so a deck padded with definitions of terms the
+learner meets daily is worse than the same deck without them. More definition
+cards is not better. The right number is one per concept a subtopic is actually
+about, and none for the vocabulary it merely uses.
 
 ## Scope — what to skip, and what to say about it
 
@@ -177,6 +221,11 @@ is given an explicit `--grid`.
   syntax (`(a) / (b)`, `Omega`, `"Var"(X)`), a single `\` for a line break,
   `#list([a], [b])` for a bulleted back with at most 4 items. Escape `#`, `*`,
   `_`, `@`, `<`, `>` and backticks in running text; `%` and `&` need nothing.
+- **Nothing is introduced only inside a `#list([…])` back.** Every item you
+  enumerate there is also named by another card in the same file — a list is a
+  reminder of what the deck has already taught, never the place a term first
+  appears. `check_project.py` reports an item no other card in that file
+  mentions.
 - **Emphasis**: `*bold*`, `_italic_` — one star, not two. `**bold**` is
   markdown and Typst reads it as two empty strong elements: the build succeeds
   and the card prints without emphasis, so nothing warns you.

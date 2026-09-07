@@ -12,6 +12,11 @@ cards:
     front: 'How long is a tidal day, and what follows for high water?'
     back: '$24 "h" 50 "min"$. \ Every high water arrives about 50 minutes later than the one on the day before.'
     source: 'Field notes 2'
+  - id: R7XQ4
+    subtopic: 'Rhythm of the tide'
+    front: 'What is the rhythm of the tide, and what does knowing it buy you?'
+    back: 'The fixed daily pattern of the Ashwind tide: two high and two low waters in a tidal day, each about 50 minutes later than the day before. \ It tells you *when* to expect water, never *how much* — that is the range.'
+    source: 'Field notes 2, "Basic quantities"'
   - id: DKMPP
     subtopic: 'Range and the rule of twelfths'
     front: 'How is the tidal range $R$ defined?'

@@ -25,8 +25,9 @@ how a deck ends up full of research-methodology cards nobody wanted.
    reading agent per source that returns topics + subtopics + one-sentence
    descriptions + references, then merge and deduplicate. Otherwise read
    directly.
-5. Write the catalog (format below), show the tree with the counts, and point
-   at the next step.
+5. Write the catalog (format below) — including a `Term:` line on every
+   subtopic whose heading names a concept — show the tree with the counts, and
+   point at the next step.
 
 ## With a goal — the normal case
 
@@ -88,8 +89,29 @@ absent:
 - `Status: out of scope` — ingested but outside the goal. Keeps its references.
 - `Parents: <primary>, <other>, …` — every topic this subtopic belongs under.
 - `Related: <subtopic>, …` — subtopics it is associated with.
+- `Term: <alias>, <alias>, …` — the names the concept this subtopic is about
+  goes by. `check_project.py` reads it and reports a card file that writes
+  cards for the subtopic without one of them naming the concept, which is how
+  a deck ends up arguing about something it never defines. The aliases are
+  **comma-separated**, and they have to cover **every language the deck is
+  written in**: the check binds per card file, so an English alias never
+  anchors the Greek cards in another file. Matching is **literal and does no
+  stemming** — write the form the cards actually use (`нуля глубин`, not
+  `нуль глубин`). An alias may **not contain a comma**, because the line is
+  split on every one; write a comma-free alias instead. Leaving the line out
+  keeps the checker silent about that subtopic, so no existing catalog needs
+  editing.
 
 And on a topic: `Also covers: <subtopic> (cards in cards/<slug>.yaml)`.
+
+**Write the `Term:` line wherever the heading names a concept.** A subtopic
+whose heading names one thing — *Access control* — gets the line; a subtopic
+whose heading describes a group of facts — *How the team works*, *Rules of
+use* — gets none, and nothing checks it. No rule can tell the two apart, which
+is why the line exists rather than the heading being matched. Give it an alias
+for every language the deck uses, at latest when the subtopic's cards exist.
+Writing it earlier costs nothing: the line is inert on a subtopic that has no
+cards yet.
 
 ## A document marked `content: sparse`
 

@@ -58,7 +58,7 @@ ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 # The attribute lines a catalog entry may carry, as `Key: value` in its body.
-ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal):(.*)$")
+ATTRIBUTE = re.compile(r"^(Status|Parents|Also covers|Related|References|Goal|Term):(.*)$")
 # `Also covers: Access control (cards in cards/security.yaml)` — the parenthetical
 # is prose for the reader, not part of the name.
 PARENTHETICAL = re.compile(r"\s*\([^)]*\)\s*$")
@@ -83,6 +83,14 @@ ESCAPED_MARKUP = re.compile(r"\\([*_#@<>$`])")
 # conservative warning threshold for both.
 MAX_FRONT = 120
 MAX_BACK = 400
+# An enumerated back is `#list([a], [b], ...)`. Nothing may be introduced only
+# inside one, so the items are pulled out and matched against the other cards.
+LIST_HEAD = "#list("
+# An item is usually "the name — what it is". Only the head is the name, so the
+# item is cut at the first of these before it is matched. The hyphen counts
+# spaced (`Amber - the middle stage`) and not unspaced, or `sigma-additivity`
+# would be torn in half.
+ITEM_SEPARATOR = re.compile(r"[—–,:;]|\s\(|\s-\s")
 
 
 class Report:
@@ -134,6 +142,85 @@ def topic_key(text):
     telling the user to re-run /catalog; one that cries wolf gets ignored.
     """
     return " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split())
+
+
+def _mentions(haystack_key, needle_key):
+    """Does `needle_key` occur in `haystack_key` as a whole token sequence?
+
+    Both arguments are already through `topic_key`, so both are lower case,
+    punctuation-free and single-spaced, and padding each with a space turns
+    "contains" into "contains these whole words in this order". A substring is
+    not a match: `Nipptidenhub` does not name `Tidenhub`, and `settlement` does
+    not name `Settlements`. There is no stemming — an inflecting language needs
+    the alias written in the form the cards use.
+
+    Both new checks match through this and only through this, so the anchor rule
+    and the orphan rule cannot drift apart.
+    """
+    return f" {needle_key} " in f" {haystack_key} "
+
+
+def _list_items(back):
+    """The `[...]` items of every `#list(...)` in a card back.
+
+    A bracket-depth scan rather than a regex, so an item containing its own
+    brackets or parentheses comes out whole. `None` means the markup does not
+    balance: the caller skips that card and reports nothing, because half a
+    fragment says nothing about the deck. `[]` means there is no enumeration.
+    """
+    text = str(back)
+    items = []
+    position = 0
+    while True:
+        head = text.find(LIST_HEAD, position)
+        if head == -1:
+            return items
+        depth = 0  # parentheses, counted only outside an item
+        bracket = 0  # brackets, counted inside the `#list(` body
+        start = None  # where the item being read begins
+        index = head + len(LIST_HEAD) - 1  # on the `(` of `#list(`
+        closed = False
+        while index < len(text):
+            char = text[index]
+            if bracket == 0 and char == "(":
+                depth += 1
+            elif bracket == 0 and char == ")":
+                depth -= 1
+                if depth == 0:
+                    closed = True
+                    index += 1
+                    break
+            elif char == "[":
+                if bracket == 0:
+                    start = index + 1
+                bracket += 1
+            elif char == "]":
+                bracket -= 1
+                if bracket < 0:
+                    return None
+                if bracket == 0:
+                    items.append(text[start:index])
+                    start = None
+            index += 1
+        if not closed or bracket != 0:
+            return None
+        position = index
+
+
+def _item_key(item):
+    """One enumeration item reduced to the name it introduces. `None` to skip it.
+
+    Two things make an item unmatchable rather than orphaned. Maths is the
+    first: an axiom written as `$P(Omega) = 1$` is not a term any other card
+    can be expected to name, so **any** `$` in the item skips it. That is
+    deliberately wider than a balanced `$...$` span — stripping the maths and
+    matching what is left would report the prose around it, which is the one
+    false positive this check cannot afford. An empty head is the second.
+    """
+    if "$" in item:
+        return None
+    head = ITEM_SEPARATOR.split(item, maxsplit=1)[0]
+    return topic_key(head) or None
 
 
 def parse_goal(text):
@@ -581,7 +668,7 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
-        return set(), {}
+        return set(), {}, {}
 
     text = path.read_text(encoding="utf-8")
     catalog = parse_catalog(text)
@@ -607,6 +694,10 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
             report.warn("catalog/topics.md", f"topic '{name}' has no subtopic (###)")
 
     marked = {}
+    # {subtopic: [alias, ...]} — the concept the heading is about, made
+    # addressable. Absent means silence, which is every catalog written before
+    # the line existed.
+    terms = {}
     for entry in catalog.subtopics:
         status = entry.attribute("status")
         if status in CATALOG_STATUS:
@@ -617,6 +708,19 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
                 f"subtopic '{entry.name}': 'Status: {status}' is not one of "
                 f"{', '.join(CATALOG_STATUS)}",
             )
+        term = entry.attribute("term")
+        if term is not None:
+            # Present but useless must not be silently the same as absent, or
+            # the shape means nothing. Worded after the invalid-`Status:` error.
+            aliases = catalog_names(term)
+            if not aliases:
+                report.error(
+                    "catalog/topics.md",
+                    f"subtopic '{entry.name}': 'Term:' is empty — name the term, "
+                    "or leave the line out",
+                )
+            else:
+                terms[entry.name] = aliases
         references = (entry.attribute("references") or "").strip()
         if (not references or references.lower() == "none") and status != "gap":
             report.error(
@@ -672,7 +776,7 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
                 "catalog/topics.md",
                 f"goal.md requires '{topic}', which is nowhere in the catalog — re-run /catalog",
             )
-    return subtopics, marked
+    return subtopics, marked, terms
 
 
 def _check_ids(cards, where, ids_seen, report, strict):
@@ -701,7 +805,76 @@ def _check_ids(cards, where, ids_seen, report, strict):
             )
 
 
-def check_cards(project, subtopics, report, marked=None, strict=False):
+def _check_orphans(where, cards, report):
+    """A-2: nothing is introduced only inside a `#list(...)` back.
+
+    An item enumerated on one card and named by no *other* card in the same file
+    is an orphan: the deck asks the learner to recall a name it never taught.
+    The haystack deliberately excludes the enumerating card, so an item that
+    only ever appears in its own list is still an orphan.
+
+    `i` is the card's position in the **unfiltered** list. A card this skips
+    still consumes an index, so `card {i}` here always means the same card as
+    `card {i}` in every other message about this file.
+    """
+    # {index: front + back, normalised} for every card that has a back at all.
+    # A malformed card contributes no text and no enumeration: `check_cards`
+    # already reports it, and one broken card must not yield two findings.
+    texts = {}
+    for i, card in enumerate(cards, start=1):
+        if not isinstance(card, dict) or "back" not in card:
+            continue
+        texts[i] = topic_key(f"{card.get('front', '')} {card['back']}")
+    for i, card in enumerate(cards, start=1):
+        if i not in texts:
+            continue
+        items = _list_items(str(card["back"]))
+        if not items:
+            continue
+        for item in items:
+            key = _item_key(item)
+            if key is None:
+                continue
+            if any(_mentions(text, key) for n, text in texts.items() if n != i):
+                continue
+            report.error(
+                where,
+                f"card {i}: '{item}' is enumerated and never named — "
+                "no other card in this file mentions it",
+            )
+
+
+def _check_anchors(anchor_text, terms, report):
+    """A-1: a subtopic that names a term has a card naming it back, per file.
+
+    The binding is per `(card file, subtopic)` pair, because a file is what
+    somebody prints: a subtopic split over two decks has to be anchored in both,
+    and a card elsewhere in the file under a different subtopic anchors nothing.
+
+    A subtopic with no `Term:` line is skipped in silence, which is every
+    catalog written before the line existed. A subtopic marked `Status: gap` or
+    `out of scope` is *not* skipped: the rule keys off cards existing, and a
+    file that carries cards for a subtopic anchors them.
+
+    `sorted` so the output is the same on every platform — tests read it.
+    """
+    for where, subtopic in sorted(anchor_text):
+        aliases = terms.get(subtopic)
+        if not aliases:
+            continue
+        text = topic_key(anchor_text[(where, subtopic)])
+        if any(_mentions(text, topic_key(alias)) for alias in aliases):
+            continue
+        # The first alias, verbatim: matching is order-independent, but the
+        # message has to be the same one every time it is printed.
+        report.error(
+            where,
+            f"subtopic '{subtopic}': no card names the term ('{aliases[0]}') — "
+            "one card in this file has to name the concept and say what it is",
+        )
+
+
+def check_cards(project, subtopics, report, marked=None, terms=None, strict=False):
     """cards/*.yaml: the schema /print reads, plus the card-style limits.
 
     The limits follow the grid the deck declares, because "too long" is a
@@ -723,6 +896,10 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
     # about a whole file rather than about one card.
     figure_faces = {}
     by_subtopic = {}
+    # {(file, subtopic): every card of that pair, front and back} — the same
+    # shape and the same reason: whether a term is anchored is a question about
+    # one file's cards under one subtopic, not about a single card.
+    anchor_text = {}
     for path in sorted(root.glob("*.yaml")):
         where = f"cards/{path.name}"
         data = read_yaml(path, report)
@@ -825,9 +1002,13 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
             subtopic = str(card.get("subtopic") or "")
             has_picture = any(f in card for f in ("front_image", "back_image"))
             by_subtopic.setdefault((where, subtopic), []).append(has_picture)
+            anchor_text[(where, subtopic)] = (
+                f"{anchor_text.get((where, subtopic), '')} {front} {back}"
+            )
             if not card.get("source"):
                 report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)
+        _check_orphans(where, data["cards"] or [], report)
     _note_pictures_at_a8(dense_with_pictures, report)
     for (where, picture, face), cards in figure_faces.items():
         if len(cards) > 1:
@@ -846,6 +1027,7 @@ def check_cards(project, subtopics, report, marked=None, strict=False):
                 f"'{subtopic}': every card carries a picture — a figure needs at least one "
                 "text-only card from its transcription, or it only ever tests recognition",
             )
+    _check_anchors(anchor_text, terms or {}, report)
 
 
 def _note_pictures_at_a8(decks, report):
@@ -892,8 +1074,8 @@ def check(project, report, strict=False):
     required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
     sparse = check_knowledge(project, source_ids, report)
-    subtopics, marked = check_catalog(project, report, required, areas, sparse)
-    check_cards(project, subtopics, report, marked, strict=strict)
+    subtopics, marked, terms = check_catalog(project, report, required, areas, sparse)
+    check_cards(project, subtopics, report, marked, terms=terms, strict=strict)
     return report
 
 
