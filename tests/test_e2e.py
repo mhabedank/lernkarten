@@ -738,6 +738,63 @@ def test_a8_prints_a_landscape_card_on_a_landscape_sheet(tmp_path):
     assert cw > ch, f"a flashcard is landscape; this one is {cw} x {ch}"
 
 
+GUIDE = (140, 135, 121)  # #8c8779, the only colour the crop marks are drawn in
+
+
+def crop_marks_per_edge(path, index=0, margin=5.0, scale=8):
+    """How many guide-coloured pixels sit in each of the four margin strips.
+
+    Rendered at scale 8 on purpose: an arm is a 0.3 pt line, and at the scale=2
+    `page_holds` uses it blends towards paper white past that helper's
+    tolerance. The strips are held 0.6 mm clear of the print area, because a
+    card's own ink lands on the boundary pixel and would otherwise be counted
+    as a mark that is not there.
+    """
+    pdfium = pytest.importorskip("pypdfium2", reason="renders the page to look at it")
+    image = pdfium.PdfDocument(str(path))[index].render(scale=scale).to_pil().convert("RGB")
+    width, height = image.size
+    sheet_w, sheet_h = pdf_page_size_mm(path)
+    arm, pad = min(margin * 0.7, 3.0), 0.6
+    px, py = width / sheet_w, height / sheet_h
+
+    def guide_pixels(box):
+        patch = image.crop(tuple(int(v) for v in box)).getdata()
+        return sum(
+            1 for p in patch if sum((a - b) ** 2 for a, b in zip(p, GUIDE, strict=True)) <= 60**2
+        )
+
+    return {
+        "top": guide_pixels((0, (margin - arm) * py, width, (margin - pad) * py)),
+        "bottom": guide_pixels(
+            (0, (sheet_h - margin + pad) * py, width, (sheet_h - margin + arm) * py)
+        ),
+        "left": guide_pixels(((margin - arm) * px, 0, (margin - pad) * px, height)),
+        "right": guide_pixels(
+            ((sheet_w - margin + pad) * px, 0, (sheet_w - margin + arm) * px, height)
+        ),
+    }
+
+
+@pytest.mark.parametrize("grid", ["a7", "a8"])
+def test_the_crop_marks_reach_all_four_edges_of_the_sheet(tmp_path, grid):
+    """The marks are the line a user cuts to, so all four edges must carry them.
+
+    `templates/cards.typ` wrote the sheet size into the crop-mark loops as the
+    literals `297mm` and `210mm` — A4 *portrait*. The 4 x 4 grid tiles a
+    *landscape* A4, so at `--grid a8` the bottom marks were placed 292 mm down a
+    210 mm page, off the paper entirely, and the right-hand marks 205 mm across
+    a 297 mm one, a ghost column standing in the middle of the sheet. A7 was
+    never affected, which is why it survived unnoticed through two grids.
+    """
+    target = tmp_path / f"{grid}.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--grid", grid)
+    assert result.returncode == 0, result.stderr
+
+    marks = crop_marks_per_edge(target)
+    missing = sorted(edge for edge, count in marks.items() if count == 0)
+    assert not missing, f"no crop marks on the {missing} edge(s) at {grid}: {marks}"
+
+
 def test_an_a7_legal_deck_reprints_at_a8_without_a_warning(tmp_path):
     """SC-011: this is what "half the sheets for the same deck" requires.
 
