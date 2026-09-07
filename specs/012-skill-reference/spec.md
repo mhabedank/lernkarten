@@ -23,7 +23,7 @@ changes behaviour, and no file a user's project holds is read or written.
 
 **Implementation half**:
 
-- [x] **Deterministic** — Python and configuration under `docs/`, a dependency
+- [x] **Deterministic** — Python and configuration under `docsite/`, a dependency
       manifest, a rebuilt `.github/workflows/pages.yml`, and pytest cases. **No
       skill prompt changes in 012**; the `SKILL.md` frontmatter change belongs to
       013.
@@ -33,6 +33,46 @@ changes behaviour, and no file a user's project holds is read or written.
 plugin's `SKILL.md`), and a contributor to this repo (who today finds half the
 documentation on a website and half in the repository, with nothing explaining
 the split).
+
+## Clarifications
+
+### Session 2026-09-08 — decisions taken before this spec was written
+
+These six were settled in the design conversation this specification came out
+of. They are recorded here because the spec carries the decisions but not the
+reasoning behind them. None of them is reopened in planning.
+
+- Q: Which static site generator builds the documentation? (FR-001) → A: **Sphinx, with `myst-parser` for the Markdown sources and `pydata-sphinx-theme` for the theme.** Django, pandas and numpy — the three sites named as the target — are all Sphinx, and pandas and numpy both use `pydata-sphinx-theme`, so the look and the mechanics being asked for are the ones this toolchain already produces. Every feature the request praised is a Sphinx feature rather than a theme's: clickable cross-references between entities are domains, a tutorial with flow is a `toctree`, topic pages are the user guide, and search is built in. The property that actually decided it is narrower than any of those: a Sphinx domain makes a reference to something that does not exist a **build failure**, which is the drift protection this feature exists for and which this repository has so far bought with bespoke regex gates written after the drift shipped. `myst-parser` keeps the Markdown that already exists as Markdown, so no source file is converted to reStructuredText.
+- Q: Does the generated site absorb `docs/index.html`? (FR-013) → A: **No — the landing page stays the site root, unchanged, and keeps `tests/test_landing_page.py`; the generated site lives under a sub-path.** The landing page is a hand-designed, self-contained file with a test suite of its own. Rebuilding it as a theme template would destroy the design and obsolete those tests, and it would buy nothing: the site needs a home page and already has a better one than a generator would produce. Django is the precedent — a bespoke home page with Sphinx behind it.
+- Q: Where does the skill metadata for the generated reference live? → A: **Under the `metadata:` key of the `SKILL.md` frontmatter, as `metadata.docs` — never as new top-level keys.** The Agent Skills standard allows exactly five top-level frontmatter keys — `compatibility`, `description`, `license`, `metadata`, `name` — and rejects anything else, including Claude Code's own extended fields. The evidence is `github.com/anthropics/claude-code` issue #25380, which quotes the validator error `Attribute 'allowed-tools' is not supported in skill files. Supported: compatibility, description, license, metadata, name.` `metadata` is the free-form map the standard provides for exactly this purpose. This is not academic here: lernkarten ships as a Claude Code plugin marketplace, so a frontmatter key the validator refuses breaks an installation rather than a lint. The decision binds **013**, not 012; it is recorded here because this is where the reasoning was established.
+- Q: Is the Sphinx extension that documents skills built in this repository, or in a separate public one? → A: **In this repository, with the extraction planned and its trigger written down.** The public artifact worth sharing is the `metadata.docs` **schema**, not the couple of hundred lines that read it — and that schema has no validated design yet. A schema with one consumer is a configuration format, not a standard; lernkarten is that first consumer and has to shake it out. Two repositories moving in lockstep would also add release friction during exactly the phase with the most iteration. So that "extract later" does not quietly become "never", the mitigation is part of the decision: the extension gets its own directory, imports nothing from lernkarten (enforced by a test, not by intent), carries its own tests, and the extraction trigger is written down now — the site live, plus the schema unchanged across one release. `sphinx-agent-skills` and `sphinx-skills` are both free on PyPI.
+- Q: Is this one feature or several? → A: **Three.** 012 is the Sphinx foundation, 013 the generated skill and CLI reference, 014 the tutorial and the topic pages. As a single feature nothing would be visible until the very end; split this way each of the three merges something a reader can open.
+- Q: How much of the existing documentation moves onto the site? (FR-007) → A: **All of it**, split into a user area (`docs/workflow.md`, the Leitner method page) and a contributing area (`docs/design.md`, `docs/testing.md`, `CONTRIBUTING.md`) — the way Django publishes both. The complaint being answered is that the content is split between the website and the repository for no reason a newcomer can see. A migration that moved only the user-facing half would leave that complaint half-standing, and it would leave the contributor documentation exactly where nobody found it.
+
+### Session 2026-09-08 — answered during clarification
+
+Five gaps found by reading this spec against the repository, and closed here.
+Unlike the session above, these were open when the spec was written.
+
+- Q: What happens to the links in the migrated documents that point at repository files rather than at documentation pages? (FR-020, FR-029) → A: **A small transform in the documentation configuration turns an unresolvable repository path into an absolute GitHub URL at build time; the sources keep their relative paths.** Read outside code fences, the five migrated documents carry 31 relative links, and 22 of them point at something that is not a documentation page — `../templates/card.typ`, four `../assets/logo*.svg`, four `../assets/brand/*.typ`, `../assets/fonts/`, `../.specify/memory/constitution.md`, `../CLAUDE.md`, `../README.md#install`, two fixture READMEs, `../specs/002-landing-page-fixes/bugs/BUG-011.md`, and more. Under FR-020 every one of them is a build failure, so this had to be decided before anything could be planned. Rewriting them in the source files was rejected because of what it costs elsewhere: `check_docs.check_links` skips any target beginning with `http` and requires the rest to exist **on the file system**, so hard-coded GitHub URLs would quietly remove two dozen links from the coverage `scripts/check_docs.py` provides today — the weakening SC-005 forbids. Leaving the relative path in the source and resolving it at build time is the only option under which both checks keep doing real work, which is what US4 scenario 3 means by "the two checks overlap deliberately". If the transform turns out to need more than roughly 30 lines, the fallback is hard-coded absolute URLs and the lost `check_docs` coverage is accepted explicitly rather than discovered later.
+- Q: Where do the documentation configuration and page sources live, and how do files outside that directory reach the site? (FR-028) → A: **A new `docsite/` directory holds the configuration and the page sources; `docs/` keeps meaning "pages published by hand"; files outside it come in through MyST's `{include}`.** Putting the sources in `docs/` would place a Sphinx root page `docs/index.md` directly beside the landing page `docs/index.html` — two files one letter apart, one of them the site root and the other not, in the directory this feature exists to make legible. The separation also states the rule in one sentence a reviewer can check. **Symlinks are excluded**, and the spec says so rather than leaving it to be discovered: a symlink into the source directory needs developer mode on Windows, against FR-004 and SC-001.
+- Q: How does `docs/leitner.html` get a navigation entry when it is not a documentation page? (FR-010, FR-032) → A: **A short Markdown page in the user guide introduces the method and links out to it; `leitner.html` is served only at the site root.** A `toctree` accepts documents and absolute URLs, not a relative `.html` file, so the entry FR-010 requires has no direct mechanism — and an absolute URL would break `file://` viewing, against FR-018. The wrapper gives a real sidebar entry and a real place in the reading order while the designed page stays byte-identical. The second half of the answer settles a question the first half opens: the page is **not** carried into the documentation tree as well, so it has exactly one URL — the one `docs/index.html` and `README.md` already link, and the one PR #105 made the workflow copy.
+- Q: May a failing documentation build block the deploy of the landing page? (FR-033) → A: **Yes — the deploy is all-or-nothing — and the documentation build additionally runs in CI on every pull request.** Deploying the landing page without the documentation would leave the site half-updated: a new landing page linking into a stale documentation tree, which is hard to notice and harder to debug, and it is the same class of failure as the 404 PR #105 fixed. The objection to all-or-nothing is that a typo in a contributor document could take the public page offline; the pull-request job removes it, because the build has to be green before anything reaches `main`. FR-023 requires that job anyway, so this costs nothing new.
+- Q: What sub-path is the documentation site published at, and what exactly does the landing page link? (FR-013, FR-014, FR-016) → A: **`/docs/`** — in one sentence: `docsite/` generates into `/docs/`. It is the path a reader guesses, and with the sources in `docsite/` the name is free of the clash that made it awkward. The landing page links **`docs/`**, the directory, not `docs/index.html`: it is what a reader would type, it survives a future change of root document, and it keeps the deployed URL free of a filename. That choice is not cosmetic — `test_the_pages_workflow_assembles_every_relative_link` matches the derived reference literally, so the two forms are not interchangeable and the adapted test's rule follows from this one. **On FR-016's "adapted, never weakened"**: what is protected is the *derivation*, not the mechanism. The test must keep deriving its target set from `docs/index.html` and no target may drop out of that set; what it may learn is that a target can also arrive in `_site` by a second route — produced by the documentation build into `_site/docs/` — rather than only by a `cp` line. The set of links checked is unchanged, so this is not a weakening, and FR-016 now says so instead of leaving a reviewer to reconstruct it.
+
+### Session 2026-09-08 — second, adversarial clarification round
+
+The first two sessions asked what was missing. This one tried to break the spec:
+requirements checked against each other, and the spec checked against the
+repository's own code. Two entries **narrow or widen a requirement written
+earlier**, and say so rather than overwriting it silently.
+
+- Q: Does the 15 px floor bind the whole theme, and what happens to the other visual rules `docs/design.md` states? (FR-027, FR-035, FR-036) → A: **Full alignment — and FR-035 is narrowed.** Two errors were found by reading `docs/design.md` instead of the spec. First, in the strict direction: `docs/design.md` line 58 says **"Reading text means Archivo"**, and constitution XVI repeats that the floor does not bind IBM Plex Mono literals or Jost labels. The *Print & Design Impact* bullet ("including code samples and tables") and FR-035's original wording ("every element the theme sets below it") therefore demanded **more than the rule they cite**; both are corrected to Archivo prose only, and a code sample is exempt. *(This narrows FR-035 as it was written on 2026-09-08 earlier the same day. The requirement is not withdrawn — the override is still required — only its scope is corrected to match `docs/design.md`.)* Second, in the loose direction, and much larger: `docs/design.md` §*The screen surfaces* says both existing surfaces are "built from flat colour and type only — **no gradients, no shadows, no rounded corners**", while `pydata-sphinx-theme` styles admonitions, buttons, the search field and the sidebar with radii and shadows by default. So FR-027 was never a type-size job. The decision is full alignment: the three inks, the three faces **self-hosted from `assets/fonts/`** (they are vendored and OFL-licensed, so the landing page's Google Fonts route is not reused), and the theme's shapes flattened. And because a normative document that describes two surfaces while three exist is stale, `docs/design.md` §*The screen surfaces* **gains a row for the documentation site** naming which theme conventions it may keep — a deliberate edit under constitution XVI, not a drive-by.
+- Q: Every page the site generates is invisible to `scripts/check_docs.py`. Does that stay true? (FR-037) → A: **No.** `markdown_files()` is extended to cover every Markdown file under `docsite/`, and a test asserts that coverage so it cannot be silently lost. `markdown_files()` globs exactly three things — root `*.md`, `docs/*.md`, `skills/*/SKILL.md` — and `gated_files()` is that list plus `scripts/*.py` and `templates/*.typ`. A new `docsite/` is in neither, so every page 012 writes would sit outside the dead-link check *and* the five drift gates at once: the A7/A8-default token gate, the sheet-capacity gate, the cutting-instruction gate, the borderless-size gate and the print-order gate. Those gates exist because this repository shipped exactly that drift twice, and their own comments say a hand-written grep missed lines and they shipped. The consequence is written into FR-037 rather than left to be discovered: `check_links` resolves a relative link **against the file system**, so pages under `docsite/` may not use extension-less MyST cross-references and write a relative path to the source file **including its `.md` extension** instead. This matters most for **014**, whose tutorial and topic pages will be full of grid and card-size claims.
+- Q: Two links resolve on the deployed site and are dead in a local build. Which promise gives way? (FR-018, FR-038) → A: **Neither — the build command assembles a miniature `_site`.** FR-031 retargets `docs/design.md`'s `index.html` to `../index.html` and its `../assets/card-box.pdf` to `../card-box.pdf`, which is right when deployed (from `/docs/`, `../` is the site root) and dead locally (from `docsite/_build/html/`, `../` is `docsite/`). US2 acceptance scenario 5 and FR-018 promise the opposite. Rather than narrowing that promise, the build places `docs/index.html`, `docs/leitner.html` and `assets/card-box.pdf` in the positions they occupy when deployed, so every link resolves in both settings. The second payoff decided it: the local build becomes a **preview a contributor can check FR-014 and SC-007 against before pushing**, instead of those being verifiable only after a deploy. This also settles **FR-019** on `python3 scripts/build_docs.py` — a plain `sphinx-build` cannot assemble anything.
+- Q: This feature amends the constitution. How far? (FR-039) → A: **Both principles, inside 012, as a named task.** Principle **VI** carries a fenced dependency graph of every `scripts/*.py`, and `check_import_graph()` derives the real graph from the import statements and **fails the *Skills & docs* CI job** for any module the block does not list — so `scripts/build_docs.py` cannot merge without the edit. Principle **V**'s `docs/` row is a normative table listing four files; a new top-level `docsite/` is outside it. Nothing enforces V, so that half is a governance obligation rather than a red build — which is precisely why it would otherwise be skipped. The overdue correction rides along: Principle V's row, and the constitution as a whole, **never mentions `docs/leitner.html`**, although FR-011 promises that if the file ever moves its gates move with it. A promise about a file the governing document does not know exists is not a promise. The version and the *Last Amended* date are bumped per the governance rule.
+- Q: Which success criteria are actually measurable, and does SC-001 still claim three platforms? (SC-001, FR-034, SC-002, SC-004, SC-005, SC-013) → A: **Three platforms — SC-001 stands and FR-034 widens to match it.** *(This widens FR-034, written earlier the same day as Windows-only. The reasoning that made Windows the minimum still holds; it was the minimum, not the target.)* `CONTRIBUTING.md` promises all three platforms work from one ordinary command, and this feature introduces two OS-sensitive points of its own — the path transform in `conf.py` and `{include}` resolution — plus text encoding, which is the same class of problem that already excluded symlinks. A portability claim nothing exercises is a claim rather than a property. On the rest: criteria a command can decide keep their present form; **SC-005** ("unweakened" is a judgement about a diff, not something a command reports) and **SC-013** (a property of the process, not of an artifact) become **numbered manual rows in `docs/testing.md`** — the mechanism constitution XI provides and SC-008 already uses. SC-002 gains a stated method, and SC-004 names its comparison explicitly: **byte-identical HTML output, excluding `.doctrees/` and `.buildinfo`**, because a naive whole-directory compare fails for reasons that have nothing to do with determinism.
+- Q: After migration, does `README.md` still send a reader to raw Markdown in the repository? (FR-042) → A: **No — all three references point at the published site.** `README.md` links `docs/workflow.md` (line 79), `docs/design.md` (274) and `docs/testing.md` (288) as repository paths; after migration each is also a published page, and the premise of this whole feature is that a newcomer should not have to know which half of the project a document lives in. The narrower alternative — retarget the two user-facing links and leave the contributor one — was rejected: it reintroduces the split it is meant to remove, one link deep. **Verified against `tests/test_repo_hygiene.py` before deciding**: `test_the_readme_still_names_the_landing_page_source` pins `](docs/index.html)` inside `## The design`, which is a *different* link from `](docs/design.md)` in the same section, so retargeting does not break it and no test is changed. The accepted cost: `check_docs.check_links` skips `http` targets, so those three links leave its file-system coverage — but `REQUIRED_FILES` still requires all three files to exist, so deleting one is still caught.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -242,7 +282,23 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   is read on GitHub *and* in the site. It has one copy and one location.
 - **A hand-written HTML page inside a generated site**: `docs/leitner.html` is
   neither Markdown nor generated. It must survive with its design intact and its
-  gates attached.
+  gates attached, reach the navigation through a wrapper page (FR-032), and be
+  served at exactly one URL — the site root, never a second copy under `/docs/`.
+- **A theme upgrade that reintroduces a shape**: FR-027 flattens radii, shadows
+  and gradients the theme sets. A later version of the theme can style a new
+  component the override does not name, so the flattening is written as broadly
+  as the theme allows rather than as a list of selectors — the same reasoning
+  `tests/test_landing_page.py` gives for stating the type floor as a rule instead
+  of a list.
+- **A font that is not there**: the three faces are served from the site itself
+  (FR-027, SC-014), so the build must copy them out of `assets/fonts/` and the
+  stylesheet must declare them. A missing face falls back to a system font and
+  the surface silently stops matching the landing page.
+- **A link that resolves in a checkout but not on the web**: the migrated
+  documents carry 22 links to repository files (`../templates/card.typ`,
+  `../.specify/memory/constitution.md`, four `../assets/logo*.svg`, …) and four
+  more to things served at the site root. Under warnings-as-errors every one of
+  them fails the build unless FR-029 and FR-031 handle it.
 
 ## Requirements *(mandatory)*
 
@@ -293,9 +349,12 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   reads it, and be pulled into the site from there.
 - **FR-010**: `docs/leitner.html` is hand-written HTML with a bespoke design, not
   Markdown. It MUST be **embedded, not converted**: the file stays at
-  `docs/leitner.html`, byte-identical, is carried into the built site as an extra
-  static page, and gets a navigation entry pointing at it. Converting it would
-  destroy a designed page and detach the gates named in FR-011.
+  `docs/leitner.html`, byte-identical, and reaches the navigation through the
+  wrapper page FR-032 specifies. Converting it would destroy a designed page and
+  detach the gates named in FR-011. It MUST be served at the **site root only** —
+  `_site/leitner.html`, the URL `docs/index.html` and `README.md` already link and
+  the one PR #105 made the workflow copy. It is **not** carried into the
+  documentation tree as a second copy: one page, one URL.
 - **FR-011**: The Leitner interval gate in `scripts/check_docs.py`
   (`LEITNER_PAGE`, `check_leitner_intervals`, checked in both directions against
   `scripts/leitner.py`) MUST keep working, and `tests/test_check_docs.py`'s
@@ -305,63 +364,332 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
 - **FR-012**: The site MUST NOT contain generated skill or CLI reference content
   in this feature, but its navigation structure MUST accommodate a reference area
   and a tutorial area being added later without restructuring what 012 ships.
+- **FR-028**: The documentation configuration and page sources MUST live in a new
+  top-level **`docsite/`** directory. `docs/` keeps its present meaning — pages
+  published by hand — so the two are told apart in one sentence. Documents that
+  live outside `docsite/` (`CONTRIBUTING.md` at the repository root, and the
+  existing `docs/*.md`) MUST be pulled in with MyST's **`{include}`**, which
+  keeps FR-008's one-copy rule: the file stays where it is and is read from
+  there. Two mechanisms are **excluded by name**:
+  - **Symlinks** into `docsite/`. They need developer mode on Windows, against
+    FR-004 and SC-001, and would fail on a platform this repository supports.
+  - A **build-time copy** of the source file into `docsite/`. It produces a
+    second file on disk that a contributor can edit by mistake.
+
+  A Sphinx root document inside `docs/` was rejected for a reason worth
+  recording: `docs/index.md` would sit one letter from `docs/index.html`, one of
+  them the site root and the other not, in the directory this feature exists to
+  make legible.
+
+  **`{include}` is forced, not preferred.** `scripts/check_docs.py`'s
+  `REQUIRED_FILES` requires `docs/workflow.md`, `docs/design.md`,
+  `docs/testing.md` and `docs/index.html` to exist at exactly those paths, and
+  fails the *Skills & docs* gate otherwise. So including the files where they lie
+  is the only option that keeps the gate green — it is not one of several equally
+  good arrangements. This is stated so that a later change does not "simplify" it
+  into a move.
+- **FR-029**: Links in the migrated documents that point at repository files
+  rather than at documentation pages MUST be resolved **at build time** by a
+  transform in the documentation configuration, which rewrites an unresolvable
+  repository-relative path into an absolute URL to the file on GitHub. **The
+  source files keep their relative paths**, so `check_docs.check_links` — which
+  skips any target beginning with `http` and requires the rest to exist on the
+  file system — keeps checking all 22 of them. Hard-coding the URLs in the
+  sources would silently drop those links out of `scripts/check_docs.py`'s
+  coverage, which SC-005 forbids; resolving them at build time is what US4
+  scenario 3 means by "the two checks overlap deliberately". Requirements on the
+  transform:
+  - It MUST resolve a path relative to the **source file's own location in the
+    repository**, not relative to the page that includes it. `CONTRIBUTING.md`
+    writes `docs/design.md` (from the repository root) while `docs/design.md`
+    writes `../CONTRIBUTING.md` (from `docs/`); both must resolve.
+  - A path that resolves to another **documentation page** MUST become an
+    internal cross-reference, not a GitHub URL — `../CONTRIBUTING.md`,
+    `docs/design.md`, `testing.md`, `design.md#the-box` and
+    `workflow.md#when-something-goes-wrong` all name pages the site carries.
+  - It MUST have **its own test**.
+  - **Fallback, stated rather than left implicit**: if the transform needs more
+    than roughly 30 lines, it is abandoned in favour of hard-coded absolute
+    GitHub URLs in the sources, and the resulting loss of `check_docs` coverage
+    is recorded as an accepted cost in `plan.md` rather than discovered later.
+- **FR-030**: A file a page **renders** rather than links — today
+  `assets/pipeline.png` in `docs/workflow.md` and `assets/example-cards.png` in
+  `docs/design.md` — MUST be copied into the built site so the image appears. It
+  MUST NOT be handled by FR-029's transform: a rewritten URL gives an image that
+  loads from GitHub or not at all. Every such asset is an input to the build and
+  therefore falls under FR-017's trigger.
+- **FR-040**: MyST heading anchors MUST be enabled (`myst_heading_anchors`), to
+  a depth that covers the headings the migrated documents already link.
+  `docs/testing.md` links `design.md#the-box` (`docs/design.md:234`) and
+  `workflow.md#when-something-goes-wrong` (`docs/workflow.md:344`); both target
+  headings exist, but without generated anchors both are build failures under
+  FR-020. One configuration line, named here because a silent one is how it gets
+  missed.
+- **FR-041**: The `{include}` of a document from outside `docsite/` MUST resolve
+  that document's **relative image paths against the included file's own
+  location** (MyST's `relative-images` option or an equivalent). Otherwise
+  `../assets/pipeline.png` in `docs/workflow.md` and `../assets/example-cards.png`
+  in `docs/design.md` resolve against the including page and the images do not
+  appear. FR-030 requires them to appear; this names the mechanism that makes it
+  true.
+- **FR-031**: Four links in the migrated documents point at things served at the
+  **site root**, not at repository files, and MUST be retargeted by hand. They
+  are enumerated here so none is missed:
+
+  | File | Link | Problem | Fix |
+  |---|---|---|---|
+  | `docs/design.md` | `index.html` | From inside `/docs/` this resolves to `/docs/index.html`, not to the landing page at the root | `../index.html` |
+  | `docs/design.md` | `../assets/card-box.pdf` | The box is published at the site root as `card-box.pdf`; FR-029 would send the reader to GitHub instead of to the download the landing page offers | `../card-box.pdf` |
+  | `docs/workflow.md` | `../README.md#install` | `README.md` is not a site page, and the anchor is a section of it | an absolute GitHub URL, via FR-029 — recorded here because the anchor must survive the rewrite |
+  | `docs/workflow.md` | `../CLAUDE.md` (also in `CONTRIBUTING.md`) | Not a site page in 012; a reader following it from the site gets nothing | an absolute GitHub URL, via FR-029 |
+
+  No migrated document links `leitner.html`, so FR-032's single-URL rule has no
+  existing link to break.
+- **FR-032**: The Leitner method page MUST reach the navigation through a **short
+  Markdown page in the user guide** that introduces the method and links out to
+  `leitner.html`. A `toctree` accepts documents and absolute URLs, never a
+  relative `.html` file, so FR-010's navigation entry has no direct mechanism; an
+  absolute URL would break `file://` viewing, against FR-018. The wrapper is not
+  a second copy of the content and does not restate it — it is a signpost, so
+  FR-008 holds.
 
 **Landing page and publication**
 
 - **FR-013**: `docs/index.html` MUST stay the site root, unchanged in content and
   design, and MUST keep passing every assertion in `tests/test_landing_page.py`.
-  The generated documentation site lives under a sub-path — the arrangement
-  Django uses.
-- **FR-014**: The landing page MUST link into the documentation site.
+  The generated documentation site lives under the sub-path **`/docs/`** — the
+  arrangement Django uses. In one sentence: **`docsite/` generates into
+  `/docs/`**.
+- **FR-014**: The landing page MUST link into the documentation site, and the
+  link MUST be **`docs/`** — the directory, not `docs/index.html`. It is what a
+  reader would type, it survives a later change of root document, and it keeps
+  the deployed URL free of a filename. The form is not cosmetic: FR-016's test
+  matches the derived reference literally, so `docs/` and `docs/index.html` are
+  not interchangeable and the adapted matching rule follows from this choice.
+- **FR-042**: `README.md`'s three references to migrated documents —
+  `docs/workflow.md` (line 79), `docs/design.md` (274) and `docs/testing.md`
+  (288) — MUST point at the **published pages**, not at the repository files.
+  After migration each is also a page of the site, and the premise of this
+  feature is that a newcomer should not have to know which half of the project a
+  document lives in; leaving them would reintroduce the split one link deep. Two
+  boundaries hold:
+  - **`](docs/index.html)` inside `## The design` does not move.**
+    `tests/test_repo_hygiene.py::test_the_readme_still_names_the_landing_page_source`
+    pins it, and it is a different link from `](docs/design.md)` in the same
+    section — the contributor's reference to the file somebody edits, kept
+    deliberately distinct from the reader's reference to the page. Verified
+    against the test before this was decided; **no test is changed**.
+  - **Accepted cost**: `check_docs.check_links` skips any target beginning with
+    `http`, so those three links leave its file-system coverage. `REQUIRED_FILES`
+    still requires all three files to exist, so a deletion is still caught.
 - **FR-015**: `.github/workflows/pages.yml` MUST be rebuilt to run the Sphinx
   build and assemble `_site` from the landing page, the card box, the Leitner
-  page and the built documentation.
+  page and the built documentation, the last of which lands in **`_site/docs/`**.
 - **FR-016**: The invariant added by PR #105 —
   `test_the_pages_workflow_assembles_every_relative_link`, which derives the
   relative links out of `docs/index.html` and requires the workflow to copy each
   one — MUST keep holding. If the assembly step changes shape, the test is
-  **adapted, never weakened**: no target may drop out of the derived set, and no
-  assertion may be relaxed to accommodate the new workflow.
+  **adapted, never weakened**. What "adapted, never weakened" protects is the
+  **derivation, not the mechanism**, and this spec states the distinction so a
+  reviewer does not have to reconstruct it:
+
+  - **Protected**: the test keeps deriving its target set from `docs/index.html`
+    itself, and **no target may drop out of that set**. No reference may be
+    exempted, allow-listed or filtered out to make the new workflow pass.
+  - **Permitted**: the test may learn that a target arrives in `_site` by a
+    **second route** — produced by the documentation build into `_site/docs/` —
+    rather than only by a `cp` line. The landing page's new `docs/` link (FR-014)
+    is exactly such a target, and no `cp` will ever produce it.
+
+  The set of links checked is unchanged, which is why the second route is an
+  adaptation rather than a weakening. Any change that shrinks the derived set is
+  a weakening and is refused.
 - **FR-017**: The workflow's `paths:` trigger MUST cover every input to the
-  documentation build — the migrated documents, the documentation configuration,
-  `requirements-docs.txt`, and the workflow file itself — so a change to any of
-  them redeploys the site.
+  documentation build — the migrated documents (`docs/*.md`, `CONTRIBUTING.md`),
+  the documentation sources and configuration (`docsite/**`),
+  `requirements-docs.txt`, every asset a page renders (FR-030), and the workflow
+  file itself — so a change to any of them redeploys the site. The existing
+  entries (`docs/index.html`, `docs/leitner.html`, `assets/card-box.pdf`) stay.
 - **FR-018**: The built site's internal links MUST be relative, so the site works
   under a sub-path and when opened from the filesystem.
+- **FR-033**: The deploy MUST be **all-or-nothing**: if the documentation build
+  fails, the whole workflow fails and nothing is published, so the site is never
+  half-updated — a new landing page linking into a stale documentation tree is
+  the same class of failure as the 404 PR #105 fixed, and harder to notice.
+  Because that makes a typo in a contributor document able to hold back a
+  landing-page fix, the documentation build MUST **also run in CI on every pull
+  request**, so the failure is caught before `main` and this case almost never
+  fires. FR-023 requires that job anyway, so the mitigation costs nothing new.
 
 **Build behaviour**
 
 - **FR-019**: A single command with no arguments MUST build the whole site, with
-  no network access required.
+  no network access required. **That command is `python3 scripts/build_docs.py`.**
+  It was left to `plan.md` in the second clarification session and settled in the
+  third: FR-038 requires the build to assemble a miniature `_site`, and a plain
+  `sphinx-build` cannot assemble anything. The candidates are kept below because
+  the reasoning is what stops the decision being reopened:
+
+  | Candidate | Trade-off |
+  |---|---|
+  | `python3 scripts/build_docs.py` | Matches the repository's existing `python3 scripts/<name>.py` convention, works identically on all three platforms, and can print the "install `requirements-docs.txt`" message itself when the dependencies are missing. One more file in `scripts/`, which constitution VI's import graph then covers. |
+  | A documented `sphinx-build` invocation | No new file. But it is not "a single command with no arguments" — it needs a source and a build directory — and it puts the arguments in a document that can go stale, which is the failure mode this feature exists to remove. |
+  | A `lernkarten docs` subcommand | Discoverable through `--help`. Rejected: it puts a documentation concern into the user-facing CLI, against FR-005's boundary — a user running `lernkarten` must never meet Sphinx. |
+
+  **Chosen: `python3 scripts/build_docs.py`.** It is the only candidate that is
+  literally one command with no arguments, that keeps the runtime CLI clean, and
+  that can do FR-038's assembly. It carries one obligation that is easy to miss
+  and is therefore a requirement of its own: a new `scripts/*.py` module must be
+  listed in Principle VI's dependency graph or `check_import_graph()` fails the
+  *Skills & docs* gate — see FR-039. FR-024 stays intact: this is a local
+  convenience and a CI job, never a fifth pre-PR gate.
 - **FR-020**: The build MUST treat warnings as errors and MUST be strict about
   references: a cross-reference or link to a target that does not exist fails the
-  build, and the message names the source document and the target.
+  build, and the message names the source document and the target. The 22 links
+  in the migrated documents that point at repository files rather than at
+  documentation pages are **not** exempted from this — they are resolved by the
+  transform in FR-029, so strictness stays absolute and the migration still
+  builds.
 - **FR-021**: The build MUST be deterministic and idempotent: the same checkout
   produces the same output, and building twice changes nothing.
 - **FR-022**: The build output MUST NOT be committed. The build directory
-  (`docs/_build/`) goes into `.gitignore`, consistent with the rule this
-  repository already applies to `output/` (constitution IX).
+  (`docsite/_build/`, following FR-028's layout) goes into `.gitignore`,
+  consistent with the rule this repository already applies to `output/`
+  (constitution IX).
 - **FR-023**: Tests that build the documentation MUST **skip** when the
   documentation dependencies are absent, with a message naming what to install —
   the pattern `tests/test_e2e.py` already uses. CI MUST have a job that installs
-  them and runs those tests.
+  them and runs those tests. That job's **id MUST NOT be `docs`**:
+  `.github/workflows/ci.yml` already has a job with that id (display name
+  "Skills & docs") running `scripts/check_docs.py`, and reusing it produces a
+  YAML error discovered as a red CI run rather than at review.
 - **FR-024**: The four existing pre-PR gates MUST still pass, and the pre-PR
   checklist MUST gain no fifth command; the docs build is a CI job and a local
-  convenience, not a fifth thing to remember.
+  convenience, not a fifth thing to remember. **Gate #1's scope widens on the
+  first commit**, and this is recorded so it is not met as a surprise:
+  `pyproject.toml` declares no `exclude` for ruff, so `ruff check .` and
+  `ruff format --check .` cover `docsite/conf.py` and every extension module from
+  the moment they exist, at `line-length = 100` with
+  `select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]`. A `conf.py` copied
+  from the Sphinx template does **not** pass unmodified. The gate count is
+  unchanged; what it reads is not.
+- **FR-037**: `markdown_files()` in `scripts/check_docs.py` MUST be extended to
+  cover every Markdown file under **`docsite/`** (recursively), and a test MUST
+  assert that coverage so it cannot later be lost without a failure. Today the function globs exactly three things
+  — root `*.md`, `docs/*.md`, `skills/*/SKILL.md` — and `gated_files()` is that
+  list plus `scripts/*.py` and `templates/*.typ`. Every page this feature writes
+  would otherwise sit outside the dead-link check **and** all five drift gates at
+  once: the A7/A8-default token gate, the sheet-capacity gate, the
+  cutting-instruction gate, the borderless-size gate and the print-order gate.
+  Those gates exist because this repository shipped that exact drift twice.
+
+  **The consequence for how pages are written is part of this requirement**, not
+  something to discover later: `check_links` resolves a relative link **against
+  the file system**, so a page under `docsite/` MUST NOT use an extension-less
+  MyST cross-reference (`[the workflow](workflow)`). It writes a relative path to
+  the source file **including its `.md` extension** (`[the workflow](workflow.md)`,
+  `[design.md](../docs/design.md)`), which MyST resolves to the built page and
+  `check_links` resolves to the file. This binds **014** hardest: its tutorial and
+  topic pages will be full of grid and card-size claims, which is what the drift
+  gates read.
+- **FR-038**: The build command MUST also assemble a **miniature `_site`**,
+  placing `docs/index.html`, `docs/leitner.html` and `assets/card-box.pdf` in the
+  positions they occupy when deployed, so that a link out of the documentation
+  tree resolves both locally and on the deployed site. Without it FR-031's
+  `../index.html` and `../card-box.pdf` are correct when deployed and dead in a
+  local build, and US2 acceptance scenario 5 and FR-018 promise the opposite. The
+  second reason is worth as much as the first: the local build becomes the
+  **preview a contributor can check FR-014 and SC-007 against before pushing**,
+  rather than those being verifiable only after a deploy. This is also what
+  settles FR-019 — a plain `sphinx-build` cannot assemble anything.
+- **FR-039**: This feature MUST amend `.specify/memory/constitution.md`, as a
+  named task rather than an afterthought, and MUST bump its version and
+  *Last Amended* date per the governance rule:
+  - **Principle V** ("Code boundaries") gains a **`docsite/` row**. Its table is
+    normative and its `docs/` row lists four files, so a new top-level directory
+    is outside it. Nothing enforces Principle V — no test reads it — which is
+    exactly why this would otherwise be skipped.
+  - **Principle V's `docs/` row additionally gains `leitner.html`.** The
+    constitution does not mention that file anywhere, although FR-011 promises
+    that if it ever moves its gates move with it. A promise about a file the
+    governing document does not know exists is not a promise.
+  - **Principle VI** gains a line for **`scripts/build_docs.py`** and its
+    imports. This half is not optional and not cosmetic: `check_import_graph()`
+    derives the real graph from the import statements in `scripts/*.py` and
+    **fails the *Skills & docs* CI job** for any module the fenced block does not
+    list.
+- **FR-034**: The documentation build MUST run in CI on **Windows, macOS and
+  Linux** — all three, matching SC-001 and the promise `CONTRIBUTING.md` already
+  makes that all three work from one ordinary command. *(An earlier draft of this
+  requirement asked for Windows only. That was the minimum, not the target, and
+  it left SC-001 claiming more than anything verified; the widening is recorded
+  in the third clarification session rather than made silently.)* A portability
+  claim nothing exercises is a claim rather than a property, and this feature
+  introduces two OS-sensitive points of its own — the path transform in the
+  documentation configuration (FR-029) and `{include}` resolution (FR-028,
+  FR-041) — plus text encoding, which is the same class of problem that already
+  excluded symlinks.
 - **FR-025**: Tests MUST be written first and seen failing (constitution XI).
   Nothing in this feature is model-driven, so the red artifacts are pytest cases:
   against the build, against the navigation tree, against the assembly step in
-  `pages.yml`, and against the preserved gates.
+  `pages.yml`, against `markdown_files()`'s coverage of `docsite/` (FR-037), and
+  against the preserved gates. Where the assertable part cannot carry the whole
+  requirement, constitution XI asks for a numbered manual row instead of a
+  pretended test. This feature adds **three** rows to the checklist in
+  `docs/testing.md`, and no more: the type-size floor across the theme (FR-035,
+  SC-008), the "gates unweakened" judgement (SC-005) and the deploy policy
+  (SC-013). Each is named where it is claimed, so no success criterion implies an
+  automated check that does not exist.
 
 **Content rules**
 
 - **FR-026**: Every page MUST stay subject-agnostic — examples demonstrate a
   format, never a field of study (constitution VII) — and MUST be in English
   (constitution XIII).
-- **FR-027**: The theme MUST be configured so the documentation site and the
-  landing page read as one property rather than as a stock template beside a
-  bespoke page. `docs/design.md` governs: reading text never below 15 px, colour
-  never carrying meaning on its own.
+- **FR-027**: The theme MUST be brought into **full alignment** with
+  `docs/design.md`, not merely recoloured. This is larger than it looks:
+  `docs/design.md` §*The screen surfaces* says both existing surfaces are "built
+  from flat colour and type only — no gradients, no shadows, no rounded corners",
+  and `pydata-sphinx-theme` styles admonitions, buttons, the search field and the
+  sidebar with radii and shadows by default. Three things are required:
+  - **The three inks**, as `docs/design.md` gives them; colour never carrying
+    meaning on its own.
+  - **The three faces — Archivo, Jost, IBM Plex Mono — self-hosted from
+    `assets/fonts/`.** They are vendored in this repository under the Open Font
+    License, so the landing page's Google Fonts route is **not** reused: the
+    documentation site loads no font from a third party.
+  - **The shapes flattened**: no radii, no shadows, no gradients.
+- **FR-036**: `docs/design.md` §*The screen surfaces* MUST gain a **row for the
+  documentation site**, naming its source (`docsite/`) and which theme
+  conventions it is allowed to keep. The table currently describes two surfaces
+  while this feature ships a third, and a normative document that describes less
+  than exists is stale — the condition the governance rule tells a contributor to
+  fix rather than work around. This is a deliberate edit under constitution XVI,
+  made with the rest of this feature, not a drive-by.
+- **FR-035**: The 15 px floor MUST be reached by a **theme CSS override that
+  raises every element carrying Archivo prose that the theme sets below it**, and
+  that override MUST be covered by a **numbered row on the manual checklist in
+  `docs/testing.md`**. Both halves are required and neither is optional.
+  `pydata-sphinx-theme` sets several elements below `1rem` — sidebar captions,
+  admonition titles, the footer — so an unmodified theme violates FR-027, SC-008
+  and constitution XVI on the day it is installed.
+
+  **The floor binds Archivo prose only.** `docs/design.md` states "Reading text
+  means Archivo", and constitution XVI repeats that the type table gives Jost
+  labels and IBM Plex Mono literals their own rows and that those are not prose.
+  So a **code sample is exempt**, as is a letterspaced label. This is narrower
+  than an earlier draft of this requirement, which said "every element the theme
+  sets below it" and so demanded more than the rule it cites; the correction is
+  recorded in the third clarification session rather than made silently. What is
+  *not* narrowed is the obligation: the override is still required, and so is the
+  manual row.
+
+  No automated check can see any of it:
+  `tests/test_landing_page.py::test_reading_text_is_never_below_the_screen_floor`
+  reads the `<style>` blocks of one hand-written file and cannot reach a theme's
+  compiled stylesheet. Constitution XI's rule for exactly this case is a numbered
+  manual row, so this spec states one rather than implying a gate that does not
+  exist.
 
 ### Format Contracts *(mandatory — state "none" if untouched)*
 
@@ -383,14 +711,31 @@ passes, with the docs tests skipped.
 
 ### Print & Design Impact *(mandatory — state "none" if nothing visible changes)*
 
-- **Visible surfaces touched**: **a new set of published pages**, plus **one link
-  added to the landing page**. The card, the press sheet, the mark and the README
-  graphics are untouched, and `docs/index.html` keeps its design.
+- **Visible surfaces touched**: **a new set of published pages** — a third screen
+  surface beside the readme and the landing page — plus **one link added to the
+  landing page** and three README links retargeted at it (FR-042). The card, the
+  press sheet, the mark and the README graphics are untouched, and
+  `docs/index.html` keeps its design. `docs/design.md` §*The screen surfaces*
+  gains a row for the new surface (FR-036), so the normative document describes
+  all three.
+- **Theme alignment is the largest visible task**: `docs/design.md` says both
+  existing surfaces are flat colour and type — no gradients, no shadows, no
+  rounded corners — and the stock theme is none of those things. FR-027 requires
+  the three inks, the three faces self-hosted from `assets/fonts/`, and the
+  shapes flattened.
 - **Black-only laser print still readable**: N/A for the card. The site pages must
   nonetheless not use colour as the only distinction — an "optional step" badge
   needs a word or a shape, not a hue.
-- **Minimum type size respected**: **yes** — 15 px is the floor for reading text
-  on every page, including code samples and tables.
+- **Minimum type size respected**: **yes** — 15 px is the floor for **Archivo
+  prose** on every page. It does **not** bind IBM Plex Mono literals or Jost
+  labels, so a code sample and a letterspaced label are exempt; `docs/design.md`
+  ("Reading text means Archivo") and constitution XVI both scope it that way, and
+  an earlier draft of this section claimed the floor covered code samples, which
+  was stricter than the rule it cited. This is **not free**:
+  `pydata-sphinx-theme` sets several elements below `1rem`, so the floor costs a
+  theme CSS override (FR-035). Its gate is a **numbered manual row in
+  `docs/testing.md`**, because no test in this repository can read a theme's
+  compiled stylesheet. No automated check is claimed for it.
 - **Brand PNGs need re-rendering**: no.
 - **Duplex alignment unaffected**: yes — nothing about the PDF changes.
 - **Additional**: `docs/design.md` MUST be read before the theme is configured
@@ -423,13 +768,25 @@ passes, with the docs tests skipped.
   drift gates in `scripts/check_docs.py` (`SHEET_CAPACITY`, the A7/A8 default
   tokens, the cutting-instruction check) likewise. 012 removes nothing.
 - **Engine version change**: no.
-- **Platforms verified**: Linux and macOS locally and in CI; Windows through the
-  existing CI matrix. The docs job's platform coverage is a plan decision — at
-  minimum the build must be *portable*, even if only one platform runs it in CI.
-- **Ordering dependency**: **PR #105 (`fix/pages-site-assembly`) must merge
-  first.** It rewrites the same workflow and adds the invariant FR-016 requires.
-  Building 012 on top of the pre-#105 workflow would either lose that test or
-  conflict with it.
+- **Platforms verified**: **all three, in CI** — FR-034 requires the documentation
+  build to run on Windows, macOS and Linux, matching SC-001 and the promise
+  `CONTRIBUTING.md` already makes. Portability that nothing exercises is a claim
+  rather than a property, and this feature adds two OS-sensitive points of its
+  own (the path transform, `{include}` resolution) on top of text encoding.
+- **Governance change**: **yes** — `.specify/memory/constitution.md` is amended
+  (FR-039): Principle V gains a `docsite/` row and the overdue `leitner.html`
+  entry, Principle VI gains `scripts/build_docs.py`, and the version and
+  *Last Amended* date are bumped. The Principle VI half is enforced —
+  `check_import_graph()` fails the *Skills & docs* gate without it — and the
+  Principle V half is not, which is why it is a named task.
+- **Ordering dependency**: **satisfied.** PR #105 (`fix/pages-site-assembly`) is
+  merged — `a28174b` on `main`, merge commit `6ade04a` — and this branch is
+  rebased onto it. `.github/workflows/pages.yml` already copies
+  `docs/leitner.html` and lists it under `paths:`, and
+  `test_the_pages_workflow_assembles_every_relative_link` is present in
+  `tests/test_landing_page.py`. The deployed page was verified live after the
+  merge. FR-016 therefore adapts an invariant that exists, rather than waiting
+  for one.
 
 ### Key Entities
 
@@ -440,6 +797,22 @@ passes, with the docs tests skipped.
   built site as-is, with a navigation entry and its existing gates intact.
 - **Documentation area**: one of the two top-level groupings — *user guide* and
   *contributing*.
+- **`docsite/`**: the new top-level directory holding the documentation
+  configuration and the page sources. It generates into `/docs/`. Distinct from
+  `docs/`, which keeps meaning "pages published by hand".
+- **Repository-link transform**: the build-time rewrite (FR-029) that turns a
+  relative path to a repository file into an absolute GitHub URL, so the source
+  files keep the relative paths `scripts/check_docs.py` checks.
+- **Wrapper page**: the short user-guide page (FR-032) that gives
+  `docs/leitner.html` a navigation entry without converting or copying it.
+- **`scripts/build_docs.py`**: the one command (FR-019). It builds the
+  documentation and assembles the miniature `_site` of FR-038. Being a
+  `scripts/*.py` module, it must appear in Principle VI's dependency graph
+  (FR-039).
+- **Miniature `_site`**: the local build's copy of the deployed layout — the
+  landing page, the Leitner page and the card box in the positions they occupy
+  when published — so links out of the documentation tree resolve in both
+  settings, and a contributor can preview the site before pushing.
 - **Site assembly**: the `_site` tree the publication workflow produces — the
   landing page at the root, the card box, the Leitner page, and the built
   documentation under a sub-path.
@@ -456,27 +829,61 @@ passes, with the docs tests skipped.
 - **SC-002**: All five migrated documents — `docs/workflow.md`,
   `docs/leitner.html`, `docs/design.md`, `docs/testing.md`, `CONTRIBUTING.md` —
   are reachable from the site navigation, and each exists in exactly one place in
-  the repository.
+  the repository. **Method**: a test walks the `toctree` the build produces,
+  starting at the root document, and asserts that the set of documents it reaches
+  contains a page for each of the five, and that the user area and the
+  contributing area are separate top-level branches of it. The `toctree` rather
+  than the rendered sidebar, because the sidebar is the theme's rendering of it
+  and would tie the assertion to a theme version.
 - **SC-003**: A cross-reference or link to a target that does not exist makes the
   build exit non-zero with a message naming the source document and the target.
 - **SC-004**: Building twice on an unchanged checkout produces the same output,
-  and no build output is tracked by git.
+  and no build output is tracked by git. **Method**: the **HTML output is
+  byte-identical**, excluding `.doctrees/` and `.buildinfo`. Those two are
+  Sphinx's own incremental-build state — pickled environment and a configuration
+  hash — and a naive whole-directory comparison fails on them for reasons that
+  have nothing to do with determinism.
 - **SC-005**: Every assertion in `tests/test_landing_page.py` and every check in
   `scripts/check_docs.py` that existed before this feature still passes,
   unweakened — including the bidirectional Leitner interval check and the PR #105
-  link-assembly invariant.
+  link-assembly invariant. **"Still passes" is decided by running the suite;
+  "unweakened" is a judgement about a diff that no command reports**, so it is
+  verified by a **numbered manual row in `docs/testing.md`** (constitution XI):
+  the reviewer reads the diff of `tests/test_landing_page.py` and
+  `scripts/check_docs.py` and confirms that no assertion was deleted, no target
+  dropped out of a derived set, and no condition relaxed.
 - **SC-006**: With the docs requirements **not** installed, `pytest` passes, with
   the docs-build tests reported as skipped and naming what to install.
 - **SC-007**: The deployed site serves `docs/index.html` at the root
   byte-identical to the repository copy, serves every relative link that page
-  makes, and serves the documentation under a sub-path reachable from it in one
-  click.
+  makes, and serves the documentation at **`/docs/`**, reachable from the landing
+  page's `docs/` link in one click.
 - **SC-008**: On a 375 px-wide viewport every documentation page is readable
-  without horizontal scrolling, and no reading text renders below 15 px.
+  without horizontal scrolling, and no reading text renders below 15 px. **This
+  criterion is verified by a numbered manual row in `docs/testing.md`, not by a
+  test** — the existing floor check reads one hand-written file's `<style>`
+  blocks and cannot reach a theme's compiled stylesheet (FR-035).
 - **SC-009**: `lernkarten build` and `lernkarten check cards/example.yaml` run
   unchanged in an environment where no documentation dependency is installed.
 - **SC-010**: The four pre-PR gates stay green and the pre-PR checklist has the
   same number of commands as before.
+- **SC-011**: No migrated document contains a link that resolves only inside a
+  local checkout. Every relative link in the five migrated documents either
+  resolves to a page of the site, renders as an asset copied into the site, or is
+  rewritten to an absolute URL at build time — and every one of them still passes
+  `scripts/check_docs.py`'s file-system check in the source file.
+- **SC-012**: `docs/leitner.html` appears exactly once in the assembled `_site`,
+  at the root, and the user guide reaches it through one navigation entry.
+- **SC-013**: A documentation build that fails takes the whole deploy with it —
+  nothing is published from a run whose docs build did not succeed — and that
+  build has already run on the pull request that introduced the change. The first
+  half is asserted against the workflow's shape; the second is a property of the
+  process rather than of any artifact, so it is verified by a **numbered manual
+  row in `docs/testing.md`**.
+- **SC-014**: The built documentation site loads **no sub-resource from a third
+  party** — the three faces are served from the site itself, out of
+  `assets/fonts/`. The landing page's Google Fonts link is not copied onto the
+  new surface.
 
 ## Assumptions
 
@@ -490,6 +897,14 @@ passes, with the docs tests skipped.
   though the user wrote the request in German.
 - Intersphinx (cross-project references) is not used in 012; if it is ever added,
   it must not make the build require the network.
+- The theme is treated as a **starting point that is overridden**, not as a
+  design. `pydata-sphinx-theme` was chosen because pandas and numpy use it and
+  because Sphinx's mechanics are what this feature needs; its default visual
+  language is not what `docs/design.md` describes, and FR-027 says so.
+- The fonts stay vendored. `assets/fonts/` already holds Archivo, Jost and IBM
+  Plex Mono under the Open Font License (constitution VIII names them as a
+  deliberate exception to the no-binaries rule), so self-hosting them on the new
+  surface adds no binary this repository does not already ship.
 - `docs/testing.md` and `docs/design.md` are contributor documentation and go into
   the contributing area rather than being hidden — the user explicitly chose
   migrating everything over a user-docs-only site.
