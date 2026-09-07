@@ -263,7 +263,7 @@ settings                           → leitner, yamlio
 setup_cmd                          → leitner, settings
 build_pdf                          → cardid, engine, leitner, settings, yamlio
 check_project                      → build_pdf, cardid, yamlio
-check_docs                         → leitner, yamlio
+check_docs                         → build_pdf, leitner, yamlio
 make_testdata                      → engine
 demo                               → make_testdata
 render_brand                       → engine

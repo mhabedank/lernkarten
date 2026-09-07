@@ -152,6 +152,166 @@ def test_the_shipped_versions_agree():
     assert not errors, errors
 
 
+# --- /cards writes the grid the default actually is (FR-010) --------------
+
+
+def write_cards_skill(root, grid):
+    folder = root / "skills" / "cards"
+    folder.mkdir(parents=True)
+    (folder / "SKILL.md").write_text(
+        f"---\nname: cards\n---\n\n```yaml\ntopic: 'T'\ngrid: {grid}\n```\n",
+        encoding="utf-8",
+    )
+
+
+def test_the_cards_skill_offering_the_wrong_grid_is_reported(tmp_path, monkeypatch):
+    """The one site in BUG-010 that writes a value rather than a sentence."""
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    write_cards_skill(tmp_path, "a7" if check_docs.default_grid_alias() != "a7" else "a8")
+
+    errors = []
+    check_docs.check_cards_skill_writes_the_default_grid(errors)
+
+    assert any("skills/cards/SKILL.md" in e for e in errors), errors
+    assert any("pin every new deck" in e for e in errors), errors
+
+
+def test_the_cards_skill_offering_the_default_grid_passes(tmp_path, monkeypatch):
+    """Read from DEFAULT_GRID, so moving the default again moves this with it."""
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    write_cards_skill(tmp_path, check_docs.default_grid_alias())
+
+    errors = []
+    check_docs.check_cards_skill_writes_the_default_grid(errors)
+
+    assert not errors, errors
+
+
+# --- A7 is not the default any more, and that is gated (FR-011, SC-011) ---
+
+
+def gated_project(tmp_path, monkeypatch, **files):
+    """A tree with only the files a case needs, everywhere the gate looks."""
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "SKILLS", tmp_path / "skills")
+    monkeypatch.setattr(check_docs, "SCRIPTS", tmp_path / "scripts")
+    (tmp_path / "skills").mkdir()
+    for name, text in files.items():
+        path = tmp_path / name.replace("__", "/")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    return tmp_path
+
+
+def test_a_doc_calling_a7_the_default_is_reported(tmp_path, monkeypatch):
+    """The claim BUG-010 left in seventeen places."""
+    gated_project(tmp_path, monkeypatch, **{"README.md": "Omitting the key prints at A7.\n"})
+
+    errors = []
+    check_docs.check_a7_is_not_the_default(errors)
+
+    assert any("README.md:1" in e for e in errors), errors
+    assert any("a8" in e for e in errors), errors
+
+
+def test_a_claim_that_wraps_is_still_reported(tmp_path, monkeypatch):
+    """README.md splits "`a7` is the / default grid" across a line break.
+
+    A line-scoped rule makes the fix depend on where the text happens to wrap,
+    which is the reason check_print_order reads a paragraph rather than a line.
+    """
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"README.md": "An a7 card is 100 mm wide, and a7 is the\ndefault grid, so check.\n"},
+    )
+
+    errors = []
+    check_docs.check_a7_is_not_the_default(errors)
+
+    assert errors, "a claim split over two lines is still one claim"
+
+
+def test_naming_a8_as_the_default_passes(tmp_path, monkeypatch):
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"README.md": "16 cards at the default a8 grid, or 8 at a7.\n"},
+    )
+
+    errors = []
+    check_docs.check_a7_is_not_the_default(errors)
+
+    assert not errors, errors
+
+
+def test_the_scale_reference_and_the_default_margin_are_not_default_claims(tmp_path, monkeypatch):
+    """FR-002's whole point: the reference stays A7 and is not the default.
+
+    And `--margin` has a default of its own. Both sit one word from an A7 token
+    all over build_pdf.py, and a gate that cannot tell them apart is a gate
+    somebody switches off.
+    """
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{
+            "docs__design.md": "The reference is the A7 card, not the default.\n",
+            "scripts__build_pdf.py": "# The A7 card at the default margin is 100 x 71.75.\n",
+        },
+    )
+
+    errors = []
+    check_docs.check_a7_is_not_the_default(errors)
+
+    assert not errors, errors
+
+
+def test_the_gate_reads_python_and_typst_too(tmp_path, monkeypatch):
+    """Six of BUG-010's sites were outside markdown_files() (FR-012)."""
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{
+            "scripts__build_pdf.py": '"""A4 with 8 cards per page by default (2 x 4, DIN A7)."""\n',
+            "templates__cards.typ": "// 2 x 4 is DIN A7 (8 up, the default).\n",
+        },
+    )
+
+    errors = []
+    check_docs.check_a7_is_not_the_default(errors)
+
+    assert any("build_pdf.py" in e for e in errors), errors
+    assert any("cards.typ" in e for e in errors), errors
+
+
+def test_the_cutting_instruction_has_to_name_its_grid(tmp_path, monkeypatch):
+    """One vertical cut and three across is the 2x4 sheet, not the default."""
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"README.md": "Cut the long line down the middle first, then the three across.\n"},
+    )
+
+    errors = []
+    check_docs.check_cut_count(errors)
+
+    assert any("cut count follows --grid" in e for e in errors), errors
+
+
+def test_a_cutting_instruction_that_names_its_grid_passes(tmp_path, monkeypatch):
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"README.md": "At --grid a7, cut down the middle, then the three across.\n"},
+    )
+
+    errors = []
+    check_docs.check_cut_count(errors)
+
+    assert not errors, errors
+
+
 # --- the sheet capacity is not a fixed fact (SC-009) -----------------------
 
 
