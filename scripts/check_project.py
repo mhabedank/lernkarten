@@ -1001,9 +1001,10 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
                 language = build_pdf.resolve_language(data["language"])
             except ValueError as e:
                 report.error(where, str(e))
-        # The grid is optional and absent means A7, so only a value that is
-        # there and wrong is worth reporting. One deck is one size, which is
-        # why the key belongs at the top level and nowhere else.
+        # The grid is optional; absent means DEFAULT_GRID, resolved in
+        # _deck_grid below rather than spelled out here. So only a value that
+        # is there and wrong is worth reporting. One deck is one size, which
+        # is why the key belongs at the top level and nowhere else.
         if data.get("grid") is not None:
             try:
                 build_pdf.parse_grid(data["grid"])
@@ -1071,7 +1072,10 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
                 if problem:
                     report.error(where, f"card {i}: {face} '{card[face]}' {problem}")
                 else:
-                    if build_pdf.parse_grid(data.get("grid") or "a7") == build_pdf.GRIDS["4x4"]:
+                    # GRIDS["4x4"] and not DEFAULT_GRID on the right: the note
+                    # is about A8, where a picture is a third of the area, not
+                    # about whichever grid happens to be the default today.
+                    if _deck_grid(data) == build_pdf.GRIDS["4x4"]:
                         dense_with_pictures.append(where)
                     figure_faces.setdefault((where, str(card[face]), face), []).append(i)
                     # A picture supplements the answer; it never replaces it.
@@ -1114,6 +1118,20 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
                 "text-only card from its transcription, or it only ever tests recognition",
             )
     _check_anchors(anchor_text, terms or {}, report)
+
+
+def _deck_grid(data):
+    """The grid a deck prints at, including when it does not say so.
+
+    Absence resolves through build_pdf's own constant, never through a literal,
+    so `check` and the build cannot disagree about what silence means. This is
+    the arrangement FR-002 already forced on the scale reference: each idea of
+    "which grid" is named once and never retyped. A literal "a7" sat here and
+    outlived the default it named — the advisory below was then skipped for
+    exactly the decks that print at A8 without saying so, which after v0.9.0 is
+    the common case (BUG-010).
+    """
+    return build_pdf.parse_grid(data["grid"]) if data.get("grid") else build_pdf.DEFAULT_GRID
 
 
 def _note_pictures_at_a8(decks, report):
