@@ -1483,6 +1483,7 @@ def test_a_file_driven_count_at_a7_skips_instead_of_refusing(tmp_path):
     assert "a8" in result.stderr.lower(), result.stderr
     assert "dividers" not in result.stdout, result.stdout
 
+
 # --- the card box beside the cards (US3) -----------------------------------
 
 
@@ -1514,4 +1515,3 @@ def test_box_as_a_flag_refuses_a_grid_it_does_not_fit(tmp_path):
     assert result.returncode != 0
     assert "a8" in result.stderr.lower(), result.stderr
     assert not (tmp_path / "box.pdf").exists()
-

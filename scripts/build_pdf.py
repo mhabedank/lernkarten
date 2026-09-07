@@ -684,6 +684,19 @@ def warn_about_overflow(ids):
         )
 
 
+def write_box(directory):
+    """Copy the card box beside the cards. Returns where it landed.
+
+    A copy, never a merge into the card PDF. Merging would need a PDF library
+    for no gain — and the two documents want different paper, so a user prints
+    them in separate passes whatever we do.
+    """
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / "box.pdf"
+    shutil.copyfile(ROOT / "assets" / "card-box.pdf", target)
+    return target
+
+
 def advise_about_dividers(count, divider_page, card_pages, sides):
     """Say which paper case the run is in, rather than implying the cheap one.
 
@@ -765,6 +778,13 @@ def main():
         f"{' or '.join(str(n) for n in leitner.COMPARTMENT_COUNTS)}. Needs --grid a8, "
         "because the card box fits nothing else",
     )
+    p.add_argument(
+        "--box",
+        action="store_true",
+        help="also write box.pdf beside the target: the cut-and-fold card box. It wants "
+        "160-250 gsm card stock, which the cards do not, so it is a separate file rather "
+        "than extra pages",
+    )
     p.add_argument("--no-logo", action="store_true", help="print the cards without the logo mark")
     args = p.parse_args()
 
@@ -810,11 +830,12 @@ def main():
     # A7 card is 100 mm wide and can never be made to fit, so a flag asking for
     # both is refused rather than quietly dropped: a flag is a request the user
     # just made and can correct.
-    if args.dividers is not None and grid != GRIDS["4x4"]:
-        sys.exit(
-            f"ERROR: --dividers needs --grid a8, not {grid_name(grid)}; the card box "
-            "fits nothing else (docs/design.md, 'The box')"
-        )
+    for flag, given in (("--dividers", args.dividers is not None), ("--box", args.box)):
+        if given and grid != GRIDS["4x4"]:
+            sys.exit(
+                f"ERROR: {flag} needs --grid a8, not {grid_name(grid)}; the card box "
+                "fits nothing else (docs/design.md, 'The box')"
+            )
 
     # An answer given once, possibly months ago, must not make an unrelated A7
     # build impossible. So the same value coming from the file skips with a word
@@ -826,6 +847,7 @@ def main():
     for warning in saved.warnings:
         print(f"NOTE: {warning}", file=sys.stderr)
 
+    want_box = args.box or (saved.compartments is not None and not saved.box_printed)
     divider_count = args.dividers
     if divider_count is None and saved.compartments and not saved.dividers_printed:
         if grid == GRIDS["4x4"]:
@@ -892,6 +914,16 @@ def main():
             project_settings.mark_printed(
                 project_settings.path_for(args.files[0]).parent, dividers=True
             )
+    if want_box and not args.check and grid == GRIDS["4x4"]:
+        box = write_box(Path(args.output).parent)
+        print(
+            f"NOTE: {box} is the cut-and-fold card box. Print it on 160-250 gsm card stock "
+            "at 100 % — the cards themselves do not want that paper, which is why it is a "
+            "separate file.",
+            file=sys.stderr,
+        )
+        project_settings.mark_printed(project_settings.path_for(args.files[0]).parent, box=True)
+
     languages = ", ".join(sorted({c["language"] for c in cards}))
     made = f"{len(cards)} cards" + (f", {len(dividers)} dividers" if dividers else "")
     if args.check:
