@@ -247,6 +247,59 @@ carries the measurements. `tests/test_repo_hygiene.py` pins the file's SHA-256:
 "unchanged" is the only guarantee an artifact without a source can offer, so a
 replacement has to be re-folded and the hash updated deliberately.
 
+## The divider
+
+A **compartment divider** for a Leitner box: `lernkarten build --grid a8
+--dividers 3` or `--dividers 4` prints them beside the cards, in the same run,
+on the same stock. Card width, **1.5 mm taller**, and not a card in any other
+sense — no user text, no id, no `TOPIC / SUBTOPIC`, and neither encoding of a
+card's side, because a divider has no front and no back.
+
+| Property | Value | Where it comes from |
+|---|---|---|
+| Size | card width × card height + 1.5 mm | the box is 73 × 52 mm inside against a 71.75 × 50 mm A8 card, so 51.5 mm still slides and still sits below the rim |
+| Colour band | 4 mm inward from the cut line | 2 mm registration error under a hand-fed simplex run, plus 1 mm of cut error, gives a floor of 3 mm; the fourth is headroom |
+| Bleed | 3 mm outward | the same floor, from the other direction |
+| Gap | ≥ 8 mm, **cut line to cut line** | two bleeds facing each other plus the cut tolerance, so the middle 2 mm is unprinted |
+| Layout | three in one row; four as two rows of two | `4 × 71.75 = 287.00 mm` is exactly the A8 print width, so four can never share a row |
+
+**A divider is not placed in the card grid**, and that is the whole design.
+Two grid cells share one cut line, and two colours cannot both bleed across it
+— every divider would carry a strip of its neighbour's colour on the edge they
+share. Free-placed, nothing is ever adjacent to a divider, so the bleed's
+guarantee is unconditional: **the divider's own colour** reaches every cut edge
+on both faces, even with the back displaced 2 mm.
+
+### It carries more ink than a card, on purpose
+
+The rule above — *it never fills the card* — holds for **cards**. A divider is a
+different artifact and is allowed a border band, because being findable at a
+glance is its entire function and it carries no reading text to compete with.
+
+This is not a loosening for cards. It is the second named exception on this
+page, beside `assets/card-box.pdf`'s exception to Principle IX, and it is
+written down for the same reason: so the next reader finds a decision rather
+than a violation.
+
+Colour still carries no meaning alone. The oversized numeral is what says which
+compartment this is, and it survives a black-only photocopy; the colour only
+makes one quick to find. On the fourth compartment's `#141414` band the numeral
+and the cut line reverse out in paper white.
+
+### The cut line is drawn on the divider
+
+Because the band bleeds 3 mm past the trim, the **visible colour edge is not
+the cut line** — cutting there gives a divider 77.75 mm wide, which enters no
+box at all. So the divider draws its own trim as a solid stroke, exactly the
+rule the card box already follows and `templates/card.typ` has always applied to
+a card. Marks in the sheet margin only help someone with a guillotine and a
+straight edge; scissors need the line on the piece.
+
+For the same reason the sheet's **grid crop marks are suppressed on a page that
+holds no card**: with the block centred at A8 the grid column at x = 76.75 mm
+falls 4 mm *inside* the first divider, and a user cutting to the crop marks
+would slice it in half.
+
 ## The screen surfaces
 
 The readme and the landing page use the same bands, the same rules and the same

@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import build_pdf  # noqa: E402
 import engine  # noqa: E402
+import leitner  # noqa: E402
 
 
 def write(tmp_path, name, content):
@@ -840,3 +841,98 @@ def test_the_engine_set_and_the_network_set_are_not_the_same():
     assert set(build_pdf.IMAGE_FORMATS) < set(network), (
         "everything printable is downloadable, and the network set is strictly wider"
     )
+
+
+# --- the divider block (feat/leitner-compartments) --------------------------
+
+A8 = build_pdf.GRIDS["4x4"]
+
+
+def divider_boxes(count, margin=5.0, grid=A8):
+    """Each divider as (left, top, right, bottom) in mm from the paper edge."""
+    _, positions = build_pdf.divider_block(0, count, grid, margin)
+    record = build_pdf.divider_record(1, count, 0, 0, grid, margin)
+    return [(x, y, x + record["w"], y + record["h"]) for x, y in positions]
+
+
+@pytest.mark.parametrize(("count", "rows"), [(3, 1), (4, 2)])
+def test_the_block_follows_the_layout_table(count, rows):
+    """FR-004: three in one row, four as two rows of two.
+
+    Not a per-row maximum. Four dividers at card width total exactly 287.00 mm,
+    which is the whole A8 print width, so four can never share a row -- while
+    three fit one with 35 mm to spare.
+    """
+    boxes = divider_boxes(count)
+    assert len(boxes) == count
+    assert len({round(top, 3) for _, top, _, _ in boxes}) == rows
+
+
+@pytest.mark.parametrize("count", [3, 4])
+def test_nothing_is_ever_adjacent_to_a_divider(count):
+    """FR-004/FR-006: the gap is what makes the bleed's guarantee unconditional.
+
+    Measured cut line to cut line, so the middle 2 mm of every gap is unprinted.
+    This is the property that failed in the grid layout the review rejected:
+    two neighbours sharing one cut line cannot both bleed across it.
+    """
+    boxes = divider_boxes(count)
+    gap = leitner.GAP_MM
+    for i, (l1, t1, r1, b1) in enumerate(boxes):
+        for l2, t2, r2, b2 in boxes[i + 1 :]:
+            apart = max(l2 - r1, l1 - r2, t2 - b1, t1 - b2)
+            assert apart >= gap - 1e-6, f"two dividers only {apart:.2f} mm apart"
+
+
+@pytest.mark.parametrize("margin", [0.0, 5.0, 10.0])
+@pytest.mark.parametrize("count", [3, 4])
+def test_the_block_keeps_clear_of_the_paper_edge_at_every_margin(count, margin):
+    """FR-004: measured from the paper, not the print area.
+
+    That is what makes `--margin 0` need no special case: the block reserves
+    its own room and the bleed lives in the gaps, never in a borrowed margin.
+    """
+    sheet_w, sheet_h = build_pdf.sheet(A8)
+    for left, top, right, bottom in divider_boxes(count, margin):
+        clear = min(left, top, sheet_w - right, sheet_h - bottom)
+        assert clear >= leitner.GAP_MM - 1e-6, f"only {clear:.2f} mm to the paper edge"
+
+
+def test_a_divider_is_card_width_and_one_and_a_half_millimetres_taller():
+    """FR-003, at every margin including 0 -- there is no fallback any more."""
+    for margin in (0.0, 5.0, 10.0):
+        card_w, card_h = build_pdf.card_size(A8, margin)
+        record = build_pdf.divider_record(1, 4, 0.0, 0.0, A8, margin)
+        assert record["w"] == pytest.approx(card_w)
+        assert record["h"] == pytest.approx(card_h + leitner.GROWTH_MM)
+
+
+def test_a_divider_carries_its_own_geometry_so_the_template_defines_none():
+    record = build_pdf.divider_record(2, 4, 10.0, 20.0, A8, 5.0)
+    assert record["kind"] == "divider"
+    assert (record["number"], record["of"]) == (2, 4)
+    assert (record["x"], record["y"]) == (10.0, 20.0)
+    assert record["interval"] == leitner.INTERVALS[4][1]
+    assert record["rule"] == leitner.rules(4)[1]
+    assert record["colour"] == leitner.COLOURS[1]
+    assert record["band"] > 0 and record["bleed"] > 0
+    for absent in ("id", "language", "front", "back"):
+        assert absent not in record, f"a divider is not a card; it has no {absent}"
+
+
+def test_the_block_shares_the_last_sheet_when_there_is_room_and_not_when_there_is_not():
+    """FR-004/FR-012: the threshold, both ways.
+
+    A two-row block needs 2.44 free card rows, so four dividers share a sheet
+    only while the cards use at most one row. Four cards is one row; five is two.
+    """
+    assert build_pdf.divider_block(4, 4, A8, 5.0)[0] == 0, "4 cards leave three rows"
+    assert build_pdf.divider_block(5, 4, A8, 5.0)[0] == 1, "5 cards spill into row two"
+
+
+def test_the_block_is_always_placeable():
+    """A fresh page offers the full sheet, so no deck size can refuse a block."""
+    for cards in (0, 1, 15, 16, 17, 31, 32, 500):
+        for count in (3, 4):
+            page, positions = build_pdf.divider_block(cards, count, A8, 5.0)
+            assert page >= 0 and len(positions) == count

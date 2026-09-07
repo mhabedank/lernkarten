@@ -16,8 +16,13 @@
 // or there, never in the generated file.
 
 #import "card.typ": faces, guide
+#import "divider.typ": divider
 
-#let cards = json("cards.json")
+#let data = json("cards.json")
+// Cards tile the grid; dividers are placed in millimetres beside it. Absent
+// means a plain card file, so a build with no dividers writes what it always did.
+#let cards = if type(data) == dictionary { data.cards } else { data }
+#let dividers = if type(data) == dictionary { data.at("dividers", default: ()) } else { () }
 #let margin = float(sys.inputs.at("margin", default: "5")) * 1mm
 #let show-logo = sys.inputs.at("logo", default: "true") == "true"
 
@@ -67,7 +72,10 @@
 // One sheet, up to columns x rows cards. `mirror` flips the columns for the
 // back pages, which is what makes duplex line up at any grid.
 #let sheet(block-of-cards, render, mirror) = {
-  cropmarks
+  // Grid crop marks only where a card actually meets that line. A page holding
+  // only dividers gets none: the grid's marks would sit 4 mm inside a divider
+  // and invite a cut straight through it.
+  if block-of-cards.len() > 0 { cropmarks }
   for (position, one) in block-of-cards.enumerate() {
     let column = calc.rem(position, columns)
     let row = calc.quo(position, columns)
@@ -76,7 +84,27 @@
   }
 }
 
-#let sheets = range(0, calc.ceil(cards.len() / per-page))
+// The dividers on this page. They are not grid cells: two cells share a cut
+// line, and two colours cannot both bleed across it, so each divider carries
+// its own (x, y) in mm from the paper edge. On a back page that reflects to
+// `sheet-w - x - w` — the same reflection the column mirror above performs for
+// a card, which a free-placed object gets no other way.
+#let divider-block(block-of-dividers, mirror) = {
+  for d in block-of-dividers {
+    let w = float(d.w) * 1mm
+    let x = float(d.x) * 1mm
+    place(
+      dx: if mirror { sheet-w - x - w } else { x },
+      dy: float(d.y) * 1mm,
+      divider(d, scale: card-scale),
+    )
+  }
+}
+
+// A divider page may lie beyond the last card page, so the sheet count is the
+// larger of the two. Without dividers this is exactly `ceil(cards / per-page)`.
+#let last-divider-page = dividers.fold(-1, (m, d) => calc.max(m, int(d.page)))
+#let sheets = range(0, calc.max(calc.ceil(cards.len() / per-page), last-divider-page + 1))
 
 // The page order as data: one (sheet, back?) pair per face. Both orders are
 // the same 2 x sheets faces in a different sequence, so the page count cannot
@@ -94,9 +122,14 @@
 
 #for (position, (sheet-index, back)) in order.enumerate() {
   if position > 0 { pagebreak() }
-  let block-of-cards = cards.slice(
-    sheet-index * per-page,
-    calc.min((sheet-index + 1) * per-page, cards.len()),
+  // Both ends are clamped: a page that holds only dividers starts past the
+  // last card, and slicing from there would be out of bounds.
+  let from = calc.min(sheet-index * per-page, cards.len())
+  let block-of-cards = cards.slice(from, calc.min(from + per-page, cards.len()))
+  sheet(
+    block-of-cards.filter(c => c.at("kind", default: "card") == "card"),
+    if back { card.back } else { card.front },
+    back,
   )
-  sheet(block-of-cards, if back { card.back } else { card.front }, back)
+  divider-block(dividers.filter(d => int(d.page) == sheet-index), back)
 }

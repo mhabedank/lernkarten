@@ -101,6 +101,12 @@ code, comments, docs and commit messages are written in English.
   line of YAML, so `'first\*bold* rest'` gives a literal `*`, no line break,
   and every following `*` shifted by one. Write `'first\ *bold* rest'`, or
   reorder so no markup character follows the break.
+- **Leitner dividers**: `lernkarten build --grid a8 --dividers 3|4` prints
+  compartment dividers beside the cards. They are **not** cards: no entry in
+  `cards/*.yaml`, no id, generated from one integer. Card width, 1.5 mm taller,
+  free-placed outside the grid so nothing is ever adjacent to one. `a8` only —
+  the box fits nothing else. What they say lives in `scripts/leitner.py`, which
+  `docs/leitner.html` must agree with. See `docs/design.md` § The divider.
 - **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
   goes to `output/`. The typesetting engine downloads itself on first use.
   Never hand-edit anything in `output/` — always go through the YAML files.
