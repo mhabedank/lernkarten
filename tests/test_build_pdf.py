@@ -496,13 +496,13 @@ def declared(*files):
 
 
 def test_the_flag_beats_the_deck_and_the_deck_beats_the_default(tmp_path):
-    """FR-013: --grid wins over the file, the file wins over A7."""
-    a8 = declared(deck(tmp_path, "a8.yaml", "a8"))
+    """FR-013/FR-005: --grid wins over the file, the file wins over the default."""
+    a7 = declared(deck(tmp_path, "a7.yaml", "a7"))
     silent = declared(deck(tmp_path, "silent.yaml"))
-    assert build_pdf.resolve_grid(a8, "a7") == (2, 4), "the flag overrides the deck"
-    assert build_pdf.resolve_grid(a8, None) == (4, 4), "the deck overrides the default"
-    assert build_pdf.resolve_grid(silent, None) == (2, 4), "no key means A7"
-    assert build_pdf.resolve_grid([], None) == (2, 4), "nothing at all means A7"
+    assert build_pdf.resolve_grid(a7, "a8") == (4, 4), "the flag overrides the deck"
+    assert build_pdf.resolve_grid(a7, None) == (2, 4), "the deck overrides the default"
+    assert build_pdf.resolve_grid(silent, None) == (4, 4), "no key means A8 (#84)"
+    assert build_pdf.resolve_grid([], None) == (4, 4), "nothing at all means A8"
 
 
 def test_two_decks_that_disagree_name_both_files_and_both_values(tmp_path):
@@ -518,19 +518,24 @@ def test_two_decks_that_disagree_name_both_files_and_both_values(tmp_path):
 
 
 def test_a_declared_grid_conflicts_with_a_deck_that_declares_nothing(tmp_path):
-    """FR-014a: absent is a value too, and the message says which is which."""
-    mixed = declared(deck(tmp_path, "eight.yaml", "a8"), deck(tmp_path, "silent.yaml"))
+    """FR-014a: absent is a value too, and the message says which is which.
+
+    The pair that conflicts flipped when A8 became the default (#84): silence
+    used to disagree with `a8` and now disagrees with `a7`. The *rule* is
+    untouched — an absent key is a value, not an absent opinion.
+    """
+    mixed = declared(deck(tmp_path, "seven.yaml", "a7"), deck(tmp_path, "silent.yaml"))
     with pytest.raises(ValueError) as excinfo:
         build_pdf.resolve_grid(mixed, None)
     message = str(excinfo.value)
-    assert "eight.yaml" in message and "silent.yaml" in message, message
+    assert "seven.yaml" in message and "silent.yaml" in message, message
     assert "4x4" in message and "2x4" in message, message
     assert "declares" in message and "no grid" in message, (
         f"a declared value and an absent one must read differently: {message}"
     )
-    # A7 declared beside nothing declared is not a disagreement — both mean 2x4.
-    agreeing = declared(deck(tmp_path, "seven.yaml", "a7"), deck(tmp_path, "quiet.yaml"))
-    assert build_pdf.resolve_grid(agreeing, None) == (2, 4)
+    # A8 declared beside nothing declared is not a disagreement — both mean 4x4.
+    agreeing = declared(deck(tmp_path, "eight.yaml", "a8"), deck(tmp_path, "quiet.yaml"))
+    assert build_pdf.resolve_grid(agreeing, None) == (4, 4)
 
 
 def test_a_deck_declaring_a_bad_grid_is_refused_even_when_the_flag_overrides(tmp_path):
@@ -936,3 +941,60 @@ def test_the_block_is_always_placeable():
         for count in (3, 4):
             page, positions = build_pdf.divider_block(cards, count, A8, 5.0)
             assert page >= 0 and len(positions) == count
+
+
+# --- A8 as the default grid (#84) -------------------------------------------
+
+
+def test_the_scale_reference_is_the_a7_card_and_not_the_default_grid():
+    """FR-002 — the one thing this change can break silently.
+
+    `card_scale` measures every grid against a reference. If that reference is
+    spelled `DEFAULT_GRID`, moving the default moves it too, and every A7 card
+    grows by 39 % at the default margin (1.394) and 41 % at `--margin 0`
+    (1.414) — type, bands, insets and note rules with it. `grid: a7` in the
+    file would not protect against it, because the file names the grid, not the
+    reference.
+
+    The numbers below are today's and must survive the default moving.
+    """
+    a7, a8 = build_pdf.GRIDS["2x4"], build_pdf.GRIDS["4x4"]
+    expected = {0.0: 0.7071, 5.0: 0.6970, 10.0: 0.6857}
+    for margin, a8_scale in expected.items():
+        assert build_pdf.card_scale(a7, margin) == pytest.approx(1.0), (
+            f"the A7 card is the reference, so it is 1.0 at margin {margin}"
+        )
+        assert build_pdf.card_scale(a8, margin) == pytest.approx(a8_scale, abs=5e-4), (
+            f"A8 at margin {margin} must keep the factor it has today"
+        )
+
+
+def test_the_default_and_the_reference_are_two_different_constants():
+    """They were one name, which is how the trap above was set."""
+    assert build_pdf.GRIDS["2x4"] == build_pdf.REFERENCE_GRID, (
+        "the card design is drawn at A7 and 11 pt is defined there"
+    )
+    assert build_pdf.GRIDS["4x4"] == build_pdf.DEFAULT_GRID, (
+        "an absent grid: key means A8 — the size the card box fits"
+    )
+
+
+def test_an_absent_grid_key_means_a8():
+    """FR-001. resolve_grid() falls back to the default when nothing says."""
+    assert build_pdf.resolve_grid([("deck.yaml", None)]) == build_pdf.GRIDS["4x4"]
+    assert build_pdf.resolve_grid([]) == build_pdf.GRIDS["4x4"]
+
+
+def test_a_stated_grid_and_a_flag_still_win_over_the_default():
+    """FR-004/FR-005 — unchanged, and asserted because the default moved.
+
+    `declared` carries the raw value from the file, not a parsed grid.
+    """
+    a7 = build_pdf.GRIDS["2x4"]
+    assert build_pdf.resolve_grid([("deck.yaml", "a7")]) == a7
+    assert build_pdf.resolve_grid([("deck.yaml", None)], "a7") == a7
+    with pytest.raises(ValueError, match="disagree"):
+        build_pdf.resolve_grid([("a.yaml", "a7"), ("b.yaml", "a8")])
+    assert build_pdf.resolve_grid([("a.yaml", "a8"), ("b.yaml", None)]) == build_pdf.GRIDS["4x4"], (
+        "a8 beside silence is no disagreement any more — both mean a8"
+    )

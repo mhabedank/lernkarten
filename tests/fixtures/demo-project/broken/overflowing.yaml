@@ -1,6 +1,7 @@
 # Valid markup, but the back of the second card is far longer than a
 # 100 x 72 mm card can hold. The build succeeds and warns about that card.
 topic: 'Broken: overflowing card'
+grid: a7
 language: english
 cards:
   - subtopic: 'Fits'

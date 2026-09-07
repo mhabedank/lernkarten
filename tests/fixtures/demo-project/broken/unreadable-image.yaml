@@ -2,6 +2,7 @@
 # without decoding it, so this one is the engine's verdict — surfaced through
 # the test typeset and attributed to its card by offending_card().
 topic: 'Kestrel Islands: Tides'
+grid: a7
 language: english
 cards:
   - id: RDB21

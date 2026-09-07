@@ -1,6 +1,7 @@
 # The second card carries an unescaped '#', which the typesetter reads as the
 # start of code. The build has to fail and name exactly this card.
 topic: 'Broken: invalid markup'
+grid: a7
 language: english
 cards:
   - subtopic: 'Fine'

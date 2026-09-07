@@ -52,7 +52,19 @@ GRIDS = {
     "4x4": (4, 4),
 }
 GRID_ALIASES = {"a7": "2x4", "a8": "4x4"}
-DEFAULT_GRID = GRIDS["2x4"]
+
+# What an absent `grid:` key means. A8, because that is the size the card box
+# ships for and the only one the Leitner dividers accept — a default that does
+# not fit the one container this project hands out is the wrong default.
+DEFAULT_GRID = GRIDS["4x4"]
+
+# What card_scale() measures against, and **not the same thing**. The card is
+# drawn at A7 and docs/design.md's 11 pt floor is defined there, so that is the
+# card every other grid is a scale of. These were one constant until the default
+# moved; spelling the reference `DEFAULT_GRID` meant moving the default silently
+# re-scaled every A7 card by 39 % — measured 1.394 at the default margin, 1.414
+# at --margin 0, with type, bands and insets going with it.
+REFERENCE_GRID = GRIDS["2x4"]
 
 # How the two faces of a sheet are sequenced. `duplex` interleaves them and the
 # printer turns the paper; `simplex` puts every front first and the user turns
@@ -182,16 +194,22 @@ def card_scale(grid, margin):
     a card two thirds the height was measured and does not work: labels wrap
     out of the band, backs run off the card, the note rules stop fitting.
 
-    Measured against the A7 card *at the same margin*, so the default grid is
-    exactly 1.0 at every margin. Against a fixed 100 x 71.75 — the A7 card at
-    the default margin only — `--margin 0` would scale A7 up by 3.5 % and
-    `--margin 10` down by 5 %, changing output nobody asked to change.
+    Measured against the A7 card *at the same margin*, so A7 is exactly 1.0 at
+    every margin. Against a fixed 100 x 71.75 — the A7 card at the default
+    margin only — `--margin 0` would scale A7 up by 3.5 % and `--margin 10`
+    down by 5 %, changing output nobody asked to change.
+
+    The reference is REFERENCE_GRID and never DEFAULT_GRID. They were one
+    constant until A8 became the default, and that is exactly the trap: a
+    reference that follows the default grows every A7 card by 39 %, and
+    `grid: a7` in the file does not protect against it, because the file names
+    the grid and not the reference.
 
     The tighter of the two ratios wins, so the card never gains room it was not
     drawn with; the other axis simply keeps a little slack.
     """
     cw, ch = card_size(grid, margin)
-    ref_w, ref_h = card_size(DEFAULT_GRID, margin)
+    ref_w, ref_h = card_size(REFERENCE_GRID, margin)
     return min(cw / ref_w, ch / ref_h)
 
 
@@ -294,16 +312,16 @@ def print_order_note(page_count, sides):
 
 
 def resolve_grid(declared, flag=None):
-    """The grid this build prints at: the flag, else the decks, else A7.
+    """The grid this build prints at: the flag, else the decks, else A8.
 
     `declared` is what load_cards() saw — one (file, value) pair per deck that
     contributes cards, the value None where the deck says nothing.
 
-    An absent key is not an absent opinion: it means A7 (FR-012). So a deck
-    asking for A8 beside a deck that says nothing is a real disagreement, and
-    is refused rather than guessed at — picking a winner would silently print
-    half the cards at a size they were not written for. A7 declared beside
-    nothing declared is no disagreement at all: both mean 2 x 4.
+    An absent key is not an absent opinion: it means A8. So a deck asking for
+    A7 beside a deck that says nothing is a real disagreement, and is refused
+    rather than guessed at — picking a winner would silently print half the
+    cards at a size they were not written for. A8 declared beside nothing
+    declared is no disagreement at all: both mean 4 x 4.
     """
     resolved = {}
     for name, value in declared:
@@ -697,6 +715,27 @@ def write_box(directory):
     return target
 
 
+def advise_about_the_default_grid(declared, flag, grid):
+    """Say once that a deck is taking the default rather than stating a size.
+
+    A8 became the default in #84, and a deck written before that prints
+    smaller than it used to. The card that matters is the one already cut and
+    sitting in someone's box: they reprint one topic, and the new cards do not
+    match. This line is the only chance they have to find out first, so it says
+    what the default is *and* what to write to keep the old size.
+
+    Once per run, not once per deck. Six silent decks are one decision.
+    """
+    if flag is not None or not any(value is None for _, value in declared):
+        return
+    print(
+        f"NOTE: {sum(1 for _, v in declared if v is None)} deck(s) state no `grid:` key, "
+        f"so they print at {grid_name(grid)} (a8, 16 up) — the default since v0.9.0. "
+        "Add `grid: a7` to keep the older, larger card.",
+        file=sys.stderr,
+    )
+
+
 def advise_about_dividers(count, divider_page, card_pages, sides):
     """Say which paper case the run is in, rather than implying the cheap one.
 
@@ -825,6 +864,7 @@ def main():
         grid = resolve_grid(declared, args.grid)
     except ValueError as e:
         sys.exit(f"ERROR: {e}")
+    advise_about_the_default_grid(declared, args.grid, grid)
 
     # The dividers exist for the card box, and the box is 73 x 52 mm inside. An
     # A7 card is 100 mm wide and can never be made to fit, so a flag asking for

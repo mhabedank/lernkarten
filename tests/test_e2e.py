@@ -561,10 +561,12 @@ def test_a_card_that_fits_one_grid_and_not_the_other_is_reported_only_there(tmp_
     """
     fixture = str(DEMO / "broken" / "overflows-only-at-a7.yaml")
 
-    default = run("check", fixture)
-    assert default.returncode == 0, default.stderr
-    assert "overflows-only-at-a7-2" in default.stderr, (
-        f"the 507-character back does not fit A7 and must be reported by id: {default.stderr}"
+    # The fixture states `grid: a7` — since #84 an absent key would mean A8,
+    # and this test is about the pair of grids rather than about the default.
+    sparse = run("check", fixture)
+    assert sparse.returncode == 0, sparse.stderr
+    assert "overflows-only-at-a7-2" in sparse.stderr, (
+        f"the 507-character back does not fit A7 and must be reported by id: {sparse.stderr}"
     )
 
     dense = run("check", fixture, "--grid", "a8")
@@ -1474,7 +1476,7 @@ def test_a_file_driven_count_at_a7_skips_instead_of_refusing(tmp_path):
     (tmp_path / "cards").mkdir()
     deck = tmp_path / "cards" / "deck.yaml"
     deck.write_text(
-        "topic: 'T'\nlanguage: english\ncards:\n  - front: 'a'\n    back: 'b'\n",
+        "topic: 'T'\nlanguage: english\ngrid: a7\ncards:\n  - front: 'a'\n    back: 'b'\n",
         encoding="utf-8",
     )
     (tmp_path / "lernkarten.yaml").write_text("compartments: 4\n", encoding="utf-8")
@@ -1515,3 +1517,36 @@ def test_box_as_a_flag_refuses_a_grid_it_does_not_fit(tmp_path):
     assert result.returncode != 0
     assert "a8" in result.stderr.lower(), result.stderr
     assert not (tmp_path / "box.pdf").exists()
+
+
+def test_a_deck_that_states_no_grid_is_told_once(tmp_path):
+    """FR-006/SC-006. The whole safety net of #84 is this one line.
+
+    Someone with a printed A7 deck has to find out that the default moved
+    *before* they cut the reprint. Once per run, not once per deck: a project
+    with six silent decks is one decision, not six.
+    """
+    (tmp_path / "cards").mkdir()
+    for name in ("a", "b"):
+        (tmp_path / "cards" / f"{name}.yaml").write_text(
+            f"topic: '{name}'\nlanguage: english\ncards:\n  - front: 'x'\n    back: 'y'\n",
+            encoding="utf-8",
+        )
+    decks = [str(p) for p in sorted((tmp_path / "cards").glob("*.yaml"))]
+
+    result = run("check", *decks)
+    assert result.returncode == 0, result.stderr
+    said = [line for line in result.stderr.splitlines() if "state no `grid:` key" in line]
+    assert len(said) == 1, f"once per run, whatever the number of silent decks: {result.stderr}"
+    assert "a8" in said[0].lower(), "it has to name what the default now is"
+    assert "grid: a7" in said[0], "and what to write to keep the old size"
+
+    pinned = tmp_path / "cards" / "a.yaml"
+    pinned.write_text(
+        pinned.read_text(encoding="utf-8").replace(
+            "language: english", "language: english\ngrid: a8"
+        ),
+        encoding="utf-8",
+    )
+    still = run("check", str(pinned))
+    assert "state no `grid:` key" not in still.stderr, "a deck that states its grid is not nagged"

@@ -5,6 +5,7 @@
 # `'... \ *bold* ...'` — backslash, space, star — it typesets and both the break
 # and the emphasis survive.
 topic: 'Broken: the backslash ate the star'
+grid: a7
 language: english
 cards:
   - subtopic: 'Fine'

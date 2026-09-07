@@ -184,8 +184,17 @@ the one this project ships as a printable net (see [The box](#the-box)):
 | `2x4` | `a7` | 8, two columns by four rows | 100 × 71.75 mm | 105 × 74.25 mm (DIN A7) |
 | `4x4` | `a8` | 16, four columns by four rows **on a landscape A4** | 71.75 × 50 mm | 74.25 × 52.5 mm (DIN A8) |
 
-`2x4` is the default and stays the default: it is the size the cards in this
-repo are written for. A card file may name its own with a top-level `grid:`
+**`4x4` is the default.** It was `2x4` until v0.9.0, and the reason it moved is
+that `2x4` did not fit the one container this project ships: an A7 card is
+100 mm wide against the card box's 73 mm opening, and the Leitner dividers
+refuse anything but A8. A default whose output does not fit the box the same
+repository hands out is the wrong default.
+
+`2x4` remains fully supported, and remains **the reference size**: the card is
+drawn at A7, the 11 pt floor is defined there, and every other grid is a uniform
+scale of it. That reference is a separate constant from the default and does not
+follow it — one name for both would have re-scaled every A7 card by 39 % the day
+the default moved. A card file may name its own with a top-level `grid:`
 key, and `--grid` on the command line overrides it. A4 halves into A7 and
 halves again into A8, so both grids fill the sheet exactly and every cut line
 is shared between two cards.
@@ -237,7 +246,7 @@ It holds about 90 cards.
 | Paper | 160–250 gsm |
 | Sheet | one page, A4 portrait |
 
-**It does not fit an A7 deck**, which is the default grid: an A7 card is 100 mm
+**It does not fit an A7 deck:** an A7 card is 100 mm
 wide against a 73 mm opening. Nor does an A8 deck printed at `--margin 0`, whose
 cards are 74.25 mm. The landing page says so beside the download, because the
 sheet cannot be changed to say it — see below.

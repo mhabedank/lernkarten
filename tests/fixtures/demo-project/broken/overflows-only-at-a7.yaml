@@ -22,6 +22,7 @@
 # the *portrait* A8. That direction no longer discriminates — nothing fits A7
 # and overflows A8 once the card scales.
 topic: 'Broken: fits A8, not A7'
+grid: a7
 language: english
 cards:
   - subtopic: 'Fits either grid'
