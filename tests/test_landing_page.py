@@ -251,6 +251,50 @@ def test_the_four_nav_links_sit_inside_the_disclosure_and_the_rest_does_not():
         assert menu not in ancestors(element), f".{cls} must stay in the bar, not in the panel"
 
 
+def test_the_desktop_bar_carries_its_height_down_to_the_link_row():
+    """A10 — the stretch chain `.nav` → `.nav__links` survives the `<details>` wrapper.
+
+    `.nav` is `align-items: stretch`, and before the disclosure existed
+    `.nav__links` was a direct flex child carrying `flex: 1`. That is where the
+    vertical centring came from: a full-height box for `align-items: center` to
+    centre in. Wrapping the row in `<details class="nav__menu">` moved `flex: 1`
+    to the wrapper, and a `<details>` is a block container — so the stretched
+    height stopped there and the links fell to the top of the bar (BUG-011).
+
+    This asserts the chain, not a pixel. The module never renders the page, and
+    FR-018 forbids the alternative anyway: a height or a padding on `.nav__links`
+    re-breaks the moment the bar's own height changes. Each link in the chain has
+    to be a flex container for the stretch to reach the row.
+    """
+    # Exact selectors, not `rules_for`'s substring match: a rule for something
+    # *inside* `.nav__menu` would satisfy a fragment search while leaving the
+    # wrapper itself a block, which is the defect rather than the fix.
+    desktop = {
+        selector.strip(): body.replace(" ", "")
+        for selector, body in _innermost_rules(media_block("min-width: 761px"))
+    }
+    for selector in (".nav__menu", ".nav__menu::details-content"):
+        body = desktop.get(selector, "")
+        # `display: flex` only. `flex: 1` is a flex *item* property — it says how
+        # the box behaves in its own parent, nothing about what it does to its
+        # children, and accepting it here would pass the exact defect BUG-011 is.
+        assert "display:flex" in body or "display:inline-flex" in body, (
+            f"{selector} is not a flex container above the breakpoint, so the bar's "
+            "height stops there and the nav links hang from the top edge instead of "
+            f"sitting on its centre line (FR-005, FR-018). Rule found: {body!r}"
+        )
+
+    # FR-018: the chain, never a hard-coded size on the row itself.
+    banned = ("height", "padding-block", "padding-top", "line-height")
+    for body in rules_for(".nav__links"):
+        for declaration in banned:
+            assert f"{declaration}:" not in body.replace(" ", ""), (
+                f".nav__links declares {declaration}, which fakes the centring at one "
+                "bar height and breaks at the next. Carry the stretch through the "
+                f"wrapper instead (FR-018). Rule: {body}"
+            )
+
+
 def next_element_sibling(node):
     """The element that follows this one under the same parent, or None."""
     siblings = node.parent.children

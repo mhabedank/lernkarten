@@ -90,13 +90,13 @@ differs. The red tests can therefore be written while the spike runs.
 
 - [X] T009 [US1] Wrap `.nav__links` in `<details class="nav__menu">` with `<summary>menu</summary>` at `docs/index.html:355-360`, keeping the four links, their `href` values and their order exactly as they are; leave `.nav__home` and `.nav__gh` as siblings of the `<details>` (see the tree in [data-model.md](data-model.md#the-navigation))
 - [X] T010 [US1] Style the control in the stylesheet near the other nav rules: remove the default disclosure marker (`summary { list-style: none }` plus `summary::-webkit-details-marker { display: none }` for older Safari), and give it the same `label` treatment the existing nav links have — no icon carries the meaning (constitution XVI)
-- [X] T011 [US1] In the `@media (max-width: 760px)` block at `docs/index.html:316-321`, make the summary the visible control; above the breakpoint hide the summary and force the panel visible, using whichever of the two patterns T005 settled on
+- [X] T011 [US1] *(reopened by [BUG-011](bugs/BUG-011.md), closed again 2026-09-08 by T050)* In the `@media (max-width: 760px)` block at `docs/index.html:316-321`, make the summary the visible control; above the breakpoint hide the summary and force the panel visible, using whichever of the two patterns T005 settled on. **Incomplete as written**: "force the panel visible" restored visibility and not box behaviour, so the link row lost the bar's height and hangs from the top edge. The override must also carry the stretch through `.nav__menu` and `::details-content` (FR-005, FR-018)
 - [X] T012 [US1] Delete `overflow-x: auto`, `scrollbar-width: none` and the `.nav__links::-webkit-scrollbar` rule at `docs/index.html:101-103` — they have nothing left to do once the row is not an overflow container (the *Anything this makes redundant* line in [spec.md](spec.md#dependency--portability-impact))
 - [X] T013 [US1] Replace the comment at `docs/index.html:96-97` — it explains a sideways scroll that no longer exists. The new one says why the bar still refuses to wrap, so the next reader does not undo T009 with a `flex-wrap`
 
 ### Refactor
 
-- [X] T014 [US1] Green now — clean up. Check the new rules sit with their neighbours rather than at the end of the stylesheet, and that the nav block still reads top to bottom
+- [X] T014 [US1] *(reopened by [BUG-011](bugs/BUG-011.md), closed again 2026-09-08 — the new rules sit in the nav block with their neighbours)* Green now — clean up. Check the new rules sit with their neighbours rather than at the end of the stylesheet, and that the nav block still reads top to bottom. Re-run once T050 has added rules to the `min-width: 761px` block
 
 **Checkpoint**: A1–A3 green, US1 stands alone.
 
@@ -195,15 +195,19 @@ would prove nothing about it. They stay in CI, where they guard the rest.
 
 Open `docs/index.html` directly — no server, no build.
 
-- [X] T036 **Navigation, at 360 px**: the bar is one line at rest; the control reads as a word; opening it shows all four links; following `install` arrives at the install section; the control takes keyboard focus and opens with Enter or Space. Then **disable JavaScript and repeat** — this is FR-003 and the row most likely to be skipped. Widen past 760 px: the bar is the row it is today
+- [ ] ⚠️ Reopened T036 *(reopened — [BUG-011](bugs/BUG-011.md))* **Navigation, at 360 px**: the bar is one line at rest; the control reads as a word; opening it shows all four links; following `install` arrives at the install section; the control takes keyboard focus and opens with Enter or Space. Then **disable JavaScript and repeat** — this is FR-003 and the row most likely to be skipped. Widen past 760 px: the bar is the row it is today. **Corrected by [BUG-011](bugs/BUG-011.md)** — "is the row it is today" was checked from memory against a *"before"* that was already committed and gone, and it passed while the link row hung 23 px too high. Check it against the parent commit rendered side by side, and check the one thing that failed by name: the links sit on the same centre line as `lernkarten` and `github`
 - [X] T037 **Section bands, above 1080 px**: the heading rows of `01`, `03` and `04` are the same height and none is taller than its heading needs; each note is a full-width block directly under its band; every rule is single — no doubled 4 px rule, none missing; `04 install` keeps `--sand` on `--ink` with a `--sand` rule beneath. Then narrow below 1080 px and confirm the reading order is unchanged in all four sections: number, heading, note, content
 - [X] T038 **The card toggle**: on load exactly one card and "show the back"; click swaps it and the label; click again returns. Then **disable JavaScript and reload** — both cards side by side, no button
-- [X] T039 Repeat T036 in the three engines the spike covered — Chromium, Firefox and Safari. *(All three pass: Chromium measured headless, Safari by hand, Firefox 154 after it was installed. Firefox also supplied the 360 px measurement Chrome's 500 px window clamp had made impossible — see research.md R2.)* CI has no browser leg and will not grow one for this feature, so this is the only place the cross-browser claim is checked
+- [ ] ⚠️ Reopened T039 *(reopened — [BUG-011](bugs/BUG-011.md); **Chromium and Firefox re-measured 2026-09-08** — Firefox headless reproduced the defect at `OFF-CENTRE-BY=-23` and the fix at `0`, link row 18 px → 63 px. **Safari still owed**: `safaridriver` is installed and serves WebDriver, but refuses a session until *Allow remote automation* is switched on by hand in Safari Settings → Developer — a GUI toggle no script can flip.)* Repeat T036 in the three engines the spike covered — Chromium, Firefox and Safari. *(~~All three pass~~ — **struck 2026-09-08 by [BUG-011](bugs/BUG-011.md)**: this pass certified a bar whose link row hung 23 px too high, so it recorded that the row was *run*, not that it was *right*. Chromium measured headless, Safari by hand, Firefox 154 after it was installed. Firefox also supplied the 360 px measurement Chrome's 500 px window clamp had made impossible — see research.md R2.)* CI has no browser leg and will not grow one for this feature, so this is the only place the cross-browser claim is checked
 
 **Known and not a regression** — name these so a reviewer does not file them
 again: the toggle still does not explain itself (the open half of issue #28), the
-notes are still 14 px against a 15 px floor (issue #30, frozen here by FR-011),
-and the README still buries the landing page (issue #26).
+notes are still 14 px against a 15 px floor (issue #30, frozen here by FR-011 —
+*stale as of 2026-08-19: BUG-006 raised them and SC-010 now guards it*), and the
+README still buries the landing page (issue #26). **Added 2026-09-08 by
+[BUG-011](bugs/BUG-011.md)**: the half-empty columns in sections `02` and `03`
+are known, are **not** this feature's to fix, and are tracked as
+[#104](https://github.com/mhabedank/lernkarten/issues/104).
 
 ---
 
@@ -328,3 +332,72 @@ stylesheet, so the assertion reaches all of it.
 - T040 before T041 and T042 — the one rule with no exception here
 - T043 and T044 are different files and may run together
 - T045 after T041 and T042
+
+---
+
+## Phase 10: Bugfix (BUG-011)
+
+**Bugfix**: 2026-09-08 — [BUG-011](bugs/BUG-011.md) Updated from bugfix patch.
+
+**Purpose**: T009 wrapped the nav link row in a `<details>` and the row lost the
+bar's height with it. Measured in headless Chrome at 1120, 1280, 1440 and
+1800 px, `.nav__links` is an 18 px box at offset **0** inside a 63 px
+`.nav__menu`, where centred is 23 px — so the four links hang from the top edge
+while `lernkarten` and `github` stay centred. This fails FR-005, which no
+assertion ever covered.
+
+**S1 only.** S2 and S3 of the report — the half-empty columns in `02` and `03` —
+are [#104](https://github.com/mhabedank/lernkarten/issues/104), not this phase.
+
+**One manual row, unlike Phase 9.** The declaration is assertable, so T049 is a
+real red test; but the reason this shipped is that T036 was checked from memory,
+so T036 is reopened with a corrected instruction rather than trusted again.
+
+### 🔴 Red
+
+- [X] T049 🔴 Assertion A10 in `tests/test_landing_page.py`: in the
+      `min-width: 761px` block, the chain that carries the bar's height reaches
+      the link row — `.nav__menu` and `::details-content` each resolve to a flex
+      container, so `.nav__links` is stretched rather than left at its own line
+      height. Red today: the block sets `flex: 1`, `display: none` on the summary
+      and `content-visibility` on `::details-content`, and nothing else. Assert
+      on the **stretch chain**, not on a pixel value — this file parses the
+      stylesheet and never lays the page out, and a hard-coded height is the
+      thing FR-018 forbids (FR-005, FR-018, SC-011)
+
+**Checkpoint**: A10 red. Commit here.
+
+### 🟢 Green — `docs/index.html`
+
+- [X] T050 Carry the stretch through the wrapper in the `min-width: 761px` block
+      at `:347-351`: `.nav__menu` and `.nav__menu::details-content` become flex
+      containers so `.nav__links`'s existing `align-items: center` has the bar's
+      63 px to centre in. Do **not** set a height, a `padding-block` or a
+      `line-height` on `.nav__links` — each re-breaks when the bar's height
+      changes, which is the brittleness FR-008 already rejected for the bands
+      (FR-018). T049 goes green
+- [X] T051 Extend the comment at `:340-346`. It explains why
+      `::details-content` had to be overridden for `display`; it now has to say
+      that a `<details>` swallows the **stretched height** as well, so the next
+      reader does not delete the flex declarations as redundant. This is the
+      second instance of one failure — the comment is where that gets recorded
+- [X] T052 Confirm the mobile panel is unaffected: below 760 px `.nav__links` is
+      absolutely positioned out of the bar (`:362-367`), so the desktop-only
+      block must not reach it. This is a check, not an edit — but it is the
+      failure mode T050 could plausibly introduce
+
+**Checkpoint**: A10 green, and T036 and T039 re-run and passing.
+
+### By hand
+
+- [ ] T053 *(Chromium **and Firefox** done 2026-09-08 — both measured against the broken state side by side: link row 18 px → 63 px, `OFF-CENTRE-BY` −23 → 0, centre line identical to the wordmark and `github`. **Safari is the only thing left**, and it is blocked on the *Allow remote automation* toggle described in T039.)* Re-run reopened **T036** and **T039** against the corrected
+      instruction: the desktop bar compared with the parent commit rendered side
+      by side, not from memory, and the link row on the same centre line as
+      `lernkarten` and `github`. This is the row that let the regression ship
+
+- [X] T055 `docs/testing.md` row 24 — the durable desktop row said *one line, four inline links, no control* and never named the alignment, which is why nothing in the permanent checklist could catch this. It now asks for the centre line and for the comparison against the previous commit. Found by `/speckit.bugfix.verify`; not in the original Phase 10 list, which is why it sits after T053 and before T054 — the gates run last, so phase order wins over numeric order here (FR-005)
+
+### Gates
+
+- [X] T054 The four gates: `ruff check . && ruff format --check .`, `pytest`,
+      `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`

@@ -252,6 +252,13 @@ typesetter, card text or a file on a user's disk. What does apply:
   the fix.
 - **FR-005**: Above the mobile breakpoint the navigation MUST be visually
   unchanged from today.
+  **Clarified 2026-09-08 by [BUG-011](bugs/BUG-011.md)**: this was implemented
+  as *the links are all still there and still in a row*, and shipped a bar whose
+  link row hangs from the top edge. "Visually unchanged" binds **position as
+  well as presence** — the vertical centring of the link row is part of what
+  must not change. The requirement was never wrong; it was carried entirely by
+  by-hand rows T036 and T039, and prose alone did not survive contact with a
+  wrapper element. FR-018 states the mechanical form so it can be asserted.
 - **FR-006**: The heading row of a section band MUST take its height from the
   heading, not from the note beside it.
 - **FR-007**: Every section note MUST render below its band and above that
@@ -302,6 +309,21 @@ typesetter, card text or a file on a user's disk. What does apply:
   that the next contributor does not have to decide for themselves what "reading
   text" means, which is what produced three incompatible readings inside this
   one spec.
+- **FR-018**: *(added 2026-09-08 by [BUG-011](bugs/BUG-011.md), giving FR-005 a
+  checkable form)* The nav's link row MUST derive its height from the bar rather
+  than from its own content, so that `align-items: center` has the bar's full
+  height to centre in. `.nav` is `align-items: stretch`, and before this feature
+  `.nav__links` was a direct flex child carrying `flex: 1`, which is where the
+  centring came from. Wrapping it in `<details class="nav__menu">` (T009) moved
+  `flex: 1` up to the wrapper and broke the chain: a `<details>` is a block
+  container, so the stretched height stops there and `.nav__links` falls back to
+  its own 18 px line box at the top of a 63 px bar. The fix is to carry the
+  stretch through the wrapper and `::details-content`, **not** to set a height or
+  a padding on `.nav__links` — a hard-coded height re-breaks the moment the bar's
+  own height changes, which is the same brittleness FR-008 rejected for the
+  bands. This is the second time this feature has had to override
+  `::details-content` for a property the wrapper silently swallowed; the first is
+  recorded in the comment at `docs/index.html:340-346`.
 
 ### Format Contracts *(mandatory — state "none" if untouched)*
 
@@ -385,6 +407,12 @@ strip's own geometry.
 - **SC-010**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md))* No rule in
   `docs/index.html` setting Archivo running prose declares a `font-size` below
   15 px, and `tests/test_landing_page.py` fails if one is added.
+- **SC-011**: *(added 2026-09-08 by [BUG-011](bugs/BUG-011.md))* Above 760 px
+  the nav link row is vertically centred in the bar: its top offset inside
+  `.nav__menu` equals `(bar height − row height) / 2` to within a pixel, matching
+  `.nav__home` and `.nav__gh`. Measured today it is **0 px against an expected
+  23 px** — an 18 px row at the top of a 63 px box. `tests/test_landing_page.py`
+  fails if the stretch chain FR-018 describes is broken again.
 - **SC-009**: The four gates are green: `ruff check . && ruff format --check .`,
   `pytest`, `lernkarten check cards/example.yaml`,
   `python3 scripts/check_docs.py`.

@@ -343,11 +343,26 @@
      it in ::details-content and hides that instead. Overriding only the panel's
      own display looks like it works (the computed value even reads `flex`) and
      lays the panel out at zero width. An engine that has never heard of the
-     pseudo-element just drops that line, so no feature query is needed. */
+     pseudo-element just drops that line, so no feature query is needed.
+
+     The `display: flex` on both is not decoration and is not redundant with the
+     `flex: 1` beside it — that one is a flex *item* property and says nothing
+     about what the box does to its children. `.nav` is `align-items: stretch`,
+     and the links are centred by giving `align-items: center` a full-height box
+     to work in. A <details> is a block container, so it swallows the stretched
+     height the way it swallowed the display above: without these two the row is
+     an 18 px line box at the top of a 63 px bar, which is how the links came to
+     hang from the ceiling once the disclosure was introduced. Each link in the
+     chain has to be a flex container for the height to reach the next one.
+     Never fix this with a height, a padding-block or a line-height on
+     `.nav__links` — those fake it at one bar height and break at the next. */
   @media (min-width: 761px) {
-    .nav__menu { flex: 1; min-width: 0; }
+    .nav__menu { flex: 1; min-width: 0; display: flex; }
     .nav__menu > summary { display: none; }
-    .nav__menu::details-content { content-visibility: visible !important; }
+    .nav__menu::details-content {
+      content-visibility: visible !important;
+      display: flex; flex: 1; min-width: 0;
+    }
   }
 
   @media (max-width: 760px) {

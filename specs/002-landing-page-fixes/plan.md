@@ -179,6 +179,18 @@ and the panel forced visible; below it, the summary is the control. The
 deleted along with the comment that justified them, and a new comment says why
 the bar still refuses to wrap.
 
+> **Corrected 2026-09-08 by [BUG-011](bugs/BUG-011.md).** "The panel forced
+> visible" was one property short. `.nav__links` is not only a panel — it is the
+> box that made the links sit on the bar's centre line, and it did that by being
+> a direct flex child of a stretched `.nav` while carrying `flex: 1`. Moving
+> `flex: 1` to the `<details>` restores the *width* and drops the *height*: a
+> `<details>` is a block container, so the stretch stops at the wrapper and the
+> links fall to the top of the bar. The desktop override therefore has to carry
+> the stretch through **both** the wrapper and `::details-content`, not merely
+> undo their `display: none`. R2's risk was read as a question about
+> *visibility*; it was also a question about *box behaviour*, and only the first
+> half was spiked. See FR-018.
+
 **`docs/index.html` — the three bands.** In sections `01`, `03` and `04`, the
 `<p class="band__note">` moves out of `<div class="band">` to become its next
 sibling. `.band__note` loses `border-left`, gains `border-bottom`, and drops its
@@ -208,6 +220,8 @@ order matters — the spike settles R2 before anything is written against it.
 | A6 | The stylesheet declares no `border-left` on `.band__note`, and the 1080 px block no longer redefines the note's borders | both exist at `:82` and `:295` | FR-009 |
 | A7 | The stylesheet contains a `[hidden]` rule declaring `display: none` with `!important` | the file has no `[hidden]` rule at all | FR-012 |
 | A8 | The file holds exactly one `<script>` block and no external stylesheet, script or image reference | **green today** — a regression guard, not a red assertion | FR-014, SC-007 |
+
+| A10 | *(added 2026-09-08 by [BUG-011](bugs/BUG-011.md))* The desktop override carries the bar's height through `.nav__menu` and `::details-content` to `.nav__links` | the override sets visibility only, so the link row is an 18 px box at the top of a 63 px bar | FR-005, FR-018, SC-011 |
 
 A8 is deliberately the odd one out and is labelled so rather than dressed up as
 red: it guards a property the feature must not break, and constitution XI asks
@@ -269,3 +283,27 @@ checklist row.
 | New file `tests/test_landing_page.py` | V | The three bugs need red assertions before their fixes, and no existing module's purpose covers structural claims about a hand-written HTML page | `test_repo_hygiene.py` is scoped to user content and committed binaries; `test_check_project.py` to the model-driven steps' artifacts; `test_e2e.py` to the built PDF. Detail in [research.md R1](research.md#r1--how-does-a-landing-page-requirement-become-an-assertion-that-fails-first) |
 
 Principle XI has no row here. It is not waivable.
+
+**Bugfix**: 2026-09-08 — [BUG-011](bugs/BUG-011.md) Updated from bugfix patch.
+
+The plan's one open technical risk (R2) was scoped to whether the desktop
+override could beat the user-agent rule that hides a closed `<details>`. It
+could, and the spike proved it — for `display`. What the spike never asked is
+what the wrapper does to every *other* inherited box property, and height is the
+one that mattered: the stretch chain `.nav` → `.nav__links` had been load-bearing
+for the vertical centring and nothing in the plan recorded that it existed. This
+is the second failure of the same shape in this feature; the first is the
+`::details-content` override the plan already documents at
+`docs/index.html:340-346`.
+
+The lesson the plan should carry forward: **when a flex child is wrapped, the
+wrapper inherits the child's layout role and must be given it explicitly.** The
+new assertion A10 is written against the stylesheet rather than against rendered
+geometry, keeping it inside the level the rest of this feature uses — which is
+also why it can run in CI where a real layout measurement could not.
+
+S2 and S3 of [BUG-011](bugs/BUG-011.md) — the half-empty columns in sections
+`02` and `03` — are **out of scope for this feature** and tracked as
+[#104](https://github.com/mhabedank/lernkarten/issues/104). Re-proportioning a
+section is a design change under constitution XVI, and `02`'s remedy is the
+undecided half of #28. This patch is S1 only.
