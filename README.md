@@ -182,6 +182,38 @@ It fits a deck printed at `--grid a8` with the **default margin** (cards
 71.75 × 50 mm). An `a7` card is 100 mm wide and will not go in — and `a7` is the
 default grid, so check which one you printed before you cut the box out.
 
+### Compartments, so the box does the scheduling
+
+```bash
+lernkarten build cards/*.yaml --grid a8 --dividers 4
+```
+
+Three or four coloured **dividers** come out of the same run, on the same
+stock, cut from the same sheets. Put them in the box and it becomes a Leitner
+box: a card you got right moves one compartment forward and comes back less
+often, a card you got wrong goes back to the first. The card's *position* is
+its state — no app, no account, nothing to sync, and nothing to lose when a
+laptop dies.
+
+Each divider says how often its compartment is due (`daily`, `every 2 days`,
+`weekly`, `every 2 weeks`) and what enters and leaves it. Cut along the line
+drawn on the divider, not along the colour, which deliberately runs past it so
+a slightly crooked cut still has colour at the edge.
+
+The run tells you which paper case you are in — the dividers usually fill space
+the last sheet was wasting, but not always:
+
+```
+NOTE: the 3 dividers share the last sheet — no extra paper.
+OK: 7 cards, 3 dividers (english) -> output/cards.pdf (2 pages, …).
+```
+
+Sebastian Leitner published the box in 1972 and it needed no software then
+either. His original had no intervals at all — you worked through a compartment
+when it was *full*, and the widths did the spacing. That needs a bigger box than
+one A4 sheet folds into, so these intervals are a calendar simplification of his
+idea rather than his idea.
+
 ## Where your files live
 
 ```
