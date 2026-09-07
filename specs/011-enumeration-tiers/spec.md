@@ -46,6 +46,14 @@ Run against `tests/fixtures/demo-project/cards/*.yaml` plus `cards/example.yaml`
 
 Two consequences run through everything below. **A numeral in a front is not an enumeration prompt** — F3M2Q proves it — so E-2 needs a verb, not just a number. And **the general no-double-questions rule is what is unchecked**, not the counted slice of it: this repository's own deck breaks the rule six times, so E-4 cannot be added as scoped without first deciding whether `…, and why?` is a double question at all (Q3).
 
+## Clarifications
+
+### Session 2026-09-07
+
+- Q: Where do the tier boundaries sit, and are they item counts at all (FR-002)? → A: **1–2 a sentence, 3–5 flat `#list`, 6–8 one card but grouped, 9+ an anchor card plus one card per group** — issue #83's proposal, confirmed. Counted in **items**, because the physical half is already checked: `MAX_BACK` warns at ~400 characters and the build warns when text runs off the card, so a measured budget would duplicate an existing check and still miss the cognitive question. The boundary that decided it is 5: the shipped `Y4H26` lists five islands flat and is a good card, so a flat tier ending below five would have made this repository's own fixture illegal.
+- Q: What does "grouped" mean to a checker (FR-011)? → A: A **labelled item** — `#list([*Discover*: a, b], [*Define*: c, d])`. An item whose text opens with emphasis followed by a colon is a group; everything after the colon is its members, comma-separated. Deterministic, reuses `_list_items`, and gives the learner the hierarchy the tier exists for. **A-2 moves with it** (FR-011b): it descends into a group item and checks the *members*, rather than cutting at the first `:` and checking the label. Without that, introducing the shape would silently shrink A-2's coverage — the exact drift BUG-009 documents.
+- Q: What happens to E-4 (FR-013)? → A: **Dropped from this feature**, and the general rule ticketed separately. E-4 as issue #83 scopes it — a counted front that also asks a second thing — fires on **nothing** in this repository: its one intended target `NKQK0` announces two counts and is invisible to `_announced_count`. The real gap is the *general* no-double-questions rule, which `CLAUDE.md` § Card style asserts and nothing checks, and which **six** shipped fixture cards break. Whether `…, and why?` is a double question at all is a decision with a six-card blast radius and does not belong in this feature's scope.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - A long enumeration is written to be learnable (Priority: P1)
@@ -98,7 +106,8 @@ A contributor reading `skills/cards/SKILL.md` cold can state how long an enumera
 ### Edge Cases
 
 - **An enumeration whose items carry maths** — `[$P(Omega) = 1$]`. The maths gate is E-1's and A-2's, not the tier rule's: counting items does not read inside them, so a maths item counts like any other.
-- **A grouped list read by A-2**. If grouping takes a shape like `[*Discover*: a, b]`, A-2's head-term rule cuts at the first `:` and sees `*Discover*` — so grouping makes A-2 demand an anchor for the **group name** and stop seeing the **members**. That is arguably right (a phase name is a concept the deck should teach) and is certainly a change in what A-2 checks. Q2 decides it; it MUST NOT be discovered during implementation.
+- **A grouped list read by A-2**. Resolved by FR-011b: A-2 descends into a group item and checks its members. Left alone, its head-term rule would cut `[*Discover*: a, b]` at the first `:`, demand an anchor for `Discover` and never see `a` or `b` — coverage lost without a single failing test to show it. The group label itself is exempt (FR-011c).
+- **A group with one member** — `[*Discover*: a]`. Legal markup and pointless structure. It is not a finding: a rule that counted groups as well as items would be a second tier table, and the members still reach A-2 either way.
 - **A deck in a language with no number-word table**. Digits still work; words do not. E-2 inherits this from `_announced_count` unchanged, and stays quiet rather than guessing.
 - **An enumeration prompt with no numeral** — *"Name the inhabited islands"*. No count is announced, so neither E-1 nor E-2 fires. Legitimate open prompt, left alone.
 - **Text that does not fit**: unchanged. `MAX_BACK` already warns at ~400 characters and the build warns when text actually runs off the card. The tiers are about what is learnable, not what fits — see Assumptions A-1.
@@ -113,7 +122,16 @@ A contributor reading `skills/cards/SKILL.md` cold can state how long an enumera
 **The tier rule (model-driven)**
 
 - **FR-001**: `skills/cards/SKILL.md` MUST carry a tier table stating, for a given number of enumerated items, the shape the back takes. The tiers MUST be expressed in **item counts**, not in characters or rendered height (Assumptions A-1).
-- **FR-002**: The tier boundaries MUST be [NEEDS CLARIFICATION: issue #83 proposes 1–2 a sentence, 3–5 flat `#list`, 6–8 chunked into 2–3 labelled groups, 9+ an anchor card plus one card per group. Are these the boundaries, or 1–2 / 3–6 / 7–9 / 10+, or something else?]
+- **FR-002**: The tiers MUST be:
+
+  | items | shape |
+  |---|---|
+  | 1–2 | a sentence; a `#list` of one item is absurd |
+  | 3–5 | a flat `#list`, exactly *n* items |
+  | 6–8 | one card still, **grouped** into 2–3 labelled groups (FR-011a) |
+  | 9+ | an anchor card naming the groups and stating the total, plus one card per group (FR-004) |
+
+  The boundary at five is load-bearing and not a taste: the shipped `Y4H26` lists five islands flat and is a good card, so a flat tier ending below five would make this repository's own fixture illegal.
 - **FR-003**: The rule MUST state that an enumeration is **never split to make it shorter**: "name the six steps" does not become two cards of three, because the learner would then never once practise recalling all six. Splitting is permitted only in the top tier and only in the shape FR-004 describes.
 - **FR-004**: In the top tier the deck MUST hold an **anchor card that states the total and names the groups** ("the ten steps fall into three phases — name them"), plus one card per group whose front announces that group's own count. The total therefore survives the split and E-1 tests both levels.
 - **FR-005**: `CLAUDE.md` § Card style MUST state the tier rule alongside the counted-front rule PR #96 added, and `skills/cards/SKILL.md` step 6 MUST carry a reaction for every message this feature adds, in the shape the two existing reactions use.
@@ -128,12 +146,15 @@ A contributor reading `skills/cards/SKILL.md` cold can state how long an enumera
 
 **E-3 — an unchunked enumeration past the flat tier**
 
-- **FR-011**: A grouped enumeration MUST have a shape a checker can recognise without judgement, or E-3 MUST NOT be implemented as a check at all and the tier rule stays advisory prose in the skill. [NEEDS CLARIFICATION: is the shape a labelled item such as `#list([*Discover*: a, b], [*Define*: c, d])`, a nested `#list`, or is E-3 dropped and the tiers left to the model? The first changes what A-2 sees — its head-term cut at `:` makes A-2 demand an anchor for the group name and stop seeing the members.]
+- **FR-011**: `scripts/check_project.py` MUST warn when an enumeration is above the flat tier and is **not grouped**.
+- **FR-011a**: A **group** MUST be a `#list` item whose text opens with an emphasised label followed by a colon — `[*Discover*: a, b]`. Everything after the colon is the group's members, separated by commas. The shape is documented markup inside the existing `back` string, never a schema key (Format Contracts). A member MUST NOT itself contain a comma; the limitation and its workaround — write a comma-free member — belong in the contract, and it is the same limitation `catalog_names()` already carries.
+- **FR-011b**: **A-2 MUST descend into a group item** and check its *members*, instead of applying the head-term cut and checking the label. Without this, introducing the shape shrinks A-2's coverage silently: today `[*Discover*: a, b]` cuts at the first `:` and A-2 demands an anchor for `Discover` while never seeing `a` or `b`.
+- **FR-011c**: The group **label** MUST NOT itself be subject to A-2. A label is structure rather than content — the members are what a learner has to recall and what A-2 exists to protect — and in the top tier the anchor card of FR-004 names the groups anyway, so a label that *is* a taught concept is taught there.
 - **FR-012**: If E-3 is implemented, it MUST be a **warning** and its message MUST point at the tier table rather than restating it.
 
-**E-4 — a counted front that also asks a second thing**
+**E-4 — not this feature**
 
-- **FR-013**: [NEEDS CLARIFICATION: E-4 as issue #83 scopes it fires on **nothing** in this repository, because its one intended target announces two counts and is invisible to `_announced_count`. Meanwhile **six** shipped fixture cards ask a second question (`…, and why?`, `…, and how large is it?`). Options: (a) drop E-4; (b) implement the general no-double-questions check and edit the six cards; (c) implement the general check as advisory only. This decides whether `…, and why?` is a double question in this project at all.]
+- **FR-013**: E-4 is **out of scope** and MUST NOT be implemented here. As issue #83 scopes it — a counted front that also asks a second thing — it fires on nothing in this repository, because its one intended target `NKQK0` announces two counts and is invisible to `_announced_count`. The gap it was aimed at is the *general* no-double-questions rule that `CLAUDE.md` § Card style asserts and nothing checks; six shipped fixture cards break it, so deciding whether `…, and why?` is a double question is a separate piece of work with its own blast radius. Tracked as issue [#98](https://github.com/mhabedank/lernkarten/issues/98). Recorded here so a future reader does not mistake the omission for an oversight.
 
 **Invariants**
 
@@ -188,6 +209,7 @@ A contributor reading `skills/cards/SKILL.md` cold can state how long an enumera
 - **SC-005**: The four repo gates stay green — `ruff check . && ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py` — and `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` passes with any card-count assertion moved with the fixture (`DEMO_CARD_COUNT` in `tests/test_e2e.py`, and the bare card count in `tests/test_check_project.py`).
 - **SC-006**: Reading `skills/cards/SKILL.md` cold, a reader can state the tiers and what happens above each boundary without opening issue #83.
 - **SC-007**: No measurable cost: the checker on the demo project stays under a second.
+- **SC-007a**: On a card whose back carries a grouped `#list`, A-2 reports an unnamed **member** and never the group label — asserted against a fixture where the label appears nowhere else in the file, so an implementation that keeps the head-term cut fails it.
 - **SC-008**: A project written before this feature produces no new **error**, and every new finding names a card and a remedy.
 
 ## Assumptions

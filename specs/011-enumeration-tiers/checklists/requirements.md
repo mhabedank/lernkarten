@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain — **3 open** (FR-002 tier boundaries, FR-011 what "chunked" means, FR-013 E-4's fate). Each is a decision, not a gap: all three change scope, and the third decides whether a rule this repository's own deck breaks six times is enforced at all.
+- [x] No [NEEDS CLARIFICATION] markers remain — all three closed in the session of 2026-09-07 recorded under *Clarifications*: the tiers are 3–5 / 6–8 / 9+ counted in items, a group is a labelled item and A-2 descends into it (FR-011a–c), and E-4 is out of scope with the general rule ticketed separately.
 - [x] Requirements are testable and unambiguous — apart from the three above
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic
@@ -35,4 +35,4 @@
 - Two measurements are load-bearing and should not be re-derived in planning:
   - E-2 as the issue scopes it fires on `F3M2Q`, a correct card. FR-008 exists because of that, not on taste.
   - E-4 as the issue scopes it fires on nothing, while six shipped cards break the general rule. That is FR-013's clarification.
-- Items marked incomplete require `/speckit-clarify` before `/speckit-plan`.
+- Every item passes. The spec is ready for `/speckit-plan`; `/speckit-clarify` has nothing left to ask, because the three decisions it would have surfaced were taken with the measurements in front of them.
