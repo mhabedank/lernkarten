@@ -141,7 +141,7 @@ lernkarten check cards/*.yaml
 
 ## Printing and cutting
 
-The PDF puts 8 cards on an A4 page at the default `a7` grid, or 16 at `a8`. The
+The PDF puts 16 cards on an A4 page at the default `a8` grid, or 8 at `a7`. The
 backs are column-mirrored, so turning a sheet on its long edge puts each back
 exactly behind its front.
 

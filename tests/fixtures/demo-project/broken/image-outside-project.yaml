@@ -1,6 +1,7 @@
 # A path that climbs out of the project. A deck that only builds on the machine
 # that wrote it is a defect, not a preference, so this is refused by name.
 topic: 'Kestrel Islands: Tides'
+grid: a7
 language: english
 cards:
   - id: ESC01

@@ -134,6 +134,7 @@ The blast radius is a deck's *size*, never its content: no card is lost, no key 
 ## Assumptions
 
 - **Nobody has to migrate anything.** A user who wants the old size adds one line; a user who does nothing gets smaller cards on the next print, which is what the release note has to say plainly.
-- **The demo project and `cards/example.yaml` state no grid**, so both move to A8 and their derived page counts follow. `tests/test_e2e.py` derives `DEMO_A7_PAGES` and `DEMO_A8_PAGES` from `DEMO_CARD_COUNT`, so those do not need retyping — which is exactly why that was done in #82.
+- **Corrected while implementing**: the demo project and `cards/example.yaml` do *not* state no grid — all six demo decks and the example carry `grid: a7` explicitly. So neither moves by itself, and the demo project stays A7 on purpose: it is the corpus that exercises the **non**-default path, which is worth more than having it match the default. `cards/example.yaml` moves to `grid: a8` because it is what a user copies as a starting point, and it should show the size the card box fits.
+- **The twelve `broken/` fixtures that stated no grid now state `grid: a7`.** They belong to an A7 project, and after this change their silence would mean A8 and put them in genuine disagreement with the decks beside them — the build was right to refuse, so the fixtures were wrong to be silent.
 - **This is a minor, not a major.** Before 1.0.0 a breaking change rides in a minor and the release notes say what breaks (CONTRIBUTING, *Releases*).
 - **#67 is untouched.** Its argument against a *settings file* supplying a grid default at build time still stands; this is a built-in constant that moves once, for everyone, in a release, and cannot differ per machine.

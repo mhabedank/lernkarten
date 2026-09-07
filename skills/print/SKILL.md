@@ -107,8 +107,8 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 - Once the cards are cut they are a loose stack. `--box` writes the cut-and-fold
   box beside the cards — 160–250 gsm, print at 100 %, holds about 90 cards. Say
   **which deck it fits**: `--grid a8` at the default margin. It does not take an
-  `a7` card, and `a7` is the default, so a user who did not pass `--grid` should
-  not print the box.
+  `a7` card. Since v0.9.0 `a8` is the default, so a deck that says nothing fits
+  the box — but one carrying `grid: a7` does not.
 - **Relay what the build says, and offer `lernkarten setup`.** When the run
   reports that the Leitner setup is unanswered, pass that on and offer to run
   `lernkarten setup --project <root>` — it asks how many compartments (3, 4 or

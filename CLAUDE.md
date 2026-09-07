@@ -65,7 +65,8 @@ code, comments, docs and commit messages are written in English.
   `grid` is the card size the deck is written for: `a7` (`2x4`, 8 to an A4
   sheet, 105 × 74.25 mm) or `a8` (`4x4`, 16 up, 74.25 × 52.5 mm — landscape,
   on a landscape A4 sheet). It is
-  optional and absent means `a7`, so no existing file needs changing. One deck
+  optional and absent means `a8` (since v0.9.0 — it was `a7`, and a deck that
+  wants the older, larger card now has to say so). One deck
   is one size — the key is top level only, never on a card, and two files in
   one build that declare different grids are refused unless `--grid` settles
   it. `--grid` on the command line always overrides the file.

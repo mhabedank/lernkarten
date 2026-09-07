@@ -928,9 +928,10 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
         elif strict:
             report.warn(
                 where,
-                "no 'grid' key — the deck prints at A7 (2x4), which is the right default "
-                "but not a statement. /cards writes the size the deck was written for; "
-                "add 'grid: a7' to say so",
+                "no 'grid' key — the deck prints at A8 (4x4) since v0.9.0, which is "
+                "the right default but not a statement. /cards writes the size the deck "
+                "was written for; add 'grid: a8' to say so, or 'grid: a7' for the older, "
+                "larger card",
             )
         # A picture answers one question; it is not a property of the file. The
         # same rule the grid key has, pointing the other way.

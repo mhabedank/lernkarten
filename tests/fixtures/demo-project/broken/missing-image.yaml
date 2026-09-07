@@ -2,6 +2,7 @@
 # not a warning — and the message has to name the card and the face, or the user
 # is left grepping a deck for a path.
 topic: 'Kestrel Islands: Tides'
+grid: a7
 language: english
 cards:
   - id: M5SS1

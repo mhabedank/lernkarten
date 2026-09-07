@@ -1,5 +1,6 @@
 # The second card has no 'back'. Every card needs 'front' and 'back'.
 topic: 'Broken: missing fields'
+grid: a7
 language: english
 cards:
   - subtopic: 'Complete'

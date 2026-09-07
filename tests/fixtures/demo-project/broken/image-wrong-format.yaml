@@ -2,6 +2,7 @@
 # looked for, so this is reported as the wrong format rather than as missing —
 # the first thing wrong with it is the thing worth fixing.
 topic: 'Kestrel Islands: Tides'
+grid: a7
 language: english
 cards:
   - id: FMT01
