@@ -480,6 +480,43 @@ def test_the_pages_workflow_publishes_the_box():
     )
 
 
+def landing_page_relative_refs():
+    """Every path the landing page points at inside its own site.
+
+    Absolute URLs are somebody else's problem, and a bare `#anchor` never
+    leaves the page. What is left is exactly the set that has to exist in
+    `_site`, because a relative link resolves against the deployed site and
+    nothing else.
+    """
+    refs = set(re.findall(r'(?:href|src)="([^"]+)"', page_source()))
+    return sorted(
+        ref
+        for ref in refs
+        if not ref.startswith(("http://", "https://", "//", "#", "mailto:", "data:"))
+    )
+
+
+def test_the_pages_workflow_assembles_every_relative_link():
+    """A relative link to a path the workflow never copies is a live 404.
+
+    `test_the_pages_workflow_publishes_the_box` asserts this for one file. It
+    was written for the box and it only ever knew about the box, so when the
+    method page arrived with `href="leitner.html"` nothing objected — the page
+    is fine opened off the filesystem, the link is in the HTML, the suite is
+    green, and the deployed link 404s. The workflow's own header comment warns
+    about exactly this. This test closes it for good by deriving the list from
+    the page instead of naming files: the next relative link anyone adds is
+    covered the moment they add it.
+    """
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    for ref in landing_page_relative_refs():
+        copied = re.search(rf"^\s*cp\s+\S*{re.escape(ref)}\s+\S*_site/", workflow, re.MULTILINE)
+        assert copied, (
+            f"docs/index.html links {ref!r}, but pages.yml never copies it into "
+            f"_site — the deployed link is a 404 that looks fine locally"
+        )
+
+
 def box_block():
     """The download block itself, not the section around it.
 

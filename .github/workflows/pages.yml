@@ -1,18 +1,22 @@
 name: Landing page
 
-# Publishes the landing page to GitHub Pages. The page is one self-contained
-# file, and the site is that file plus the one thing it offers for download:
-# the printable card box. Nothing else in the repository is served, so anything
+# Publishes the landing page to GitHub Pages. The site is the page plus what
+# the page points at: the method page it links, and the printable card box it
+# offers for download. Nothing else in the repository is served, so anything
 # the page links has to be copied in here first — a relative link to a path that
 # is not in _site is a 404 that looks fine when the page is opened locally.
+# That is not hypothetical: leitner.html was linked for a release before anyone
+# noticed it was never copied. `test_the_pages_workflow_assembles_every_relative_link`
+# now derives the list from the page, so adding a link here is not optional.
 # Set Pages -> Source to "GitHub Actions" once in the repository settings; after
-# that this runs on every push to main that touches either file.
+# that this runs on every push to main that touches one of these files.
 
 on:
   push:
     branches: [main]
     paths:
       - docs/index.html
+      - docs/leitner.html
       - assets/card-box.pdf
       - .github/workflows/pages.yml
   workflow_dispatch:
@@ -39,6 +43,7 @@ jobs:
         run: |
           mkdir -p _site
           cp docs/index.html _site/index.html
+          cp docs/leitner.html _site/leitner.html
           cp assets/card-box.pdf _site/card-box.pdf
           touch _site/.nojekyll
       - uses: actions/configure-pages@v6
