@@ -350,3 +350,21 @@ def test_the_shipped_page_agrees_with_the_module():
     errors = []
     check_docs.check_leitner_intervals(errors)
     assert not errors, errors
+
+def test_the_print_skill_offers_the_setup_command(monkeypatch):
+    """Principle XI for a prompt change: the only assertable artifact.
+
+    In `check_docs.py`, not `check_project.py`. That gate validates a *user's*
+    project; `skills/*/SKILL.md` belongs to this repository and is already read
+    here (`check_skills`). See issue #89 for the constitution wording.
+    """
+    errors = []
+    monkeypatch.setattr(check_docs, "read_skill", lambda name: "print the cards and stop")
+    check_docs.check_print_skill_relays_setup(errors)
+    assert errors, "a print skill that never mentions the setup command must be reported"
+    assert "lernkarten setup" in " ".join(errors)
+
+    errors = []
+    check_docs.check_print_skill_relays_setup(errors)
+    assert not errors, errors
+

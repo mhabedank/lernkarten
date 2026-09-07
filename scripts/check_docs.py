@@ -238,6 +238,26 @@ def check_leitner_intervals(errors):
             )
 
 
+def read_skill(name):
+    """A skill's body. A seam, so a test can hand in one that says the wrong thing."""
+    path = SKILLS / name / "SKILL.md"
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def check_print_skill_relays_setup(errors):
+    """`/print` has to pass the build's advisory on rather than swallow it.
+
+    The build says once that the Leitner setup is unanswered; a user driving
+    Claude never sees a terminal, so if the skill does not relay it the feature
+    is unreachable for exactly the audience this project has.
+    """
+    if "lernkarten setup" not in read_skill("print"):
+        errors.append(
+            "skills/print/SKILL.md: does not name `lernkarten setup`, so the build's "
+            "advisory has nowhere to go for a user who never opens a terminal"
+        )
+
+
 def check_sheet_capacity(errors):
     for path in markdown_files():
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -281,6 +301,7 @@ def main():
     check_links(errors)
     check_sheet_capacity(errors)
     check_leitner_intervals(errors)
+    check_print_skill_relays_setup(errors)
     check_print_order(errors)
 
     for e in errors:
