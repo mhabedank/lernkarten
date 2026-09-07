@@ -5,6 +5,9 @@
 sources.yaml
 # What you are trying to learn is as personal as where you read it.
 goal.md
+# The answers to what lernkarten should not ask you twice — how many Leitner
+# compartments, what is already printed. Choices, never content, and yours.
+lernkarten.yaml
 knowledge/*
 !knowledge/.gitkeep
 catalog/*
