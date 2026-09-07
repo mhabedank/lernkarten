@@ -426,6 +426,33 @@ def test_an_a8_deck_without_pictures_is_not_noted(tmp_path):
     assert not [w for w in report.warnings if "A8" in w], report.warnings
 
 
+def test_a_gridless_deck_with_pictures_is_noted_like_any_other_a8_deck(tmp_path):
+    """A silent deck prints at A8 since v0.9.0, so it is an A8 deck (BUG-010).
+
+    Both tests above state `grid: a8`, which is why neither went red when the
+    default moved: the advisory decided which decks were dense by resolving an
+    absent key with a literal `"a7"`, so the one deck that never says anything —
+    the common case after the default moved — printed sixteen up and was told
+    nothing. The deck below is `CARDS_WITH_PICTURE`, which states no grid.
+    """
+    report = check(with_figure(project(tmp_path, cards=CARDS_WITH_PICTURE)))
+    assert not report.errors, messages(report)
+    notes = [w for w in report.warnings if "A8" in w]
+    assert len(notes) == 1, f"expected exactly one A8 note for a silent deck, got {notes}"
+
+
+def test_an_a7_deck_with_pictures_is_not_noted(tmp_path):
+    """The other side of BUG-010, and what keeps the fix honest.
+
+    "Resolve the absent key through the default" and "always warn" agree on
+    every deck except this one, so without it the test above passes for a fix
+    that drops the grid question entirely.
+    """
+    cards = CARDS_WITH_PICTURE.replace("language: english\n", "language: english\ngrid: a7\n")
+    report = check(with_figure(project(tmp_path, cards=cards)))
+    assert not [w for w in report.warnings if "A8" in w], report.warnings
+
+
 def test_a_picture_key_at_the_top_level_is_an_error(tmp_path):
     """A picture belongs to a card, the way a grid belongs to a deck."""
     report = check(with_figure(project(tmp_path, cards=TOP_LEVEL_PICTURE)))

@@ -7,7 +7,7 @@
 // print jobs.
 //
 // Two grids are supported, and they are the two that cut to a standard card:
-// 2 x 4 is DIN A7 (8 up, the default) and 4 x 4 is DIN A8 (16 up). Card size,
+// the default is 4 x 4, DIN A8 (16 up); the other is 2 x 4, DIN A7 (8 up). Card size,
 // the mirroring, the crop marks and the pagination all derive from those two
 // numbers, so nothing below is written twice.
 //
@@ -38,7 +38,8 @@
 #let sheet-w = float(sys.inputs.at("sheet-w", default: "210")) * 1mm
 #let sheet-h = float(sys.inputs.at("sheet-h", default: "297")) * 1mm
 // One factor for the whole card, so every proportion is preserved at a denser
-// grid. 1.0 at 2 x 4, so the default sheet is untouched.
+// grid. 1.0 at 2 x 4 — the reference size, not the default — so the A7
+// sheet is untouched.
 #let card-scale = float(sys.inputs.at("scale", default: "1.0"))
 #let per-page = columns * rows
 #let cw = (sheet-w - 2 * margin) / columns

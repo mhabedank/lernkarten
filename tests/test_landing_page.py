@@ -492,6 +492,62 @@ def box_block():
     return match.group(0)
 
 
+def prose():
+    """The page as a reader meets it: tags stripped, attribute text kept.
+
+    `aria-label` carries a claim too — the cutting diagram describes itself to a
+    screen reader in words, and those words were as wrong as the picture.
+    """
+    text = page_source()
+    labels = " ".join(re.findall(r'aria-label="([^"]*)"', text))
+    return re.sub(r"<[^>]+>", " ", text) + " " + labels
+
+
+def test_the_page_does_not_give_the_a7_sheet_as_what_you_get(tmp_path=None):
+    """The landing page owns its own copy of this claim (FR-011, FR-012).
+
+    `check_docs.py` gates markdown, `scripts/*.py` and `templates/*.typ`; it
+    does not read HTML and should not become the second thing that parses this
+    file. So the four sites BUG-010 found here are asserted where the rest of
+    the page's claims already live.
+    """
+    text = prose()
+    assert "105 × 74.25" not in text, (
+        "the page still gives the A7 card as what a default build produces — "
+        "at the default a8 grid, --margin 0 cuts to 74.25 × 52.5 mm"
+    )
+    assert "100 × 71.75" not in text, (
+        "the page still gives the A7 card as the default-margin card — "
+        "at the default a8 grid it is 71.75 × 50 mm"
+    )
+    assert "8 cards / A4 page" not in text, (
+        "the hero band still opens with the A7 sheet capacity; the default is 16 up"
+    )
+    assert "full A7" not in text, (
+        "the page still says borderless printing gives an A7 card; at the default grid it gives A8"
+    )
+
+
+def test_the_cutting_diagram_shows_the_default_sheet():
+    """One vertical cut and three across is the 2x4 sheet, which is no longer it.
+
+    The picture and the sentence beside it are one claim, and the SVG is the
+    half a reader believes: three interior verticals and three horizontals at
+    4x4, against one and three at 2x4.
+    """
+    text = prose()
+    assert "one vertical cut down the middle" not in text.lower(), (
+        "the page still describes the 2x4 cut; at the default a8 grid it is "
+        "three vertical cuts and three horizontal"
+    )
+    cut_svg = one(one(tree(), cls="print__cut"), "svg")
+    verticals = [n for n in find(cut_svg, "line") if n.attrs.get("x1") == n.attrs.get("x2")]
+    assert len(verticals) == 3, (
+        f"the cutting diagram draws {len(verticals)} interior vertical cuts; "
+        "the default 4x4 sheet needs three"
+    )
+
+
 def test_the_box_download_says_which_deck_it_fits():
     """An A7 reader has to stop *before* spending an hour on a box.
 
@@ -502,7 +558,7 @@ def test_the_box_download_says_which_deck_it_fits():
     block = box_block().lower()
     assert "a8" in block, (
         "the box download does not name the a8 grid — an A7 deck is 100 mm wide "
-        "against a 73 mm opening, and A7 is the default"
+        "against a 73 mm opening, and a deck can still pin a7"
     )
     assert "margin" in block, (
         "the box download does not mention the margin — a deck printed at "
