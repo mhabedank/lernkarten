@@ -47,11 +47,28 @@ def main(argv=None):
     p.add_argument("--compartments", choices=[*counts, settings.DECLINED])
     p.add_argument("--dividers-printed", choices=["yes", "no"])
     p.add_argument("--box-printed", choices=["yes", "no"])
+    p.add_argument(
+        "--sides",
+        choices=settings.SIDES,
+        help="how your printer wants the pages sequenced. This one is about the *machine*, "
+        f"so it is written to {settings.machine_path()} and applies to every project",
+    )
     args = p.parse_args(sys.argv[1:] if argv is None else argv)
 
     root = Path(args.project).resolve()
     if not root.is_dir():
         p.error(f"--project {args.project}: not a directory")
+
+    # The machine answer is routed by its key, not by a flag the user has to
+    # pick. Nobody should have to know which of two files a setting lives in.
+    if args.sides is not None:
+        warning = settings.save_machine(sides=args.sides)
+        if warning:
+            print(f"NOTE: {warning}", file=sys.stderr)
+        else:
+            print(f"wrote {settings.machine_path()}")
+        if all(g is None for g in (args.compartments, args.dividers_printed, args.box_printed)):
+            return 0
 
     given = (args.compartments, args.dividers_printed, args.box_printed)
     if any(g is None for g in given):

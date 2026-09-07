@@ -114,6 +114,14 @@ code, comments, docs and commit messages are written in English.
   different states**: the first two mean never asked and get one advisory, the
   third means asked and declined and gets none. An unknown key warns and the run
   continues; an invalid value on a known key is fatal.
+- **Machine settings**: `$XDG_CONFIG_HOME/lernkarten/settings.yaml` (default
+  `~/.config/lernkarten/settings.yaml`) — choices about *this computer*, not
+  this material. One key today, `sides`, because the printer someone owns is
+  not a fact about the cards they wrote. **Each key belongs to exactly one
+  scope**: a machine key in `lernkarten.yaml`, or a project key in the machine
+  file, is reported as unknown *there* and does not take effect. Precedence is
+  `flag → project → machine → built-in default`, per key. Not under
+  `~/.cache/`, which is where the engine lives and which a user may delete.
 - **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
   goes to `output/`. The typesetting engine downloads itself on first use.
   Never hand-edit anything in `output/` — always go through the YAML files.

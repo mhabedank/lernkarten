@@ -143,6 +143,7 @@ def test_write_back_only_touches_an_answered_file(tmp_path):
     s = settings.load(deck)
     assert s.dividers_printed and s.box_printed
 
+
 # --- settings that belong to the machine, not the project (#67) -------------
 
 
@@ -204,8 +205,16 @@ def test_an_invalid_sides_value_names_the_accepted_set(tmp_path, monkeypatch):
 
 
 def test_an_unwritable_config_home_warns_rather_than_failing(tmp_path, monkeypatch):
-    """FR-008: a settings file must never be the reason a build does not happen."""
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "nope" / "\x00bad"))
+    """FR-008: a settings file must never be the reason a build does not happen.
+
+    A config home that is a *file* is the realistic shape — an env var pointing
+    at the wrong thing — and it is what a read-only home degrades to as well.
+    """
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("", encoding="utf-8")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(blocked))
     warning = settings.save_machine(sides="simplex")
     assert warning is not None and "settings" in warning.lower()
 
+    # ...and reading one is just as harmless.
+    assert settings.load_machine().sides is None

@@ -160,6 +160,18 @@ sheet's front and back sit on consecutive pages:
 lernkarten build cards/*.yaml --sides simplex
 ```
 
+Once, rather than every time — the printer you own is not a fact about the cards
+you wrote:
+
+```bash
+lernkarten setup --sides simplex
+```
+
+That goes to `~/.config/lernkarten/settings.yaml` and applies to every project on
+this machine. A project's own answers stay in its `lernkarten.yaml`; each setting
+belongs to exactly one of the two, and putting one in the other is reported
+rather than quietly obeyed.
+
 That puts every front first and every back after, and the build tells you the
 two page ranges. Print the first range, take the stack out, turn it over on the
 long edge, put it back in the tray and print the second — at 100 % scale both
