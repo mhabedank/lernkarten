@@ -17,6 +17,11 @@ cards:
     front: 'Which two of the six flags call for help, and how do they differ?'
     back: 'White: doctor needed on the island. \ Yellow: fresh water short.'
     source: 'Field notes 3, "The six flags"'
+  - id: V6TQ8
+    subtopic: 'The six flags'
+    front: 'Name the six flags of the Kestrel code.'
+    back: '#list([*Traffic*: grey, blue], [*Help*: white, yellow], [*Closure*: red, black])'
+    source: 'Field notes 3, "The six flags"'
   - id: 1E782
     subtopic: 'Rules of use'
     front: 'How is a mast with two flags read?'

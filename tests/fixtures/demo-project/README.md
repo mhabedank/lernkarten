@@ -68,9 +68,9 @@ have no place in a git history, so they are `.gitignore`d and rebuilt from
 their text sources instead — which also means you can read and review every
 byte of the test data as text.
 
-## The three deck-level checks
+## The deck-level checks
 
-`scripts/check_project.py` asks three questions of the deck that no schema can
+`scripts/check_project.py` asks four questions of the deck that no schema can
 ask, and the fixture is written so that all of them pass — and so that the
 interesting borderline cases are visible in the material rather than hidden in
 a test.
@@ -122,7 +122,39 @@ borderline and are silent on purpose:
   With no `#list(...)` there is no second number to compare, and whether that
   back should have been an enumeration is a judgement this check does not make.
 
-**All three failing cases live in `tmp_path`, not in `broken/`.**
+**The enumeration tiers.** How long a `#list(...)` may be before its shape has
+to change: 3–5 flat, 6–8 grouped, 9 or more split across cards. Card `V6TQ8` in
+`cards/signals.yaml` is the grouped tier, and it is the only card here written
+to demonstrate a rule rather than to teach the subject:
+
+```yaml
+back: '#list([*Traffic*: grey, blue], [*Help*: white, yellow], [*Closure*: red, black])'
+```
+
+It carries three checks at once, which is why one card was enough where six
+looked necessary:
+
+- **E-1 counts members, not items.** Six announced, six enumerated — in *three*
+  `#list` items. Against the checker as it shipped in v0.9.0 this card reported
+  `the front announces 'six' and the back enumerates 3`, an **error** produced by
+  writing the card the way this project recommends.
+- **A-2 descends into a group.** It checks `grey`, `blue`, `white`, `yellow`,
+  `red` and `black`, never `Traffic`, `Help` or `Closure`. Before that change
+  the head-term cut landed on the colon, and the result was not merely wrong but
+  arbitrary: `*Help*` passed because `NKQK0`'s front happens to say "call for
+  help", while `*Traffic*` and `*Closure*` failed.
+- **Grouping cost one card, not seven.** A-2 asks whether *any other card* in
+  the file names an item, and all six flag names were already there — `grey` and
+  `blue` on `BS1M5`, `red` on `W9238`, `white` and `yellow` on `NKQK0`, `black`
+  on `A7BSD`. No companion card was written for it.
+
+**The 9+ tier is deliberately not here.** After you split a long enumeration you
+have ordinary cards: an anchor card naming the groups is just a flat three-item
+card, and nothing in the material marks it as the product of a split. Fixture
+cards would demonstrate nothing a reader could check. E-3b's finding is a
+failing case, so it lives in `tmp_path` with the others.
+
+**All four failing cases live in `tmp_path`, not in `broken/`.**
 `check_project.py` reads `<project>/cards/*.yaml` and
 `<project>/catalog/topics.md` and nothing else, so it never looks inside
 `broken/`; a card file placed there would not be checked at all. The red cases

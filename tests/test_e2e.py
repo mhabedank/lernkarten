@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI = ROOT / "bin" / "lernkarten"
 DEMO = ROOT / "tests" / "fixtures" / "demo-project"
 CARDS = sorted(str(p) for p in (DEMO / "cards").glob("*.yaml"))
-DEMO_CARD_COUNT = 32
+DEMO_CARD_COUNT = 33
 
 # How many cards a press sheet holds, per grid.
 A7_UP, A8_UP = 8, 16
@@ -91,9 +91,8 @@ def pdf_pages(path):
         (1, A7_UP, 2),  # one card still costs a whole sheet, front and back
         (8, A7_UP, 2),  # exactly full
         (9, A7_UP, 4),  # one over, and the second sheet is whole
-        (32, A7_UP, 8),  # the demo deck today
-        (33, A7_UP, 10),  # one more card is two more pages, not none
-        (32, A8_UP, 4),  # the same deck, denser grid
+        (33, A7_UP, 10),  # the demo deck today
+        (33, A8_UP, 6),  # the same deck, denser grid
         (16, A8_UP, 2),
         (17, A8_UP, 4),
     ],
@@ -148,7 +147,7 @@ def test_a_topic_filter_narrows_the_build(tmp_path):
 def test_a_subtopic_filter_narrows_the_build(tmp_path):
     result = run("build", *CARDS, "--subtopic", "The six flags", "-o", str(tmp_path / "flags.pdf"))
     assert result.returncode == 0, result.stderr
-    assert "3 cards" in result.stdout, result.stdout
+    assert "4 cards" in result.stdout, result.stdout
 
 
 def test_a_filter_that_matches_nothing_fails_out_loud(tmp_path):
@@ -1282,12 +1281,16 @@ def test_dividers_as_a_flag_refuses_a_grid_the_box_does_not_fit(tmp_path):
     assert not target.exists()
 
 
-def test_four_dividers_open_a_further_page_on_the_demo_deck(tmp_path):
-    """SC-001: 31 cards fill three-and-a-bit rows of sheet 2.
+def test_the_demo_deck_pays_for_dividers_exactly_as_it_says(tmp_path):
+    """SC-001, as an invariant rather than as a branch.
 
-    Far less than the 2.44 free card rows a two-row block needs, so the block
-    cannot share the sheet and opens a further one. Both counts follow from
-    DEMO_CARD_COUNT; typing them would be the drift test_repo_hygiene forbids.
+    Which branch the whole deck lands in follows from DEMO_CARD_COUNT, and it
+    *flips*: at 32 cards the last A8 sheet was exactly full, so a two-row block
+    of four could not share it; the enumeration fixture card took the deck to 33
+    and three free rows opened up. Asserting the branch made a Leitner test the
+    hostage of any deck that grows. What must always hold is that the paper and
+    the advisory agree — the two branches themselves are asserted explicitly by
+    the two tests below, on decks chosen to be in them.
     """
     plain, with_dividers = tmp_path / "plain.pdf", tmp_path / "leitner.pdf"
     assert run("build", *CARDS, "-o", str(plain), "--grid", "a8").returncode == 0
@@ -1295,7 +1298,31 @@ def test_four_dividers_open_a_further_page_on_the_demo_deck(tmp_path):
 
     result = run("build", *CARDS, "-o", str(with_dividers), "--grid", "a8", "--dividers", "4")
     assert result.returncode == 0, result.stderr
-    assert pdf_pages(with_dividers) == DEMO_A8_PAGES + 2, "one further sheet, so two pages"
+    cost = pdf_pages(with_dividers) - DEMO_A8_PAGES
+    assert cost in (0, 2), f"a block costs one further sheet or none, not {cost} pages"
+    said = result.stderr.lower()
+    if cost:
+        assert "further sheet" in said, result.stderr
+    else:
+        assert "no extra" in said or "share" in said, result.stderr
+
+
+def test_four_dividers_open_a_further_sheet_on_a_nearly_full_one(tmp_path):
+    """FR-004/FR-012, the branch that costs paper, on a deck that is in it.
+
+    `--topic Tides` is eleven cards at 16 up: two full rows of four and three in
+    the third, so 1.25 card rows are free where the two-row block of four needs
+    2.44. Compared against the same deck built without dividers, never against a
+    typed number — tides.yaml may grow, and then this test moves to the other
+    branch honestly instead of failing on arithmetic.
+    """
+    plain, with_dividers = tmp_path / "plain.pdf", tmp_path / "leitner.pdf"
+    common = ("build", *CARDS, "--grid", "a8", "--topic", "Tides")
+    assert run(*common, "-o", str(plain)).returncode == 0
+    result = run(*common, "-o", str(with_dividers), "--dividers", "4")
+    assert result.returncode == 0, result.stderr
+    assert pdf_pages(with_dividers) == pdf_pages(plain) + 2, "one further sheet, so two pages"
+    assert "further sheet" in result.stderr.lower(), result.stderr
 
 
 def test_three_dividers_share_a_sheet_with_a_short_deck(tmp_path):
@@ -1324,7 +1351,18 @@ def test_the_run_counts_dividers_apart_from_cards(tmp_path):
 
 def test_the_run_says_which_paper_case_it_is_in(tmp_path):
     """FR-012: 'they cost no paper' is true only when the last sheet has room."""
-    added = run("build", *CARDS, "-o", str(tmp_path / "a.pdf"), "--grid", "a8", "--dividers", "4")
+    added = run(
+        "build",
+        *CARDS,
+        "-o",
+        str(tmp_path / "a.pdf"),
+        "--grid",
+        "a8",
+        "--topic",
+        "Tides",
+        "--dividers",
+        "4",
+    )
     shared = run(
         "build",
         *CARDS,
