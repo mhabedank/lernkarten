@@ -267,6 +267,23 @@ also draw), and a 0.5 mm offset costs 1.0 % of a 50 mm card against 0.5 % of a
 
 | 20 | print | at `--grid a8`, read the card at arm's length | **the type-size question**: A8 renders the whole card at ~0.70, so reading text is 7.67 pt against A7's 11 pt. `docs/design.md` sets the floor because Archivo "survives 11 pt on cheap paper"; this asks whether it survives 7.67. Include the Greek and Cyrillic cards — they fall back to New Computer Modern, whose apertures differ, and will fail first |
 
+### The Leitner dividers, 40–43
+
+Four things `feat/leitner-compartments` cannot assert. Three are physical and one
+needs a terminal; all four were walked on 2026-09-07 and recorded in
+`specs/008-leitner-compartments/verified.md`.
+
+| # | Given | Do | Expect |
+|---|---|---|---|
+| 40 | `--grid a8 --dividers 4`, printed and cut along the line drawn on the divider | drop a divider into the folded card box | it slides in. 51.5 mm against a 52 mm opening is half a millimetre of clearance, and a fold 0.3 mm tight would end the design — no arithmetic can settle this |
+| 41 | the box filled with cards and dividers | look into it from above | the 1.5 mm ridge is visible and you can find a compartment by it. The number was chosen from the box's own measurements; whether it *reads* is a different question |
+| 42 | `--sides simplex`, printed, turned by hand, re-fed and cut by hand | inspect every divider edge on both faces | colour reaches all four cut edges. This is the worst case the 4 mm band and 3 mm bleed were derived for — 2 mm of registration error plus 1 mm of cut error — and the only place the arithmetic meets paper |
+| 43 | `lernkarten setup` in a terminal | answer the three questions | it writes `lernkarten.yaml` beside `cards/`. pytest has no terminal, so only the flag form is asserted; the prompting form is checked here |
+
+Steps 40–42 need a printer, scissors and a folded box. Step 43 needs nothing but
+a shell — it is on this list only because a pipe is not a terminal, and
+`lernkarten setup` refuses one rather than guessing.
+
 Steps 34–39 cover the printable card box. Only 39 needs a Claude session; 34
 needs the deployed site rather than a checkout, and 35–38 need a printer, a
 photocopier and about twenty minutes. They are the whole verification of an

@@ -19,6 +19,7 @@ import sys
 import tomllib
 from pathlib import Path
 
+import leitner
 import yamlio
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -198,6 +199,65 @@ SHEET_CAPACITY = re.compile(
 QUALIFIED = re.compile(r"grid|a7|a8|2\s*[x\u00d7]\s*4|4\s*[x\u00d7]\s*4", re.I)
 
 
+LEITNER_PAGE = ROOT / "docs" / "leitner.html"
+# Anything shaped like one of our intervals. Wide enough to catch an invented
+# "every 5 days" that the module never defined, which is the direction a
+# one-way check would miss.
+INTERVAL_SHAPE = re.compile(r"\b(?:daily|weekly|monthly|every \d+ (?:days?|weeks?|months?))\b")
+
+
+def read_page():
+    """docs/leitner.html as text. A seam, so a test can hand in a broken one."""
+    return LEITNER_PAGE.read_text(encoding="utf-8") if LEITNER_PAGE.exists() else ""
+
+
+def check_leitner_intervals(errors):
+    """The method page and the printed dividers say the same words.
+
+    Both render from `scripts/leitner.py`, but only the dividers do so
+    mechanically — the page is written by hand, so it is the half that can
+    drift. Checked in both directions: a missing interval leaves a compartment
+    unexplained, and an invented one describes a divider nobody will ever hold.
+    """
+    if not LEITNER_PAGE.exists():
+        errors.append(f"{LEITNER_PAGE.relative_to(ROOT)}: the method page is missing")
+        return
+    page = read_page()
+    defined = {interval for intervals in leitner.INTERVALS.values() for interval in intervals}
+    for interval in sorted(defined):
+        if interval not in page:
+            errors.append(
+                f"docs/leitner.html: does not mention '{interval}', which a divider prints "
+                "— the page and the paper have to agree"
+            )
+    for found in sorted(set(INTERVAL_SHAPE.findall(page))):
+        if found not in defined:
+            errors.append(
+                f"docs/leitner.html: mentions '{found}', which scripts/leitner.py does not "
+                "define — no divider will ever say it"
+            )
+
+
+def read_skill(name):
+    """A skill's body. A seam, so a test can hand in one that says the wrong thing."""
+    path = SKILLS / name / "SKILL.md"
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def check_print_skill_relays_setup(errors):
+    """`/print` has to pass the build's advisory on rather than swallow it.
+
+    The build says once that the Leitner setup is unanswered; a user driving
+    Claude never sees a terminal, so if the skill does not relay it the feature
+    is unreachable for exactly the audience this project has.
+    """
+    if "lernkarten setup" not in read_skill("print"):
+        errors.append(
+            "skills/print/SKILL.md: does not name `lernkarten setup`, so the build's "
+            "advisory has nowhere to go for a user who never opens a terminal"
+        )
+
+
 def check_sheet_capacity(errors):
     for path in markdown_files():
         for line in path.read_text(encoding="utf-8").splitlines():
@@ -240,6 +300,8 @@ def main():
     check_skills(errors)
     check_links(errors)
     check_sheet_capacity(errors)
+    check_leitner_intervals(errors)
+    check_print_skill_relays_setup(errors)
     check_print_order(errors)
 
     for e in errors:

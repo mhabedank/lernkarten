@@ -1347,3 +1347,171 @@ def test_dividers_do_not_change_a_deck_that_does_not_ask_for_them(tmp_path):
     assert run("build", *CARDS, "-o", str(after), "--grid", "a8").returncode == 0
     assert pdf_pages(before) == pdf_pages(after) == DEMO_A8_PAGES
     assert pdf_page_size_mm(before) == pdf_page_size_mm(after)
+
+
+# --- the settings a user answers once (feat/leitner-settings) ---------------
+
+
+def scratch_project(tmp_path, settings_text=None):
+    """A project directory shaped the way the pipeline writes one."""
+    (tmp_path / "cards").mkdir()
+    deck = tmp_path / "cards" / "deck.yaml"
+    deck.write_text(
+        "topic: 'Tides'\nlanguage: english\ngrid: a8\ncards:\n"
+        "  - subtopic: 'S'\n    front: 'a'\n    back: 'b'\n",
+        encoding="utf-8",
+    )
+    if settings_text is not None:
+        (tmp_path / "lernkarten.yaml").write_text(settings_text, encoding="utf-8")
+    return deck
+
+
+def test_setup_writes_the_three_keys_where_the_build_will_read_them(tmp_path):
+    """FR-013/FR-014b/SC-006. The flags are the pytest-reachable path.
+
+    The prompting path needs a terminal, which pytest has not got — it is on
+    the manual checklist in docs/testing.md instead.
+    """
+    scratch_project(tmp_path)
+    result = run(
+        "setup",
+        "--project",
+        str(tmp_path),
+        "--compartments",
+        "4",
+        "--dividers-printed",
+        "no",
+        "--box-printed",
+        "no",
+    )
+    assert result.returncode == 0, result.stderr
+    written = (tmp_path / "lernkarten.yaml").read_text(encoding="utf-8")
+    assert "compartments: 4" in written
+    assert "dividers_printed: false" in written
+
+
+def test_setup_refuses_a_piped_stdin_rather_than_guessing(tmp_path):
+    """FR-014b: a pipe is not a terminal, so there is nobody to ask."""
+    scratch_project(tmp_path)
+    result = subprocess.run(
+        [sys.executable, str(CLI), "setup", "--project", str(tmp_path)],
+        input="4\nn\nn\n",
+        capture_output=True,
+        text=True,
+        cwd=ROOT,
+    )
+    assert result.returncode != 0
+    assert "--compartments" in result.stderr, "the error names the flags that work"
+    assert not (tmp_path / "lernkarten.yaml").exists(), "nothing was guessed"
+
+
+def test_an_unanswered_project_is_told_once_how_to_answer(tmp_path):
+    """FR-014: the build is unchanged, and says so on stderr with a NOTE prefix.
+
+    The prefix is load-bearing: two existing cases assert `"WARNING" not in
+    result.stderr`, and this line appears on every run of an unanswered project.
+    """
+    deck = scratch_project(tmp_path)
+    result = run("build", str(deck), "-o", str(tmp_path / "out.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert result.stderr.count("lernkarten setup") == 1, result.stderr
+    assert "NOTE:" in result.stderr
+    assert "WARNING" not in result.stderr
+
+
+def test_a_declined_project_is_never_nagged(tmp_path):
+    """`compartments: none` is an answer, so the advisory stops."""
+    deck = scratch_project(tmp_path, "compartments: none\n")
+    result = run("build", str(deck), "-o", str(tmp_path / "out.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert "lernkarten setup" not in result.stderr, "asked and declined is not unanswered"
+
+
+def test_the_file_drives_the_dividers_without_a_flag(tmp_path):
+    deck = scratch_project(tmp_path, "compartments: 3\n")
+    result = run("build", str(deck), "-o", str(tmp_path / "out.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert "3 dividers" in result.stdout, result.stdout
+
+
+def test_a_printed_deck_is_not_reprinted_but_a_flag_still_wins(tmp_path):
+    """FR-015: an explicit flag is a request just made and beats the file."""
+    deck = scratch_project(tmp_path, "compartments: 3\ndividers_printed: true\n")
+    quiet = run("build", str(deck), "-o", str(tmp_path / "a.pdf"))
+    assert "dividers" not in quiet.stdout, quiet.stdout
+    forced = run("build", str(deck), "-o", str(tmp_path / "b.pdf"), "--dividers", "3")
+    assert "3 dividers" in forced.stdout, forced.stdout
+
+
+def test_a_successful_build_records_that_the_dividers_are_printed(tmp_path):
+    """FR-020, and the two limits that keep it safe."""
+    deck = scratch_project(tmp_path, "compartments: 3\n")
+    assert run("build", str(deck), "-o", str(tmp_path / "out.pdf")).returncode == 0
+    assert "dividers_printed: true" in (tmp_path / "lernkarten.yaml").read_text(encoding="utf-8")
+
+    # ... but never on `check`, which typesets without anything being printed —
+    # and /print runs check before every build.
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    deck2 = scratch_project(fresh, "compartments: 3\n")
+    assert run("check", str(deck2)).returncode == 0
+    assert "dividers_printed: true" not in (fresh / "lernkarten.yaml").read_text(encoding="utf-8")
+
+    # ... and never into a project that never answered.
+    never = tmp_path / "never"
+    never.mkdir()
+    deck3 = scratch_project(never)
+    assert run("build", str(deck3), "-o", str(never / "o.pdf"), "--dividers", "3").returncode == 0
+    assert not (never / "lernkarten.yaml").exists(), "write-back never creates the file"
+
+
+def test_a_file_driven_count_at_a7_skips_instead_of_refusing(tmp_path):
+    """FR-015a. A flag is a request just made; a file is an answer from months ago.
+
+    Refusing on the file would make an unrelated A7 build impossible for
+    someone who once said "four compartments".
+    """
+    (tmp_path / "cards").mkdir()
+    deck = tmp_path / "cards" / "deck.yaml"
+    deck.write_text(
+        "topic: 'T'\nlanguage: english\ncards:\n  - front: 'a'\n    back: 'b'\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "lernkarten.yaml").write_text("compartments: 4\n", encoding="utf-8")
+    result = run("build", str(deck), "-o", str(tmp_path / "out.pdf"))
+    assert result.returncode == 0, "a file must not make an A7 build impossible"
+    assert "a8" in result.stderr.lower(), result.stderr
+    assert "dividers" not in result.stdout, result.stdout
+
+
+# --- the card box beside the cards (US3) -----------------------------------
+
+
+def test_box_writes_the_pdf_beside_the_target_and_names_the_stock(tmp_path):
+    """FR-010/FR-011/SC-007.
+
+    Beside the `-o` target, not at a fixed `output/box.pdf`: a fixed path would
+    put the file somewhere the user did not ask for whenever -o points
+    elsewhere. Never merged into the card PDF -- merging would need a PDF
+    library, and the two want different paper anyway.
+    """
+    target = tmp_path / "deck.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--grid", "a8", "--box")
+    assert result.returncode == 0, result.stderr
+
+    box = tmp_path / "box.pdf"
+    assert box.exists(), "no box beside the target"
+    assert box.read_bytes() == (ROOT / "assets" / "card-box.pdf").read_bytes()
+    assert pdf_pages(target) == DEMO_A8_PAGES, "the card PDF is untouched by --box"
+
+    assert "160" in result.stderr and "250" in result.stderr, result.stderr
+    assert "box" in result.stderr.lower()
+
+
+def test_box_as_a_flag_refuses_a_grid_it_does_not_fit(tmp_path):
+    """US3 scenario 3, per FR-009 — the same rule the dividers follow."""
+    target = tmp_path / "no.pdf"
+    result = run("build", *CARDS, "-o", str(target), "--grid", "a7", "--box")
+    assert result.returncode != 0
+    assert "a8" in result.stderr.lower(), result.stderr
+    assert not (tmp_path / "box.pdf").exists()

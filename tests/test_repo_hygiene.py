@@ -76,6 +76,20 @@ def test_versioned_files_are_reported_unquoted():
     assert not [f for f in files if f.startswith('"')], "git quoted a path instead of reporting it"
 
 
+def test_the_project_settings_file_can_never_be_committed():
+    """Principle VII: `lernkarten.yaml` holds a user's choices, so it is theirs.
+
+    No slash in the pattern, so it matches at every level the way `sources.yaml`
+    does — a fixture that ever needs one would need the same
+    `!tests/fixtures/**/` negation those entries carry.
+    """
+    ignored = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    assert "lernkarten.yaml" in [line.strip() for line in ignored], (
+        "lernkarten.yaml is not gitignored — a user's answers would land in the repo"
+    )
+    assert not list(ROOT.glob("lernkarten.yaml")), "one is sitting in the repo root"
+
+
 def test_no_user_content_in_the_repo():
     intruders = [f for f in versioned_files() if f.startswith(BLOCKED) and f not in ALLOWED]
     assert not intruders, (

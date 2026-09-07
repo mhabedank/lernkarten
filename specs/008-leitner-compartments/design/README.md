@@ -45,36 +45,36 @@ after they were drawn:
   page exists for.
 - The wording of the four house rules, and of the daily loop.
 
-## How big a divider may be
+## How big a divider may be, and where it goes
 
-Recorded because the arithmetic is what settled it, and it is easy to redo
-wrong.
+**Rewritten 2026-09-07**, after the cross-model review rejected the layout this
+section originally described. What follows is what shipped; the reasoning that
+was replaced lives in [research.md](../research.md) R1, in a block marked
+superseded.
 
-The box (`docs/design.md` § The box) is **73 × 52 mm** inside against a
-**71.75 × 50 mm** A8 card: 1.25 mm of clearance across, 2 mm up. So 2 mm larger
-on both axes does not go in at all, and width has nothing to gain anyway —
-cards stand on their long edge and the box is looked into from above.
+The box (`docs/design.md` § The divider) is **73 × 52 mm** inside against a
+**71.75 × 50 mm** A8 card. So a divider is **1.5 mm taller and never wider**:
+51.5 mm still slides and still sits below the rim, and width buys nothing —
+cards stand on their long edge and the box is looked into from above, so the
+side edges are never seen.
 
-**1.5 mm of extra height** reaches 51.5 mm against a 52 mm opening, which still
-slides and still sits below the rim.
+**A divider is not placed in the card grid.** Two grid cells share one cut line,
+and two colours cannot both bleed across it: every divider would have carried a
+strip of its neighbour's colour on the edge they share, and no band width fixes
+that. They are free-placed instead, at least 8 mm cut line to cut line from
+anything else — three in one row, four as two rows of two, because
+`4 × 71.75 = 287.00 mm` is exactly the A8 print width.
 
-The sheet permits exactly that and nothing more. `card_size()` in
-`scripts/build_pdf.py:169` is `(sheet - 2 * margin) / grid`: cards tile the
-print area with **no gutter**, so a wider divider collides with the card beside
-it, while a taller one collides only with the row above or below — and below the
-bottom row there is already a gutter, the page margin. Hence: bottom row, growing
-down, no second grid.
+Three ideas this file used to describe are gone with that change: the bottom
+row, the downward-only growth, and the `--margin 0` fallback. All three existed
+only to work around the grid.
 
-At `--margin 0` there is no margin to grow or bleed into, and dividers fall back
-to exact card size.
+**The block does not always cost a sheet.** It goes in the free height below the
+cards where it fits — a two-row block needs 2.44 free card rows, a one-row block
+1.25 — and opens a further page where it does not. The run says which case it is
+in rather than implying the cheap one.
 
-## What simplex costs
-
-`templates/cards.typ:63-70` mirrors **columns** for the back pages, never rows,
-so "down" is the same paper edge on both faces at either `--sides` value.
-
-What changes under `--sides simplex` is registration: the stack is turned by
-hand and re-fed, which is routinely 1–2 mm off and may be skewed. The colour
-band has to stay at every cut edge under a 2 mm back-face offset — that is a
-floor under its width — and the bleed runs as far as the page margin allows
-rather than only as far as the 1.5 mm of growth.
+**And the divider draws its own cut line.** The colour bleeds 3 mm past the trim,
+so the visible colour edge is *not* where the divider ends; cutting there gives
+77.75 mm, which enters no box at all. The line is drawn on the piece, the way
+`templates/card.typ` has always drawn one for a card.

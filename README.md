@@ -208,11 +208,22 @@ NOTE: the 3 dividers share the last sheet — no extra paper.
 OK: 7 cards, 3 dividers (english) -> output/cards.pdf (2 pages, …).
 ```
 
+Answer once and it stops asking:
+
+```bash
+lernkarten setup --project .
+```
+
+That writes `lernkarten.yaml` beside your `cards/` folder — how many
+compartments, and whether the dividers and the box are already printed. It is
+yours and never committed. Add `--box` to any build to get the card box beside
+the cards.
+
 Sebastian Leitner published the box in 1972 and it needed no software then
 either. His original had no intervals at all — you worked through a compartment
 when it was *full*, and the widths did the spacing. That needs a bigger box than
 one A4 sheet folds into, so these intervals are a calendar simplification of his
-idea rather than his idea.
+idea rather than his idea. [The method, in full](https://mhabedank.github.io/lernkarten/leitner.html).
 
 ## Where your files live
 

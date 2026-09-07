@@ -107,6 +107,12 @@ code, comments, docs and commit messages are written in English.
   free-placed outside the grid so nothing is ever adjacent to one. `a8` only —
   the box fits nothing else. What they say lives in `scripts/leitner.py`, which
   `docs/leitner.html` must agree with. See `docs/design.md` § The divider.
+- **Project settings**: `lernkarten.yaml` in the project root — three flat keys
+  (`compartments`, `dividers_printed`, `box_printed`), gitignored, written only
+  by `lernkarten setup`. **Absent, empty and `compartments: none` are three
+  different states**: the first two mean never asked and get one advisory, the
+  third means asked and declined and gets none. An unknown key warns and the run
+  continues; an invalid value on a known key is fatal.
 - **PDF build**: `lernkarten build` / `lernkarten check` (see `--help`). Output
   goes to `output/`. The typesetting engine downloads itself on first use.
   Never hand-edit anything in `output/` — always go through the YAML files.

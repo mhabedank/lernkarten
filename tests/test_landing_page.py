@@ -508,3 +508,31 @@ def test_the_box_download_says_which_deck_it_fits():
         "the box download does not mention the margin — a deck printed at "
         "--margin 0 has 74.25 mm cards and does not fit either"
     )
+
+
+# --- the method page (US4) --------------------------------------------------
+
+
+def test_the_landing_page_points_at_the_method():
+    """US4 scenario 1. `check_docs.check_links` reads markdown only, so an
+    HTML-to-HTML link is invisible to it — this is where it gets checked."""
+    assert 'href="leitner.html"' in page_source(), "the landing page does not link the method page"
+
+
+def test_the_method_page_is_one_self_contained_file():
+    """The rule docs/design.md states for every screen surface here."""
+    page = (ROOT / "docs" / "leitner.html").read_text(encoding="utf-8")
+    assert "<script" not in page, "the method page must carry no script at all"
+    assert "http://" not in page, "no plain-http asset"
+    for external in re.findall(r'<(?:link|img|script)\b[^>]*\bsrc="([^"]+)"', page):
+        assert not external.startswith("http"), f"remote asset: {external}"
+
+
+def test_every_link_on_the_method_page_resolves():
+    """US4 scenario 1: 'every link in it resolves'."""
+    page = (ROOT / "docs" / "leitner.html").read_text(encoding="utf-8")
+    for href in re.findall(r'href="([^"]+)"', page):
+        if href.startswith(("http", "#", "mailto:")):
+            continue
+        target = (ROOT / "docs" / href).resolve()
+        assert target.exists(), f"dead link on the method page: {href}"

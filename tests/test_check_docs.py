@@ -311,3 +311,61 @@ def test_a_real_dead_link_outside_code_is_still_reported(tmp_path, monkeypatch):
     errors = []
     check_docs.check_links(errors)
     assert any("design.md" in e for e in errors), errors
+
+
+# --- the method page cannot drift from the dividers (US4) -------------------
+
+
+def test_the_method_page_must_carry_every_interval_the_dividers_print(tmp_path, monkeypatch):
+    """FR-017: one definition, two renders.
+
+    `scripts/leitner.py` is the single source. A compartment that says "weekly"
+    on paper and something else on screen is the failure this check exists to
+    make impossible — and it is checkable in both directions, so neither a
+    missing interval nor an invented one gets through.
+    """
+    page = ROOT / "docs" / "leitner.html"
+    assert page.exists(), "docs/leitner.html does not exist yet"
+
+    original = page.read_text(encoding="utf-8")
+    missing = original.replace("every 3 days", "", 1)
+    assert missing != original, "the page never mentioned 'every 3 days'"
+
+    errors = []
+    monkeypatch.setattr(check_docs, "read_page", lambda: missing)
+    check_docs.check_leitner_intervals(errors)
+    assert errors, "an interval dropped from the page must be reported"
+    assert "every 3 days" in " ".join(errors)
+
+
+def test_the_method_page_may_not_invent_an_interval(monkeypatch):
+    errors = []
+    monkeypatch.setattr(check_docs, "read_page", lambda: "<p>every 5 days</p>")
+    check_docs.check_leitner_intervals(errors)
+    assert errors, "an interval the module does not define must be reported"
+    assert "every 5 days" in " ".join(errors)
+
+
+def test_the_shipped_page_agrees_with_the_module():
+    errors = []
+    check_docs.check_leitner_intervals(errors)
+    assert not errors, errors
+
+
+def test_the_print_skill_offers_the_setup_command(monkeypatch):
+    """Principle XI for a prompt change: the only assertable artifact.
+
+    In `check_docs.py`, not `check_project.py`. That gate validates a *user's*
+    project; `skills/*/SKILL.md` belongs to this repository and is already read
+    here (`check_skills`). See issue #89 for the constitution wording.
+    """
+    errors = []
+    monkeypatch.setattr(check_docs, "read_skill", lambda name: "print the cards and stop")
+    check_docs.check_print_skill_relays_setup(errors)
+    assert errors, "a print skill that never mentions the setup command must be reported"
+    assert "lernkarten setup" in " ".join(errors)
+
+    monkeypatch.undo()
+    errors = []
+    check_docs.check_print_skill_relays_setup(errors)
+    assert not errors, errors

@@ -3,6 +3,7 @@
 
     lernkarten build cards/*.yaml -o output/cards.pdf
     lernkarten check cards/*.yaml
+    lernkarten setup --project .
     lernkarten engine --check
     lernkarten deps --check
     lernkarten id --backfill cards/*.yaml
@@ -15,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-COMMANDS = {"build", "check", "engine", "deps", "id"}
+COMMANDS = {"build", "check", "setup", "engine", "deps", "id"}
 
 
 def main():
@@ -60,6 +61,12 @@ def main():
         deps.activate()
     except deps.DependencyError as e:
         sys.exit(f"ERROR: {e}")
+
+    if command == "setup":
+        import setup_cmd
+
+        sys.argv = ["lernkarten setup", *argv[1:]]
+        sys.exit(setup_cmd.main())
 
     import build_pdf
 

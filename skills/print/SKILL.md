@@ -104,8 +104,21 @@ Compiles the YAML card files into a PDF that is ready to print and cut.
 - The card layout lives in `templates/card.typ`, the press sheet in
   `templates/cards.typ`. Change it there, never in the generated file, and read
   `docs/design.md` first.
-- Once the cards are cut they are a loose stack. Tell the user that
-  `assets/card-box.pdf` is a cut-and-fold box on one A4 sheet — 160–250 gsm,
-  print at 100 %, holds about 90 cards. Say **which deck it fits**: `--grid a8`
-  at the default margin. It does not take an `a7` card, and `a7` is the default,
-  so a user who did not pass `--grid` should not print the box.
+- Once the cards are cut they are a loose stack. `--box` writes the cut-and-fold
+  box beside the cards — 160–250 gsm, print at 100 %, holds about 90 cards. Say
+  **which deck it fits**: `--grid a8` at the default margin. It does not take an
+  `a7` card, and `a7` is the default, so a user who did not pass `--grid` should
+  not print the box.
+- **Relay what the build says, and offer `lernkarten setup`.** When the run
+  reports that the Leitner setup is unanswered, pass that on and offer to run
+  `lernkarten setup --project <root>` — it asks how many compartments (3, 4 or
+  none) and whether the dividers and the box are already printed, then never
+  asks again. Do **not** answer for the user and do **not** write
+  `lernkarten.yaml` yourself; the command owns that file. A user driving you
+  never sees a terminal, so if you swallow that line the feature is unreachable
+  for them.
+- `--dividers 3|4` prints Leitner compartment dividers beside the cards, on the
+  same paper, cut from the same sheets. `a8` only. Tell the user to cut along
+  the **line drawn on the divider**, not along the colour — the colour runs past
+  the edge on purpose so a crooked cut still lands in colour. The method is at
+  `docs/leitner.html`.
