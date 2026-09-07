@@ -196,6 +196,22 @@ picks: at `duplex` each sheet's faces sit on consecutive pages and the printer
 turns the paper; at `simplex` every front comes first and the reader turns the
 stack between two print jobs. The mirroring is the same either way, because a
 stack turned on its long edge is the flip a duplex printer makes.
+
+**"Long edge" is the edge of the *sheet*, not of the page.** The distinction is
+invisible at A7 and easy to misread at A8, so it is worth stating: A4 leaves the
+tray the same way whatever the grid — 210 mm across, 297 mm along — and the long
+edge is that 297 mm side of the paper. The A8 *page* is landscape, so its own
+long edge is the other one, and reading the phrase against the page rather than
+the sheet gives the opposite flip. Column mirroring is correct at both grids
+because the paper never turns; only the layout on it does.
+
+**If your printer disagrees, one sheet tells you.** Print the first two pages
+of any deck — at `--sides duplex` the printer turns them, at `--sides simplex`
+you do — and look at a single card: the back of the card in the top-left corner
+must be the card in the top-*right* corner of the reverse. If it is not, the
+turn was the other one; switch the driver's setting, or turn the stack the other
+way, and nothing else needs changing. Verified at both grids on real hardware,
+but drivers vary and this check costs one sheet.
 Default margin 5 mm, which keeps clear of printers with a non-printable edge;
 crop marks reach into that margin at every cut. With `--margin 0` the card
 frames sit on the paper edge and there are no crop marks to draw.

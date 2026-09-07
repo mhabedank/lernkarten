@@ -238,6 +238,72 @@ def check_leitner_intervals(errors):
             )
 
 
+CONSTITUTION = ROOT / ".specify" / "memory" / "constitution.md"
+SCRIPTS = ROOT / "scripts"
+# `A → b, c` or `A, B ← leaves…`; anything after an unbracketed `(` is prose.
+GRAPH_LINE = re.compile(r"^([\w, ]+?)\s*(?:→|←)\s*(.*)$")
+
+
+def real_graph():
+    """Which local modules each `scripts/*.py` imports, read from the source."""
+    modules = {p.stem for p in SCRIPTS.glob("*.py")}
+    graph = {}
+    for path in sorted(SCRIPTS.glob("*.py")):
+        imported = set()
+        for line in path.read_text(encoding="utf-8").splitlines():
+            match = re.match(r"\s*(?:import|from) ([a-z_]+)", line)
+            if match and match.group(1) in modules and match.group(1) != path.stem:
+                imported.add(match.group(1))
+        graph[path.stem] = imported
+    return graph
+
+
+def documented_graph():
+    """The graph as Principle VI draws it, from the fenced block after it."""
+    text = CONSTITUTION.read_text(encoding="utf-8")
+    block = re.search(r"### VI\..*?```\n(.*?)```", text, re.S)
+    if not block:
+        return {}
+    graph = {}
+    for line in block.group(1).splitlines():
+        line = re.sub(r"\(.*?\)", "", line).strip()
+        match = GRAPH_LINE.match(line)
+        if not match:
+            continue
+        targets = match.group(2)
+        imports = (
+            set()
+            if not targets or "leaves" in targets
+            else {t.strip() for t in targets.split(",") if t.strip()}
+        )
+        for module in (m.strip() for m in match.group(1).split(",")):
+            graph[module] = imports
+    return graph
+
+
+def check_import_graph(errors):
+    """Principle VI's graph has to be the graph the repository actually has.
+
+    A rule that no longer traces to the codebase is stale and should be removed,
+    not worked around — Principle VI says so about itself. Deriving the check
+    from the source makes that a fact rather than a hope.
+    """
+    real, documented = real_graph(), documented_graph()
+    for module in sorted(set(real) - set(documented)):
+        errors.append(
+            f"constitution.md: Principle VI's graph does not list scripts/{module}.py, which exists"
+        )
+    for module in sorted(set(documented) - set(real)):
+        errors.append(f"constitution.md: Principle VI's graph lists {module}, which is gone")
+    for module in sorted(set(real) & set(documented)):
+        if real[module] != documented[module]:
+            errors.append(
+                f"constitution.md: Principle VI says {module} imports "
+                f"{sorted(documented[module]) or 'nothing local'}, but it imports "
+                f"{sorted(real[module]) or 'nothing local'}"
+            )
+
+
 def read_skill(name):
     """A skill's body. A seam, so a test can hand in one that says the wrong thing."""
     path = SKILLS / name / "SKILL.md"
@@ -302,6 +368,7 @@ def main():
     check_sheet_capacity(errors)
     check_leitner_intervals(errors)
     check_print_skill_relays_setup(errors)
+    check_import_graph(errors)
     check_print_order(errors)
 
     for e in errors:
