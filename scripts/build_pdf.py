@@ -33,6 +33,7 @@ from pathlib import Path
 import cardid
 import engine
 import leitner
+import settings as project_settings
 import yamlio
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -814,6 +815,33 @@ def main():
             f"ERROR: --dividers needs --grid a8, not {grid_name(grid)}; the card box "
             "fits nothing else (docs/design.md, 'The box')"
         )
+
+    # An answer given once, possibly months ago, must not make an unrelated A7
+    # build impossible. So the same value coming from the file skips with a word
+    # rather than failing -- the asymmetry with the flag above is the point.
+    try:
+        saved = project_settings.load(args.files[0])
+    except project_settings.SettingsError as e:
+        sys.exit(f"ERROR: {e}")
+    for warning in saved.warnings:
+        print(f"NOTE: {warning}", file=sys.stderr)
+
+    divider_count = args.dividers
+    if divider_count is None and saved.compartments and not saved.dividers_printed:
+        if grid == GRIDS["4x4"]:
+            divider_count = saved.compartments
+        else:
+            print(
+                f"NOTE: lernkarten.yaml asks for {saved.compartments} Leitner compartments, "
+                f"but this is {grid_name(grid)} and the card box fits a8 only — skipping them.",
+                file=sys.stderr,
+            )
+    if saved.unanswered:
+        print(
+            "NOTE: the Leitner setup has not been answered for this project. "
+            "`lernkarten setup` asks once and remembers.",
+            file=sys.stderr,
+        )
     if override:
         for c in cards:
             c["language"] = override
@@ -825,10 +853,10 @@ def main():
 
     dividers = ()
     divider_page = None
-    if args.dividers is not None:
-        divider_page, positions = divider_block(len(cards), args.dividers, grid, args.margin)
+    if divider_count is not None:
+        divider_page, positions = divider_block(len(cards), divider_count, grid, args.margin)
         dividers = [
-            dict(divider_record(n + 1, args.dividers, x, y, grid, args.margin), page=divider_page)
+            dict(divider_record(n + 1, divider_count, x, y, grid, args.margin), page=divider_page)
             for n, (x, y) in enumerate(positions)
         ]
 
@@ -857,6 +885,13 @@ def main():
     if dividers:
         page_count = max(page_count, 2 * (divider_page + 1))
         advise_about_dividers(len(dividers), divider_page, pages(len(cards), grid), args.sides)
+        # Only a real build marks them printed. `check` typesets without
+        # anything reaching paper, and /print runs check before every build --
+        # a write-back there would make the build that follows skip them.
+        if not args.check:
+            project_settings.mark_printed(
+                project_settings.path_for(args.files[0]).parent, dividers=True
+            )
     languages = ", ".join(sorted({c["language"] for c in cards}))
     made = f"{len(cards)} cards" + (f", {len(dividers)} dividers" if dividers else "")
     if args.check:

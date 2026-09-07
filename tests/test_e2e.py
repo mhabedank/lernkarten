@@ -1348,6 +1348,7 @@ def test_dividers_do_not_change_a_deck_that_does_not_ask_for_them(tmp_path):
     assert pdf_pages(before) == pdf_pages(after) == DEMO_A8_PAGES
     assert pdf_page_size_mm(before) == pdf_page_size_mm(after)
 
+
 # --- the settings a user answers once (feat/leitner-settings) ---------------
 
 
@@ -1481,4 +1482,3 @@ def test_a_file_driven_count_at_a7_skips_instead_of_refusing(tmp_path):
     assert result.returncode == 0, "a file must not make an A7 build impossible"
     assert "a8" in result.stderr.lower(), result.stderr
     assert "dividers" not in result.stdout, result.stdout
-
