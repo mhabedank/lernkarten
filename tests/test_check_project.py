@@ -1629,6 +1629,7 @@ def test_a_front_announcing_two_counts_is_left_alone(tmp_path):
 def test_announced_count_reads_the_front(front, language, expected):
     assert check_project._announced_count(front, language) == expected
 
+
 EMPTY_TERM_CATALOG = """# Topics
 
 ## Tides

@@ -46,6 +46,11 @@ Creates flashcards from the topic catalog and the references under
      language's alias to the subtopic's `Term:` line in `catalog/topics.md`.
      A `Term:` line binds per card file, so a German deck needs the German
      alias whatever the English deck already says.
+   - *the front announces … and the back enumerates …* — the front promises a
+     count the list does not deliver. Fix whichever of the two is wrong: add
+     the item that is missing, or correct the number in the front. Never
+     delete the number to quieten the check — the count is often the fact the
+     card tests.
    - *is enumerated and never named* — a `#list([…])` back introduces
      something no other card in the file explains. Write, or reword, a card
      that names it. Never delete the item from the enumeration to quieten the
@@ -219,8 +224,18 @@ is given an explicit `--grid`.
 
 - `front`/`back` are Typst markup, not LaTeX: maths in `$...$` with Typst
   syntax (`(a) / (b)`, `Omega`, `"Var"(X)`), a single `\` for a line break,
-  `#list([a], [b])` for a bulleted back with at most 4 items. Escape `#`, `*`,
-  `_`, `@`, `<`, `>` and backticks in running text; `%` and `&` need nothing.
+  `#list([a], [b])` for a bulleted back. Escape `#`, `*`, `_`, `@`, `<`, `>`
+  and backticks in running text; `%` and `&` need nothing.
+- **A front that announces a count gets an enumerated back with exactly that
+  many items.** "What are the four types …" promises four, and the learner
+  grades against the promise: a prose answer makes them segment a sentence and
+  count it at the moment they are supposed to be delivering a verdict. Write
+  the `#list([…])`, and move commentary that belongs to no item onto its own
+  card. `check_project.py` reports a front whose count the list does not
+  deliver. There is **no fixed cap on items** — the ~400 character back budget
+  and what stays readable decide. Splitting "name the six steps" into two cards
+  of three is not the answer: the learner would then never once practise
+  recalling all six, which is the thing being learned.
 - **Nothing is introduced only inside a `#list([…])` back.** Every item you
   enumerate there is also named by another card in the same file — a list is a
   reminder of what the deck has already taught, never the place a term first
