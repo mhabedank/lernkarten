@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Leitner method — Lernkarten</title>
+<meta name="description" content="Three or four compartments, one rule. A card you get right moves forward and comes back less often; a card you get wrong goes back to the first. No app, no account — the card's position is its state.">
+<link rel="canonical" href="https://mhabedank.github.io/lernkarten/leitner.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The Leitner method — Lernkarten">
+<meta property="og:description" content="Spaced repetition made of cardboard. Sebastian Leitner published it in 1972 and it needed no software then either.">
+<style>
+  /* Same system as index.html — three inks, three faces, flat colour and rules.
+     See design.md. One self-contained file, no runtime, no webfonts. */
+  :root {
+    --ink: #141414;
+    --paper: #fbfaf6;
+    --sand: #f2efe6;
+    --ground: #e9e5da;
+    --red: #c2251b;
+    --yellow: #f0c000;
+    --blue: #0a3f8f;
+    --muted: #3a3733;
+    --guide: #8c8779;
+    --rule: 2px solid var(--ink);
+    --display: "Jost", "Futura", "Century Gothic", system-ui, sans-serif;
+    --reading: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--reading);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell { max-width: 1280px; margin: 0 auto; background: var(--ground); }
+
+  a { color: var(--ink); text-decoration: none; border-bottom: 2px solid var(--yellow); }
+  a:hover { color: var(--red); border-bottom-color: var(--red); }
+  ::selection { background: var(--yellow); color: var(--ink); }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  nav {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 32px; border-bottom: var(--rule); background: var(--paper);
+  }
+  nav a.brand {
+    display: flex; align-items: center; gap: 10px; border: 0;
+    font-family: var(--display); font-size: 20px; letter-spacing: -0.02em;
+  }
+  nav .spacer { flex: 1; }
+  nav .up { font-family: var(--mono); font-size: 13px; }
+
+  header { padding: 56px 32px; border-bottom: var(--rule); background: var(--paper); }
+  header p.kicker {
+    margin: 0 0 12px; font-family: var(--display); font-weight: 500;
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+  }
+  h1 {
+    margin: 0; font-family: var(--display); font-weight: 400;
+    font-size: clamp(32px, 6vw, 58px); line-height: 1.02; letter-spacing: -0.03em;
+  }
+  header p.lede { margin: 20px 0 0; max-width: 62ch; font-size: 19px; }
+
+  section { padding: 48px 32px; border-bottom: var(--rule); }
+  section:last-of-type { border-bottom: 0; }
+  h2 {
+    margin: 0 0 8px; font-family: var(--display); font-weight: 400;
+    font-size: clamp(24px, 3.4vw, 34px); letter-spacing: -0.02em;
+  }
+  h2 .num {
+    font-family: var(--mono); font-size: 14px; color: var(--guide);
+    margin-right: 14px; vertical-align: 4px;
+  }
+  section > p { max-width: 68ch; }
+
+  ol.loop { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 2px; background: var(--ink); border: var(--rule); }
+  ol.loop li { background: var(--paper); padding: 20px 24px; display: grid; grid-template-columns: 44px 1fr; gap: 18px; }
+  ol.loop b { font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1; color: var(--guide); }
+  ol.loop p { margin: 4px 0 0; color: var(--muted); }
+  ol.loop strong { color: var(--ink); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 28px; background: var(--paper); border: var(--rule); }
+  caption { text-align: left; padding-bottom: 10px; color: var(--muted); font-size: 15px; }
+  th, td { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--ground); }
+  tbody tr:last-child td { border-bottom: 0; }
+  th { font-family: var(--display); font-weight: 500; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+  td.n { font-family: var(--mono); width: 3.5em; }
+  td.when { font-family: var(--display); font-size: 19px; white-space: nowrap; }
+  .swatch { display: inline-block; width: 14px; height: 14px; margin-right: 10px; vertical-align: -2px; border: 1px solid var(--ink); }
+
+  .rules { display: grid; gap: 2px; margin-top: 28px; background: var(--ink); border: var(--rule); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .rules div { background: var(--paper); padding: 22px 24px; }
+  .rules h3 { margin: 0 0 8px; font-family: var(--display); font-weight: 500; font-size: 17px; }
+  .rules p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  pre {
+    margin: 24px 0 0; padding: 18px 22px; overflow-x: auto;
+    background: var(--ink); color: var(--sand);
+    font-family: var(--mono); font-size: 14px; line-height: 1.7;
+  }
+
+  aside {
+    margin-top: 32px; padding: 22px 24px; max-width: 68ch;
+    background: var(--sand); border-left: 6px solid var(--blue);
+  }
+  aside p { margin: 0; color: var(--muted); }
+  aside p + p { margin-top: 10px; }
+
+  footer { padding: 32px; font-family: var(--mono); font-size: 13px; color: var(--muted); background: var(--paper); border-top: var(--rule); }
+
+  @media (max-width: 720px) {
+    nav, header, section, footer { padding-left: 18px; padding-right: 18px; }
+    ol.loop li { grid-template-columns: 34px 1fr; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav>
+    <a class="brand" href="./">
+      <svg width="30" height="30" viewBox="0 0 120 120" role="img" aria-label="Lernkarten">
+        <path d="M8 94 L8 20 L60 20 Z" fill="#c2251b"></path>
+        <circle cx="60" cy="57" r="21" fill="#0a3f8f"></circle>
+        <path d="M60 36 A21 21 0 0 1 60 78 Z" fill="#f0c000"></path>
+        <rect x="8" y="20" width="104" height="74" fill="none" stroke="#141414" stroke-width="7"></rect>
+      </svg>
+      <span>lernkarten</span>
+    </a>
+    <span class="spacer"></span>
+    <a class="up" href="./">back to the start</a>
+  </nav>
+
+  <header>
+    <p class="kicker">the method · Sebastian Leitner, 1972</p>
+    <h1>The box does the&nbsp;scheduling</h1>
+    <p class="lede">
+      Three or four compartments, one rule. A card you get right moves forward and comes
+      back less often; a card you get wrong goes back to the first. There is no app, no
+      account and nothing to sync — <strong>the card's position is its state</strong>, and
+      the whole system keeps working during a power cut.
+    </p>
+  </header>
+
+  <section id="loop">
+    <h2><span class="num">01</span>One session, five moves</h2>
+    <p>
+      A session is one compartment, front to back, ten minutes on most days. The box tells
+      you which one, so you never spend the first five minutes deciding what to study.
+    </p>
+    <ol class="loop">
+      <li><b>1</b><div><strong>Take the compartment that is due.</strong>
+        <p>Compartment 1 every day; the others on their own day, from the table below.</p></div></li>
+      <li><b>2</b><div><strong>Answer out loud before you turn the card.</strong>
+        <p>Out loud, or on paper. “I would have known it” is not knowing it.</p></div></li>
+      <li><b>3</b><div><strong>Right? One compartment forward.</strong>
+        <p>Fully right, without peeking. Behind the next divider it goes — you will see it
+        again, later rather than tomorrow.</p></div></li>
+      <li><b>4</b><div><strong>Wrong? All the way back to the first.</strong>
+        <p>Back to compartment 1, not one step back. Read the answer once, then bury the
+        card in the middle of the pile rather than on top of it.</p></div></li>
+      <li><b>5</b><div><strong>Compartment empty? The session is over.</strong>
+        <p>Do not “just do one more”. The gaps between sessions are not a side effect of
+        the method; they are the method.</p></div></li>
+    </ol>
+  </section>
+
+  <section id="schedule">
+    <h2><span class="num">02</span>When each compartment is due</h2>
+    <p>
+      The interval is printed on every divider, so the box explains itself with the lid
+      open. Pick days rather than gaps — “every Tuesday and Friday” is something you can
+      keep; “every second day” is something you have to remember.
+    </p>
+
+    <table>
+      <caption>Four compartments — the fuller version.</caption>
+      <thead><tr><th>Compartment</th><th>Due</th><th>What is in it</th></tr></thead>
+      <tbody>
+        <tr><td class="n"><span class="swatch" style="background:#c2251b"></span>1</td><td class="when">daily</td><td>Everything new, and everything you got wrong. Kept small on purpose: if it overflows, you are adding cards faster than you are learning them.</td></tr>
+        <tr><td class="n"><span class="swatch" style="background:#f0c000"></span>2</td><td class="when">every 2 days</td><td>Survived one round.</td></tr>
+        <tr><td class="n"><span class="swatch" style="background:#0a3f8f"></span>3</td><td class="when">weekly</td><td>The same weekday each week.</td></tr>
+        <tr><td class="n"><span class="swatch" style="background:#141414"></span>4</td><td class="when">every 2 weeks</td><td>The exit. A card that is right here has earned its way out of the box; one that is wrong goes back to the first, no exceptions.</td></tr>
+      </tbody>
+    </table>
+
+    <table>
+      <caption>Three compartments — fewer sessions, not shorter gaps.</caption>
+      <thead><tr><th>Compartment</th><th>Due</th><th>What is in it</th></tr></thead>
+      <tbody>
+        <tr><td class="n"><span class="swatch" style="background:#c2251b"></span>1</td><td class="when">daily</td><td>New and wrong cards.</td></tr>
+        <tr><td class="n"><span class="swatch" style="background:#f0c000"></span>2</td><td class="when">every 3 days</td><td>Survived one round.</td></tr>
+        <tr><td class="n"><span class="swatch" style="background:#0a3f8f"></span>3</td><td class="when">every 2 weeks</td><td>The exit.</td></tr>
+      </tbody>
+    </table>
+
+    <aside>
+      <p>
+        <strong>Both sets end at the same longest rest, and that is deliberate.</strong>
+        Choosing three compartments should cost you sessions, not spacing — what the far
+        end of the box is for does not change because you decided to keep fewer piles.
+      </p>
+    </aside>
+  </section>
+
+  <section id="setup">
+    <h2><span class="num">03</span>Printing it</h2>
+    <p>
+      The dividers come out of the same build as the cards, on the same paper, cut from the
+      same sheets. They usually fill space the last sheet was wasting.
+    </p>
+    <pre>lernkarten build cards/*.yaml --grid a8 --dividers 4</pre>
+    <p style="margin-top:24px">
+      Cut along the <strong>line drawn on the divider</strong>, not along the colour. The
+      colour deliberately runs past the edge so that a slightly crooked cut still leaves
+      colour at the border; the line is where the divider actually ends.
+    </p>
+    <p>
+      You will want somewhere to put them:
+      <a href="../assets/card-box.pdf">the card box</a> is one A4 sheet to cut, fold and
+      glue. Print it on 160–250 gsm — heavier paper than the cards want, which is why it
+      comes as its own file. It fits a deck printed at <code>--grid a8</code>.
+    </p>
+    <p>
+      Every freshly cut card starts in compartment 1. Do not backfill: a card you are sure
+      of still has to earn its way forward, one right answer at a time.
+    </p>
+  </section>
+
+  <section id="rules">
+    <h2><span class="num">04</span>Four house rules</h2>
+    <p>The box only works if the moves are honest. These are the four places every paper system quietly dies.</p>
+    <div class="rules">
+      <div>
+        <h3>Never write on a card</h3>
+        <p>No compartment numbers, no tally marks. The card moves; anything written on it is
+        wrong the first time it does. The position carries the state so the card does not
+        have to.</p>
+      </div>
+      <div>
+        <h3>No tracking file, no app</h3>
+        <p>The moment the schedule exists in two places they disagree — and the file is the
+        one that will be wrong. The box is the single source of truth.</p>
+      </div>
+      <div>
+        <h3>Reprint a topic, not the deck</h3>
+        <p>Cutting a fresh full deck throws away everything the box was tracking. Fixed one
+        card? Reprint that topic and swap the cards in place, into the compartments they
+        came from.</p>
+      </div>
+      <div>
+        <h3>Decide what “done” means</h3>
+        <p>A card that passes the last compartment can retire into an envelope, or go back
+        to the front. Leitner has no answer and neither does this page — but a box that
+        never empties grows without bound, so pick one.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <h2><span class="num">05</span>Why it works, and what it is not</h2>
+    <p>
+      Recalling something just before you would have forgotten it is what makes it stick.
+      Growing intervals put every card near that moment, and the cards you struggle with
+      automatically get the most repetitions — you never have to decide which those are.
+    </p>
+    <aside>
+      <p>
+        <strong>Leitner's own box had no intervals at all.</strong> In
+        <em>So lernt man lernen</em> (1972) the compartments are 1, 2, 5, 8 and 14 cm wide,
+        and you work through one when it is <em>full</em>. The spacing comes from capacity:
+        a wider compartment takes longer to fill, so the gap grows by itself, with no
+        calendar anywhere.
+      </p>
+      <p>
+        That needs a bigger box than one A4 sheet folds into — at 24 mm of depth the first
+        compartment would hold five cards. So the intervals above are a calendar
+        simplification of his idea rather than his idea, and it seemed better to say so
+        than to put his name on a schedule he never wrote.
+      </p>
+    </aside>
+  </section>
+
+  <footer>
+    lernkarten by mhabedank · MIT ·
+    <a href="https://github.com/mhabedank/lernkarten">github.com/mhabedank/lernkarten</a>
+  </footer>
+
+</div>
+</body>
+</html>

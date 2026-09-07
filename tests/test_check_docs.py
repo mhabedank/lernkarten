@@ -312,6 +312,7 @@ def test_a_real_dead_link_outside_code_is_still_reported(tmp_path, monkeypatch):
     check_docs.check_links(errors)
     assert any("design.md" in e for e in errors), errors
 
+
 # --- the method page cannot drift from the dividers (US4) -------------------
 
 
@@ -349,4 +350,3 @@ def test_the_shipped_page_agrees_with_the_module():
     errors = []
     check_docs.check_leitner_intervals(errors)
     assert not errors, errors
-
