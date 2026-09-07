@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import check_docs  # noqa: E402
+import check_project  # noqa: E402
 
 DOMAIN = "flashcard"
 
@@ -555,3 +556,80 @@ def test_a_module_missing_from_the_graph_is_reported(monkeypatch):
     check_docs.check_import_graph(errors)
     assert errors, "a module the graph forgets must be reported"
     assert "build_pdf" in " ".join(errors)
+
+
+# --- The enumeration tier table (011) ---------------------------------------
+#
+# The first check in this repository about a skill's own text. Constitution XI
+# puts it here rather than in check_project.py: the rule is about what
+# `skills/cards/SKILL.md` must *contain*, not about what /cards writes into a
+# user's project.
+
+
+TIERLESS_SKILL = """---
+name: cards
+description: Generate flashcards about a topic.
+---
+
+## Style rules
+
+- Write the cards well.
+"""
+
+TIERED_SKILL = """---
+name: cards
+description: Generate flashcards about a topic.
+---
+
+## Style rules
+
+| items | shape |
+|---|---|
+| 1-2 | a sentence |
+| 3-5 | a flat `#list`, exactly n items |
+| 6-8 | one card, grouped: `#list([*Discover*: a, b], [*Define*: c, d])` |
+| 9+ | an anchor card plus one card per group |
+"""
+
+
+def test_a_cards_skill_without_a_tier_table_is_reported(tmp_path, monkeypatch):
+    skill = tmp_path / "SKILL.md"
+    skill.write_text(TIERLESS_SKILL, encoding="utf-8")
+    monkeypatch.setattr(check_docs, "CARDS_SKILL", skill)
+    errors = []
+    check_docs.check_enumeration_tiers(errors)
+    assert errors, "a skill with no tier table has to be reported"
+    assert any("tier" in e for e in errors), errors
+
+
+def test_a_cards_skill_with_the_tier_table_passes(tmp_path, monkeypatch):
+    skill = tmp_path / "SKILL.md"
+    skill.write_text(TIERED_SKILL, encoding="utf-8")
+    monkeypatch.setattr(check_docs, "CARDS_SKILL", skill)
+    errors = []
+    check_docs.check_enumeration_tiers(errors)
+    assert not errors, errors
+
+
+def test_the_shipped_cards_skill_states_the_tiers():
+    errors = []
+    check_docs.check_enumeration_tiers(errors)
+    assert not errors, errors
+
+
+def test_the_tier_table_agrees_with_the_checker_constants():
+    """The one place the table and the code could drift, closed by a test.
+
+    `check_docs.py` cannot import `check_project` — constitution VI documents
+    the import graph and `check_docs.check_import_graph` enforces it — so the
+    numeric half of the agreement lives here, where a test may import both.
+    """
+    skill = (ROOT / "skills" / "cards" / "SKILL.md").read_text(encoding="utf-8")
+    flat, grouped = check_project.FLAT_MAX, check_project.GROUPED_MAX
+    assert f"| 3\u2013{flat} |" in skill or f"| 3-{flat} |" in skill, (
+        f"the flat tier has to end at {flat}, the value check_project uses"
+    )
+    assert f"| {flat + 1}\u2013{grouped} |" in skill or f"| {flat + 1}-{grouped} |" in skill, (
+        f"the grouped tier has to run {flat + 1} to {grouped}"
+    )
+    assert f"| {grouped + 1}+ |" in skill, f"the top tier has to start at {grouped + 1}"

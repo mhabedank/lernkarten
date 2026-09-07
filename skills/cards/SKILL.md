@@ -51,6 +51,14 @@ Creates flashcards from the topic catalog and the references under
      the item that is missing, or correct the number in the front. Never
      delete the number to quieten the check — the count is often the fact the
      card tests.
+   - *the front asks for … and the back answers in prose* — write the
+     `#list([…])`. Commentary that belongs to no item is a second fact and
+     wants a second card, which is usually why the back was prose.
+   - *… items in a flat list* — group them, two or three labelled groups, per
+     the tier table. The labels are structure and need no cards.
+   - *… items on one card* — past the top boundary this is more than one card.
+     Write the anchor card that names the groups and states the total, then one
+     card per group.
    - *is enumerated and never named* — a `#list([…])` back introduces
      something no other card in the file explains. Write, or reword, a card
      that names it. Never delete the item from the enumeration to quieten the
@@ -234,10 +242,23 @@ is given an explicit `--grid`.
   count it at the moment they are supposed to be delivering a verdict. Write
   the `#list([…])`, and move commentary that belongs to no item onto its own
   card. `check_project.py` reports a front whose count the list does not
-  deliver. There is **no fixed cap on items** — the ~400 character back budget
-  and what stays readable decide. Splitting "name the six steps" into two cards
-  of three is not the answer: the learner would then never once practise
-  recalling all six, which is the thing being learned.
+  deliver.
+- **How many items there are decides the shape of the back.** There is no fixed
+  cap — what changes with the length is the form, not the permission:
+
+| items | shape |
+|---|---|
+| 1–2 | a sentence; a `#list` of one item is absurd |
+| 3–5 | a flat `#list`, exactly *n* items |
+| 6–8 | one card still, but **grouped** — `#list([*Discover*: a, b], [*Define*: c, d])`, two or three labelled groups, so recall has a hierarchy instead of a queue |
+| 9+ | more than one card: an **anchor card** naming the groups and stating the total ("the ten steps fall into three phases — name them"), then one card per group, each front announcing its own count |
+
+  Never split an enumeration merely to shorten it. "Name the six steps" does
+  not become two cards of three: the learner would then never once practise
+  recalling all six, which is the thing being learned. The split at nine is the
+  one exception, and it keeps the count honest at two levels rather than losing
+  it. A group label is *structure* — it needs no card of its own, and the
+  "nothing is introduced only inside a list" rule below does not apply to it.
 - **Nothing is introduced only inside a `#list([…])` back.** Every item you
   enumerate there is also named by another card in the same file — a list is a
   reminder of what the deck has already taught, never the place a term first

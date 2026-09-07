@@ -141,6 +141,10 @@ def messages(report):
     return " | ".join(report.errors)
 
 
+def warned(report):
+    return " | ".join(report.warnings)
+
+
 def run_checker(*args):
     return subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "check_project.py"), *args],
@@ -161,7 +165,7 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 32
+    assert counts["cards"] == 33
 
 
 def test_the_demo_project_passes_on_the_command_line():
@@ -1655,6 +1659,207 @@ def test_a_front_announcing_two_counts_is_left_alone(tmp_path):
 )
 def test_announced_count_reads_the_front(front, language, expected):
     assert check_project._announced_count(front, language) == expected
+
+
+# --- Enumeration tiers (011) -------------------------------------------------
+
+GROUPED_CARDS = """topic: 'Process'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the four steps.'
+    back: '#list([*Discover*: alpha, beta], [*Define*: gamma, delta])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What do the steps cover?'
+    back: 'Alpha and beta come first, then gamma and delta.'
+    source: 'Field notes'
+"""
+
+GROUPED_ORPHAN_CARDS = """topic: 'Process'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Name the four steps.'
+    back: '#list([*Discover*: alpha, beta], [*Define*: gamma, delta])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What do the steps cover?'
+    back: 'Alpha and beta come first, then gamma.'
+    source: 'Field notes'
+"""
+
+SPAN_FRONT_CARDS = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Describe how the range is distributed over the six hours of the flood'
+    back: 'One twelfth, two, three, three, two, one — half by the third hour.'
+    source: 'Field notes'
+"""
+
+FLAT_SEVEN_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Which stages does the code define?'
+    back: '#list([a], [b], [c], [d], [e], [f], [g])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What are the stages for?'
+    back: 'a, b, c, d, e, f and g mark the rising water.'
+    source: 'Field notes'
+"""
+
+GROUPED_SEVEN_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Which stages does the code define?'
+    back: '#list([*Calm*: a, b, c], [*Rising*: d, e], [*Storm*: f, g])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What are the stages for?'
+    back: 'a, b, c, d, e, f and g mark the rising water.'
+    source: 'Field notes'
+"""
+
+FLAT_TEN_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Which stages does the code define?'
+    back: '#list([a], [b], [c], [d], [e], [f], [g], [h], [j], [k])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What are the stages for?'
+    back: 'a, b, c, d, e, f, g, h, j and k mark the rising water.'
+    source: 'Field notes'
+"""
+
+GROUPED_TEN_CARDS = """topic: 'Signals'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'Which stages does the code define?'
+    back: '#list([*Calm*: a, b, c], [*Rising*: d, e, f], [*Storm*: g, h, j, k])'
+    source: 'Field notes'
+  - subtopic: 'Rhythm of the tide'
+    front: 'What are the stages for?'
+    back: 'a, b, c, d, e, f, g, h, j and k mark the rising water.'
+    source: 'Field notes'
+"""
+
+
+def test_e1_counts_members_not_group_items(tmp_path):
+    """R-4: a grouped back holds four members in two items, and four is right."""
+    report = check(project(tmp_path, cards=GROUPED_CARDS))
+    assert "the front announces" not in messages(report), messages(report)
+
+
+def test_a2_reports_a_member_not_the_group_label(tmp_path):
+    """R-5: the head-term cut would report the label and never look inside."""
+    report = check(project(tmp_path, cards=GROUPED_ORPHAN_CARDS))
+    said = messages(report)
+    assert "'delta'" in said, said
+    assert "Discover" not in said, said
+    assert "Define" not in said, said
+
+
+def test_a_counted_prompt_answered_in_prose_is_reported(tmp_path):
+    """E-2: 'Name the four …' over a sentence."""
+    report = check(project(tmp_path, cards=COUNTED_PROSE_CARDS))
+    said = warned(report)
+    assert "card 1" in said, said
+    assert "'four'" in said, said
+    assert "prose" in said, said
+
+
+def test_a_numeral_without_a_cue_is_not_an_enumeration_prompt(tmp_path):
+    """R-2: 'over the six hours' is a span, and F3M2Q is a correct card."""
+    report = check(project(tmp_path, cards=SPAN_FRONT_CARDS))
+    assert not report.warnings, report.warnings
+    assert not report.errors, messages(report)
+
+
+def test_a_flat_list_past_the_grouped_boundary_is_reported(tmp_path):
+    report = check(project(tmp_path, cards=FLAT_SEVEN_CARDS))
+    said = warned(report)
+    assert "card 1" in said, said
+    assert "seven items" in said or "7 items" in said, said
+
+
+def test_a_grouped_list_in_that_tier_is_silent(tmp_path):
+    report = check(project(tmp_path, cards=GROUPED_SEVEN_CARDS))
+    assert not report.warnings, report.warnings
+
+
+@pytest.mark.parametrize("cards", [FLAT_TEN_CARDS, GROUPED_TEN_CARDS])
+def test_an_enumeration_of_ten_is_reported_whether_grouped_or_not(tmp_path, cards):
+    """I-6: the top tier is not 'group harder', it is 'more than one card'."""
+    report = check(project(tmp_path, cards=cards))
+    said = warned(report)
+    assert "card 1" in said, said
+    assert "one card" in said, said
+    assert "group them" not in said, said
+
+
+@pytest.mark.parametrize(
+    ("items", "expected"),
+    [
+        (["*A*: x, y", "*B*: z"], [("A", ["x", "y"]), ("B", ["z"])]),
+        (["*A*: x, y", "plain"], None),  # mixed is not grouped
+        (["*A*: x"], [("A", ["x"])]),  # one member is still a group
+        (["*A with * star*: x"], None),  # a star inside the label
+        (["*A*:"], None),  # no members
+        ([], None),
+    ],
+)
+def test_groups_reads_a_labelled_item(items, expected):
+    assert check_project._groups(items) == expected
+
+
+@pytest.mark.parametrize(
+    ("items", "expected"),
+    [
+        (["a", "b", "c"], 3),
+        (["*A*: x, y", "*B*: z, w"], 4),
+        (["*A*: x, y, z"], 3),
+        ([], 0),
+        (None, None),
+    ],
+)
+def test_enumeration_size_counts_members_when_grouped(items, expected):
+    assert check_project._enumeration_size(items) == expected
+
+
+@pytest.mark.parametrize(
+    ("front", "language", "expected"),
+    [
+        # The card the issue was reported for — it opens with 'What are'.
+        ("What are the four types of work?", "english", ("four", 4)),
+        ("Name the five stages.", "english", ("five", 5)),
+        ("State the three axioms.", "english", ("three", 3)),
+        ("List the 6 rules.", "english", ("6", 6)),
+        ("Nenne die vier Warnstufen.", "german", ("vier", 4)),
+        ("Was sind die vier Arten?", "german", ("vier", 4)),
+        # A span, not a prompt: the numeral is not adjacent to the cue.
+        ("Describe how the range is distributed over the six hours", "english", None),
+        ("Describe the flood over the six hours", "english", None),
+        # No cue at all.
+        ("How is a mast with two flags read?", "english", None),
+        # Two counts — inherited from _announced_count.
+        ("Which two of the six flags call for help?", "english", None),
+        # No numeral, so nothing is announced.
+        ("Name the inhabited islands.", "english", None),
+        # Below three: the helper reads it, the check ignores it.
+        ("Name the two stages.", "english", ("two", 2)),
+        # No cue table for this language.
+        ("Name the five stages.", "greek", None),
+    ],
+)
+def test_enumeration_prompt_needs_a_cue_next_to_the_numeral(front, language, expected):
+    assert check_project._enumeration_prompt(front, language) == expected
 
 
 EMPTY_TERM_CATALOG = """# Topics
