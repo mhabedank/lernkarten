@@ -351,6 +351,12 @@ with prose. The cutting diagram is a drawing of a sheet, so it belongs beside th
 two drawings of sheets, not under four hundred pixels of text about printer
 settings.
 
+Moving it there is not enough on its own, and the failure is instructive: sent
+to the picture column but left to wrap *below* the two sheets, it made that
+column the heavy one and the hole simply reappeared on the other side. Three
+pictures in one row is what makes both columns end together. Closing a hole and
+moving it look identical from the column you were watching — measure both.
+
 A block that belongs to neither kind, or that would make one column outgrow the
 other by more than about half, becomes a **full-width block beneath both**. The
 card box went that way — it is a different subject from the three printing rules,
@@ -370,7 +376,7 @@ Two worked examples, both measured before and after:
 | Section | Before | After |
 |---|---|---|
 | `02 one card, one idea` | 269 px of content in a 644 px cell — 46 % empty | 564 px in 644 px |
-| `03 print it, cut it` | 327 px in a 1176 px column — 65 % empty | 595 px in 675 px |
+| `03 print it, cut it` | 327 px in a 1176 px column — 65 % empty | both columns end together at 433 px |
 
 Neither happened at once. `03` accreted over three features, each adding correct,
 well-scoped content to the same column, none of them measuring it against the one

@@ -596,9 +596,7 @@ def test_the_page_stays_one_self_contained_file():
         "The page is one self-contained file with almost no behaviour; a second "
         "script leaves that rule regardless of what the first one does"
     )
-    assert all("src=" not in tag for tag in scripts), (
-        f"any script must stay inline: {scripts}"
-    )
+    assert all("src=" not in tag for tag in scripts), f"any script must stay inline: {scripts}"
 
     loaded = {
         url.split("?")[0]

@@ -40,7 +40,8 @@ header band differs front to back; the mark is hollow on one and solid on the
 other; the note space only exists on the back. A reader looking at one side
 cannot check three of the four claims against what they see.
 
-Both cards come back, side by side, and the toggle goes. That is the no-JS
+Both cards come back — one above the other, which is how 269 px twice plus the
+26 px gap comes to the 644 px the prose beside it sets — and the toggle goes. That is the no-JS
 fallback the page already had, which the script's own comment calls "the same
 information, one scroll longer" — and the measurement says it is not even longer:
 two cards are what the column was proportioned around.
@@ -240,12 +241,24 @@ landing page is served, not consumed by a tool.
 - **SC-001**: In section 02, the visible content of the card column fills its
   cell to within the cell's own padding. Measured today: 269 px of content in a
   644 px cell, 335 px dead (46 %). Target: 564 px in 644 px, 0 % dead.
-- **SC-002**: In section 03, the visible content of the sheets column fills its
-  column to within the column's own padding. Measured today: 327 px in 1176 px,
-  809 px dead (65 %). Target: 547 px in 627 px, 0 % dead.
-- **SC-003**: Both figures hold at 1120, 1280, 1440 and 1800 px. The page caps
-  its content at 1280 px, so a result that holds at these four holds above the
-  breakpoint generally.
+- **SC-002**: In section 03, **both** columns end together — the sheets column
+  and the rules column. Measured before: the sheets column held 327 px in
+  1176 px, 769 px dead (65 %). After: both columns close at 433 px.
+  **Corrected during implementation.** This criterion first read *"the visible
+  content of the sheets column fills its column"* and predicted 547 px in
+  627 px from a prototype. Written that way it was satisfiable by moving the
+  hole rather than closing it, and that is exactly what happened: sending the
+  cutting diagram to the picture column but letting it wrap *below* the two
+  sheets filled the left column to 595 px and left 161 px under the three rules
+  on the right. The one-sided measurement reported 0 % and the section still had
+  a hole in it. A criterion about a two-column section has to name both columns.
+- **SC-003**: Section 02 holds at 1120, 1280, 1440 and 1800 px. Section 03 holds
+  from 1280 px up; between 1080 px and about 1180 px the cutting diagram wraps
+  below the sheets and roughly 160 px is left under the rules column.
+  **That fallback is accepted, not overlooked**: closing it would mean squeezing
+  the diagram's caption below its minimum width, and the layout never shrinks
+  reading text to fit (constitution XVI). It is a fifth of the 769 px it
+  replaced and within the tolerance the new design rule states.
 - **SC-004**: `docs/index.html` contains zero `<script>` blocks and the same
   single external sub-resource it has today.
 - **SC-005**: With JavaScript disabled, both sections render identically to the

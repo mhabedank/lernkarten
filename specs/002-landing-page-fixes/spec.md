@@ -284,8 +284,15 @@ typesetter, card text or a file on a user's disk. What does apply:
   FR-016.
 - **FR-012**: The stylesheet MUST make the `hidden` attribute effective against
   every element on the page, including those whose class sets `display`.
-- **FR-013**: The card toggle MUST show exactly one card at a time when
-  JavaScript is enabled, and both cards with no button when it is not.
+- **FR-013**: ~~The card toggle MUST show exactly one card at a time when
+  JavaScript is enabled, and both cards with no button when it is not.~~
+  **Superseded 2026-09-08 by [012-column-balance](../012-column-balance/spec.md)**,
+  FR-001 and FR-002. The toggle is gone: it left half the card column empty,
+  and three of the four explanations beside it describe things that differ
+  between the two faces. This requirement was met exactly as written — the
+  control it describes was correct and worked. What was wrong was having the
+  control at all, which is the decision [#28](https://github.com/mhabedank/lernkarten/issues/28)
+  parked and never took.
 - **FR-014**: `docs/index.html` MUST remain one self-contained file, with no
   new script block and no new external asset. If script is unavoidable for
   FR-002, it MUST extend the single existing block.
@@ -407,15 +414,24 @@ strip's own geometry.
   than its heading needs — no note sets a heading row's height any more.
 - **SC-004**: Reading order in every section band is unchanged at every width:
   number, heading, note, content.
-- **SC-005**: Clicking "show the back" leaves exactly one card visible; clicking
-  again leaves exactly the other one visible.
-- **SC-006**: With JavaScript disabled, both cards are visible and no toggle
-  button is.
-- **SC-007**: `docs/index.html` is still one file with exactly one `<script>`
+- **SC-005**: ~~Clicking "show the back" leaves exactly one card visible; clicking
+  again leaves exactly the other one visible.~~ **Superseded 2026-09-08 by
+  [012-column-balance](../012-column-balance/spec.md) SC-001** — there is no
+  toggle to click. This criterion was green when it was retired.
+- **SC-006**: ~~With JavaScript disabled, both cards are visible and no toggle
+  button is.~~ **Superseded 2026-09-08 by [012-column-balance](../012-column-balance/spec.md)
+  SC-005** — this is now the only rendering, not the fallback. The page carries
+  no script, so there is no second state for it to be a fallback *from*.
+- **SC-007**: ~~`docs/index.html` is still one file with exactly one `<script>`
   block and no external asset reference beyond what it has today.
 - **SC-008**: The three landing-page assertions fail on the parent commit and
   pass on the merge commit — the red-then-green evidence constitution XI
-  requires.
+  requires.~~
+  **Restated 2026-09-08 by [012-column-balance](../012-column-balance/spec.md)
+  FR-011** as *at most one* `<script>` block. The page now has zero, and the
+  old count would have failed for the worst possible reason: a passing test
+  going red because the code got better. The ceiling is kept — a second script
+  leaves the design rule whether or not the first one was ever removed.
 - **SC-010**: *(added 2026-08-19 by [BUG-006](bugs/BUG-006.md))* No rule in
   `docs/index.html` setting Archivo running prose declares a `font-size` below
   15 px, and `tests/test_landing_page.py` fails if one is added.

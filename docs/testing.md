@@ -301,7 +301,16 @@ cut is the point.
 `tests/test_landing_page.py` reads `docs/index.html`; it never renders it. So it
 can tell you a control exists and cannot tell you anybody would find it, and it
 can tell you the note is no longer a child of the band and cannot tell you the
-heading row got shorter. These three rows are the other half of that pair, and
+heading row got shorter.
+
+That is also why four of its assertions are about *arrangement* rather than
+proportion. A column that is half empty is geometry; what the module can reach is
+the arrangement that causes it — the card box is not inside the rules column, the
+cutting diagram is inside the sheets column, both card faces stand, the page
+carries at most one script. Anyone writing the next assertion here should reach
+for the same move rather than for a number this module cannot see.
+
+The rows below are the other half of that pair, and
 they are named here rather than left to a reviewer's eye because that is the
 condition constitution XI attaches to splitting a layout requirement.
 
@@ -317,9 +326,9 @@ Open `docs/index.html` straight off disk. No server, no build.
 | 25 | above 1080 px | sections `01`, `03`, `04` | the three heading rows are the same height, none taller than its heading needs; each note is a full-width block under its band |
 | 26 | above 1080 px | the rules around each note | single everywhere — no doubled 4 px rule where band meets note, none missing |
 | 27 | above 1080 px | section `04 install` | the note is still light on ink, and the rule under it is `--sand`, not the default dark |
-| 28 | below 1080 px | all four sections | reading order unchanged: number, heading, note, content. Section `02` still has its toggle in the band |
-| 29 | any width | `02 one card, one idea`: click **show the back**, then again | exactly one card at a time, and the label follows it |
-| 30 | any width, **JavaScript off** | reload and look at `02` | both cards side by side, no button — the fallback the script's own comment describes |
+| 28 | below 1080 px | all four sections | reading order unchanged: number, heading, note, content |
+| 29 | any width | `02 one card, one idea` | both card faces stand side by side. There is no toggle: feature 012 removed it, and this row used to ask you to click it |
+| 30 | any width, **JavaScript off** | reload and look at `02` | identical to row 29. The page has no script left, so there is nothing that can differ — this row is cheap now and was not before |
 | 31 | Chromium, Firefox, Safari | repeat rows 20, 23 and 25 in each | the same in all three. CI has no browser leg, so this is the only place the claim is checked |
 | 32 | above 1080 px and at 360 px | the section notes, the anatomy list, the printing descriptions, the rules list and the three principles, after the type floor was raised to 15 px | nothing reflows into a heading row, no column loses its measure, and the three heading rows of row 25 are still equal. The size itself is asserted by `test_reading_text_is_never_below_the_screen_floor`; what a test cannot see is whether the extra line a paragraph gained landed somewhere ugly |
 | 33 | github.com, an ordinary laptop window | the `README.md` opening block, rendered — then follow the link | the link to the live page is visible without scrolling past the intro paragraph; it reads as an invitation to *look*, not one more thing to read; and `https://mhabedank.github.io/lernkarten/` loads. `test_the_readme_points_a_newcomer_at_the_landing_page` asserts that the link is in the opening block and where in it — it cannot tell you whether anybody sees it, whether the wording invites, or whether the page is still there |
@@ -329,6 +338,11 @@ Open `docs/index.html` straight off disk. No server, no build.
 | 37 | a black-only photocopy of the sheet, and someone who has not seen the colour version | ask them to point out every cut and every fold | they get all of them, from the legend and the dash patterns alone. This is `docs/design.md`'s closing rule at its most literal: get it wrong here and a reader cuts where they should have folded |
 | 38 | the landing page and the README | read the box paragraph as somebody who ran `lernkarten build` without `--grid` | it is clear *before* any cutting that this box does not fit their A7 deck. `test_the_box_download_says_which_deck_it_fits` asserts the words are present; only a reader can say whether they land in time |
 | 39 | a Claude session that has just run `/print` | read what it says about the cut cards | it names the box and says which grid it fits. Run output leaves nothing on disk, so no check in `check_project.py` can assert this (constitution XI) — it is named here instead of being left implicit |
+| 45 | above 1080 px | `02 one card, one idea` | the two faces stand one above the other and fill the column beside the four explanations. Measured, 564 px of content in a 644 px cell — it was 269 px, and 46 % of that column was empty |
+| 46 | above 1080 px | check each of the four explanations against the cards | the header band, the field, the footer band and the note space are all on screen. **Three of the four differ front to back** — the band's colour and shape, the mark hollow against solid, the note space only the back has. This is why one card was never enough, and it is not a layout question |
+| 47 | above 1080 px | `03 print it, cut it` | two sheets and the cutting diagram on the left, three numbered rules on the right, the card box across the full width beneath both. **No hole under _either_ column** — check the right-hand one too, which is where the hole reappeared the first time this was fixed. Measured at 1280 px and up, both columns end together at 433 px; the left one was 327 px against 1176 px. Between 1080 px and about 1180 px the diagram wraps below the sheets and roughly 160 px is left under the three rules — the accepted fallback, not a defect |
+| 48 | above 1080 px | every boundary in `03` | each rule single: none doubled where the box meets the columns above it, none missing. Compare against the previous commit rendered beside it, not from memory — that instruction is here because a by-hand row once passed a bar whose links hung 23 px too high |
+| 49 | 360 px | both sections | one column each, reading order unchanged, nothing holding the page open sideways |
 
 Row 33 is the odd one out. It is read on github.com rather than off disk, and
 its subject is `README.md`, not the page. It sits here because what it checks

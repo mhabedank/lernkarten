@@ -276,9 +276,24 @@
   /* The diagram is the third picture in the sheets column, not the filler at
      the foot of a text column it used to be. `flex: 1` and
      `justify-content: center` were both for that old job; the padding
-     duplicated the 40 px .print__sheets already applies. What it needs now is
-     to take the full width of the row it wraps onto, beneath the two sheets. */
-  .print__cut { flex: 1 0 100%; display: flex; flex-direction: column; gap: 14px; }
+     duplicated the 40 px .print__sheets already applies.
+
+     It sits *beside* the two sheets rather than wrapping beneath them, and the
+     difference is the whole section: wrapped, the left column ran to 595 px
+     against the rules' 433 px and the hole simply moved to the right-hand side.
+     Three pictures in one row make both columns end together. `200px` is the
+     SVG's own width, so the basis is the drawing and the caption takes what is
+     left, shrinking with it — the drawing is a diagram, so scaling it costs
+     nothing, while its caption is reading text and may not be squeezed.
+
+     Between 1080 px and roughly 1180 px the row wraps anyway: the caption's own
+     minimum width holds it open, and the honest fallback is the arrangement
+     this replaced, with about 160 px left under the three rules. That is a
+     tolerable imbalance by the rule in docs/design.md and a fifth of the 769 px
+     it used to be. Forcing one row there would mean shrinking type to fit,
+     which is the one thing the layout never does. */
+  .print__cut { flex: 1 1 150px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .print__cut svg { width: 100%; height: auto; max-width: 200px; }
   .print__cut p { font-size: 15px; line-height: 1.6; color: var(--muted); }
   /* Full width beneath both columns, the way a section note sits beneath its
      band. It keeps its top rule and must never gain a bottom one — the

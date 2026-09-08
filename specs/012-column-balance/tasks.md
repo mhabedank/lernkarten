@@ -216,16 +216,16 @@ assertion has been seen failing for its own reason.
 
 ## Phase 7: Docs & Cross-Cutting
 
-- [ ] T018 Add the by-hand rows to `docs/testing.md` § *The landing page*,
+- [X] T018 Add the by-hand rows to `docs/testing.md` § *The landing page*,
       continuing the existing numbering: both sections' proportion above 1080 px,
       the four explanations checked against two visible cards, every rule at the
       moved boundaries single, and the sections at 360 px. Every link added must
       resolve or `check_docs.py` fails
-- [ ] T019 Update the `docs/testing.md` line that says the landing-page module
+- [X] T019 Update the `docs/testing.md` line that says the landing-page module
       *"reads `docs/index.html`; it never renders it"* — still true, and now the
       reason four of its assertions are about arrangement rather than proportion.
       Say so there, where the next person writing an assertion will read it
-- [ ] T020 Note in `specs/002-landing-page-fixes/spec.md` that FR-013, SC-005 and
+- [X] T020 Note in `specs/002-landing-page-fixes/spec.md` that FR-013, SC-005 and
       SC-006 are superseded by this feature, and that FR-014 and SC-007 are
       restated by FR-011. Strikethrough with a reason, the convention BUG-006
       established there — a shipped requirement is retired in writing, never by
@@ -237,12 +237,12 @@ assertion has been seen failing for its own reason.
 
 **Purpose**: exactly what CI checks. All green before the pull request.
 
-- [ ] T021 [P] `ruff check . && ruff format --check .`
-- [ ] T022 [P] `pytest`
-- [ ] T023 [P] `lernkarten check cards/example.yaml`
-- [ ] T024 [P] `python3 scripts/check_docs.py` — matters more than usual here:
+- [X] T021 [P] `ruff check . && ruff format --check .`
+- [X] T022 [P] `pytest`
+- [X] T023 [P] `lernkarten check cards/example.yaml`
+- [X] T024 [P] `python3 scripts/check_docs.py` — matters more than usual here:
       T015, T016 and T018 all add links
-- [ ] T025 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` once before the PR, per
+- [X] T025 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` once before the PR, per
       `CLAUDE.md`. Nothing here touches the build, so this is a formality — but
       it is a required one
 
@@ -256,21 +256,21 @@ these are named, so they are numbered here and land in `docs/testing.md` at T018
 
 Open `docs/index.html` straight off disk — no server, no build.
 
-- [ ] T026 **Both sections, above 1080 px**: two cards filling the column in
+- [X] T026 **Both sections, above 1080 px**: two cards filling the column in
       `02`; sheets and diagram left, three rules right, box full width beneath in
       `03`. No hole under either column. Then **measure** rather than judge:
       section 02 at 564 px of content in 644 px, section 03 at 547 px in 627 px,
       at 1120, 1280, 1440 and 1800 px *(SC-001, SC-002, SC-003)*
-- [ ] T027 **The four explanations against the two cards**: header band, field,
+- [X] T027 **The four explanations against the two cards**: header band, field,
       footer band, note space — all visible. Three of the four differ front to
       back, which is the argument for two cards that is not about layout at all
-- [ ] T028 **Every boundary in `03`**: each rule single. None doubled where the
+- [X] T028 **Every boundary in `03`**: each rule single. None doubled where the
       box meets the columns, none missing. Compare against the previous commit
       rendered beside it, not from memory — that is the instruction BUG-011
       added to row 24 after the last time a by-hand row passed something broken
-- [ ] T029 **360 px**: one column per section, reading order unchanged, nothing
+- [X] T029 **360 px**: one column per section, reading order unchanged, nothing
       holding the page open sideways *(FR-007, SC-007)*
-- [ ] T030 Repeat T026 and T028 in Chromium, Firefox and Safari. CI has no
+- [X] T030 Repeat T026 and T028 in Chromium, Firefox and Safari. CI has no
       browser leg and will not grow one for this page, so this is the only place
       the cross-engine claim is checked. Safari needs *Allow remote automation*
       switched on by hand if it is driven rather than clicked
