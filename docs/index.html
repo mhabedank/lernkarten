@@ -273,9 +273,17 @@
   }
   .rule-item h3 { font-size: 17px; line-height: 1.2; }
   .rule-item p { margin-top: 6px; font-size: 15px; line-height: 1.6; color: var(--muted); }
-  .print__cut { flex: 1; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+  /* The diagram is the third picture in the sheets column, not the filler at
+     the foot of a text column it used to be. `flex: 1` and
+     `justify-content: center` were both for that old job; the padding
+     duplicated the 40 px .print__sheets already applies. What it needs now is
+     to take the full width of the row it wraps onto, beneath the two sheets. */
+  .print__cut { flex: 1 0 100%; display: flex; flex-direction: column; gap: 14px; }
   .print__cut p { font-size: 15px; line-height: 1.6; color: var(--muted); }
-  .print__box { padding: 22px 28px; border-top: var(--rule); display: flex; flex-direction: column; gap: 8px; }
+  /* Full width beneath both columns, the way a section note sits beneath its
+     band. It keeps its top rule and must never gain a bottom one — the
+     section carries `border-bottom` itself, and a second would double it. */
+  .print__box { padding: 26px 40px; border-top: var(--rule); display: flex; flex-direction: column; gap: 8px; }
   .print__box h3 { font-size: 17px; line-height: 1.2; }
   .print__box p { font-size: 15px; line-height: 1.6; color: var(--muted); }
 
@@ -668,6 +676,24 @@
             <span>2</span><span>1</span><span>4</span><span>3</span><span>6</span><span>5</span><span>8</span><span>7</span>
           </div>
         </div>
+        <div class="print__cut">
+          <svg viewBox="0 0 200 150" width="200" height="150" role="img" aria-label="Cutting order: three vertical cuts, then three horizontal cuts">
+            <rect x="10" y="8" width="180" height="127" fill="#fbfaf6" stroke="#141414" stroke-width="2"/>
+            <line x1="55" y1="8" x2="55" y2="135" stroke="#c2251b" stroke-width="3"/>
+            <line x1="100" y1="8" x2="100" y2="135" stroke="#c2251b" stroke-width="3"/>
+            <line x1="145" y1="8" x2="145" y2="135" stroke="#c2251b" stroke-width="3"/>
+            <line x1="10" y1="39.75" x2="190" y2="39.75" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+            <line x1="10" y1="71.5" x2="190" y2="71.5" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+            <line x1="10" y1="103.25" x2="190" y2="103.25" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
+            <circle cx="55" cy="8" r="5" fill="#c2251b"/>
+            <circle cx="100" cy="8" r="5" fill="#c2251b"/>
+            <circle cx="145" cy="8" r="5" fill="#c2251b"/>
+            <circle cx="190" cy="39.75" r="4" fill="#0a3f8f"/>
+            <circle cx="190" cy="71.5" r="4" fill="#0a3f8f"/>
+            <circle cx="190" cy="103.25" r="4" fill="#0a3f8f"/>
+          </svg>
+          <p>A 5 mm free margin is kept by default (cards 71.75 × 50 mm at the <span class="mono">a8</span> grid) so printers with a non-printable edge clip nothing, and crop marks in that margin show where to cut. Borderless printers get the full 74.25 × 52.5 mm with <span class="mono">--margin 0</span>.</p>
+        </div>
       </div>
       <div class="print__rules">
         <div class="rule-item">
@@ -691,39 +717,21 @@
             <p>Three vertical cuts, then three horizontal: sixteen cards, twenty seconds.</p>
           </div>
         </div>
-        <div class="print__cut">
-          <svg viewBox="0 0 200 150" width="200" height="150" role="img" aria-label="Cutting order: three vertical cuts, then three horizontal cuts">
-            <rect x="10" y="8" width="180" height="127" fill="#fbfaf6" stroke="#141414" stroke-width="2"/>
-            <line x1="55" y1="8" x2="55" y2="135" stroke="#c2251b" stroke-width="3"/>
-            <line x1="100" y1="8" x2="100" y2="135" stroke="#c2251b" stroke-width="3"/>
-            <line x1="145" y1="8" x2="145" y2="135" stroke="#c2251b" stroke-width="3"/>
-            <line x1="10" y1="39.75" x2="190" y2="39.75" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
-            <line x1="10" y1="71.5" x2="190" y2="71.5" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
-            <line x1="10" y1="103.25" x2="190" y2="103.25" stroke="#0a3f8f" stroke-width="2" stroke-dasharray="6 4"/>
-            <circle cx="55" cy="8" r="5" fill="#c2251b"/>
-            <circle cx="100" cy="8" r="5" fill="#c2251b"/>
-            <circle cx="145" cy="8" r="5" fill="#c2251b"/>
-            <circle cx="190" cy="39.75" r="4" fill="#0a3f8f"/>
-            <circle cx="190" cy="71.5" r="4" fill="#0a3f8f"/>
-            <circle cx="190" cy="103.25" r="4" fill="#0a3f8f"/>
-          </svg>
-          <p>A 5 mm free margin is kept by default (cards 71.75 × 50 mm at the <span class="mono">a8</span> grid) so printers with a non-printable edge clip nothing, and crop marks in that margin show where to cut. Borderless printers get the full 74.25 × 52.5 mm with <span class="mono">--margin 0</span>.</p>
-        </div>
-        <!--
-          The href is relative because pages.yml copies the PDF next to this
-          file in _site. It resolves on the deployed site and is dead when this
-          file is opened straight out of docs/ — the two are not siblings in the
-          repository. check_docs.py link-checks markdown only, so nothing else
-          records that.
-        -->
-        <div class="print__box">
-          <h3>and something to keep them in</h3>
-          <p>A box, from one more sheet. Print it on 160–250 gsm card stock at 100 %, check the printed ruler before you cut, fold the dashed lines and glue the grey tabs. It holds about 90 cards.</p>
-          <p><a href="card-box.pdf">Download the card box (PDF, one A4 page)</a></p>
-          <p>Add <span class="mono">--dividers 4</span> to the build and the box becomes a Leitner box: a card you get right moves forward and comes back less often. <a href="leitner.html">How the method works</a>.</p>
-          <p class="print__box-note">Sized for a deck printed at the <span class="mono">a8</span> grid with the default margin — cards 71.75 × 50 mm, inner box 73 × 24 × 52 mm. An <span class="mono">a7</span> card is 100 mm wide and will not go in, and neither will an <span class="mono">a8</span> deck printed at <span class="mono">--margin 0</span>.</p>
-        </div>
       </div>
+    </div>
+    <!--
+      The href is relative because pages.yml copies the PDF next to this
+      file in _site. It resolves on the deployed site and is dead when this
+      file is opened straight out of docs/ — the two are not siblings in the
+      repository. check_docs.py link-checks markdown only, so nothing else
+      records that.
+    -->
+    <div class="print__box">
+      <h3>and something to keep them in</h3>
+      <p>A box, from one more sheet. Print it on 160–250 gsm card stock at 100 %, check the printed ruler before you cut, fold the dashed lines and glue the grey tabs. It holds about 90 cards.</p>
+      <p><a href="card-box.pdf">Download the card box (PDF, one A4 page)</a></p>
+      <p>Add <span class="mono">--dividers 4</span> to the build and the box becomes a Leitner box: a card you get right moves forward and comes back less often. <a href="leitner.html">How the method works</a>.</p>
+      <p class="print__box-note">Sized for a deck printed at the <span class="mono">a8</span> grid with the default margin — cards 71.75 × 50 mm, inner box 73 × 24 × 52 mm. An <span class="mono">a7</span> card is 100 mm wide and will not go in, and neither will an <span class="mono">a8</span> deck printed at <span class="mono">--margin 0</span>.</p>
     </div>
   </section>
 

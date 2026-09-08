@@ -441,17 +441,16 @@ def test_both_card_faces_stand_and_no_control_hides_one():
     which drops the script count to zero — with no script on the page, `hidden`
     can only arrive the way this assertion checks.
     """
-    cards = one(tree(), cls="anatomy__cards")
-    hidden = [
-        node.tag for node in find(cards) if "hidden" in node.attrs
-    ]
+    root = tree()
+    cards = one(root, cls="anatomy__cards")
+    hidden = [node.tag for node in find(cards) if "hidden" in node.attrs]
     assert not hidden, (
         f"these elements in the card column carry `hidden`: {hidden}. Both faces "
         "have to stand — the explanations beside them name parts that differ "
         "between front and back"
     )
 
-    toggles = find(tree(), cls="toggle")
+    toggles = find(root, cls="toggle")
     assert not toggles, (
         f"the page still declares {len(toggles)} toggle control(s). The button and "
         "the script that drove it go together; one without the other is either a "
@@ -468,9 +467,13 @@ def test_the_card_box_is_not_buried_in_the_printing_rules():
     full-width sibling. US2 of feature 002 did it for the section notes; this
     does it for the card box, which had grown to 410 px inside a 420 px column.
     """
-    columns = one(tree(), cls="print")  # the two-column flex row
+    # One parse, passed around. Two `tree()` calls build two independent object
+    # graphs, and `in ancestors(...)` compares by identity — the assertion would
+    # then fail against a node that is structurally the same element.
+    root = tree()
+    columns = one(root, cls="print")  # the two-column flex row
     rules = one(columns, cls="print__rules")
-    boxes = find(tree(), cls="print__box")
+    boxes = find(root, cls="print__box")
     assert boxes, "the printing section no longer has a card box block at all"
     for box in boxes:
         assert rules not in ancestors(box), (
@@ -494,8 +497,9 @@ def test_the_cutting_diagram_sits_with_the_sheets_it_draws():
     settings — and moving it is what takes the sheets column from 327 px of
     content in a 1176 px column to 547 px in 627 px.
     """
-    sheets = one(tree(), cls="print__sheets")
-    cuts = find(tree(), cls="print__cut")
+    root = tree()  # one parse — see the note in A12 about identity comparison
+    sheets = one(root, cls="print__sheets")
+    cuts = find(root, cls="print__cut")
     assert cuts, "the cutting diagram is gone from the page entirely"
     for cut in cuts:
         assert sheets in ancestors(cut), (
@@ -692,6 +696,24 @@ def test_the_pages_workflow_assembles_every_relative_link():
         )
 
 
+def element_source(source, opening):
+    """The full text of one `<div>`, matched by nesting depth.
+
+    A regex cannot do this: `.*?</div>` stops at the first close, and padding
+    the pattern with however many `</div>`s the element happens to sit inside
+    encodes its *position in the tree* into a helper that claims to return the
+    element. Feature 012 moved one such block up a level and that is exactly how
+    the old pattern broke.
+    """
+    start = source.index(opening)
+    depth = 0
+    for match in re.finditer(r"<(/?)div\b[^>]*>", source[start:]):
+        depth += 1 if match.group(1) == "" else -1
+        if depth == 0:
+            return source[start : start + match.end()]
+    raise AssertionError(f"unbalanced <div> nesting from {opening!r}")
+
+
 def box_block():
     """The download block itself, not the section around it.
 
@@ -699,9 +721,12 @@ def box_block():
     unrelated reasons, so asserting against the whole section passes before the
     caption is written and proves nothing.
     """
-    match = re.search(r'<div class="print__box">.*?</div>\s*</div>', print_section(), re.DOTALL)
-    assert match, 'docs/index.html has no <div class="print__box"> holding the download'
-    return match.group(0)
+    section = print_section()
+    opening = '<div class="print__box">'
+    assert opening in section, (
+        'docs/index.html has no <div class="print__box"> inside <section id="print">'
+    )
+    return element_source(section, opening)
 
 
 def prose():

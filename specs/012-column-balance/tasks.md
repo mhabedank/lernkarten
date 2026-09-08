@@ -44,7 +44,7 @@ This feature touches four files, three of them documentation:
 **Purpose**: know the numbers before touching anything, so "better" can be
 demonstrated rather than asserted.
 
-- [ ] T001 Record the baseline. Measure both sections in a browser against the
+- [X] T001 Record the baseline. Measure both sections in a browser against the
       current `docs/index.html` and write the figures into the pull request
       description: section 02 is 269 px of content in a 644 px cell, section 03
       is 327 px in 1176 px. Re-derive them rather than copying from
@@ -84,7 +84,7 @@ picture matches its prose.
 
 ### 🔴 Red — the tests, before any implementation
 
-- [ ] T002 🔴 [US1] Assertion **A11** in `tests/test_landing_page.py`: no element
+- [X] T002 🔴 [US1] Assertion **A11** in `tests/test_landing_page.py`: no element
       inside `.anatomy__cards` carries a `hidden` attribute, **and** the page
       declares no element with class `toggle`. Red today on both halves — the
       script gives `#card-back` `hidden` on load and `button.toggle#flip` sits in
@@ -92,7 +92,7 @@ picture matches its prose.
       while the script still sets `hidden` leaves one card and no way back;
       deleting the script while the button stays leaves a dead control. Either
       half alone passes a half-done removal *(FR-001, FR-002)*
-- [ ] T003 🔴 [US1] Restate **A14** in `test_the_page_stays_one_self_contained_file`:
+- [X] T003 🔴 [US1] Restate **A14** in `test_the_page_stays_one_self_contained_file`:
       **at most one** `<script>` block, not exactly one. Green today at one and
       green after at zero. Do **not** weaken it to "any number" — the rule it
       defends is "one self-contained file with almost no script", and a page that
@@ -105,19 +105,19 @@ green-but-restated. Commit here.
 
 ### 🟢 Green — `docs/index.html`
 
-- [ ] T004 [US1] Delete `button.toggle#flip` from the `02` band at
+- [X] T004 [US1] Delete `button.toggle#flip` from the `02` band at
       `docs/index.html:573`, leaving `.band__no` and the `<h2>` as the band's two
       children (the tree in [data-model.md](data-model.md#section-02--one-card-one-idea))
-- [ ] T005 [US1] Delete the entire `<script>` block. The page now has zero. Its
+- [X] T005 [US1] Delete the entire `<script>` block. The page now has zero. Its
       comment — *"The one piece of behaviour on the page"* — goes with it; there
       is no behaviour left to describe *(FR-002)*
-- [ ] T006 [US1] Delete the `.toggle` base rule and its `@media (max-width: 1080px)`
+- [X] T006 [US1] Delete the `.toggle` base rule and its `@media (max-width: 1080px)`
       override. Then delete `.band { flex-wrap: wrap }` and
       `.band h2 { flex-basis: calc(100% - 72px) }` from that same block — the
       comment above them says *"Only section 02 still has a child that needs
       this"*, and the toggle **is** that child ([research.md R5](research.md#r5--what-else-does-the-toggle-take-with-it)).
       Delete the comment with the rules it explains
-- [ ] T007 [US1] **Keep** the `[hidden]` reset and adjust the comment beside it at
+- [X] T007 [US1] **Keep** the `[hidden]` reset and adjust the comment beside it at
       `docs/index.html:44`, which currently explains the toggle. It stays as a
       *reset* against a class of bug — an author `display` outranking the
       user-agent rule — not as the toggle's fix. Deleting it with its one caller
@@ -140,13 +140,13 @@ leaves a printing section with no hole in it.
 
 ### 🔴 Red — the tests, before any implementation
 
-- [ ] T008 🔴 [US2] Assertion **A12** in `tests/test_landing_page.py`:
+- [X] T008 🔴 [US2] Assertion **A12** in `tests/test_landing_page.py`:
       `.print__box` is not a descendant of `.print__rules`, and is a following
       sibling of `.print`. Red today — it is the last child of `.print__rules`.
       Write it in the idiom of `test_no_band_note_is_a_child_of_its_band` and
       `test_every_band_note_follows_its_band`, which assert the same shape for
       the move this one copies *(FR-003)*
-- [ ] T009 🔴 [US2] Assertion **A13** in `tests/test_landing_page.py`:
+- [X] T009 🔴 [US2] Assertion **A13** in `tests/test_landing_page.py`:
       `.print__cut` is a descendant of `.print__sheets`. Red today — it is a
       child of `.print__rules`. **Not parallel with T008**: same file *(FR-004)*
 
@@ -154,26 +154,26 @@ leaves a printing section with no hole in it.
 
 ### 🟢 Green — `docs/index.html`
 
-- [ ] T010 [US2] Move `.print__cut` from `.print__rules` into `.print__sheets`,
+- [X] T010 [US2] Move `.print__cut` from `.print__rules` into `.print__sheets`,
       as its third child, after the two `.sheet` blocks
-- [ ] T011 [US2] Adjust the `.print__cut` rule for its new home: drop `flex: 1`
+- [X] T011 [US2] Adjust the `.print__cut` rule for its new home: drop `flex: 1`
       and `justify-content: center` — both written for its old life as filler at
       the bottom of a text column — and drop the padding that now duplicates the
       40 px `.print__sheets` already applies ([research.md R2](research.md#r2--where-does-the-cutting-diagram-go-and-what-does-it-cost)).
       Same file as T010, so **not** parallel with it
-- [ ] T012 [US2] Move the whole `.print__box` block out of `.print__rules` to
+- [X] T012 [US2] Move the whole `.print__box` block out of `.print__rules` to
       become a sibling of `.print`, inside `#print`. It moves **as one unit**:
       heading, `card-box.pdf` link, the `--dividers 4` paragraph with its
       `leitner.html` link, and the `.print__box-note` caption. **The HTML comment
       above it moves with it** — it records why the href is relative and dead
       when opened off disk, and it is the only place that is written down *(FR-005)*
-- [ ] T013 [US2] Get the rules right at the new boundaries: `.print__box` keeps
+- [X] T013 [US2] Get the rules right at the new boundaries: `.print__box` keeps
       its `border-top` and must **not** gain a `border-bottom` — `#print` already
       carries one inline, and a second doubles it. Check the table in
       [data-model.md](data-model.md#the-rules-between-the-blocks); this is the
       detail [research.md R1](research.md#r1--how-does-a-block-leave-a-column-and-become-full-width)
       names as most likely to be got wrong *(FR-006)*. T008 and T009 go green
-- [ ] T014 [US2] Check the narrow widths rather than assuming them: below 1080 px
+- [X] T014 [US2] Check the narrow widths rather than assuming them: below 1080 px
       the box was already full width via `.print__rules { width: 100% }`, and
       below 760 px the diagram inherits `.print__sheets { min-width: 0 }`, which
       is what stops that column holding the page open at 320 px
