@@ -74,6 +74,32 @@ earlier**, and say so rather than overwriting it silently.
 - Q: Which success criteria are actually measurable, and does SC-001 still claim three platforms? (SC-001, FR-034, SC-002, SC-004, SC-005, SC-013) → A: **Three platforms — SC-001 stands and FR-034 widens to match it.** *(This widens FR-034, written earlier the same day as Windows-only. The reasoning that made Windows the minimum still holds; it was the minimum, not the target.)* `CONTRIBUTING.md` promises all three platforms work from one ordinary command, and this feature introduces two OS-sensitive points of its own — the path transform in `conf.py` and `{include}` resolution — plus text encoding, which is the same class of problem that already excluded symlinks. A portability claim nothing exercises is a claim rather than a property. On the rest: criteria a command can decide keep their present form; **SC-005** ("unweakened" is a judgement about a diff, not something a command reports) and **SC-013** (a property of the process, not of an artifact) become **numbered manual rows in `docs/testing.md`** — the mechanism constitution XI provides and SC-008 already uses. SC-002 gains a stated method, and SC-004 names its comparison explicitly: **byte-identical HTML output, excluding `.doctrees/` and `.buildinfo`**, because a naive whole-directory compare fails for reasons that have nothing to do with determinism.
 - Q: After migration, does `README.md` still send a reader to raw Markdown in the repository? (FR-042) → A: **No — all three references point at the published site.** `README.md` links `docs/workflow.md` (line 79), `docs/design.md` (274) and `docs/testing.md` (288) as repository paths; after migration each is also a published page, and the premise of this whole feature is that a newcomer should not have to know which half of the project a document lives in. The narrower alternative — retarget the two user-facing links and leave the contributor one — was rejected: it reintroduces the split it is meant to remove, one link deep. **Verified against `tests/test_repo_hygiene.py` before deciding**: `test_the_readme_still_names_the_landing_page_source` pins `](docs/index.html)` inside `## The design`, which is a *different* link from `](docs/design.md)` in the same section, so retargeting does not break it and no test is changed. The accepted cost: `check_docs.check_links` skips `http` targets, so those three links leave its file-system coverage — but `REQUIRED_FILES` still requires all three files to exist, so deleting one is still caught.
 
+### Amendments made during planning
+
+Planning built the thing rather than reasoning about it, and two requirements
+turned out to be wrong against the repository. They are **amended in place, with
+the original wording quoted in the amendment note**, so the change is visible
+rather than silent — the same treatment the third clarification session gave to
+FR-034 and FR-035.
+
+| Requirement | Was | Is | Why |
+|---|---|---|---|
+| **FR-031** | "Four links … MUST be retargeted **by hand**", with `../index.html` and `../card-box.pdf` as the fixes | all four are resolved **at build time** by FR-029's transform; no source file is edited, and the values are `../../index.html` and `../../card-box.pdf`, derived from the page's depth | the hand-edit makes both links dead **on the file system**, so `check_docs.check_links` — gate #4 — goes red on the commit that makes it (FR-024, SC-011). `../` was also only correct for a flat site. Measured; see `plan.md` C1 and C2 |
+| **FR-029** | the ~30-line ceiling, with an unconditional fallback to hard-coded GitHub URLs | the ceiling is **superseded**, and the fallback is not taken | the FR-029 lookup itself measures ~22 lines, inside the ceiling. The shipped module is ~42 because building it found two failure modes the requirement did not know about (`plan.md` C3, C4), and the fallback fixes neither while dropping 22 links out of `check_docs` coverage, which SC-005 forbids |
+
+Two further findings changed no requirement but qualify one each, and are
+recorded so they are not rediscovered:
+
+- **FR-037**'s prescribed spelling (`[design.md](../docs/design.md)` from a
+  `docsite/` page) is a build failure as written — MyST strips the `.md` and
+  resolves a docname that does not exist. The spelling is kept, because it is
+  what keeps the page inside `check_docs.check_links`; the transform is what
+  makes it work (`plan.md` C3).
+- **FR-014**'s `docs/` link is a *directory*, so over `file://` a browser shows a
+  listing rather than following it. The deployed behaviour is correct and FR-014
+  is unchanged; the local preview of FR-038 covers everything except that one
+  hop, which needs a served `_site`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - All the documentation is in one navigable place (Priority: P1)
@@ -412,6 +438,22 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
     than roughly 30 lines, it is abandoned in favour of hard-coded absolute
     GitHub URLs in the sources, and the resulting loss of `check_docs` coverage
     is recorded as an accepted cost in `plan.md` rather than discovered later.
+
+    **Superseded in planning — the fallback is not taken, and this records why**
+    *(amendment of 2026-09-08, see [Amendments made during planning](#amendments-made-during-planning))*.
+    The transform was built and measured. The part FR-029 actually describes is
+    **~22 lines of logic — inside the ceiling**. The module that ships is ~42,
+    because building it found two failure modes this requirement did not know
+    about: a `docsite/` page linking a repository Markdown file resolves as a
+    **docname** and renders as no link at all (`plan.md` C3), and a relative link
+    to `docs/leitner.html` becomes a **download**, duplicating the file at a
+    second URL against FR-010 and SC-012 (`plan.md` C4). The ceiling was not
+    measuring either of them, and **the fallback would not fix either**:
+    hard-coding URLs in the sources leaves both bugs standing *and* drops 22
+    links out of `check_docs.check_links`, which SC-005 forbids. So the ceiling
+    is superseded rather than met, deliberately and here rather than at review.
+    It still binds what it was written to bind: if the FR-029 lookup itself ever
+    grows past ~30 lines, the fallback is back on the table.
 - **FR-030**: A file a page **renders** rather than links — today
   `assets/pipeline.png` in `docs/workflow.md` and `assets/example-cards.png` in
   `docs/design.md` — MUST be copied into the built site so the image appears. It
@@ -433,15 +475,32 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   appear. FR-030 requires them to appear; this names the mechanism that makes it
   true.
 - **FR-031**: Four links in the migrated documents point at things served at the
-  **site root**, not at repository files, and MUST be retargeted by hand. They
-  are enumerated here so none is missed:
+  **site root**, not at repository files. They are enumerated here so none is
+  missed, and **every one of them is resolved at build time by FR-029's
+  transform — no source file is edited.**
 
-  | File | Link | Problem | Fix |
+  *(Amended 2026-09-08. This requirement said "MUST be retargeted by hand" and
+  gave `../index.html` and `../card-box.pdf` as the fixes. Both were wrong, and
+  the reason is worth keeping: `check_docs.check_links` resolves a relative
+  target against the file system from the file's own directory, so
+  `../index.html` written into `docs/design.md` points at `<repo>/index.html`,
+  which does not exist — the hand-edit would turn gate #4 red on the commit that
+  made it, against FR-024 and SC-011. The values were also wrong: `../` is
+  correct only for a flat site, and under FR-007's two areas the page sits at
+  `/docs/contributing/design.html`. The Fix column below now gives what the
+  build **renders**; the source keeps the path it has today. See
+  [Amendments made during planning](#amendments-made-during-planning).)*
+
+  | File | Link (unchanged in the source) | Problem | Rendered as |
   |---|---|---|---|
-  | `docs/design.md` | `index.html` | From inside `/docs/` this resolves to `/docs/index.html`, not to the landing page at the root | `../index.html` |
-  | `docs/design.md` | `../assets/card-box.pdf` | The box is published at the site root as `card-box.pdf`; FR-029 would send the reader to GitHub instead of to the download the landing page offers | `../card-box.pdf` |
+  | `docs/design.md` | `index.html` | From inside `/docs/` this resolves to `/docs/index.html`, not to the landing page at the root | `../../index.html` — depth-derived, via FR-029's site-root table |
+  | `docs/design.md` | `../assets/card-box.pdf` | The box is published at the site root as `card-box.pdf`; a GitHub URL would send the reader away from the download the landing page offers | `../../card-box.pdf` — same table |
   | `docs/workflow.md` | `../README.md#install` | `README.md` is not a site page, and the anchor is a section of it | an absolute GitHub URL, via FR-029 — recorded here because the anchor must survive the rewrite |
   | `docs/workflow.md` | `../CLAUDE.md` (also in `CONTRIBUTING.md`) | Not a site page in 012; a reader following it from the site gets nothing | an absolute GitHub URL, via FR-029 |
+
+  The first two rows are the **site-root** case and the last two the **GitHub**
+  case; both are branches of the one transform, so "retargeting" is a build-time
+  behaviour with a test (FR-029), never an instruction to edit a document.
 
   No migrated document links `leitner.html`, so FR-032's single-URL rule has no
   existing link to break.

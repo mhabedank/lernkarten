@@ -92,8 +92,21 @@ For a link written in file *S* with target *T*:
 
 ## 7 — The assembled `_site`
 
-Identical locally (`python3 scripts/build_docs.py`) and on GitHub Pages
+The same tree locally (`python3 scripts/build_docs.py`) and on GitHub Pages
 (`pages.yml`), which is what makes the local build a preview (FR-038).
+
+**Who writes what** — the three root files are written **twice on CI, on
+purpose**: `pages.yml` keeps its `cp` lines (two existing tests read them as
+text, and CI never executes the workflow) and `build_docs.py` performs the same
+copies (so the local build is a real preview). Both write identical bytes and
+both are idempotent. Stated in full in
+[plan.md § The `_site` assembly](../plan.md#the-_site-assembly-stated-once);
+this contract does not restate the reasoning.
+
+| Path | `pages.yml` | `build_docs.py` |
+|---|---|---|
+| `index.html`, `leitner.html`, `card-box.pdf`, `.nojekyll` | yes (`cp`/`touch`) | yes (`shutil.copy2`/`touch`) |
+| `docs/**` | no | yes (Sphinx) |
 
 ```text
 _site/

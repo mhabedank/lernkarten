@@ -76,6 +76,7 @@ An existing repository file published unchanged.
 | Instances | the local `_site` (`scripts/build_docs.py`) and the deployed `_site` (`pages.yml`) |
 | Invariant | **the same shape**, which is what makes the local build a preview (FR-038) |
 | Layout | see [contracts/docsite-layout.md § 7](contracts/docsite-layout.md) |
+| Written by | the three root files are written **by both** on CI — `pages.yml`'s `cp` lines (which two existing tests read as text) and `build_docs.py`'s copies (which make the local build real). Idempotent, identical bytes; see [plan.md § The `_site` assembly](plan.md#the-_site-assembly-stated-once) |
 | Assertion | every relative link in `docs/index.html` is present in `_site`, by a `cp` or by the documentation build (FR-016) |
 
 ## State transitions

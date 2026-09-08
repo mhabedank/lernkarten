@@ -73,7 +73,8 @@ paths (all three measured). The site loads no third-party sub-resource
 (SC-014).
 
 **Scale/Scope**: five migrated documents, ~10 new source files under `docsite/`,
-one new `scripts/` module, one new workflow job, three new manual checklist rows.
+one new `scripts/` module, one new workflow job, 24 test rows (20 red-first, 4
+guards) and three new manual checklist rows.
 
 ## Dependency Decisions
 
@@ -162,7 +163,7 @@ and report.
 | VIII | No binaries committed | **yes** — the fonts are already committed and already named in Principle VIII. The build **copies** them; it converts nothing, so no new binary appears (this is why `woff2` was rejected — see research R4) |
 | IX | Sources edited, never generated files | **yes** — `docsite/_build/` and `_site/` go into `.gitignore` (FR-022) |
 | X | Skill frontmatter valid | **yes** — no skill changes in 012 |
-| XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — the red-first order is in [Phase 1](#phase-1-design). Three requirements that no test can reach get **numbered manual rows 44–46** in `docs/testing.md` (FR-025), and no more than three |
+| XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — 24 rows in [Phase 1](#phase-1-design), of which 20 are red-first and 4 are guards, each labelled and justified in [Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied). Requirements no test can reach get **numbered manual rows 44–46** (FR-025), and no more than three |
 | XII | The four gates pass; ruff not loosened | **yes** — and no fifth gate (FR-024). Gate #1's *scope* widens to `docsite/`, which was measured and costs one line-length fix |
 | XIII | English throughout | **yes** |
 | XIV | Branch `docs/skill-reference`; `main` untouched | **yes** |
@@ -190,6 +191,18 @@ Full evidence in [research.md](research.md#findings-that-contradict-the-spec).
 | **C2** | FR-031: the value is `../index.html` | Correct only for a flat `docsite/`. Under FR-007's two areas the page is at `/docs/contributing/design.html` and needs `../../index.html` | The transform computes `"../" * (docname.count("/") + 1)`. Same destination, one line |
 | **C3** | FR-037: a `docsite/` page writes `[design.md](../docs/design.md)` | MyST strips `.md`, resolves it as a **docname**, finds nothing, warns (fatal under `-W`) and renders **no link at all** | The transform gains a branch for `refdomain == "doc"` targets absent from `env.all_docs`: put the suffix back, run the same lookup. FR-037's spelling then works and its intent (visible to `check_links`) is preserved |
 | **C4** | FR-032: a wrapper page links out to `leitner.html` | Written as a relative path it becomes a MyST **download**: Sphinx copies the file to `_downloads/<hash>/leitner.html`, a **second URL** with a `download=""` attribute. Violates FR-010 and SC-012 | The transform also handles `download_reference`, on `doctree-read` at `priority=100` — ahead of Sphinx's `DownloadFileCollector` (500). Measured: `_downloads/` disappears; the link renders `../../leitner.html` |
+
+**Two of these are now closed in `spec.md`, not only here.** A finding recorded
+in a plan is a finding a later reader implements *around*; FR-031 still read as
+an instruction to edit two files, and FR-029's fallback clause still read as
+unconditional. Both are amended in place, with the original wording quoted, under
+[spec.md § Amendments made during planning](spec.md#amendments-made-during-planning):
+FR-031 now describes the build-time behaviour and gives the rendered values
+(`../../index.html`, `../../card-box.pdf`), and FR-029 records its ceiling as
+**superseded**, with the reason — the FR-029 lookup itself is ~22 lines and
+inside the ceiling; the extra twenty are C3 and C4, which the fallback would not
+fix while costing 22 links of `check_docs` coverage that SC-005 forbids losing.
+The ceiling still binds what it was written to bind.
 
 One caveat that contradicts nothing but qualifies a claim: FR-014's `docs/` link
 is a **directory**, and over `file://` a browser shows a listing rather than
@@ -263,7 +276,8 @@ tests/
 ├── test_build_docs.py           # NEW  — the build, the toctree, the transform
 ├── test_docsite_layout.py       # NEW  — assembly, gitignore, requirements, extension purity
 ├── test_check_docs.py           # EDIT — markdown_files() covers docsite/ (FR-037)
-└── test_landing_page.py         # EDIT — one test adapted, never weakened (FR-016)
+├── test_landing_page.py         # EDIT — one test adapted (FR-016); paths: rows (FR-017)
+└── test_repo_hygiene.py         # EDIT — the pre-PR gate count (SC-010), Principle V (FR-039)
 ```
 
 **Structure Decision**. `docsite/` is a new top level because FR-028 settled it
@@ -484,6 +498,10 @@ planning is resolved there with a measurement:
 `_site`. FR-019's "single command with no arguments" is about the default, and
 the default takes none.
 
+**Step 3 is idempotent by construction** — `shutil.copy2` of bytes that are
+already there — which is what lets `pages.yml` keep its own `cp` lines. See
+[The `_site` assembly, stated once](#the-_site-assembly-stated-once).
+
 **Import graph**: `build_docs` imports `argparse`, `pathlib`, `shutil`,
 `subprocess`/`sphinx.cmd.build` — **no local module**. It joins Principle VI's
 leaves line: `build_docs, deps, engine, leitner ← leaves, import nothing local`.
@@ -535,26 +553,111 @@ Both tables are in [contracts/docsite-layout.md](contracts/docsite-layout.md).
 
 One `docsite/_static/lernkarten.css`, registered with `html_css_files`. See
 [The theme work](#the-theme-work-fr-027-fr-035-fr-036) for the selector list and
-the size. The fonts are copied out of `assets/fonts/` by `html_static_path` and
+the size. It is **not** written green-first: **red row 21** asserts that the
+override actually lands — three font-family variable names and the blanket
+flattening rule, deliberately not a selector list, because a list would go stale
+and become somewhere to put the next violation. What a test cannot judge — whether
+the result *reads* as the same system, and whether raising two sizes reflows
+anything at 375 px — stays on manual row 44. The fonts are copied out of `assets/fonts/` by `html_static_path` and
 declared with `@font-face … format("truetype")`, with `font-weight: 100 900` on
 the two variable faces.
 
+### Relative internal links (FR-018)
+
+**`html_baseurl` is left unset, deliberately, and `conf.py` carries a comment
+saying so.** Sphinx's HTML builder emits document-relative URIs by default, so
+FR-018 holds — but it holds by the *absence* of a line, which is the kind of
+property that regresses when somebody later adds `html_baseurl` for a sitemap or
+an Open Graph tag. Two things make it a decision rather than an accident:
+
+- the comment in `conf.py`, naming FR-018 and the sub-path;
+- an assertion folded into **red row 13**, which already walks `_site/docs` for
+  URL shapes: no `href`/`src` starts with `/`, and none contains
+  `mhabedank.github.io`. Root-anchored and absolute-site URLs are the two ways
+  this breaks, and both are one grep.
+
 ### `scripts/check_docs.py` (FR-037)
 
-`markdown_files()` gains `sorted((ROOT / "docsite").rglob("*.md"))`. Consequences,
-all of which hold under the layout above: `check_links` then walks the `docsite/`
-pages (fenced `{toctree}` and `{include}` blocks are already stripped by
-`CODEBLOCK`, so only prose links are read), and all five drift gates start
-reading them through `gated_files()`.
+`markdown_files()` gains `sorted((ROOT / "docsite").rglob("*.md"))`. Three
+consequences, all of which hold under the layout above:
+
+- **`check_links`** walks the `docsite/` pages. Fenced `{toctree}` and
+  `{include}` blocks are stripped by `CODEBLOCK` before targets are read, so an
+  include-only page contributes no links, and the wrapper page's
+  `../../docs/leitner.html` resolves on the file system.
+- **The five drift gates** start reading them, by **two different routes** —
+  worth naming so an implementer does not look for one: `check_a7_is_not_the_default`,
+  `check_cut_count` and `check_borderless_size` go through `gated_files()`, while
+  `check_sheet_capacity` (line 577) and `check_print_order` (line 597) call
+  `markdown_files()` **directly** and do not strip code blocks. The outcome is the
+  same for 012's pages, which carry no grid or capacity claim; the mechanism is
+  not, and 014's pages will be full of exactly those claims.
+- **`check_leitner_intervals` is unaffected.** It reads `LEITNER_PAGE`
+  (`scripts/check_docs.py:252`) directly — a single hard-coded path — and never
+  goes through `markdown_files()`. Widening the glob cannot reach it, cannot
+  dilute it and cannot turn it into a no-op, which is what FR-011 protects.
+  `docs/leitner.html` does not move, so `tests/test_check_docs.py`'s existence
+  assertion is untouched as well. Stated because "nothing changed" is a claim,
+  and the whole point of FR-011 is that it should not be left as one.
+
+### The `_site` assembly, stated once
+
+*This section exists because an earlier draft of this plan specified the assembly
+in two places and the two disagreed. It is now stated **here only**; every other
+section points at it.*
+
+**Decision: `pages.yml` keeps all three `cp` lines it has today, and
+`build_docs.py` performs the same three copies. The duplication is deliberate.**
+
+| | `pages.yml` | `scripts/build_docs.py` |
+|---|---|---|
+| `docs/index.html` → `_site/index.html` | `cp` line | `shutil.copy2` |
+| `docs/leitner.html` → `_site/leitner.html` | `cp` line | `shutil.copy2` |
+| `assets/card-box.pdf` → `_site/card-box.pdf` | `cp` line | `shutil.copy2` |
+| `_site/.nojekyll` | `touch` | `Path.touch()` |
+| `_site/docs/` | — | Sphinx |
+
+Why both, rather than letting the script do it alone:
+
+- **Two existing tests read the `cp` lines as text, and SC-005 forbids weakening
+  either.** `test_the_pages_workflow_assembles_every_relative_link`
+  (`tests/test_landing_page.py:562`) requires a literal
+  `^\s*cp\s+\S*<ref>\s+\S*_site/` for every ref derived from `docs/index.html`,
+  and `test_the_pages_workflow_publishes_the_box` (line 529) requires the box's
+  line specifically — **that second test is the one an earlier draft of this plan
+  never mentioned**, and it alone would have gone red on a `cp`-free workflow.
+  CI never executes the workflow, so reading it as text is the only check there
+  is; the `cp` lines are the workflow's *declaration* of what the site contains,
+  which is exactly what PR #105 made them.
+- **The script's copies are what make the local build a preview** (FR-038).
+  Without them `python3 scripts/build_docs.py` produces a documentation tree with
+  two dead links out of it.
+- **Order does not matter and neither does duplication**: both write identical
+  bytes, and `cp`/`copy2` are idempotent. `pages.yml` runs the `cp` block first
+  (unchanged from today), then the build.
+
+The rejected alternative was a `--docs-only` flag so the workflow assembles and
+the script does not. It costs a second assembly code path, and the two would be
+free to drift — which is the one thing FR-038's "the local build is a preview"
+must not allow.
 
 ### `.github/workflows/pages.yml` (FR-015, FR-017, FR-033)
 
-Rebuilt: install `requirements-docs.txt`, run `python3 scripts/build_docs.py
---site _site`, upload. **All-or-nothing** falls out of the shape — one job, and a
-failing build fails the job before `upload-pages-artifact` runs, so nothing is
-published (FR-033). `paths:` gains `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`,
+Rebuilt to four steps, in this order:
+
+1. `checkout`;
+2. **the existing assembly block, unchanged** — `mkdir -p _site`, the three `cp`
+   lines, `touch _site/.nojekyll`;
+3. install `requirements-docs.txt`, then `python3 scripts/build_docs.py --site _site`;
+4. `configure-pages` → `upload-pages-artifact` → `deploy-pages`.
+
+**All-or-nothing** falls out of the shape — one job, and a failing build fails it
+before `upload-pages-artifact` runs, so nothing is published (FR-033).
+
+`paths:` gains seven entries — `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`,
 `requirements-docs.txt`, `assets/pipeline.png`, `assets/example-cards.png`,
-`scripts/build_docs.py`; the three existing entries stay (FR-017).
+`scripts/build_docs.py` — and the three existing entries stay (FR-017). All ten
+are asserted by red row 22.
 
 ### `.github/workflows/ci.yml` (FR-023, FR-034)
 
@@ -562,8 +665,24 @@ One new job, **id `docs-build`**, name "Documentation build". Not `docs` — tha
 id is taken by the "Skills & docs" job and reusing it is a YAML error found as a
 red run rather than at review (FR-023 says so explicitly; verified against the
 file). Matrix `[ubuntu-latest, macos-latest, windows-latest]`, Python 3.12,
-`shell: bash` like the other multi-OS jobs, installing `requirements-docs.txt`
-and running `python3 scripts/build_docs.py` (FR-034).
+`shell: bash` like the other multi-OS jobs.
+
+**It runs two commands, not one:**
+
+```yaml
+- run: python -m pip install -r requirements-dev.txt -r requirements-docs.txt
+- run: python3 scripts/build_docs.py
+- run: python -m pytest
+```
+
+The second `run` is not optional and is the point of the job. FR-023 says CI
+must have a job that installs the docs requirements **and runs those tests**; a
+job that only builds would leave red rows 5–13 skipping in every CI job and
+executing nowhere, which is not a test suite. Running the *whole* suite rather
+than just the docs module is deliberate and nearly free: it is the only leg that
+exercises the transform, `{include}` resolution and text encoding on macOS,
+which is a platform the `test` job does not cover at all. Red row 16 asserts
+both commands.
 
 ### `docs/index.html` (FR-014)
 
@@ -583,19 +702,49 @@ built = bool(re.search(r"_site/docs\b", workflow)) and ref.rstrip("/") == "docs"
 ```
 
 Verified against a draft workflow: `card-box.pdf` and `leitner.html` still match
-only through their `cp` lines; `cp docs/index.html _site/index.html` does **not**
-falsely satisfy `docs/`. The derived set is unchanged, so this is the adaptation
-FR-016 permits and not the weakening it forbids.
+through their `cp` lines, which [The `_site` assembly](#the-_site-assembly-stated-once)
+keeps in `pages.yml` for exactly this reason; and `cp docs/index.html
+_site/index.html` does **not** falsely satisfy `docs/`, because `\S*docs/`
+requires whitespace after the slash. The derived set is unchanged, so this is the
+adaptation FR-016 permits and not the weakening it forbids.
+
+**`test_the_pages_workflow_publishes_the_box` (line 529) is not touched at all.**
+It asserts `cp …assets/card-box.pdf …_site/` and the `assets/card-box.pdf`
+`paths:` entry, and both survive the rebuild unchanged. It is named here because
+an earlier draft of this plan did not name it, and a workflow written from that
+draft would have turned it red.
 
 ### Test plan first (constitution XI) — the red order
 
-Every row goes red on its **assertion**, not on an import, before the
-implementation beside it exists.
+Every **red** row goes red on its *assertion*, not on an import, before the
+implementation beside it exists. Three rows are **guards** rather than red-first
+cases, and are marked *(guard)* rather than left to be discovered — see
+[Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied) below.
+
+**Two ordering constraints bind this table, and belong in the task list rather
+than in a contributor's memory:**
+
+1. **`requirements-docs.txt` must be written and installed before rows 5–13 are
+   written.** Those rows skip when the docs requirements are absent — FR-023
+   requires that skip and SC-006 asserts it — so a contributor who writes them
+   first sees *skipped*, not red, and has not seen the red constitution XI
+   demands. Row 1 lands the manifest; `pip install -r requirements-docs.txt`
+   comes immediately after it.
+2. **The Phase 0 probes are re-run at that same point, before row 8 is written.**
+   Every number in `research.md` R2, R4 and R5 — the post-transform priorities
+   (5 against MyST's 9, `doctree-read` 100 against `DownloadFileCollector`'s
+   500), the 33-distribution closure, the three version pins, the 131/78/33
+   stylesheet counts and the byte-identical rebuild — came from a spike that
+   cannot be re-run from a checkout without Sphinx installed. They are recorded
+   as measured, which is the right place for them, but the first task after the
+   manifest lands re-runs them rather than assuming them. The three pins in
+   particular are only truly exercised by the first green `docs-build` run on all
+   three operating systems.
 
 | # | Red assertion | Goes green with |
 |---|---|---|
 | 1 | `test_the_docs_requirements_are_pinned_exactly` — `requirements-docs.txt` exists, names the three packages with `==`, one comment each | `requirements-docs.txt` |
-| 2 | `test_the_docs_requirements_are_not_a_runtime_dependency` — no name from `requirements-docs.txt` appears in `scripts/deps.py` `REQUIREMENTS`, and nothing under `bin/` or `scripts/` imports one (FR-003, FR-005) | (green by construction; a regression guard, stated as such) |
+| 2 *(guard)* | `test_the_docs_requirements_are_not_a_runtime_dependency` — no name from `requirements-docs.txt` appears in `scripts/deps.py` `REQUIREMENTS`, and nothing under `bin/` or `scripts/` imports one (FR-003, FR-005) | nothing — it guards FR-003/FR-005 against a later feature |
 | 3 | `test_the_build_directory_is_ignored` — `docsite/_build/` and `_site/` are matched by `.gitignore` (FR-022) | `.gitignore` |
 | 4 | `test_check_docs_covers_the_docsite` — `markdown_files()` contains every `docsite/**/*.md` (FR-037) | `markdown_files()` |
 | 5 | `test_the_build_exits_zero_and_writes_an_index` — skips without the docs requirements, naming `requirements-docs.txt` (FR-023, SC-006) | `scripts/build_docs.py` + `docsite/conf.py` |
@@ -605,26 +754,65 @@ implementation beside it exists.
 | 9 | `test_the_method_page_is_never_duplicated` — no `_downloads/` in the build output and no second `leitner.html` in `_site` (**C4**, FR-010, SC-012) | the `doctree-read` hook |
 | 10 | `test_a_docsite_page_may_link_a_repository_file` — FR-037's prescribed spelling renders as a link, and the build stays clean (**C3**) | the `refdomain == "doc"` branch |
 | 11 | `test_the_images_are_rendered_not_linked` — `pipeline.png` and `example-cards.png` appear as `<img>` under `_images/`, not as GitHub URLs (FR-030, FR-041) | `:relative-images:` |
-| 12 | `test_building_twice_is_byte_identical` — two builds, HTML compared, `.doctrees/` and `.buildinfo` excluded (SC-004) | (green by construction; the guard is the point) |
+| 12 *(guard)* | `test_building_twice_is_byte_identical` — two builds, HTML compared, `.doctrees/` and `.buildinfo` excluded (SC-004) | nothing — Sphinx is already deterministic; it guards a later `conf.py` line that would not be |
 | 13 | `test_the_site_loads_no_third_party_subresource` — no `<link>`/`<script>`/`<img>` with an `http(s)` URL anywhere in the output (SC-014) | the `@font-face` block |
-| 14 | `test_the_extension_imports_nothing_from_lernkarten` — `docsite/_ext/` imports no `scripts/` module (the purity rule 013 inherits) | (green by construction) |
+| 14 *(guard)* | `test_the_extension_imports_nothing_from_lernkarten` — `docsite/_ext/` imports no `scripts/` module (the purity rule 013 inherits) | nothing — it is the enforcement the spec's extraction decision promised |
 | 15 | `test_the_pages_workflow_assembles_every_relative_link` — **existing test**, red once `docs/index.html` gains `docs/` | the adaptation above + the rebuilt `pages.yml` |
-| 16 | `test_the_ci_docs_job_is_not_called_docs` — `ci.yml` has a docs-build job, its id is not `docs`, and it runs on all three OSes (FR-023, FR-034) | `ci.yml` |
+| 16 | `test_the_ci_docs_job_runs_the_docs_tests` — `ci.yml` has a docs-build job; its id is **not** `docs`; it runs on all three OSes; it installs `requirements-docs.txt`; **and it runs `pytest`** (FR-023, FR-034). The last clause is the one that matters: without it rows 5–13 execute in no CI job at all | `ci.yml` |
 | 17 | `test_the_deploy_is_all_or_nothing` — `pages.yml` uploads only after the build step, in one job (FR-033, SC-013 first half) | `pages.yml` |
 | 18 | `test_the_readme_points_at_the_published_pages` — the three `README.md` links are site URLs, **and** `](docs/index.html)` inside `## The design` is untouched (FR-042) | `README.md` |
 | 19 | `test_the_design_doc_describes_the_documentation_site` — `docs/design.md` § *The screen surfaces* has a third row naming `docsite/` (FR-036) | `docs/design.md` |
 | 20 | `python3 scripts/check_docs.py` — red until Principle VI lists `build_docs` (FR-039). **This one is a gate, not a pytest case**, and it is the reason the constitution amendment is a named task rather than an afterthought | the constitution amendment |
+| 21 | `test_the_theme_override_lands` — the built `_static/lernkarten.css` sets `--pst-font-family-base`, `--bs-font-sans-serif` and `--bs-font-monospace`, and carries the blanket `border-radius: 0` / `box-shadow: none` rule (FR-027). **Not a selector list** — three variable names and one rule, chosen because the measurement that produced them is exactly what regresses silently: overriding only the three `--pst-` variables leaves `body` on the system stack | `docsite/_static/lernkarten.css` |
+| 22 | `test_the_pages_workflow_triggers_on_every_input` — all ten `paths:` entries are present (FR-017), one assertion per entry, following the pattern already at `tests/test_landing_page.py:539` | `pages.yml` |
+| 23 | `test_principle_v_names_the_documentation_directory` — Principle V's table has a `docsite/` row and its `docs/` row names `leitner.html` (FR-039, the half nothing enforces) | the constitution amendment |
+| 24 *(guard)* | `test_the_pre_pr_gates_have_not_grown` — the **first** fenced `bash` block under `CONTRIBUTING.md` § *Before the pull request* still holds exactly **five** command lines (`ruff check .`, `ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`) — five lines for what the project calls four gates, because `ruff` runs twice. SC-010's second half, and FR-024's "no fifth gate". Lives in `tests/test_repo_hygiene.py`, beside the other "the repository still says what it says" assertions. **Scoped to the first block**: the section carries a second one (`make_testdata.py`, `LERNKARTEN_E2E=1 pytest`) which is not a pre-PR gate | nothing — the only thing standing between FR-024 and a future feature quietly adding a sixth line |
 
 ### The three manual rows (FR-025, constitution XI)
 
 `docs/testing.md`'s checklist reaches 43 today (the Leitner dividers). This
-feature adds **44, 45 and 46 — and no more**, each named where it is claimed:
+feature adds **44, 45 and 46 — and no more**, each named where it is claimed.
+FR-025's cap is a real constraint and it is respected: **SC-007 was given a home
+inside row 46 rather than a fourth row of its own**, because the two are the same
+post-merge moment and rows 33 and 34 already establish that shape — row 33 is
+read on github.com and row 34 on the deployed site, neither in a checkout.
+SC-010's second half got the opposite treatment: it turned out to be assertable
+(red row 24) and so it gets a test instead of a row.
 
 | # | Verifies | Why no test can |
 |---|---|---|
 | 44 | **SC-008 / FR-035** — at 375 px every page reads without horizontal scrolling and no Archivo prose renders below 15 px | `test_reading_text_is_never_below_the_screen_floor` reads one hand-written file's `<style>` blocks; it cannot reach a theme's compiled stylesheet |
 | 45 | **SC-005** — the reviewer reads the diff of `tests/test_landing_page.py` and `scripts/check_docs.py` and confirms no assertion deleted, no target dropped from a derived set, no condition relaxed | "unweakened" is a judgement about a diff; no command reports it |
-| 46 | **SC-013** — the documentation build ran on the pull request that introduced the change | a property of the process, not of an artifact |
+| 46 | **SC-013 and SC-007** — the documentation build ran on the pull request that introduced the change; then, after the merge, walk `https://mhabedank.github.io/lernkarten/`: the landing page is the repository copy, its `docs/` link reaches the documentation in one click, `/leitner.html` serves the method page and no copy of it exists under `/docs/` | both are properties of a *process and a deployment*, not of an artifact in the checkout. Quickstart § 11 is the script for the second half |
+
+### Guards, and how XI is satisfied
+
+Constitution XI is not waivable, so the plan says plainly which rows are red-first
+and which are not rather than letting "(green by construction)" pass as an answer.
+
+**Red-first — 20 rows**: 1, 3–11, 13, 15–23. Each is written first, run, and
+seen failing on its assertion.
+
+**Guards — rows 2, 12, 14 and 24.** They are green the moment they are written,
+because there is no behaviour to satisfy: each states an invariant that already
+holds and that a *later* change could break. That is an established and
+documented shape in this repository, not an improvisation —
+`tests/test_landing_page.py::test_the_page_stays_one_self_contained_file` says so
+in its own docstring ("Unlike the seven assertions above this one was never red,
+and it could not be without breaking the page on purpose"). XI asks for red on
+every *behaviour*; a guard asserts the absence of a behaviour, and there is
+nothing to make red without first writing the defect.
+
+Row 12 is the one worth naming individually, because it is not quite the same
+shape: `test_building_twice_is_byte_identical` cannot even be **collected** before
+`scripts/build_docs.py` exists, so writing it first produces an *error*, which XI
+explicitly refuses to count as red ("fails with ImportError does not count").
+Making it genuinely red would mean writing a deliberately non-deterministic build
+and then removing it, which is a spike promoted to a pull request — the thing XI's
+spike clause forbids. So it is written **after** row 5, as a guard, and labelled
+one. Determinism itself is Sphinx's property, verified in the Phase 0 spike
+(research R5); what row 12 defends is a future `conf.py` line that would destroy
+it.
 
 ## Complexity Tracking
 

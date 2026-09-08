@@ -239,7 +239,15 @@ three upright faces (~808 KiB with the italic).
   `docs/leitner.html` at `_site/leitner.html`, `assets/card-box.pdf` at
   `_site/card-box.pdf` and the Sphinx output at `_site/docs/`, every rewritten
   link resolves in both settings. The depth-aware `../` prefix in the transform
-  is what makes that true for a page nested under `docs/contributing/`.
+  is what makes that true for a page nested under `docs/contributing/`. **Who
+  performs those three copies is a plan decision, not a research finding** — see
+  [plan.md § The `_site` assembly](plan.md#the-_site-assembly-stated-once); both
+  `pages.yml` and `build_docs.py` do, deliberately.
+- **Relative internal links**: Sphinx's HTML builder emits document-relative
+  URIs with `html_baseurl` unset, which is the default. Grepped the spike output
+  for `href="/…"` and for an absolute site URL: zero hits. FR-018 therefore holds
+  by the absence of a `conf.py` line, which is why the plan makes it a stated
+  decision plus an assertion rather than leaving it to the default.
 
 **One honest caveat on the local preview.** FR-014 makes the landing page link
 `docs/` — a *directory*. Over `file://` a browser shows a directory listing

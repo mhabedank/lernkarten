@@ -78,8 +78,12 @@ lernkarten check cards/example.yaml
 python3 scripts/check_docs.py
 ```
 
-**Expect**: all four green. `ruff` now also reads `docsite/conf.py` and
-`docsite/_ext/`, which is the scope widening FR-024 records.
+**Expect**: all four green, and the block above is **the same block that is in
+`CONTRIBUTING.md` § *Before the pull request*** — no fifth command (FR-024,
+SC-010). Red row 24 asserts that block has not grown. `ruff` now also reads
+`docsite/conf.py` and `docsite/_ext/`, which is the scope widening FR-024
+records. (`CONTRIBUTING.md` writes the four gates as five command lines — `ruff`
+twice — so a task editing that block should not "fix" the count.)
 
 Then the bidirectional Leitner gate, by hand:
 
@@ -132,11 +136,24 @@ grep -rEo '<(link|script|img)[^>]+https?://[^>]*>' _site/docs | sort -u
 **Expect**: nothing. The three faces come out of `assets/fonts/`; the theme
 bundles its own icon font.
 
+Relative links, in the same pass (FR-018):
+
+```bash
+grep -rEo '(href|src)="(/[^/][^"]*|https?://[^"]*mhabedank\.github\.io[^"]*)"' _site/docs | sort -u
+```
+
+**Expect**: nothing. `html_baseurl` is deliberately unset, so every internal URI
+is document-relative and the site works under `/docs/` and from the filesystem
+alike.
+
 ## 9 — On the other two platforms (SC-001, FR-034)
 
-Nothing to run by hand: the `docs-build` CI job does steps 1 and 5 on
-`ubuntu-latest`, `macos-latest` and `windows-latest`. Check that the job exists,
-that its id is **not** `docs`, and that all three legs are green.
+Nothing to run by hand: the `docs-build` CI job runs **`python3
+scripts/build_docs.py` and then `python -m pytest`** on `ubuntu-latest`,
+`macos-latest` and `windows-latest`. The `pytest` step is the point — it is the
+only place the docs-build tests actually execute rather than skip. Check that the
+job exists, that its id is **not** `docs`, that it runs both commands, and that
+all three legs are green.
 
 ## 10 — The manual rows (SC-005, SC-008, SC-013)
 
@@ -146,9 +163,9 @@ Three, and only three, in `docs/testing.md`:
 |---|---|
 | 44 | Open a documentation page at a 375 px viewport. No horizontal scrolling, and no Archivo prose below 15 px — a code sample and a letterspaced label are exempt |
 | 45 | Read the diff of `tests/test_landing_page.py` and `scripts/check_docs.py`. No assertion deleted, no target dropped from a derived set, no condition relaxed |
-| 46 | Confirm the documentation build ran on the pull request that introduced the change |
+| 46 | Confirm the documentation build ran on the pull request that introduced the change, then — after the merge — walk the deployed site as § 11 describes (SC-007 rides here rather than on a fourth row; FR-025 caps the list at three) |
 
-## 11 — Deployed (SC-007, SC-013)
+## 11 — Deployed (SC-007, SC-013) — this is the script for manual row 46
 
 After the merge, on `https://mhabedank.github.io/lernkarten/`:
 
