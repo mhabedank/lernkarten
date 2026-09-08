@@ -151,7 +151,7 @@ no Typst, no fixture. What did need resolving:
 | # | Question | Answer |
 |---|---|---|
 | R1 | How does a block leave a column and become full width? | Copy US2's `band__note` move exactly; the rule direction flips to `border-top` |
-| R2 | Where does the cutting diagram go, and what does it cost? | Third child of `.print__sheets`; its `flex: 1`, `justify-content` and padding were written for its old life and change with it |
+| R2 | Where does the cutting diagram go, and what does it cost? | Third child of `.print__sheets`, **beside** the two sheets rather than wrapping below them — that is what makes both columns end together. Its `flex: 1`, `justify-content` and padding were written for its old life and change with it |
 | R3 | What can be asserted, given the module never renders? | Structure, in four places — the same trade FR-008 made for the bands |
 | R4 | What does the design rule say, and where? | `docs/design.md` § The screen surfaces, with a bullet in XVI. Direction and remedy, no false-precision number |
 | R5 | What else does the toggle take with it? | Three CSS rules the previous feature already flagged as conditional on it. **Not** the `[hidden]` reset |
@@ -200,3 +200,23 @@ that failure mode and this is where it is caught.
 ## Complexity Tracking
 
 No Constitution Check row is a "no". Nothing to record.
+
+**Bugfix**: 2026-09-08 — [BUG-012](bugs/BUG-012.md) Updated from bugfix patch.
+
+**No section of this plan changed, and that is a finding rather than luck.** The
+plan summarises R2 in one table row — *"Third child of `.print__sheets`; its
+`flex: 1`, `justify-content` and padding were written for its old life and change
+with it"* — and never says which row the diagram occupies or quotes a figure.
+Both the arrangement that failed and the one that shipped are third children of
+`.print__sheets`, so the row is true of either.
+
+The lesson is not that the plan was right. It is that the plan was written at a
+level where the distinction that mattered could not be expressed, and the
+distinction lived in `research.md` instead, where it was wrong. A plan that
+abstracts away the thing under test cannot be evidence that the thing under test
+is correct.
+
+So the R2 row **has** been sharpened to say *beside* — leaving a row that cannot
+distinguish the two answers, having just written down that it cannot, would be
+recording the problem instead of fixing it. The row is now one line longer and
+says the thing that mattered.

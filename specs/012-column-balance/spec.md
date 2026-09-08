@@ -274,6 +274,13 @@ landing page is served, not consumed by a tool.
   `pytest`, `lernkarten check cards/example.yaml`,
   `python3 scripts/check_docs.py`.
 
+**Bugfix**: 2026-09-08 — [BUG-012](bugs/BUG-012.md) SC-002 and SC-003 were
+corrected during implementation and are already in their patched form above. No
+further change here. The report is filed against this feature because the defect
+*originated* in SC-002's wording — a criterion for a two-column section that
+named one column — and because four artifacts downstream of the correction were
+left describing the arrangement it replaced.
+
 ## Assumptions
 
 - **The user has taken the toggle decision.** Removing it rather than centring

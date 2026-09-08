@@ -85,11 +85,11 @@ section#print
 ├── div.band                             unchanged
 ├── p.band__note                         unchanged
 ├── div.print
-│   ├── div.print__sheets                547 px of content
+│   ├── div.print__sheets                closes level with the rules column, 433 px
 │   │   ├── div.sheet                    page 1 · fronts
 │   │   ├── div.sheet                    page 2 · backs, mirrored
-│   │   └── div.print__cut               ← wraps to the second row
-│   └── div.print__rules                 the three numbered rules only
+│   │   └── div.print__cut               ← beside them, not below: three in one row
+│   └── div.print__rules                 the three numbered rules only — 433 px
 │       ├── div.rule-item                1
 │       ├── div.rule-item                2
 │       └── div.rule-item                3
@@ -99,7 +99,10 @@ section#print
 **Invariants** the assertions hold to:
 
 - `.print__box` is not a descendant of `.print__rules`, and follows `.print`.
-- `.print__cut` is a descendant of `.print__sheets`.
+- `.print__cut` is a descendant of `.print__sheets`, and sits **beside** the two
+  sheets rather than wrapping below them. The assertion reaches only the first
+  half; the second is what makes both columns end together, and it is checked by
+  hand ([BUG-012](bugs/BUG-012.md)).
 - The box moves as one unit: its heading, its `card-box.pdf` download link, the
   `--dividers 4` paragraph with its `leitner.html` link, and the
   `.print__box-note` sizing caption. The href stays relative — it resolves only

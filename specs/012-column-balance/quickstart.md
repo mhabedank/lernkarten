@@ -74,9 +74,18 @@ name:
 ```
 
 Targets from [spec.md](spec.md#measurable-outcomes): section 02 goes from 269 px
-of content in a 644 px cell to 564 px; section 03 from 327 px in 1176 px to
-547 px in 627 px. Both at 1120, 1280, 1440 and 1800 px — the page caps its
-content at 1280 px, so those four settle it above the breakpoint.
+of content in a 644 px cell to 564 px, at 1120, 1280, 1440 and 1800 px.
+
+Section 03 is the one to measure carefully, and **both** its columns:
+`.print__sheets` held 327 px in a 1176 px column, and both columns now close at
+433 px from 1280 px up. Measuring only the sheets column is how the first fix
+passed while leaving 161 px under the rules — see
+[BUG-012](bugs/BUG-012.md). Between 1080 px and about 1180 px the row wraps and
+roughly 160 px is left under the rules; that is the accepted fallback in SC-003,
+not a failure of this check.
+
+The page caps its content at 1280 px, so those widths settle it above the
+breakpoint.
 
 ## 4. What "done" looks like
 

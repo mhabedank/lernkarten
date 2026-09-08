@@ -259,8 +259,11 @@ Open `docs/index.html` straight off disk — no server, no build.
 - [X] T026 **Both sections, above 1080 px**: two cards filling the column in
       `02`; sheets and diagram left, three rules right, box full width beneath in
       `03`. No hole under either column. Then **measure** rather than judge:
-      section 02 at 564 px of content in 644 px, section 03 at 547 px in 627 px,
-      at 1120, 1280, 1440 and 1800 px *(SC-001, SC-002, SC-003)*
+      section 02 at 564 px of content in 644 px, and section 03 with **both**
+      columns closing together at 433 px — not the sheets column alone, which is
+      how the first attempt passed while leaving 161 px under the rules
+      ([BUG-012](bugs/BUG-012.md)). At 1120, 1280, 1440 and 1800 px
+      *(SC-001, SC-002, SC-003)*
 - [X] T027 **The four explanations against the two cards**: header band, field,
       footer band, note space — all visible. Three of the four differ front to
       back, which is the argument for two cards that is not about layout at all
@@ -351,3 +354,24 @@ Genuinely few, and the honest list is short:
   silent deletion — the trail is what lets the next reader tell a decision from
   an oversight.
 - Commit after each task or logical group, and always at a 🔴 checkpoint.
+
+---
+
+## Bugfix (BUG-012)
+
+**Bugfix**: 2026-09-08 — [BUG-012](bugs/BUG-012.md) Updated from bugfix patch.
+
+**No task is reopened, and no task is added.** T026's target figures were wrong
+and are corrected in place; the work it names was performed, and performing it is
+what found the defect. The neighbouring row T028 — *"look at every boundary in
+`03`"* — is what actually caught it: the automated measurement reported 0 % and
+was not lying, because it measured the one column SC-002 named.
+
+That is the whole value of this phase existing. Constitution XI allows layout
+work to split its verification only on condition the manual claims are named, and
+this is the second time in two features that the named manual row caught what the
+assertions could not. The first was BUG-011, where the row existed and was
+checked from memory; here it existed and was walked.
+
+**Corrected, not reopened**: T026 (`docs/testing.md` figures, both columns).
+**Unchanged**: everything else. Phases 1–9 stand as completed.

@@ -47,27 +47,47 @@ be got wrong.
 
 ## R2 — Where does the cutting diagram go, and what does it cost?
 
-**Decision**: `.print__cut` becomes the third child of `.print__sheets`, which
-is already `display: flex; flex-wrap: wrap; gap: 32px`. The two sheet mock-ups
-take the first row; the diagram wraps onto the second.
+**Decision** *(rewritten 2026-09-08 by [BUG-012](bugs/BUG-012.md) — the first
+answer is kept below as the alternative it turned out to be)*: `.print__cut`
+becomes the third child of `.print__sheets` and takes its place **beside** the
+two sheet mock-ups, three pictures sharing one row. `flex: 1 1 150px` with
+`min-width: 0`, and the SVG scales with its box.
 
 **Rationale**: it is a drawing of a sheet with cut lines on it. It belongs with
 the two drawings of sheets, not stranded beneath 400 px of prose about printer
-settings. Measured, this is also what closes the gap: the sheets column goes
-from 327 px of content in 1176 px to 547 px in 627 px.
+settings. But *which column* is only half the question — the other half is
+whether both columns then end together, and only the shared row does that.
+Measured, both close at 433 px. The section is also 242 px shorter than the
+version below, which is a second reason and was not the deciding one.
+
+**What it costs**: between 1080 px and about 1180 px the row wraps anyway. The
+caption is reading text and has a minimum width the diagram does not; forcing
+one row there would mean shrinking type to fit, which is the one thing the
+layout never does (constitution XVI). The fallback leaves roughly 160 px under
+the rules column — a fifth of the 769 px it replaced, and inside the tolerance
+the new rule in `docs/design.md` states. Accepted, not overlooked.
 
 **What has to change with it**: `.print__cut` currently declares
 `flex: 1; justify-content: center` — both written for its old life as the
-filler at the bottom of a text column, and both wrong inside a wrapping row of
-pictures. Its 24 px / 28 px padding also duplicates the 40 px the sheets column
-already applies. These are edits to the rule, not new rules.
+filler at the bottom of a text column, and both wrong inside a row of pictures.
+Its 24 px / 28 px padding also duplicates the 40 px the sheets column already
+applies. These are edits to the rule, not new rules.
 
 **Alternatives considered**:
 
+- *Let the diagram **wrap** onto a second row beneath the two sheets.* **This
+  was the original decision and it is the one worth keeping written down.** It
+  is wrong in a way that looks right: the diagram reaches the correct column, and
+  the column it was measured against — the sheets column — becomes full. Measured
+  after: sheets column 595 px of content, rules column 433 px, section drawn to
+  595 px, and **161 px of dead space under the three rules**. The hole did not
+  close, it crossed the section. It survived a prototype, an implementation and
+  an automated measurement that reported 0 %, because SC-002 as first written
+  named only the sheets column. Closing a hole and moving it are indistinguishable
+  from the column you were watching.
 - *Move the diagram out full-width too, beside the box.* Measured: leaves the
-  sheets column at 433 px against 327 px of content, 24 % dead. Better than
-  today, worse than this, and it separates the diagram from rule 3, which is the
-  text that introduces it.
+  sheets column at 433 px against 327 px of content, 24 % dead. It also separates
+  the diagram from rule 3, which is the text that introduces it.
 - *Centre the sheets vertically and leave everything else.* Measured: 765 px
   column, 327 px content, dead space merely redistributed to 219 px above and
   219 px below. It converts a hole into two margins without adding anything to
