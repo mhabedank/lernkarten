@@ -191,7 +191,7 @@ that points at it.
 **Independent Test**: revert either markup move and an assertion goes red naming
 its section (SC-006).
 
-- [ ] T015 [US3] Add the two-column rule to `docs/design.md` § *The screen
+- [X] T015 [US3] Add the two-column rule to `docs/design.md` § *The screen
       surfaces*: a two-column section is proportioned by its heavier column, so a
       new block joins the column whose *kind* it is — pictures with pictures,
       prose with prose. A block belonging to neither kind, or one that would make
@@ -200,11 +200,11 @@ its section (SC-006).
       examples. **No numeric threshold**: the assertions are structural and could
       not enforce one, and false precision invites arguing about the number
       instead of looking at the page ([research.md R4](research.md#r4--what-does-the-design-rule-say-and-where-does-it-live)) *(FR-008)*
-- [ ] T016 [P] [US3] Add one bullet to constitution XVI in
+- [X] T016 [P] [US3] Add one bullet to constitution XVI in
       `.specify/memory/constitution.md` pointing at that rule, in the shape the
       type floor already has there. Different file from T015, so parallel with it
       — but the wording depends on T015, so write T015 first *(FR-008)*
-- [ ] T017 [US3] Verify the assertions actually bite, one revert at a time, using
+- [X] T017 [US3] Verify the assertions actually bite, one revert at a time, using
       the table in [quickstart.md](quickstart.md#1-the-assertions). Each of the
       four must fail and name its section. An assertion that passes both before
       and after its move is not a guard *(SC-006, FR-009)*
