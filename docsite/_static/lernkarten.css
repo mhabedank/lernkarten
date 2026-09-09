@@ -52,7 +52,14 @@
  * never looks at a `--pst-` variable — so setting only those three leaves
  * reading text on the system stack, which looks almost right. */
 
-html {
+/* Specificity is load-bearing here, and it is not obvious. The theme declares
+ * its families on `html`, its Bootstrap variables on `:root,[data-bs-theme=…]`
+ * and its colours on `html[data-theme=light]`. A plain `html { }` block ties
+ * with the first and *loses* to the other two — the declarations would sit in
+ * the stylesheet, be perfectly visible to anything reading the file, and never
+ * reach a pixel. So each group is written at the selector the theme uses. */
+
+:root {
   --lk-ink: #141414;
   --lk-sand: #f2efe6;
   --lk-ground: #e9e5da;
@@ -67,7 +74,14 @@ html {
   --pst-font-family-monospace: "IBM Plex Mono", monospace;
   --bs-font-sans-serif: "Archivo", sans-serif;
   --bs-font-monospace: "IBM Plex Mono", monospace;
+  --bs-body-font-family: "Archivo", sans-serif;
 
+  /* Uppercase labels are Jost, the way they are everywhere else. */
+  --lk-label-font: "Jost", sans-serif;
+}
+
+html[data-theme="light"],
+html[data-theme="dark"] {
   --pst-color-primary: var(--lk-blue);
   --pst-color-secondary: var(--lk-red);
   --pst-color-link: var(--lk-blue);
@@ -81,9 +95,6 @@ html {
   --pst-color-inline-code: var(--lk-muted);
   --pst-color-warning: var(--lk-yellow);
   --pst-color-danger: var(--lk-red);
-
-  /* Uppercase labels are Jost, the way they are everywhere else. */
-  --lk-label-font: "Jost", sans-serif;
 }
 
 .bd-sidebar-primary .caption-text,
@@ -110,7 +121,7 @@ html {
   box-shadow: none !important;
 }
 
-html {
+:root {
   --bs-gradient: none;
 }
 
@@ -124,7 +135,7 @@ html {
  * both to 0.9rem, which is 14.4 px, and between them they carry the sidebar,
  * the captions and the admonition titles. */
 
-html {
+:root {
   --pst-font-size-milli: 1rem;
   --pst-sidebar-font-size: 1rem;
 }
@@ -135,5 +146,15 @@ html {
 figcaption,
 .caption-text,
 .admonition-title {
+  font-size: 1rem;
+}
+
+/* The breadcrumbs are the one place the variables above do not reach: the
+ * theme sets `ul.bd-breadcrumbs` to 0.8rem directly, which is 12.8 px of
+ * Archivo prose — a trail of page titles, not a label, so the floor binds it.
+ * Found by measuring the built site in a browser; a stylesheet read as text
+ * cannot say what a rule resolves to. */
+ul.bd-breadcrumbs,
+ul.bd-breadcrumbs li.breadcrumb-item:not(.breadcrumb-home):before {
   font-size: 1rem;
 }

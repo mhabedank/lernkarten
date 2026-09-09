@@ -384,6 +384,28 @@ def test_the_theme_override_lands(tmp_path):
             f"the first leaves body text on the system stack"
         )
 
+    # Declared is not the same as applied. The theme sets its colours on
+    # `html[data-theme=light]` and its Bootstrap variables on `:root`, both of
+    # which outrank a plain `html { }` block — so an override written there
+    # sits in the file, reads correctly to anything checking the text, and
+    # never reaches a pixel. That is what happened, and it took a screenshot
+    # to notice. This asserts the override plays at the theme's own
+    # specificity rather than asserting a colour, which no file can show.
+    import re
+
+    colour_blocks = [
+        selector
+        for selector, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css)
+        if "--pst-color-" in body
+    ]
+    assert colour_blocks, "lernkarten.css sets no --pst-color-* variable at all"
+    assert all("data-theme" in selector for selector in colour_blocks), (
+        f"the colour overrides are declared on {[s.strip()[:60] for s in colour_blocks]}. "
+        f"The theme declares its own on `html[data-theme=light]`, which outranks a bare "
+        f"`html` or an element selector — these would lose the cascade and the site would "
+        f"keep the theme's palette while this file says otherwise"
+    )
+
     assert "border-radius: 0" in css and "box-shadow: none" in css, (
         "lernkarten.css carries no blanket radius/shadow rule. docs/design.md says the "
         "screen surfaces are flat colour and type only, and the theme rounds and shadows "
