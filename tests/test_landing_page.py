@@ -21,11 +21,16 @@ carry the whole requirement.
 """
 
 import re
+import sys
 from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "index.html"
+
+sys.path.insert(0, str(ROOT / "scripts"))
+
+import yamlio  # noqa: E402
 
 # Elements that never have a closing tag. The page carries SVG, where most
 # shapes arrive self-closing and reach us through handle_startendtag instead,
@@ -657,6 +662,45 @@ def test_the_pages_workflow_publishes_the_box():
     )
 
 
+def test_the_deploy_is_all_or_nothing():
+    """A documentation build that fails publishes nothing at all.
+
+    One job, and the build ahead of the upload, so a broken cross-reference
+    cannot put a half-updated site on the web — a new landing page linking
+    into a stale documentation tree is the kind of inconsistency that is hard
+    to notice and harder to explain. The cost is that a documentation typo can
+    hold up a landing-page fix, which is why the same build also runs on every
+    pull request: by the time a change reaches main it has been built already.
+
+    Asserted as text because CI never executes this workflow. That is the same
+    reason `test_the_pages_workflow_publishes_the_box` exists, and the same
+    blind spot that let the method page 404 for a release.
+    """
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+
+    build = workflow.find("build_docs.py")
+    assert build != -1, (
+        "pages.yml never builds the documentation, so the deployed site would carry a "
+        "landing page that links into a documentation tree nobody generated"
+    )
+    upload = workflow.find("upload-pages-artifact")
+    assert upload != -1, "pages.yml no longer uploads anything — this test's anchor is gone"
+    assert build < upload, (
+        "pages.yml uploads the site before building the documentation, so a failing build "
+        "would publish whatever happened to be assembled instead of publishing nothing"
+    )
+
+    # Parsed, not grepped: a regex over indented keys also matches `push` and
+    # `workflow_dispatch` under `on:`, and would report three jobs where there
+    # is one.
+    jobs = yamlio.load(workflow)["jobs"]
+    assert len(jobs) == 1, (
+        f"pages.yml has {len(jobs)} jobs ({sorted(jobs)}). All-or-nothing depends on the "
+        f"build and the upload sharing one job: split across two, the upload runs on its "
+        f"own and a failed build stops nothing"
+    )
+
+
 def landing_page_relative_refs():
     """Every path the landing page points at inside its own site.
 
@@ -684,13 +728,28 @@ def test_the_pages_workflow_assembles_every_relative_link():
     about exactly this. This test closes it for good by deriving the list from
     the page instead of naming files: the next relative link anyone adds is
     covered the moment they add it.
+
+    A target may now arrive by a **second route**. The documentation build
+    writes the whole `_site/docs/` subtree, so a link into it is satisfied by
+    the build step rather than by a `cp` line. What is protected is the
+    derivation — the set still comes from the page, and no target may drop out
+    of it; what changed is only the number of ways a target can be accounted
+    for. The subtree, not one literal: the page links `docs/` and
+    `docs/user/workflow.html`, and a rule matching only the first would push
+    the second onto a `cp` line that can never produce it.
     """
     workflow = WORKFLOW.read_text(encoding="utf-8")
+    # Read from the workflow text rather than assumed: the build step ends with
+    # `test -f _site/docs/index.html`, so this token is there only while the
+    # build really writes that tree.
+    builds_the_docs = bool(re.search(r"_site/docs\b", workflow))
+
     for ref in landing_page_relative_refs():
         copied = re.search(rf"^\s*cp\s+\S*{re.escape(ref)}\s+\S*_site/", workflow, re.MULTILINE)
-        assert copied, (
-            f"docs/index.html links {ref!r}, but pages.yml never copies it into "
-            f"_site — the deployed link is a 404 that looks fine locally"
+        built = builds_the_docs and (ref.rstrip("/") == "docs" or ref.startswith("docs/"))
+        assert copied or built, (
+            f"docs/index.html links {ref!r}, but pages.yml neither copies it into _site nor "
+            f"builds it there — the deployed link is a 404 that looks fine locally"
         )
 
 

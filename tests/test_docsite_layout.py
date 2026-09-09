@@ -182,6 +182,63 @@ def test_the_docs_requirements_are_not_a_runtime_dependency():
     )
 
 
+def test_the_ci_docs_job_runs_the_docs_tests():
+    """CI must actually run the tests that only run with Sphinx installed.
+
+    `tests/test_build_docs.py` skips when the documentation requirements are
+    absent, which is deliberate — a contributor running the four gates should
+    not need a docs toolchain. The consequence is that those assertions
+    execute in exactly one place, and if that job only *builds* the site they
+    execute nowhere at all while every job stays green.
+
+    Scoped to the one job rather than matched against the file as text, and
+    that matters: read as text, four of these five clauses are already true of
+    `ci.yml` today. Two other jobs list all three runners, the `test` job runs
+    pytest, and `requirements-dev.txt` is installed in four places — so an
+    unscoped assertion is red on one clause and vacuous on the rest.
+    """
+    import yamlio
+
+    workflow = yamlio.load((ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    jobs = workflow["jobs"]
+
+    def runs_the_build(job):
+        return any("build_docs.py" in str(step.get("run", "")) for step in job.get("steps", []))
+
+    matches = {name: job for name, job in jobs.items() if runs_the_build(job)}
+    assert matches, (
+        f"no job in ci.yml runs scripts/build_docs.py, so the documentation is never built "
+        f"or tested in CI. The jobs are {sorted(jobs)}"
+    )
+    assert len(matches) == 1, f"more than one job builds the documentation: {sorted(matches)}"
+
+    job_id, job = next(iter(matches.items()))
+
+    assert job_id != "docs", (
+        "the documentation job reuses the id `docs`, which already belongs to the "
+        "'Skills & docs' job. Two jobs with one id is a YAML error found as a red run "
+        "rather than at review"
+    )
+
+    runners = set(job.get("strategy", {}).get("matrix", {}).get("os", []))
+    assert runners == {"ubuntu-latest", "macos-latest", "windows-latest"}, (
+        f"the documentation job runs on {sorted(runners) or 'one implicit runner'}. The "
+        f"build resolves paths and reads text files, and this is the only job that "
+        f"exercises either on macOS or Windows"
+    )
+
+    steps = " ".join(str(step.get("run", "")) for step in job.get("steps", []))
+    assert "requirements-docs.txt" in steps, (
+        "the documentation job never installs requirements-docs.txt, so its build cannot "
+        "run and its tests would skip"
+    )
+    assert "pytest" in steps, (
+        "the documentation job builds the site but never runs pytest. tests/test_build_docs.py "
+        "skips without Sphinx, and this is the only job that has it — so every assertion in "
+        "that module would execute nowhere while CI stayed green"
+    )
+
+
 def test_the_extension_imports_nothing_from_lernkarten():
     """A guard: the build-time extensions know nothing about this project's code.
 
