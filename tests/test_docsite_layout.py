@@ -180,3 +180,43 @@ def test_the_docs_requirements_are_not_a_runtime_dependency():
         f"package: {offenders}. The closure is {sorted(closure)} — anything in it runs "
         "for a user who is only building cards"
     )
+
+
+def test_the_extension_imports_nothing_from_lernkarten():
+    """A guard: the build-time extensions know nothing about this project's code.
+
+    Green from the first run. It is the enforcement rather than the intention
+    behind a decision the specification made deliberately: the Sphinx
+    extension that documents Agent Skills is being written here because its
+    schema has one consumer and needs to survive contact with it, and it is
+    meant to be extracted into a package of its own once it has.
+
+    "Extract it later" is a promise that keeps itself only if nothing grows
+    across the seam in the meantime. One `import yamlio` and the extraction
+    becomes a refactor nobody schedules. So the seam is a test, and 013's
+    skill extension inherits both the directory and the rule.
+    """
+    import ast
+
+    ext = ROOT / "docsite" / "_ext"
+    modules = sorted(ext.glob("*.py"))
+    assert modules, "docsite/_ext/ holds no modules — this assertion has nothing to check"
+
+    local = {p.stem for p in (ROOT / "scripts").glob("*.py")}
+    offenders = {}
+    for path in modules:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported |= {alias.name.split(".")[0] for alias in node.names}
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                imported.add(node.module.split(".")[0])
+        if found := imported & local:
+            offenders[path.name] = sorted(found)
+
+    assert not offenders, (
+        f"these extensions import lernkarten's own modules: {offenders}. The directory is "
+        f"meant to leave this repository as a package once its schema has settled, and a "
+        f"single import across that seam turns the extraction into a refactor"
+    )

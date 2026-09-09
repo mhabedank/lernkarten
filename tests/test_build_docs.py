@@ -354,3 +354,88 @@ def test_every_migrated_document_is_in_the_toctree(tmp_path):
         f"the root does not carry a user branch and a contributing branch as separate "
         f"top-level entries. It carries {branches}"
     )
+
+
+def built_html(site):
+    """Every built page, keyed by its path inside the documentation tree.
+
+    `.doctrees/` and `.buildinfo` are Sphinx's own incremental-build state —
+    a pickled environment and a configuration hash — so they differ between
+    runs for reasons that have nothing to do with the pages.
+    """
+    docs = site / "docs"
+    return {
+        p.relative_to(docs).as_posix(): p.read_bytes()
+        for p in docs.rglob("*.html")
+        if ".doctrees" not in p.parts
+    }
+
+
+def test_building_twice_is_byte_identical(tmp_path):
+    """A guard: same sources, same bytes — and no absolute path in the output.
+
+    Never red, and it could not be without making the build non-deterministic
+    on purpose, which would be a spike promoted into a pull request. Sphinx is
+    deterministic by itself; what this defends is a future `conf.py` line —
+    a timestamp in the footer, a build id — that would quietly end it and make
+    every deploy a full diff.
+
+    The absolute-path half is the same shape of defence. A page that carries
+    the path it was built from leaks a private directory into a public site
+    and differs between two machines building the same commit.
+    """
+    first, second = tmp_path / "one", tmp_path / "two"
+    assert build(site=first).returncode == 0
+    assert build(site=second).returncode == 0
+
+    left, right = built_html(first), built_html(second)
+    assert left.keys() == right.keys(), (
+        f"the two builds wrote different files: {sorted(left.keys() ^ right.keys())}"
+    )
+    differing = sorted(name for name in left if left[name] != right[name])
+    assert not differing, (
+        f"these pages differ between two builds of the same sources: {differing}. Something "
+        f"in the build is not a function of its inputs, so every deploy would show changes "
+        f"nobody made"
+    )
+
+    leaked = sorted(name for name, html in left.items() if str(ROOT).encode() in html)
+    assert not leaked, (
+        f"these pages contain the absolute path they were built from: {leaked}. That is a "
+        f"private directory on a public site, and it differs per machine"
+    )
+
+
+def test_the_site_loads_no_third_party_subresource(tmp_path):
+    """A guard: the site fetches nothing from anywhere else, and links relatively.
+
+    Green from the first run, and said so rather than dressed up as a red: the
+    theme already ships its icon font bundled, and Sphinx emits
+    document-relative URIs by default. There is nothing to make fail without
+    first pointing an `@font-face` at a CDN or setting `html_baseurl` — which
+    is precisely what this stands guard over.
+
+    Note what it *cannot* see. A build with no fonts at all satisfies it
+    completely, so it says nothing about whether the three faces arrived; that
+    assertion belongs to the stylesheet row. A guard that looks like it covers
+    more than it does is worse than none.
+    """
+    import re
+
+    assert build(site=tmp_path).returncode == 0
+
+    offenders = {}
+    for name, html in built_html(tmp_path).items():
+        text = html.decode("utf-8")
+        remote = re.findall(r'<(?:link|script|img)\b[^>]*\b(?:href|src)="(https?://[^"]+)"', text)
+        rooted = re.findall(r'\b(?:href|src)="(/[^/][^"]*)"', text)
+        deployed = re.findall(r'\b(?:href|src)="([^"]*mhabedank\.github\.io[^"]*)"', text)
+        if remote or rooted or deployed:
+            offenders[name] = (remote + rooted + deployed)[:5]
+
+    assert not offenders, (
+        f"these pages reach outside themselves: {offenders}. A sub-resource on someone "
+        f"else's server is an availability and privacy dependency; a root-relative or "
+        f"deployed-absolute link breaks the site under its /docs/ sub-path and when the "
+        f"build output is opened from the filesystem"
+    )
