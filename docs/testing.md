@@ -284,6 +284,20 @@ Steps 40–42 need a printer, scissors and a folded box. Step 43 needs nothing b
 a shell — it is on this list only because a pipe is not a terminal, and
 `lernkarten setup` refuses one rather than guessing.
 
+### The documentation site, 44–46
+
+Three things `docs/skill-reference` cannot assert. One is a rendering
+judgement, one is a judgement about a diff, and one happens after the merge.
+
+| # | Given | Do | Expect |
+|---|---|---|---|
+| 44 | `python3 scripts/build_docs.py`, `_site` served, a 375 px viewport | read a page from each area — a migrated document, an index, the Leitner signpost | no horizontal scrolling, and no **Archivo prose** below 15 px. A code sample and a letterspaced label are exempt by name: the floor binds prose, and `docs/design.md` scopes it that way. `tests/test_landing_page.py` reads one file's `<style>` blocks and cannot reach a compiled theme stylesheet, so nothing automated can see this. The second half is a judgement no measurement settles: does the site read as the same system as the landing page, or as a stock theme wearing its colours? |
+| 45 | the diff of `tests/test_landing_page.py` and `scripts/check_docs.py` | read it | no assertion deleted, no target dropped from a derived set, no condition relaxed. The one adaptation is `test_the_pages_workflow_assembles_every_relative_link`, which learns that a target may arrive because the build writes `_site/docs/` rather than because a `cp` line copies it — the derivation is unchanged and the set still comes from the page. "Unweakened" is a judgement about a diff; no command reports it |
+| 46 | the pull request, then the deployed site after the merge | check the `docs-build` job ran on all three runners; then walk the site per [quickstart.md § 11](../specs/012-skill-reference/quickstart.md) | the build ran *before* main, so an all-or-nothing deploy never fires in anger. After the merge: `/` is the landing page, its `docs/` button opens the site, `leitner.html` is served once at the root, and a repository link inside a page reaches GitHub. Following a `docs/` link over `file://` shows a directory listing rather than the index — that one hop is only verifiable over HTTP, which is why the quickstart says to serve rather than open |
+
+Row 44 needs a browser. Rows 45 and 46 need nothing but attention — 45 at
+review time, 46 once the change is on `main`, the same shape as rows 33 and 34.
+
 Steps 34–39 cover the printable card box. Only 39 needs a Claude session; 34
 needs the deployed site rather than a checkout, and 35–38 need a printer, a
 photocopier and about twenty minutes. They are the whole verification of an
