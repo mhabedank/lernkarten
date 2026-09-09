@@ -547,6 +547,13 @@ across all of them:
   forbids is setting *this* card's text smaller than 11 pt to fit more on it.
   Scaling the card is a choice about the card; shrinking its type is a choice
   about the text, and only the second is a legibility question.
+- **A two-column section is proportioned by its heavier column**, so a block
+  joins the column whose kind it is — pictures with pictures, prose with prose —
+  and a block belonging to neither becomes a full-width block beneath both. The
+  rule and its two worked examples are in `docs/design.md` § *Two-column
+  sections*. It exists because nothing else here has an opinion about
+  proportion: one landing-page section drifted to 65 % empty across three
+  features that each added correct content to the same column.
 - The layout never shrinks type to fit — a card whose text does not fit is
   *reported*, not silently squeezed. This survives the scaling rule above
   intact: a card that overflows its own card is split by the author. Scale is

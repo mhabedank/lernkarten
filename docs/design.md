@@ -339,6 +339,52 @@ shadows, no rounded corners.
 | social card, 1200 × 630 | [`assets/brand/social-card.typ`](../assets/brand/social-card.typ) |
 | example cards | [`assets/brand/example-cards.typ`](../assets/brand/example-cards.typ) |
 
+### Two-column sections
+
+Four sections of the landing page are two columns side by side, and each is
+drawn to the height of its **heavier** column. That is what makes a light column
+a hole rather than a margin: the empty space is not a choice anybody made, it is
+the arithmetic of the column beside it.
+
+So a block joins the column whose **kind** it is — pictures with pictures, prose
+with prose. The cutting diagram is a drawing of a sheet, so it belongs beside the
+two drawings of sheets, not under four hundred pixels of text about printer
+settings.
+
+Moving it there is not enough on its own, and the failure is instructive: sent
+to the picture column but left to wrap *below* the two sheets, it made that
+column the heavy one and the hole simply reappeared on the other side. Three
+pictures in one row is what makes both columns end together. Closing a hole and
+moving it look identical from the column you were watching — measure both.
+
+A block that belongs to neither kind, or that would make one column outgrow the
+other by more than about half, becomes a **full-width block beneath both**. The
+card box went that way — it is a different subject from the three printing rules,
+what you keep the cards in rather than how you print them — and so did the
+section notes before it, for the same reason.
+
+There is no number here on purpose. Nothing in the test suite can measure a
+column, so a threshold could not be enforced, and a false precision in this
+document would only move the argument from *look at the page* to *what counts as
+half*. What the checks do hold is the arrangement that produces the proportion:
+`tests/test_landing_page.py` asserts that the card box is not inside the rules
+column and that the diagram is inside the sheets column. Those are structure, and
+structure is what a file that is never rendered can see.
+
+Two worked examples, both measured before and after:
+
+| Section | Before | After |
+|---|---|---|
+| `02 one card, one idea` | 269 px of content in a 644 px cell — 46 % empty | 564 px in 644 px |
+| `03 print it, cut it` | 327 px in a 1176 px column — 65 % empty | both columns end together at 433 px |
+
+Neither happened at once. `03` accreted over three features, each adding correct,
+well-scoped content to the same column, none of them measuring it against the one
+beside it. `02` was tipped by a *fix* — making the `hidden` attribute effective
+left one card on screen where the column had been proportioned around two. Both
+are what this rule exists to catch, because nothing else in this repository has
+an opinion about proportion.
+
 ### The step strip
 
 The pipeline strip — on the landing page and as `pipeline.png` — carries seven
