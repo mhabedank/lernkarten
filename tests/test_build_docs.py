@@ -356,6 +356,69 @@ def test_every_migrated_document_is_in_the_toctree(tmp_path):
     )
 
 
+def test_the_theme_override_lands(tmp_path):
+    """The stylesheet is applied, and the three faces actually arrived.
+
+    Three variable names, one rule and the fonts — deliberately not a list of
+    selectors. A selector list goes stale on the next theme release and turns
+    into somewhere to record the next violation instead of preventing it.
+
+    What each half catches is specific. Overriding only the three `--pst-`
+    variables leaves `body` on the system stack, because Bootstrap resolves
+    `--bs-body-font-family` through `--bs-font-sans-serif` and never reads a
+    `--pst-` one — so the site would look almost right and be wrong. And an
+    `html_static_path` that never reached `assets/fonts/` leaves the whole
+    site on fallback type with a perfectly clean build: no warning, no failing
+    test anywhere else. The sub-resource guard cannot see it either, since a
+    site with no fonts loads nothing third-party by definition.
+    """
+    assert build(site=tmp_path).returncode == 0
+
+    static = tmp_path / "docs" / "_static"
+    css = (static / "lernkarten.css").read_text(encoding="utf-8")
+
+    for variable in ("--pst-font-family-base", "--bs-font-sans-serif", "--bs-font-monospace"):
+        assert variable in css, (
+            f"lernkarten.css does not set {variable}. Both families are needed: the theme "
+            f"reads the `--pst-` one and Bootstrap reads the `--bs-` one, and setting only "
+            f"the first leaves body text on the system stack"
+        )
+
+    assert "border-radius: 0" in css and "box-shadow: none" in css, (
+        "lernkarten.css carries no blanket radius/shadow rule. docs/design.md says the "
+        "screen surfaces are flat colour and type only, and the theme rounds and shadows "
+        "by default"
+    )
+
+    faces = css.count("@font-face")
+    assert faces == 4, (
+        f"lernkarten.css declares {faces} @font-face blocks, not four (Archivo, Jost, and "
+        f"the mono face). Fewer means a face the site names but never loads"
+    )
+    assert 'format("truetype")' in css, (
+        "the faces are not declared as truetype. The .ttf files are committed and copied "
+        "rather than converted, so no new binary enters the repository"
+    )
+
+    # Resolved from the stylesheet's own location, not merely present
+    # somewhere under _static/. The difference is the whole point: the fonts
+    # land in `_static/` while a stylesheet written for `_static/fonts/` asks
+    # for a path that does not exist, and the site falls back to system type
+    # with a clean build, no warning, and every other assertion still green.
+    # "The file is in the tree" is exactly the shape of check that lets that
+    # through.
+    import re
+
+    referenced = re.findall(r'url\("([^"]+)"\)', css)
+    assert len(referenced) == 4, f"the stylesheet references {referenced}, not four faces"
+    dangling = sorted(ref for ref in referenced if not (static / ref).exists())
+    assert not dangling, (
+        f"the stylesheet asks for {dangling}, which the built _static/ does not hold at "
+        f"that path. It holds {sorted(p.name for p in static.glob('*.ttf'))}. A font that "
+        f"404s is a site silently set in the system stack"
+    )
+
+
 def built_html(site):
     """Every built page, keyed by its path inside the documentation tree.
 

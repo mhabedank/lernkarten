@@ -34,7 +34,12 @@ source_suffix = {".md": "markdown"}
 myst_heading_anchors = 3
 
 html_theme = "pydata_sphinx_theme"
-html_static_path = ["_static"]
+
+# `assets/fonts/` is copied in rather than converted: the .ttf files are
+# already committed and named in the constitution's binary exception, so a
+# woff2 would be a new binary for a smaller download.
+html_static_path = ["_static", "../assets/fonts"]
+html_css_files = ["lernkarten.css"]
 
 # Deliberately NOT set: `html_baseurl`.
 #

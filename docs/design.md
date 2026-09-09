@@ -327,18 +327,31 @@ would slice it in half.
 
 ## The screen surfaces
 
-The readme and the landing page use the same bands, the same rules and the same
-three inks. Both are built from flat colour and type only — no gradients, no
-shadows, no rounded corners.
+The readme, the landing page and the documentation site use the same bands, the
+same rules and the same three inks. All of them are built from flat colour and
+type only — no gradients, no shadows, no rounded corners.
 
 | Surface | Source |
 |---|---|
 | landing page | [`docs/index.html`](index.html) — one self-contained file, published to GitHub Pages |
+| documentation site | [`docsite/`](../docsite/) — Sphinx and MyST, `pydata-sphinx-theme` overridden to the rules on this page |
 | readme banner, 1280 × 320 | [`assets/brand/banner.typ`](../assets/brand/banner.typ) |
 | pipeline strip | [`assets/brand/pipeline.typ`](../assets/brand/pipeline.typ) |
 | social card, 1200 × 630 | [`assets/brand/social-card.typ`](../assets/brand/social-card.typ) |
 | example cards | [`assets/brand/example-cards.typ`](../assets/brand/example-cards.typ) |
 
+The documentation site is the one surface that starts from someone else's
+design, so it is worth saying what is kept and what is not. **Kept**: the
+two-level navigation, the theme's bundled icon font, admonitions that double
+their colour with an icon and a rule, and the footer credit. **Overridden**:
+the nine inks, the three faces self-hosted from `assets/fonts/`, every radius,
+shadow and gradient, and the 15 px reading floor — the theme sets its sidebar
+and its small labels at 14.4 px.
+
+The override is written as a rule rather than as a list of selectors, and for
+the same reason the type floor is: a list is correct only against the theme
+version it was read from, and the next release turns it into a record of
+violations instead of a defence against them.
 ### Two-column sections
 
 Four sections of the landing page are two columns side by side, and each is
