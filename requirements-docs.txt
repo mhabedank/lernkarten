@@ -1,0 +1,27 @@
+# The documentation site. Separate from requirements-dev.txt on purpose: that
+# file is what every contributor installs to run the four gates, and Sphinx's
+# transitive tree is thirty-three distributions. Nobody who only wants to run
+# the tests should pay for a toolchain they will never invoke.
+#
+# Never routed through scripts/deps.py — that is the *runtime* channel, and a
+# user running `lernkarten build` must not install a documentation toolchain.
+# tests/test_docsite_layout.py guards both halves of that.
+#
+# Pinned exactly rather than by range. Sphinx is a tool here, not a library:
+# its warning set is a gate and its output is compared byte-for-byte between
+# two runs, so a patch release arriving on its own would change what "the
+# build passes" means. Same reasoning as the ruff pin. The transitive closure
+# is deliberately not pinned — a hand-maintained hash table is the
+# constitution's open Reconciliation item, and this feature neither closes nor
+# worsens it.
+
+# Builds the site.
+sphinx==9.0.4
+
+# Reads the Markdown this repository already has, so no source file is
+# converted to reStructuredText.
+myst-parser==5.1.0
+
+# The theme pandas and numpy use, and the reason their docs read the way they
+# do. Overridden by docsite/_static/lernkarten.css to match docs/design.md.
+pydata-sphinx-theme==0.21.0

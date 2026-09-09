@@ -43,7 +43,7 @@ no library knows this repository's publication layout.
 ### Wheel coverage, verified rather than asserted
 
 `pip download --only-binary=:all: --python-version 3.12 --abi cp312` resolved the
-**complete** closure (33 distributions) for `win_arm64`, `manylinux2014_x86_64`
+**complete** closure (32 distributions) for `win_arm64`, `manylinux2014_x86_64`
 and `macosx_11_0_arm64`. `win_arm64` is the platform that decided this project's
 3.12 floor, so it is the one that matters. Only three distributions in the tree
 are not `py3-none-any` — `charset-normalizer`, `MarkupSafe`, `PyYAML` — and all
@@ -52,7 +52,7 @@ needed anywhere.**
 
 ### Licences across the whole closure
 
-Every one of the 33 is permissive: BSD-2/3, MIT, Apache-2.0, PSF-2.0,
+Every one of the 32 is permissive: BSD-2/3, MIT, Apache-2.0, PSF-2.0,
 `0BSD OR CC0-1.0`, public domain (docutils), and `MPL-2.0` for `certifi`.
 MPL-2.0 is file-level copyleft on `certifi`'s own files only; nothing is
 modified and nothing is redistributed, so it is compatible. **No advisory** is
@@ -60,9 +60,9 @@ outstanding on any of them at the time of writing.
 
 ### The one gate that is not a clean pass
 
-**Transitive tree: 33 distributions.** Principle IV asks for "a shallow
+**Transitive tree: 32 distributions.** Principle IV asks for "a shallow
 transitive tree" and gives "thirty packages to get one function" as the failing
-shape. This is thirty-three. It is recorded as a **stated cost, not a pass**:
+shape. This is thirty-two. It is recorded as a **stated cost, not a pass**:
 
 - It is not thirty packages for *one function* — it is a documentation
   toolchain, and the spec chose it over hand-writing HTML for reasons FR-001
@@ -336,6 +336,59 @@ is invisible until something is duplicated.
 `DownloadFileCollector` (priority 500) copies anything. Verified: `_downloads/`
 disappears entirely, and the wrapper's link renders as `../../leitner.html` —
 the site root, one URL, FR-010 and SC-012 intact.
+
+---
+
+## Re-verified at T009 (2026-09-09)
+
+*Every number below R1–R5 came from a networked spike taken before this
+checkout could install anything. T009 exists to turn them back into
+measurements. Run against `sphinx==9.0.4`, `myst-parser==5.1.0`,
+`pydata-sphinx-theme==0.21.0` in a Python 3.13.14 virtualenv.*
+
+| Claim | Stated | Measured | |
+|---|---|---|---|
+| the three pins resolve | 9.0.4 / 5.1.0 / 0.21.0 | identical | ✓ |
+| `MystReferenceResolver.default_priority` | 9 | 9 | ✓ |
+| `Sphinx.connect` default priority | 500 | 500 | ✓ |
+| `--pst-font-size-milli`, `--pst-sidebar-font-size` | `0.9rem` | `0.9rem` | ✓ |
+| wheel closure, three platform tags | 33 | **32**, identical on all three | corrected |
+| `border-radius` rule blocks | 131 | 131 | ✓ |
+| `box-shadow` rule blocks | 78 | 78 | ✓ |
+| `font-size` rule blocks below 16 px | 33 | **20 / 25 / 43**, see below | not reproducible |
+
+Both priorities hold, which is what the transform's whole design rests on, and
+the wheel matrix resolves `--only-binary=:all:` on `win_arm64`,
+`manylinux2014_x86_64` and `macosx_11_0_arm64` alike — so constitution IV's
+gate passes on measurement rather than on report. The closure is 32
+distributions, not 33; the count was quoted in nine places across two
+artifacts and all nine are corrected.
+
+**The stylesheet counts needed a method before they could be checked at all.**
+`border-radius` yields 322 if you count occurrences of the string, 146 if you
+count declarations, and 131 if you count rule blocks — the last is what the
+table below means, and it is exactly right. The same for `box-shadow` at 78.
+That was never written down, so neither number was reproducible even though
+both were correct.
+
+The sub-16-px count has no such resolution: 20 rule blocks carry a literal
+`rem`/`px` value below the floor, 25 route a `font-size` through a `--pst-*`
+variable, and 43 if `em` values and the small-variable routes are both counted.
+The stated 33 sits inside that range and cannot be recovered without the rule
+that produced it. It does not matter to the design: the override is written as
+a blanket rule rather than a selector list precisely so that the exact
+denominator is irrelevant, and the finding that actually governs — that about
+eight of the small rules are Archivo prose while the rest are code literals,
+FontAwesome glyphs, or classes this site never emits — is a qualitative
+result the recount does not disturb.
+
+**Method, so the next reader can repeat it**: split the compiled stylesheet on
+`\{([^{}]*)\}` and count the blocks whose declaration list matches
+`<shape>\s*:`. The file is minified, 376 389 bytes, 5 028 rule blocks — the
+table's "~5 200" is the same measurement rounded.
+
+Determinism, absolute paths and the offline build (R5) still cannot be probed:
+they need `scripts/build_docs.py`, and are re-verified at T034 and T035.
 
 ---
 

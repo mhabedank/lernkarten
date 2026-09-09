@@ -43,7 +43,7 @@ asserts it.
 `requirements-docs.txt`, is added (FR-002).
 
 **Docs dependencies (new)**: `sphinx==9.0.4`, `myst-parser==5.1.0`,
-`pydata-sphinx-theme==0.21.0`. Pure-Python wheels; 33-distribution closure with
+`pydata-sphinx-theme==0.21.0`. Pure-Python wheels; 32-distribution closure with
 full `cp312` wheel coverage on `win_arm64`, `manylinux2014_x86_64` and
 `macosx_11_0_arm64`. See [Dependency Decisions](#dependency-decisions).
 
@@ -88,7 +88,7 @@ is bespoke because no library knows this repository's `_site` layout, its
 
 ### Vetting (constitution IV)
 
-The full three-package table, the 33-distribution wheel matrix and the licence
+The full three-package table, the 32-distribution wheel matrix and the licence
 survey are in [research.md § R1](research.md#r1--dependency-vetting-principle-iv-fr-002--fr-004).
 The summary a reviewer needs:
 
@@ -107,7 +107,7 @@ The summary a reviewer needs:
 | **Not a typo-squat** | spelling checked character by character: `sphinx`, `myst-parser`, `pydata-sphinx-theme` |
 | **No install-time scripts** | none — all three install from wheels with no build step |
 | **Licence** | BSD-2-Clause / MIT / BSD-3-Clause. The whole closure is permissive; the only non-BSD/MIT/Apache entry is `certifi` (MPL-2.0, file-level copyleft on unmodified files, dev-only, never redistributed) |
-| **Transitive tree** | **33 distributions — a stated cost, not a clean pass.** See the note below |
+| **Transitive tree** | **32 distributions — a stated cost, not a clean pass.** See the note below |
 | **Cold-start import cost** | none: FR-003/FR-005 keep every one of them off the runtime path, and SC-009 asserts `lernkarten build` runs with none of them installed |
 | **No known unfixed advisory** | none outstanding on any of the 33 at adoption |
 | **Dependabot covers the declaring manifest** | yes, with no edit — `.github/dependabot.yml` already declares `package-ecosystem: pip, directory: "/"`, which picks up a new root-level `requirements-docs.txt` |
@@ -117,7 +117,7 @@ names "thirty packages to get one function" as the failing shape. Thirty-three i
 over that number and the plan says so rather than rounding it down. Three things
 make it acceptable, and all three are structural rather than rhetorical:
 
-1. It is not thirty-three packages for one function; it is a documentation
+1. It is not thirty-two packages for one function; it is a documentation
    toolchain, adopted instead of hand-writing HTML for the reasons FR-001 gives.
 2. **FR-002's separate manifest is the mitigation, and it works**: the tree lands
    on nobody who is not building documentation. `requirements-dev.txt` stays as
@@ -368,7 +368,13 @@ what they actually are:
 | **Keycap literal** | 1 | `.search-button-field .kbd-shortcut__modifier` | none — a literal |
 | **Never emitted on this site** | 13 | eleven Bootstrap form classes (`.form-control-sm`, `.valid-feedback`, `.invalid-tooltip`, `.dropdown-header`, …), `.ablog__collection …` (ABlog, not installed), `#ethical-ad-placement …` (Read the Docs ads, not used) | none |
 
-So the floor costs **about ten declarations**, not thirty-three. The spec's
+So the floor costs **about ten declarations**, not thirty-three. (The breakdown
+above is internally consistent, but its total is the one Phase 0 number T009
+could not reproduce — recounting gives 20, 25 or 43 depending on the rule
+applied, and the rule was never stated. See `research.md` § *Re-verified at
+T009*. Nothing here depends on it: the override is a blanket rule precisely so
+the denominator does not matter, and the qualitative split is what governs.)
+The spec's
 worry that "an unmodified theme violates FR-027, SC-008 and constitution XVI on
 the day it is installed" is confirmed — `--pst-font-size-milli` and
 `--pst-sidebar-font-size` are both 14.4 px — and the fix is small.
@@ -802,7 +808,7 @@ than in a contributor's memory:**
 2. **The Phase 0 probes are re-run at that same point, before row 8 is written.**
    Every number in `research.md` R2, R4 and R5 — the post-transform priorities
    (5 against MyST's 9, `doctree-read` 100 against `DownloadFileCollector`'s
-   500), the 33-distribution closure, the three version pins, the 131/78/33
+   500), the 32-distribution closure, the three version pins, the 131/78/33
    stylesheet counts and the byte-identical rebuild — came from a spike that
    cannot be re-run from a checkout without Sphinx installed. They are recorded
    as measured, which is the right place for them, but the first task after the
@@ -901,7 +907,7 @@ shape as row 14, and 013 inherits it along with the directory.
 
 | Violation | Gate | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|---|
-| A 33-distribution transitive tree | IV | Sphinx is the toolchain FR-001 settled on, and its `sphinxcontrib-*` set plus `requests` are hard requirements of it | Hand-written HTML has no checked cross-references, which is the whole reason for the feature. MkDocs is a smaller tree but has no domain model and no `metadata.docs` path for 013 |
+| A 32-distribution transitive tree | IV | Sphinx is the toolchain FR-001 settled on, and its `sphinxcontrib-*` set plus `requests` are hard requirements of it | Hand-written HTML has no checked cross-references, which is the whole reason for the feature. MkDocs is a smaller tree but has no domain model and no `metadata.docs` path for 013 |
 | A new module under `scripts/` | V | FR-019's one command, and FR-038's assembly, which `sphinx-build` cannot do | `check_docs.py` is a gate and `render_brand.py` is a renderer; adding a build to either gives it a second job and a second import graph |
 | A new top-level directory | V | FR-028 settled it: `docs/index.md` beside `docs/index.html` is the confusion this feature removes | Sources under `docs/` — rejected in the spec, with the reason recorded |
 | An in-repo Sphinx extension | III | No library knows this repository's `_site` layout, `PAGES` mapping or GitHub URL | Nothing on PyPI does repository-relative link rewriting to a project-specific published layout |
