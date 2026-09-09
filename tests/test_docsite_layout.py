@@ -79,6 +79,25 @@ def test_the_docs_requirements_are_pinned_exactly():
     )
 
 
+def test_the_build_directory_is_ignored():
+    """Generated output is never committed, and neither tree is generated yet.
+
+    `docsite/_build/` is Sphinx's own output and `_site/` is the assembled
+    site — the same bytes the deploy uploads. Both are derived from sources
+    that *are* versioned, so committing either would put a second copy of the
+    documentation in the repository that nothing keeps in step.
+    """
+    from test_repo_hygiene import ignored
+
+    candidates = ["docsite/_build/index.html", "_site/index.html"]
+    missing = sorted(set(candidates) - ignored(candidates))
+    assert not missing, (
+        f".gitignore does not keep {missing} out. Both are build output: the first is "
+        "Sphinx's, the second is the assembled site, and either one committed is a "
+        "second copy of the documentation that drifts from the sources it came from"
+    )
+
+
 def docs_import_names():
     """The manifest's packages as they are spelled in an `import` statement."""
     names = set()

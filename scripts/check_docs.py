@@ -168,6 +168,11 @@ def check_versions(errors):
 def markdown_files():
     files = sorted(ROOT.glob("*.md"))
     files += sorted((ROOT / "docs").glob("*.md"))
+    # Recursive, unlike the two above: the site's pages sit in area folders
+    # (docsite/user/, docsite/contributing/), so a flat glob would leave every
+    # page this feature writes outside all six drift gates and the dead-link
+    # check — the blind spot 014's tutorial would then be written into.
+    files += sorted((ROOT / "docsite").rglob("*.md"))
     files += sorted(SKILLS.glob("*/SKILL.md"))
     return files
 
