@@ -483,6 +483,38 @@ def test_the_design_doc_describes_the_box():
         )
 
 
+def test_the_pre_pr_gates_have_not_grown():
+    """A guard: the pre-PR checklist stays at the commands it has.
+
+    Green from the first run, and it could not be red without adding the gate
+    it forbids. It exists because "no fifth gate" is the kind of rule that
+    holds until a feature has a good reason, and this feature had one — a
+    documentation build that a contributor can run. That build is deliberately
+    *not* a gate: it needs a toolchain the four gates do not, and requiring it
+    would make every contributor install Sphinx to fix a typo.
+
+    Five command lines for what the project calls four gates, because `ruff`
+    runs twice. That is not an error to tidy up.
+
+    Scoped to the first fenced block: the section carries a second one, for
+    the end-to-end material, which is not a pre-PR gate.
+    """
+    text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    section = re.search(r"^## Before the pull request\n(.*?)(?=^## )", text, re.M | re.S)
+    assert section, "CONTRIBUTING.md has no '## Before the pull request' section"
+
+    block = re.search(r"```bash\n(.*?)```", section.group(1), re.S)
+    assert block, "the section carries no fenced bash block"
+
+    commands = [line for line in block.group(1).splitlines() if line.strip()]
+    assert len(commands) == 5, (
+        f"the pre-PR block runs {len(commands)} commands, not five:\n"
+        + "\n".join(commands)
+        + "\n\nFive lines for four gates — ruff runs twice. A sixth line is a fifth gate, "
+        "which this feature was explicitly not allowed to add"
+    )
+
+
 def test_the_design_doc_describes_the_documentation_site():
     """The design rules describe every surface they govern, including the new one.
 

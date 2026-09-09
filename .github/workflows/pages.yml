@@ -15,10 +15,22 @@ on:
   push:
     branches: [main]
     paths:
+      # Served at the site root.
       - docs/index.html
       - docs/leitner.html
       - assets/card-box.pdf
       - .github/workflows/pages.yml
+      # Read by the documentation build. A file the site is built from but
+      # does not redeploy for is a file that can change on main while the
+      # published page goes on saying the old thing.
+      - docs/*.md
+      - CONTRIBUTING.md
+      - docsite/**
+      - requirements-docs.txt
+      - assets/pipeline.png
+      - assets/example-cards.png
+      - assets/fonts/**
+      - scripts/build_docs.py
   workflow_dispatch:
 
 permissions:

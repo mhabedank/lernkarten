@@ -182,6 +182,47 @@ def test_the_docs_requirements_are_not_a_runtime_dependency():
     )
 
 
+def test_the_docsite_holds_no_symlink_and_no_copy():
+    """A guard: the site reaches its sources, it never holds them.
+
+    Two arrangements were excluded by name, and both are the kind that get
+    proposed as simplifications later. A symlink into `docsite/` needs
+    developer mode on Windows, so it would work for whoever wrote it and fail
+    for a contributor on another machine. A copy is worse and quieter: two
+    editable files with the same content, one of which the four gates read and
+    the other of which the site publishes, drifting apart the first time
+    somebody edits the nearer one.
+
+    The requirement says it is written "so that a later change does not
+    simplify it into a move". That sentence had no gate until this one. Green
+    from the first run — making it red would mean committing the arrangement
+    the requirement forbids.
+    """
+    docsite = ROOT / "docsite"
+
+    links = sorted(p.relative_to(ROOT).as_posix() for p in docsite.rglob("*") if p.is_symlink())
+    assert not links, (
+        f"these paths under docsite/ are symlinks: {links}. They need developer mode on "
+        f"Windows, so the build works for whoever made them and fails for the next "
+        f"contributor"
+    )
+
+    migrated = {
+        path.read_bytes(): path.relative_to(ROOT).as_posix()
+        for path in [*(ROOT / "docs").glob("*.md"), ROOT / "CONTRIBUTING.md"]
+    }
+    copies = {
+        p.relative_to(ROOT).as_posix(): migrated[p.read_bytes()]
+        for p in docsite.rglob("*.md")
+        if p.read_bytes() in migrated
+    }
+    assert not copies, (
+        f"these pages under docsite/ are byte-identical copies of a repository document: "
+        f"{copies}. A page includes its source; it never holds it, or the gates and the "
+        f"site read two files that start identical and stop being so"
+    )
+
+
 def test_the_ci_docs_job_runs_the_docs_tests():
     """CI must actually run the tests that only run with Sphinx installed.
 

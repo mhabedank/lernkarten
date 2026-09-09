@@ -662,6 +662,52 @@ def test_the_pages_workflow_publishes_the_box():
     )
 
 
+# Everything the deployed site is built from. A file missing here is a file
+# that can change on main without the site being rebuilt — the deployed page
+# then contradicts the repository and nothing says so.
+PAGES_INPUTS = (
+    # what the workflow already watched
+    "docs/index.html",
+    "docs/leitner.html",
+    "assets/card-box.pdf",
+    ".github/workflows/pages.yml",
+    # what the documentation build reads
+    "docs/*.md",
+    "CONTRIBUTING.md",
+    "docsite/**",
+    "requirements-docs.txt",
+    "assets/pipeline.png",
+    "assets/example-cards.png",
+    "assets/fonts/**",
+    "scripts/build_docs.py",
+)
+
+
+def test_the_pages_workflow_triggers_on_every_input():
+    """Everything the site is built from also redeploys it.
+
+    One assertion per entry rather than a count, because a count is satisfied
+    by the wrong twelve. That is not hypothetical here: `assets/fonts/**` was
+    missing while the number was being reconciled from ten to eleven — the
+    figure had been checked against itself and the list had never been checked
+    against what the build actually reads.
+
+    A dropped entry does not fail anything. It means an edit lands on main,
+    the site is not rebuilt, and the deployed page quietly disagrees with the
+    repository — the same shape of silence that let the method page 404.
+    """
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    triggers = re.search(r"paths:\n(.*?)\n\s*\w+:", workflow, re.DOTALL)
+    assert triggers, "pages.yml has no paths: filter — every push to main would redeploy"
+
+    listed = triggers.group(1)
+    missing = [entry for entry in PAGES_INPUTS if entry not in listed]
+    assert not missing, (
+        f"pages.yml does not redeploy when {missing} change, though the site is built from "
+        f"them. The filter lists:\n{listed}"
+    )
+
+
 def test_the_deploy_is_all_or_nothing():
     """A documentation build that fails publishes nothing at all.
 
