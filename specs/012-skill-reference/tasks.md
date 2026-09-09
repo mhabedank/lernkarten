@@ -314,15 +314,15 @@ fifth gate** (FR-024, SC-010).
 
 <!-- parallel-group: 10 -->
 
-- [ ] T056 [P] `ruff check . && ruff format --check .` — gate #1 now also reads `docsite/conf.py` and `docsite/_ext/*.py`; `pyproject.toml` declares no `exclude`, which is the scope widening FR-024 records
-- [ ] T057 [P] `pytest`
-- [ ] T058 [P] `lernkarten check cards/example.yaml`
+- [x] T056 [P] `ruff check . && ruff format --check .` — gate #1 now also reads `docsite/conf.py` and `docsite/_ext/*.py`; `pyproject.toml` declares no `exclude`, which is the scope widening FR-024 records
+- [x] T057 [P] `pytest`
+- [x] T058 [P] `lernkarten check cards/example.yaml`
 
 <!-- sequential -->
 
-- [ ] T059 `python3 scripts/check_docs.py` — including `check_import_graph()`, green since T018, and `check_leitner_intervals`, which the FR-037 widening cannot reach
-- [ ] T060 In an environment where **none** of the three docs packages is installed (a fresh venv with `requirements-dev.txt` only): `pytest -q` passes with the docs-build tests reported as **skipped**, each naming `requirements-docs.txt`; `python3 bin/lernkarten check cards/example.yaml` and `python3 bin/lernkarten build cards/example.yaml -o output/cards.pdf` run unchanged (SC-006, SC-009, quickstart § 6)
-- [ ] T061 `git status` clean of generated output and user content — no `_site/`, no `docsite/_build/`, no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binary
+- [x] T059 `python3 scripts/check_docs.py` — including `check_import_graph()`, green since T018, and `check_leitner_intervals`, which the FR-037 widening cannot reach
+- [x] T060 In an environment where **none** of the three docs packages is installed (a fresh venv with `requirements-dev.txt` only): `pytest -q` passes with the docs-build tests reported as **skipped**, each naming `requirements-docs.txt`; `python3 bin/lernkarten check cards/example.yaml` and `python3 bin/lernkarten build cards/example.yaml -o output/cards.pdf` run unchanged (SC-006, SC-009, quickstart § 6)
+- [x] T061 `git status` clean of generated output and user content — no `_site/`, no `docsite/_build/`, no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binary
 - [ ] T062 Push the branch and open the pull request (`main` rejects direct pushes), then confirm the **`docs-build` job is green on all three operating systems**. This run is the second half of ordering constraint 2 (T009): it is the first time the three pins and the wheel matrix are exercised outside the Phase 0 spike
 
 ---
