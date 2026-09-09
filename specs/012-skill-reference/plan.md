@@ -494,9 +494,16 @@ planning is resolved there with a measurement:
    touches `_site/.nojekyll`;
 4. prints the path to open.
 
-`--site <dir>` is the one option, so `pages.yml` can point it at the runner's
-`_site`. FR-019's "single command with no arguments" is about the default, and
-the default takes none.
+`--site <dir>` and `--source <dir>` are the two options, both defaulting, so
+FR-019's "single command with no arguments" is about the default and the default
+takes none. `--site` lets `pages.yml` point at the runner's `_site`. `--source`
+defaults to `docsite/` and exists so that **no test ever writes into the checked-in
+tree**: rows 7 and 10 need a probe page, and an interrupted run that leaves a
+`docsite/*.md` behind turns the next build red, turns gate #4 red (FR-037 puts
+`docsite/**/*.md` inside `check_links`, and a probe's dead link is exactly what it
+reports) and trips guard row 25. Both tests `shutil.copytree` `docsite/` into
+`tmp_path` and build the copy; `conf.py`'s `sys.path` insert of `_ext` is relative to
+the configuration directory, so a copied tree builds unchanged.
 
 **Step 3 is idempotent by construction** — `shutil.copy2` of bytes that are
 already there — which is what lets `pages.yml` keep its own `cp` lines. See
@@ -648,21 +655,38 @@ Rebuilt to four steps, in this order:
 1. `checkout`;
 2. **the existing assembly block, unchanged** — `mkdir -p _site`, the three `cp`
    lines, `touch _site/.nojekyll`;
-3. install `requirements-docs.txt`, then `python3 scripts/build_docs.py --site _site`;
+3. install `requirements-docs.txt`, then
+   `python3 scripts/build_docs.py --site _site && test -f _site/docs/index.html`;
 4. `configure-pages` → `upload-pages-artifact` → `deploy-pages`.
 
 **All-or-nothing** falls out of the shape — one job, and a failing build fails it
-before `upload-pages-artifact` runs, so nothing is published (FR-033).
+before `upload-pages-artifact` runs, so nothing is published (FR-033). The
+`&& test -f _site/docs/index.html` on step 3 does two jobs and neither is optional:
+it makes a build that exits 0 while writing nothing fail *before* the upload, which
+is FR-033 at its strongest; and it is the only honest way the workflow text comes to
+contain the string `_site/docs`, which is the token the FR-016 adaptation below
+reads. Without it row 15 cannot go green and the quickest repair is a comment saying
+`_site/docs` — a derivation that reads a word instead of a fact.
 
-`paths:` gains seven entries — `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`,
+`paths:` gains **eight** entries — `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`,
 `requirements-docs.txt`, `assets/pipeline.png`, `assets/example-cards.png`,
-`scripts/build_docs.py` — and the **four** existing entries stay (FR-017):
+`scripts/build_docs.py` and **`assets/fonts/**`** — and the **four** existing entries
+stay (FR-017):
 `docs/index.html`, `docs/leitner.html`, `assets/card-box.pdf` **and
 `.github/workflows/pages.yml` itself**, which the file already lists today.
-**Eleven** in total, all asserted by red row 22. *(An earlier draft of this plan
-said "the three existing entries" and "all ten"; the workflow's own path was
-being absorbed silently, which under row 22's "one assertion per entry" would
-have produced a test that was wrong by construction.)*
+**Twelve** in total, all asserted by red row 22.
+
+**`assets/fonts/**` is an input, not an asset a page renders.** FR-027 and the theme
+task copy the three faces out of it through `html_static_path` (SC-014), so replacing
+or re-hinting a face changes the built site and must redeploy it. It is named here
+because it is the one input FR-017's own enumeration does not spell out.
+
+*(Two earlier drafts of this paragraph were wrong in the same family and one step
+apart. The first said "the three existing entries" and "all ten", absorbing the
+workflow's own path silently. The second fixed the number to eleven and left the
+list — the count was reconciled against itself in four places and never against
+FR-027's inputs. Under row 22's "one assertion per entry" either would have produced
+a test that was wrong by construction.)*
 
 ### `.github/workflows/ci.yml` (FR-023, FR-034)
 
@@ -698,9 +722,25 @@ both commands.
 
 ### `docs/index.html` (FR-014)
 
-One link added, pointing at **`docs/`** — the directory, matched literally by
-FR-016's test. Nothing else on the page changes, so every existing assertion in
-`tests/test_landing_page.py` still passes (SC-005).
+**Two edits, both inside the button row at lines 767–770.**
+
+1. A link added, pointing at **`docs/`** — the directory, matched by FR-016's test.
+2. The existing **`full walkthrough`** button (line 769) retargeted from
+   `https://github.com/mhabedank/lernkarten/blob/main/docs/workflow.md` to
+   **`docs/user/workflow.html`**.
+
+The second is not a tidy-up. That button is the most literal instance of the
+complaint this feature answers: the landing page's own call to action sends a
+newcomer to raw Markdown on GitHub, and after 012 it would do so from the same
+section that offers `docs/` into the site. It is decided the way FR-042 decided the
+README's three references — leaving it reintroduces the split one link deep — and it
+is recorded in FR-042 rather than left as a remark, because it edits a file with its
+own test suite. `.button-row` is `flex-wrap: wrap` (line 152), so a third button
+reflows rather than overflowing.
+
+Nothing else on the page changes, so every existing assertion in
+`tests/test_landing_page.py` still passes (SC-005) — including the four-link nav
+assertions, which is why both edits are in the body and not in the nav.
 
 ### `tests/test_landing_page.py` (FR-016) — adapted, never weakened
 
@@ -710,8 +750,23 @@ second route: a target may also arrive because the documentation build writes
 `_site/docs/`. The rule is derived from the workflow text, not allow-listed:
 
 ```python
-built = bool(re.search(r"_site/docs\b", workflow)) and ref.rstrip("/") == "docs"
+built = bool(re.search(r"_site/docs\b", workflow)) and (
+    ref.rstrip("/") == "docs" or ref.startswith("docs/")
+)
 ```
+
+**The subtree, not one literal.** FR-016's *permitted* clause admits any target
+"produced by the documentation build into `_site/docs/`", and after the two edits
+above the page carries two of them: `docs/` and `docs/user/workflow.html`. A rule
+matching only the literal `docs` would reject the second and force it back onto a
+`cp` line that can never produce it — which is a weakening dressed as strictness.
+
+**The token the first half reads is real.** `pages.yml`'s build step ends with
+`&& test -f _site/docs/index.html`, so `_site/docs` appears in the workflow as a
+check the deploy actually runs. Stated because the alternative — a comment carrying
+the string — would satisfy the regex while proving nothing, and an earlier draft of
+this section described the adaptation as verified against a draft workflow that no
+artifact contained.
 
 Verified against a draft workflow: `card-box.pdf` and `leitner.html` still match
 through their `cp` lines, which [The `_site` assembly](#the-_site-assembly-stated-once)
@@ -758,7 +813,7 @@ than in a contributor's memory:**
 | # | Red assertion | Goes green with |
 |---|---|---|
 | 1 | `test_the_docs_requirements_are_pinned_exactly` — `requirements-docs.txt` exists, names the three packages with `==`, one comment each | `requirements-docs.txt` |
-| 2 *(guard)* | `test_the_docs_requirements_are_not_a_runtime_dependency` — no name from `requirements-docs.txt` appears in `scripts/deps.py` `REQUIREMENTS`, and nothing under `bin/` or `scripts/` imports one (FR-003, FR-005) | nothing — it guards FR-003/FR-005 against a later feature |
+| 2 *(guard)* | `test_the_docs_requirements_are_not_a_runtime_dependency` — no name from `requirements-docs.txt` appears in `scripts/deps.py` `REQUIREMENTS`, and no module in the **import closure of `bin/lernkarten`** imports one (FR-003, FR-005). **Scoped to the closure, not to `scripts/` as a directory**: `scripts/build_docs.py` imports `sphinx` on purpose from T015, so a directory-wide rule goes red eight tasks after it is written and the cheap repair is a name-list exclusion — a guard that no longer guards. `bin/lernkarten` imports `engine`, `deps`, `cardid`, `setup_cmd` and `build_pdf` (lines 30–71) and `check_docs.real_graph()` already derives each module's local imports, so the closure is computed rather than listed, and `build_docs` — a leaf nothing imports — falls outside it by construction. FR-005's own wording is the narrow one: "any script a **user's run** reaches" | nothing — it guards FR-003/FR-005 against a later feature that puts a docs package on a user-reachable module |
 | 3 | `test_the_build_directory_is_ignored` — `docsite/_build/` and `_site/` are matched by `.gitignore` (FR-022) | `.gitignore` |
 | 4 | `test_check_docs_covers_the_docsite` — `markdown_files()` contains every `docsite/**/*.md` (FR-037) | `markdown_files()` |
 | 5 | `test_the_build_exits_zero_and_writes_an_index` — skips without the docs requirements, naming `requirements-docs.txt` (FR-023, SC-006) | `scripts/build_docs.py` + `docsite/conf.py` |
@@ -772,13 +827,13 @@ than in a contributor's memory:**
 | 13 *(guard)* | `test_the_site_loads_no_third_party_subresource` — no `<link>`/`<script>`/`<img>` with an `http(s)` URL anywhere in the output, and (FR-018) no `href`/`src` beginning with `/` and none naming `mhabedank.github.io` (SC-014, FR-018) | **nothing.** Research R4 measured that the stock theme already loads no third-party sub-resource — FontAwesome ships bundled under `_static/vendor/` — and Sphinx's URIs are already document-relative, so this row is green the moment it is written. It guards a later `@font-face` pointing at a CDN and a later `html_baseurl` line. **The positive half of SC-014 — the three faces actually being served from the site — is asserted by row 21**, because a build with no font at all satisfies this row |
 | 14 *(guard)* | `test_the_extension_imports_nothing_from_lernkarten` — `docsite/_ext/` imports no `scripts/` module (the purity rule 013 inherits) | nothing — it is the enforcement the spec's extraction decision promised |
 | 15 | `test_the_pages_workflow_assembles_every_relative_link` — **existing test**, red once `docs/index.html` gains `docs/` | the adaptation above + the rebuilt `pages.yml` |
-| 16 | `test_the_ci_docs_job_runs_the_docs_tests` — `ci.yml` has a docs-build job; its id is **not** `docs`; it runs on all three OSes; it installs `requirements-docs.txt`; **and it runs `pytest`** (FR-023, FR-034). The last clause is the one that matters: without it rows 5–13 execute in no CI job at all | `ci.yml` |
+| 16 | `test_the_ci_docs_job_runs_the_docs_tests` — `ci.yml` has a docs-build job; its id is **not** `docs`; it runs on all three OSes; it installs `requirements-docs.txt`; **and it runs `pytest`** (FR-023, FR-034). The last clause is the one that matters: without it rows 5–13 execute in no CI job at all. **Parsed with `yamlio` and asserted on the job object**, selected by its `build_docs.py` step — against `ci.yml` as text four of the five clauses are already true today (`cards` and `e2e` list three runners, `test` runs `pytest`, `requirements-dev.txt` is installed in four places), so an unscoped test is red on one clause and vacuous on the rest. Same discipline as row 24's "scoped to the first block" | `ci.yml` |
 | 17 | `test_the_deploy_is_all_or_nothing` — `pages.yml` uploads only after the build step, in one job (FR-033, SC-013 first half) | `pages.yml` |
 | 18 | `test_the_readme_points_at_the_published_pages` — the three `README.md` links are site URLs, **and** `](docs/index.html)` inside `## The design` is untouched (FR-042) | `README.md` |
 | 19 | `test_the_design_doc_describes_the_documentation_site` — `docs/design.md` § *The screen surfaces* has a third row naming `docsite/` (FR-036) | `docs/design.md` |
 | 20 | `python3 scripts/check_docs.py` — red until Principle VI lists `build_docs` (FR-039). **This one is a gate, not a pytest case**, and it is the reason the constitution amendment is a named task rather than an afterthought | the constitution amendment |
 | 21 | `test_the_theme_override_lands` — the built `_static/lernkarten.css` sets `--pst-font-family-base`, `--bs-font-sans-serif` and `--bs-font-monospace`, and carries the blanket `border-radius: 0` / `box-shadow: none` rule (FR-027). **Not a selector list** — three variable names and one rule, chosen because the measurement that produced them is exactly what regresses silently: overriding only the three `--pst-` variables leaves `body` on the system stack. **It also asserts that the faces arrived**: the built `_static/` carries `Archivo.ttf`, `Jost.ttf` and `IBMPlexMono-Regular.ttf`, and the stylesheet declares four `@font-face` blocks with `format("truetype")`. Without that clause a build whose `html_static_path` never reached `assets/fonts/` passes both this row and row 13 and falls back to a system stack silently — the spec's *A font that is not there* edge case, which nothing else can see | `docsite/_static/lernkarten.css` |
-| 22 | `test_the_pages_workflow_triggers_on_every_input` — all **eleven** `paths:` entries are present (FR-017), one assertion per entry, following the pattern already at `tests/test_landing_page.py:539`. Eleven, not ten: the four the file has today include `.github/workflows/pages.yml` | `pages.yml` |
+| 22 | `test_the_pages_workflow_triggers_on_every_input` — all **twelve** `paths:` entries are present (FR-017), one assertion per entry, following the pattern already at `tests/test_landing_page.py:539`. Twelve, not ten: the four the file has today include `.github/workflows/pages.yml`, and the eight new ones include `assets/fonts/**` | `pages.yml` |
 | 23 | `test_principle_v_names_the_documentation_directory` — Principle V's table has a `docsite/` row and its `docs/` row names `leitner.html` (FR-039, the half nothing enforces) | the constitution amendment |
 | 24 *(guard)* | `test_the_pre_pr_gates_have_not_grown` — the **first** fenced `bash` block under `CONTRIBUTING.md` § *Before the pull request* still holds exactly **five** command lines (`ruff check .`, `ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`) — five lines for what the project calls four gates, because `ruff` runs twice. SC-010's second half, and FR-024's "no fifth gate". Lives in `tests/test_repo_hygiene.py`, beside the other "the repository still says what it says" assertions. **Scoped to the first block**: the section carries a second one (`make_testdata.py`, `LERNKARTEN_E2E=1 pytest`) which is not a pre-PR gate | nothing — the only thing standing between FR-024 and a future feature quietly adding a sixth line |
 | 25 *(guard)* | `test_the_docsite_holds_no_symlink_and_no_copy` — nothing under `docsite/` is a symlink, and no file under `docsite/` repeats the bytes of a migrated document (`docs/*.md`, `CONTRIBUTING.md`). FR-028 excludes both mechanisms **by name** and says it is written "so that a later change does not 'simplify' it into a move", which is a rule with no enforcement until this row exists | nothing — the two mechanisms are already absent; it is the enforcement FR-028's own sentence asks for. A pytest case, **not** a manual row, so FR-025's cap of three stays intact |
