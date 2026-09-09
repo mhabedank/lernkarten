@@ -1,4 +1,4 @@
-# Phase 0 research: Sphinx documentation foundation (012)
+# Phase 0 research: Sphinx documentation foundation (013)
 
 **Method**: everything below was **measured**, not estimated. A throwaway venv
 (`sphinx 9.0.4`, `myst-parser 5.1.0`, `pydata-sphinx-theme 0.21.0`) and a
@@ -325,7 +325,7 @@ wrapper page becomes a MyST **download reference**. Sphinx copies the file to
 browser *saves* instead of opening — a direct violation of FR-010 ("one page,
 one URL") and SC-012, produced by the most natural way to write the wrapper.
 
-The general rule behind it, worth stating because 014 will meet it: **a link
+The general rule behind it, worth stating because 015 will meet it: **a link
 written in a `docsite/` page to a file that exists on disk becomes a download**;
 the same link written inside an `{include}`d document does not, because MyST
 resolves it against the including page, where it does not exist. The asymmetry

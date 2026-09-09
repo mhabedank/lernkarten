@@ -9,11 +9,11 @@
 **Input**: User description: "Es gibt keine wirkliche API beschreibung und dokumentation, die webseite verriet nicht wie die einzelnen befehle im detail ausgeführt werden können. gute seiten haben eine übersicht. die sollten wir auch haben. jetzt stellt sich mir aber eine frage: in regulären code können dise aus dem code generiert werden, zum beispiel klassen anhand der docstrings usw. ist sowas auch für skills möglich, wenn ja wäre es nice die auto zu geniereien. vlt sollte jeder skill meta informatiojen dafür zu verfügung stellen. es gibt ein paar solcher dokumentationen die mir am besten gefallen und die ich für dieses projekt auch gerne hätte: 1. Django (python) 2. Pandas 3. numpy — diese sind extrem gut gestaltet, auto generiert und bieten einen echten value. was mir bei pandas und django sehr gut gefällt ist dass es ein sehr gutes tutorial hat und dass die classes, methoden usw. direkt verlinkt sind und man easy hinklicken kann; zudem gibt es noch Themenseiten — das gibt es bei pandas auch (zum Beispiel Visualisierung)."
 
 **Scope note**: the original request is delivered in three features. **This spec is
-012, the foundation only**: the toolchain, the theme, the rebuilt publication
+013, the foundation only**: the toolchain, the theme, the rebuilt publication
 workflow, and the migration of the documentation that already exists. It ships a
 real, navigable documentation site with **no generated content yet**. The
-generated skill/CLI reference is **013**; the tutorial and topic pages are
-**014**. Both are recorded in [Follow-on features](#follow-on-features) so they
+generated skill/CLI reference is **014**; the tutorial and topic pages are
+**015**. Both are recorded in [Follow-on features](#follow-on-features) so they
 can be specified later without re-deciding anything.
 
 ## Scope in the Pipeline *(mandatory)*
@@ -25,7 +25,7 @@ changes behaviour, and no file a user's project holds is read or written.
 
 - [x] **Deterministic** — Python and configuration under `docsite/`, a dependency
       manifest, a rebuilt `.github/workflows/pages.yml`, and pytest cases. **No
-      skill prompt changes in 012**; the `SKILL.md` frontmatter change belongs to
+      skill prompt changes in 013**; the `SKILL.md` frontmatter change belongs to
       013.
 
 **Who runs into this**: **both** — the user driving Claude in their own project
@@ -44,9 +44,9 @@ reasoning behind them. None of them is reopened in planning.
 
 - Q: Which static site generator builds the documentation? (FR-001) → A: **Sphinx, with `myst-parser` for the Markdown sources and `pydata-sphinx-theme` for the theme.** Django, pandas and numpy — the three sites named as the target — are all Sphinx, and pandas and numpy both use `pydata-sphinx-theme`, so the look and the mechanics being asked for are the ones this toolchain already produces. Every feature the request praised is a Sphinx feature rather than a theme's: clickable cross-references between entities are domains, a tutorial with flow is a `toctree`, topic pages are the user guide, and search is built in. The property that actually decided it is narrower than any of those: a Sphinx domain makes a reference to something that does not exist a **build failure**, which is the drift protection this feature exists for and which this repository has so far bought with bespoke regex gates written after the drift shipped. `myst-parser` keeps the Markdown that already exists as Markdown, so no source file is converted to reStructuredText.
 - Q: Does the generated site absorb `docs/index.html`? (FR-013) → A: **No — the landing page stays the site root, unchanged, and keeps `tests/test_landing_page.py`; the generated site lives under a sub-path.** The landing page is a hand-designed, self-contained file with a test suite of its own. Rebuilding it as a theme template would destroy the design and obsolete those tests, and it would buy nothing: the site needs a home page and already has a better one than a generator would produce. Django is the precedent — a bespoke home page with Sphinx behind it.
-- Q: Where does the skill metadata for the generated reference live? → A: **Under the `metadata:` key of the `SKILL.md` frontmatter, as `metadata.docs` — never as new top-level keys.** The Agent Skills standard allows exactly five top-level frontmatter keys — `compatibility`, `description`, `license`, `metadata`, `name` — and rejects anything else, including Claude Code's own extended fields. The evidence is `github.com/anthropics/claude-code` issue #25380, which quotes the validator error `Attribute 'allowed-tools' is not supported in skill files. Supported: compatibility, description, license, metadata, name.` `metadata` is the free-form map the standard provides for exactly this purpose. This is not academic here: lernkarten ships as a Claude Code plugin marketplace, so a frontmatter key the validator refuses breaks an installation rather than a lint. The decision binds **013**, not 012; it is recorded here because this is where the reasoning was established.
+- Q: Where does the skill metadata for the generated reference live? → A: **Under the `metadata:` key of the `SKILL.md` frontmatter, as `metadata.docs` — never as new top-level keys.** The Agent Skills standard allows exactly five top-level frontmatter keys — `compatibility`, `description`, `license`, `metadata`, `name` — and rejects anything else, including Claude Code's own extended fields. The evidence is `github.com/anthropics/claude-code` issue #25380, which quotes the validator error `Attribute 'allowed-tools' is not supported in skill files. Supported: compatibility, description, license, metadata, name.` `metadata` is the free-form map the standard provides for exactly this purpose. This is not academic here: lernkarten ships as a Claude Code plugin marketplace, so a frontmatter key the validator refuses breaks an installation rather than a lint. The decision binds **014**, not 013; it is recorded here because this is where the reasoning was established.
 - Q: Is the Sphinx extension that documents skills built in this repository, or in a separate public one? → A: **In this repository, with the extraction planned and its trigger written down.** The public artifact worth sharing is the `metadata.docs` **schema**, not the couple of hundred lines that read it — and that schema has no validated design yet. A schema with one consumer is a configuration format, not a standard; lernkarten is that first consumer and has to shake it out. Two repositories moving in lockstep would also add release friction during exactly the phase with the most iteration. So that "extract later" does not quietly become "never", the mitigation is part of the decision: the extension gets its own directory, imports nothing from lernkarten (enforced by a test, not by intent), carries its own tests, and the extraction trigger is written down now — the site live, plus the schema unchanged across one release. `sphinx-agent-skills` and `sphinx-skills` are both free on PyPI.
-- Q: Is this one feature or several? → A: **Three.** 012 is the Sphinx foundation, 013 the generated skill and CLI reference, 014 the tutorial and the topic pages. As a single feature nothing would be visible until the very end; split this way each of the three merges something a reader can open.
+- Q: Is this one feature or several? → A: **Three.** 013 is the Sphinx foundation, 014 the generated skill and CLI reference, 015 the tutorial and the topic pages. As a single feature nothing would be visible until the very end; split this way each of the three merges something a reader can open.
 - Q: How much of the existing documentation moves onto the site? (FR-007) → A: **All of it**, split into a user area (`docs/workflow.md`, the Leitner method page) and a contributing area (`docs/design.md`, `docs/testing.md`, `CONTRIBUTING.md`) — the way Django publishes both. The complaint being answered is that the content is split between the website and the repository for no reason a newcomer can see. A migration that moved only the user-facing half would leave that complaint half-standing, and it would leave the contributor documentation exactly where nobody found it.
 
 ### Session 2026-09-08 — answered during clarification
@@ -68,9 +68,9 @@ repository's own code. Two entries **narrow or widen a requirement written
 earlier**, and say so rather than overwriting it silently.
 
 - Q: Does the 15 px floor bind the whole theme, and what happens to the other visual rules `docs/design.md` states? (FR-027, FR-035, FR-036) → A: **Full alignment — and FR-035 is narrowed.** Two errors were found by reading `docs/design.md` instead of the spec. First, in the strict direction: `docs/design.md` line 58 says **"Reading text means Archivo"**, and constitution XVI repeats that the floor does not bind IBM Plex Mono literals or Jost labels. The *Print & Design Impact* bullet ("including code samples and tables") and FR-035's original wording ("every element the theme sets below it") therefore demanded **more than the rule they cite**; both are corrected to Archivo prose only, and a code sample is exempt. *(This narrows FR-035 as it was written on 2026-09-08 earlier the same day. The requirement is not withdrawn — the override is still required — only its scope is corrected to match `docs/design.md`.)* Second, in the loose direction, and much larger: `docs/design.md` §*The screen surfaces* says both existing surfaces are "built from flat colour and type only — **no gradients, no shadows, no rounded corners**", while `pydata-sphinx-theme` styles admonitions, buttons, the search field and the sidebar with radii and shadows by default. So FR-027 was never a type-size job. The decision is full alignment: the three inks, the three faces **self-hosted from `assets/fonts/`** (they are vendored and OFL-licensed, so the landing page's Google Fonts route is not reused), and the theme's shapes flattened. And because a normative document that describes two surfaces while three exist is stale, `docs/design.md` §*The screen surfaces* **gains a row for the documentation site** naming which theme conventions it may keep — a deliberate edit under constitution XVI, not a drive-by.
-- Q: Every page the site generates is invisible to `scripts/check_docs.py`. Does that stay true? (FR-037) → A: **No.** `markdown_files()` is extended to cover every Markdown file under `docsite/`, and a test asserts that coverage so it cannot be silently lost. `markdown_files()` globs exactly three things — root `*.md`, `docs/*.md`, `skills/*/SKILL.md` — and `gated_files()` is that list plus `scripts/*.py` and `templates/*.typ`. A new `docsite/` is in neither, so every page 012 writes would sit outside the dead-link check *and* the five drift gates at once: the A7/A8-default token gate, the sheet-capacity gate, the cutting-instruction gate, the borderless-size gate and the print-order gate. Those gates exist because this repository shipped exactly that drift twice, and their own comments say a hand-written grep missed lines and they shipped. The consequence is written into FR-037 rather than left to be discovered: `check_links` resolves a relative link **against the file system**, so pages under `docsite/` may not use extension-less MyST cross-references and write a relative path to the source file **including its `.md` extension** instead. This matters most for **014**, whose tutorial and topic pages will be full of grid and card-size claims.
+- Q: Every page the site generates is invisible to `scripts/check_docs.py`. Does that stay true? (FR-037) → A: **No.** `markdown_files()` is extended to cover every Markdown file under `docsite/`, and a test asserts that coverage so it cannot be silently lost. `markdown_files()` globs exactly three things — root `*.md`, `docs/*.md`, `skills/*/SKILL.md` — and `gated_files()` is that list plus `scripts/*.py` and `templates/*.typ`. A new `docsite/` is in neither, so every page 013 writes would sit outside the dead-link check *and* the five drift gates at once: the A7/A8-default token gate, the sheet-capacity gate, the cutting-instruction gate, the borderless-size gate and the print-order gate. Those gates exist because this repository shipped exactly that drift twice, and their own comments say a hand-written grep missed lines and they shipped. The consequence is written into FR-037 rather than left to be discovered: `check_links` resolves a relative link **against the file system**, so pages under `docsite/` may not use extension-less MyST cross-references and write a relative path to the source file **including its `.md` extension** instead. This matters most for **015**, whose tutorial and topic pages will be full of grid and card-size claims.
 - Q: Two links resolve on the deployed site and are dead in a local build. Which promise gives way? (FR-018, FR-038) → A: **Neither — the build command assembles a miniature `_site`.** FR-031 retargets `docs/design.md`'s `index.html` to `../index.html` and its `../assets/card-box.pdf` to `../card-box.pdf`, which is right when deployed (from `/docs/`, `../` is the site root) and dead locally (from `docsite/_build/html/`, `../` is `docsite/`). US2 acceptance scenario 5 and FR-018 promise the opposite. Rather than narrowing that promise, the build places `docs/index.html`, `docs/leitner.html` and `assets/card-box.pdf` in the positions they occupy when deployed, so every link resolves in both settings. The second payoff decided it: the local build becomes a **preview a contributor can check FR-014 and SC-007 against before pushing**, instead of those being verifiable only after a deploy. This also settles **FR-019** on `python3 scripts/build_docs.py` — a plain `sphinx-build` cannot assemble anything.
-- Q: This feature amends the constitution. How far? (FR-039) → A: **Both principles, inside 012, as a named task.** Principle **VI** carries a fenced dependency graph of every `scripts/*.py`, and `check_import_graph()` derives the real graph from the import statements and **fails the *Skills & docs* CI job** for any module the block does not list — so `scripts/build_docs.py` cannot merge without the edit. Principle **V**'s `docs/` row is a normative table listing four files; a new top-level `docsite/` is outside it. Nothing enforces V, so that half is a governance obligation rather than a red build — which is precisely why it would otherwise be skipped. The overdue correction rides along: Principle V's row, and the constitution as a whole, **never mentions `docs/leitner.html`**, although FR-011 promises that if the file ever moves its gates move with it. A promise about a file the governing document does not know exists is not a promise. The version and the *Last Amended* date are bumped per the governance rule.
+- Q: This feature amends the constitution. How far? (FR-039) → A: **Both principles, inside 013, as a named task.** Principle **VI** carries a fenced dependency graph of every `scripts/*.py`, and `check_import_graph()` derives the real graph from the import statements and **fails the *Skills & docs* CI job** for any module the block does not list — so `scripts/build_docs.py` cannot merge without the edit. Principle **V**'s `docs/` row is a normative table listing four files; a new top-level `docsite/` is outside it. Nothing enforces V, so that half is a governance obligation rather than a red build — which is precisely why it would otherwise be skipped. The overdue correction rides along: Principle V's row, and the constitution as a whole, **never mentions `docs/leitner.html`**, although FR-011 promises that if the file ever moves its gates move with it. A promise about a file the governing document does not know exists is not a promise. The version and the *Last Amended* date are bumped per the governance rule.
 - Q: Which success criteria are actually measurable, and does SC-001 still claim three platforms? (SC-001, FR-034, SC-002, SC-004, SC-005, SC-013) → A: **Three platforms — SC-001 stands and FR-034 widens to match it.** *(This widens FR-034, written earlier the same day as Windows-only. The reasoning that made Windows the minimum still holds; it was the minimum, not the target.)* `CONTRIBUTING.md` promises all three platforms work from one ordinary command, and this feature introduces two OS-sensitive points of its own — the path transform in `conf.py` and `{include}` resolution — plus text encoding, which is the same class of problem that already excluded symlinks. A portability claim nothing exercises is a claim rather than a property. On the rest: criteria a command can decide keep their present form; **SC-005** ("unweakened" is a judgement about a diff, not something a command reports) and **SC-013** (a property of the process, not of an artifact) become **numbered manual rows in `docs/testing.md`** — the mechanism constitution XI provides and SC-008 already uses. SC-002 gains a stated method, and SC-004 names its comparison explicitly: **byte-identical HTML output, excluding `.doctrees/` and `.buildinfo`**, because a naive whole-directory compare fails for reasons that have nothing to do with determinism.
 - Q: After migration, does `README.md` still send a reader to raw Markdown in the repository? (FR-042) → A: **No — all three references point at the published site.** `README.md` links `docs/workflow.md` (line 79), `docs/design.md` (274) and `docs/testing.md` (288) as repository paths; after migration each is also a published page, and the premise of this whole feature is that a newcomer should not have to know which half of the project a document lives in. The narrower alternative — retarget the two user-facing links and leave the contributor one — was rejected: it reintroduces the split it is meant to remove, one link deep. **Verified against `tests/test_repo_hygiene.py` before deciding**: `test_the_readme_still_names_the_landing_page_source` pins `](docs/index.html)` inside `## The design`, which is a *different* link from `](docs/design.md)` in the same section, so retargeting does not break it and no test is changed. The accepted cost: `check_docs.check_links` skips `http` targets, so those three links leave its file-system coverage — but `REQUIRED_FILES` still requires all three files to exist, so deleting one is still caught.
 
@@ -119,7 +119,7 @@ rather than by knowing.
 
 **Why this priority**: this is the user's actual complaint — content split
 between the website and the repo for no reason a newcomer can see. It is also
-the prerequisite for 013 and 014, which need a site to put pages into.
+the prerequisite for 014 and 015, which need a site to put pages into.
 
 **Independent Test**: build the site from a clean checkout and assert that every
 migrated document is reachable from the site's navigation tree, and that the user
@@ -228,8 +228,8 @@ A contributor writes a cross-reference to a document or section that does not
 exist. The build fails and names the file and the reference, before the pull
 request is opened.
 
-**Why this priority**: it is the mechanism 013's entire value rests on. Standing
-it up in the foundation means 013 inherits checked cross-references rather than
+**Why this priority**: it is the mechanism 014's entire value rests on. Standing
+it up in the foundation means 014 inherits checked cross-references rather than
 inventing them.
 
 **Independent Test**: add a cross-reference to a non-existent target, build, and
@@ -396,7 +396,7 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   or deleted.
 - **FR-012**: The site MUST NOT contain generated skill or CLI reference content
   in this feature, but its navigation structure MUST accommodate a reference area
-  and a tutorial area being added later without restructuring what 012 ships.
+  and a tutorial area being added later without restructuring what 013 ships.
 - **FR-028**: The documentation configuration and page sources MUST live in a new
   top-level **`docsite/`** directory. `docs/` keeps its present meaning — pages
   published by hand — so the two are told apart in one sentence. Documents that
@@ -506,7 +506,7 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   | `docs/design.md` | `index.html` | From inside `/docs/` this resolves to `/docs/index.html`, not to the landing page at the root | `../../index.html` — depth-derived, via FR-029's site-root table |
   | `docs/design.md` | `../assets/card-box.pdf` | The box is published at the site root as `card-box.pdf`; a GitHub URL would send the reader away from the download the landing page offers | `../../card-box.pdf` — same table |
   | `docs/workflow.md` | `../README.md#install` | `README.md` is not a site page, and the anchor is a section of it | an absolute GitHub URL, via FR-029 — recorded here because the anchor must survive the rewrite |
-  | `docs/workflow.md` | `../CLAUDE.md` (also in `CONTRIBUTING.md`) | Not a site page in 012; a reader following it from the site gets nothing | an absolute GitHub URL, via FR-029 |
+  | `docs/workflow.md` | `../CLAUDE.md` (also in `CONTRIBUTING.md`) | Not a site page in 013; a reader following it from the site gets nothing | an absolute GitHub URL, via FR-029 |
 
   The first two rows are the **site-root** case and the last two the **GitHub**
   case; both are branches of the one transform, so "retargeting" is a build-time
@@ -659,7 +659,7 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   MyST cross-reference (`[the workflow](workflow)`). It writes a relative path to
   the source file **including its `.md` extension** (`[the workflow](workflow.md)`,
   `[design.md](../docs/design.md)`), which MyST resolves to the built page and
-  `check_links` resolves to the file. This binds **014** hardest: its tutorial and
+  `check_links` resolves to the file. This binds **015** hardest: its tutorial and
   topic pages will be full of grid and card-size claims, which is what the drift
   gates read.
 - **FR-038**: The build command MUST also assemble a **miniature `_site`**,
@@ -771,7 +771,7 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
 | `cards/*.yaml` schema | none | — |
 
 **No format change.** The `SKILL.md` frontmatter change — a `metadata.docs` block
-— belongs to **013**, not to this feature. 012 reads no skill metadata and writes
+— belongs to **014**, not to this feature. 013 reads no skill metadata and writes
 no generated page.
 
 **Backwards compatibility**: nothing a user has on disk is affected, and no
@@ -819,7 +819,7 @@ passes, with the docs tests skipped.
   cross-references are solved problems, and constitution III makes reuse the
   default. Sphinx is adopted rather than reimplemented. The one thing this
   project will eventually build itself is the Sphinx extension that documents
-  Agent Skills, and that is 013's scope, justified there by the finding that no
+  Agent Skills, and that is 014's scope, justified there by the finding that no
   such extension exists.
 - **New runtime dependency**: **none.** Nothing reaches `scripts/deps.py`
   (FR-003).
@@ -834,9 +834,9 @@ passes, with the docs tests skipped.
   contributors.
 - **Anything this makes redundant**: not yet. The hand-written command list in
   `README.md` § "The commands" and the pipeline table in `docs/index.html` become
-  candidates for removal in **013**, once something generates them; the bespoke
+  candidates for removal in **014**, once something generates them; the bespoke
   drift gates in `scripts/check_docs.py` (`SHEET_CAPACITY`, the A7/A8 default
-  tokens, the cutting-instruction check) likewise. 012 removes nothing.
+  tokens, the cutting-instruction check) likewise. 013 removes nothing.
 - **Engine version change**: no.
 - **Platforms verified**: **all three, in CI** — FR-034 requires the documentation
   build to run on Windows, macOS and Linux, matching SC-001 and the promise
@@ -960,12 +960,12 @@ passes, with the docs tests skipped.
 - The user is on Python 3.12+; the *reader* of the site needs only a browser.
 - The published site is served by GitHub Pages from `pages.yml`. No custom
   domain, no search backend, no versioned documentation trees for old releases.
-- Documentation search is out of scope for 012. Django, pandas and numpy all have
+- Documentation search is out of scope for 013. Django, pandas and numpy all have
   it, and `pydata-sphinx-theme` ships a client-side search — turning it on is a
   later, cheap addition once there is enough content to search.
 - Localisation is out of scope: the site is English (constitution XIII), even
   though the user wrote the request in German.
-- Intersphinx (cross-project references) is not used in 012; if it is ever added,
+- Intersphinx (cross-project references) is not used in 013; if it is ever added,
   it must not make the build require the network.
 - The theme is treated as a **starting point that is overridden**, not as a
   design. `pydata-sphinx-theme` was chosen because pandas and numpy use it and
@@ -986,10 +986,10 @@ passes, with the docs tests skipped.
 
 ## Follow-on features
 
-Recorded here so 013 and 014 can be specified later without re-deciding anything.
+Recorded here so 014 and 015 can be specified later without re-deciding anything.
 **No spec files exist for them yet.**
 
-### 013 — Skill & CLI reference
+### 014 — Skill & CLI reference
 
 The generated reference: one entry per skill and per `lernkarten` subcommand, an
 overview page, and checked cross-references between them.
@@ -997,7 +997,7 @@ overview page, and checked cross-references between them.
 - **No existing tool does this.** PyPI and GitHub were searched: there is no
   Sphinx extension — and no MkDocs plugin — that documents Agent Skills /
   `SKILL.md` files. Every hit was the inverse: skills that teach an agent to *use*
-  Sphinx. So 013 writes one.
+  Sphinx. So 014 writes one.
 - **Metadata goes in `metadata.docs` inside the `SKILL.md` frontmatter, not in
   new top-level keys.** The Agent Skills standard allows exactly five top-level
   frontmatter keys — `compatibility`, `description`, `license`, `metadata`,
@@ -1008,7 +1008,7 @@ overview page, and checked cross-references between them.
   metadata, name.` `metadata` is a free-form map the standard provides for
   exactly this purpose. This matters concretely because this repository ships as
   a Claude Code plugin marketplace.
-- **Candidate `metadata.docs` keys**, to be validated in 013 and not fixed now:
+- **Candidate `metadata.docs` keys**, to be validated in 014 and not fixed now:
   `summary`, `reads`, `writes`, `after`, `before`. `arguments` and
   `argument-hint` already exist as standard fields and should be read from there
   rather than duplicated.
@@ -1024,27 +1024,27 @@ overview page, and checked cross-references between them.
   the PyPI JSON API). Rationale for not starting a separate repository today: the
   schema is the real public contract and it has zero validated design so far;
   lernkarten is its first and only consumer and has to shake it out first.
-- **A concrete success criterion for 013**: the pipeline order and its file
+- **A concrete success criterion for 014**: the pipeline order and its file
   mapping is currently hand-maintained in at least four places — `CLAUDE.md:3`,
   two README image alt texts, `docs/workflow.md:9`, plus `docs/index.html`.
   Generating it from `metadata.docs` collapses those to one source.
-- **Deferred from 012**: how much of a `SKILL.md` becomes a reference entry — the
+- **Deferred from 013**: how much of a `SKILL.md` becomes a reference entry — the
   `metadata.docs` block only, or metadata plus rendered sections of the prose
-  body. This was FR-004 in the pre-split spec and is 013's to answer.
+  body. This was FR-004 in the pre-split spec and is 014's to answer.
 
-### 014 — Tutorial & topic pages
+### 015 — Tutorial & topic pages
 
 The Django-style tutorial and the pandas-style topic pages, written against the
-foundation 012 ships and cross-linked into the reference 013 generates.
+foundation 013 ships and cross-linked into the reference 014 generates.
 
 - The **tutorial** walks the pipeline end to end in order, marks
   `/learning-goal` and `/research-gaps` as optional, and links every command it
-  names into its reference entry. `docs/workflow.md` — migrated by 012 — is its
+  names into its reference entry. `docs/workflow.md` — migrated by 013 — is its
   raw material.
 - The **topic pages** explain a theme across several commands without restating
   their argument tables, the way pandas' "Visualization" page does.
 - **Topic-page candidate set the user has seen, not chosen yet**: printing &
   grids; card style and Typst markup; the Leitner box; the four file formats;
   learning goals & gaps; use without Claude Code.
-- **Deferred from 012**: which topic pages ship. This was FR-015 in the pre-split
-  spec and is 014's to answer.
+- **Deferred from 013**: which topic pages ship. This was FR-015 in the pre-split
+  spec and is 015's to answer.

@@ -2,7 +2,7 @@
 
 **Branch**: `docs/skill-reference` | **Date**: 2026-09-08 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `specs/012-skill-reference/spec.md`
+**Input**: Feature specification from `specs/013-skill-reference/spec.md`
 
 **Companion artifacts**: [research.md](research.md) (Phase 0 — everything below
 that says "measured" is measured there), [data-model.md](data-model.md),
@@ -11,13 +11,13 @@ that says "measured" is measured there), [data-model.md](data-model.md),
 
 ## Summary
 
-012 stands up the documentation site: `sphinx` + `myst-parser` +
+013 stands up the documentation site: `sphinx` + `myst-parser` +
 `pydata-sphinx-theme` in a docs-only dependency channel, a `docsite/` source
 tree that `{include}`s the five documents that already exist rather than moving
 them, a ~40-line build-time transform that turns their repository links into
 site links or GitHub URLs, a theme flattened to `docs/design.md`, and a rebuilt
 `pages.yml` that publishes the landing page at the root and the documentation at
-`/docs/`. **No generated content** — that is 013 — and **no tutorial** — that is
+`/docs/`. **No generated content** — that is 014 — and **no tutorial** — that is
 014.
 
 The spike behind this plan built the real thing. Three of the four hard
@@ -33,7 +33,7 @@ CI tests 3.12 and 3.13, and an `oldest-python` job builds cards on the floor.
 The three documentation packages all declare `Requires-Python: >=3.11`, so the
 floor is untouched by this feature.
 
-**Secondary language**: Typst — untouched by 012.
+**Secondary language**: Typst — untouched by 013.
 
 **Runtime dependencies**: `pyyaml==6.0.3` via `scripts/deps.py`. **Unchanged.**
 FR-003 and FR-005 forbid this feature from adding to that channel, and SC-009
@@ -141,7 +141,7 @@ Same reasoning as `ruff==0.16.5`. The transitive closure is **not** pinned:
 hand-maintained closure pinning is the constitution's one open Reconciliation
 item, and this feature neither closes nor worsens it.
 
-**Removals**: none. 012 removes nothing (the spec says so); the hand-written
+**Removals**: none. 013 removes nothing (the spec says so); the hand-written
 command list in `README.md` and the bespoke drift gates become candidates in 013.
 
 **No dependency fails a `CONTRIBUTING.md` gate.** There is nothing here to stop
@@ -153,7 +153,7 @@ and report.
 
 | # | Gate | Pass? |
 |---|---|---|
-| I | The two halves stay coupled only through the four file formats | **yes** — 012 touches no skill and no format. Spec's Format Contracts table is "none" on all four rows |
+| I | The two halves stay coupled only through the four file formats | **yes** — 013 touches no skill and no format. Spec's Format Contracts table is "none" on all four rows |
 | II | **(GATED)** Plain `pip install`, wheels, no compiler; no new binary | **yes** — measured across three platform tags for the whole 33-package closure. No new binary; the docs build needs no typesetting engine |
 | III | **(GATED)** Nothing hand-rolled that a library does | **yes** — see Reuse check. The transform is repository-specific glue, not a reimplementation |
 | IV | **(GATED)** Completed vetting table | **yes**, above. One gate (transitive tree) is answered as a stated cost with its mitigation, not ticked |
@@ -162,8 +162,8 @@ and report.
 | VII | **(GATED)** No user content; examples stay subject-agnostic | **yes** — every page is about the tool. Nothing under `knowledge/`, `catalog/`, `cards/` is touched |
 | VIII | No binaries committed | **yes** — the fonts are already committed and already named in Principle VIII. The build **copies** them; it converts nothing, so no new binary appears (this is why `woff2` was rejected — see research R4) |
 | IX | Sources edited, never generated files | **yes** — `docsite/_build/` and `_site/` go into `.gitignore` (FR-022) |
-| X | Skill frontmatter valid | **yes** — no skill changes in 012 |
-| XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — 25 rows in [Phase 1](#phase-1-design), of which 19 are red-first and 6 are guards, each labelled and justified in [Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied). Requirements no test can reach get **numbered manual rows 44–46** (FR-025), and no more than three |
+| X | Skill frontmatter valid | **yes** — no skill changes in 013 |
+| XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — 25 rows in [Phase 1](#phase-1-design), of which 19 are red-first and 6 are guards, each labelled and justified in [Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied). Requirements no test can reach get **numbered manual rows 50–46** (FR-025), and no more than three |
 | XII | The four gates pass; ruff not loosened | **yes** — and no fifth gate (FR-024). Gate #1's *scope* widens to `docsite/`, which was measured and costs one line-length fix |
 | XIII | English throughout | **yes** |
 | XIV | Branch `docs/skill-reference`; `main` untouched | **yes** |
@@ -216,7 +216,7 @@ rather than open.
 ### Documentation (this feature)
 
 ```text
-specs/012-skill-reference/
+specs/013-skill-reference/
 ├── spec.md
 ├── plan.md                      # this file
 ├── research.md                  # Phase 0 — the measurements
@@ -227,7 +227,7 @@ specs/012-skill-reference/
 └── checklists/requirements.md
 ```
 
-### Source Code (repository root) — what 012 touches
+### Source Code (repository root) — what 013 touches
 
 ```text
 requirements-docs.txt            # NEW  — FR-002. Three exact pins, one comment each
@@ -262,7 +262,7 @@ CONTRIBUTING.md                  # stays at the root (FR-009); § Development se
                                  # gains the optional docs install
 README.md                        # EDIT — three links retargeted at the site (FR-042)
 docs/design.md                   # EDIT — § The screen surfaces gains a third row (FR-036)
-docs/testing.md                  # EDIT — three numbered manual rows, 44–46 (FR-025)
+docs/testing.md                  # EDIT — three numbered manual rows, 50–52 (FR-025)
 .specify/memory/constitution.md  # EDIT — Principles V and VI, version + date (FR-039)
 .gitignore                       # EDIT — docsite/_build/ and _site/ (FR-022)
 pyproject.toml                   # unchanged
@@ -288,14 +288,14 @@ and putting a docs build into either would give it a second job and a second
 import graph. Both additions require the constitution amendment FR-039 names —
 the Principle VI half is **enforced** and will fail CI until it is written.
 
-**The `_ext/` placement** is deliberate and forward-looking: 013's skill
+**The `_ext/` placement** is deliberate and forward-looking: 014's skill
 extension has to live in its own directory and import nothing from lernkarten,
-enforced by a test. Putting 012's transform there now means 013 inherits the
+enforced by a test. Putting 013's transform there now means 014 inherits the
 directory and the purity test instead of introducing both.
 
 ### The two halves
 
-**Model-driven work** (`skills/`): **none.** 012 changes no prompt. The
+**Model-driven work** (`skills/`): **none.** 013 changes no prompt. The
 `metadata.docs` frontmatter block belongs to 013.
 
 **Deterministic work**: all of it — `docsite/`, `scripts/build_docs.py`,
@@ -316,7 +316,7 @@ against `pydata-sphinx-theme 0.21.0`'s compiled stylesheet, not estimated.*
 **One stylesheet, roughly 90–130 lines**, of which the two largest blocks —
 the `@font-face` declarations and the colour variables — are mechanical. The
 genuinely uncertain part is two visual judgements, which is exactly what manual
-row 44 exists for. **The spec's assumption that this is bounded holds.**
+row 50 exists for. **The spec's assumption that this is bounded holds.**
 
 The reason it is bounded is not that the theme is tidy — it is not — but that
 CSS lets a rule be written as broadly as the theme allows, which is what the
@@ -417,7 +417,7 @@ an icon or a border.
 
 ### What is *not* bounded, and is therefore a manual row
 
-Two things, both visual, both on **row 44**:
+Two things, both visual, both on **row 50**:
 
 1. Whether raising `--pst-sidebar-font-size` and `--pst-font-size-milli` from
    14.4 px to 16 px reflows the sidebar or an admonition title badly at 375 px.
@@ -437,7 +437,7 @@ requires one.
 construction — a new `border-radius` on a component that does not exist yet is
 still `*`. The font floor does not: a new element set at 14 px is not caught by
 anything. `pydata-sphinx-theme` is pinned exactly, so this can only arrive with
-a deliberate bump, and the bump is when row 44 is walked again.
+a deliberate bump, and the bump is when row 50 is walked again.
 
 ### What FR-036's new `docs/design.md` row is written from
 
@@ -530,7 +530,7 @@ verbatim.
   so nothing is retyped (FR-008).
 - `docsite/index.md` carries **two `toctree`s** — `user/index` and
   `contributing/index` — which are the two top-level branches SC-002 walks.
-  FR-012's headroom for 013 and 014 is a third and fourth entry in the same
+  FR-012's headroom for 014 and 015 is a third and fourth entry in the same
   list, with no restructuring.
 - `docsite/user/leitner.md` is the FR-032 wrapper: a short signpost that
   introduces the method and links out. It restates nothing.
@@ -571,7 +571,7 @@ override actually lands — three font-family variable names and the blanket
 flattening rule, deliberately not a selector list, because a list would go stale
 and become somewhere to put the next violation. What a test cannot judge — whether
 the result *reads* as the same system, and whether raising two sizes reflows
-anything at 375 px — stays on manual row 44. The fonts are copied out of `assets/fonts/` by `html_static_path` and
+anything at 375 px — stays on manual row 50. The fonts are copied out of `assets/fonts/` by `html_static_path` and
 declared with `@font-face … format("truetype")`, with `font-weight: 100 900` on
 the two variable faces.
 
@@ -603,8 +603,8 @@ consequences, all of which hold under the layout above:
   `check_cut_count` and `check_borderless_size` go through `gated_files()`, while
   `check_sheet_capacity` (line 577) and `check_print_order` (line 598) call
   `markdown_files()` **directly** and do not strip code blocks. The outcome is the
-  same for 012's pages, which carry no grid or capacity claim; the mechanism is
-  not, and 014's pages will be full of exactly those claims.
+  same for 013's pages, which carry no grid or capacity claim; the mechanism is
+  not, and 015's pages will be full of exactly those claims.
 - **`check_leitner_intervals` is unaffected.** It reads `LEITNER_PAGE`
   (`scripts/check_docs.py:252`) directly — a single hard-coded path — and never
   goes through `markdown_files()`. Widening the glob cannot reach it, cannot
@@ -737,7 +737,7 @@ both commands.
 
 The second is not a tidy-up. That button is the most literal instance of the
 complaint this feature answers: the landing page's own call to action sends a
-newcomer to raw Markdown on GitHub, and after 012 it would do so from the same
+newcomer to raw Markdown on GitHub, and after 013 it would do so from the same
 section that offers `docs/` into the site. It is decided the way FR-042 decided the
 README's three references — leaving it reintroduces the split one link deep — and it
 is recorded in FR-042 rather than left as a remark, because it edits a file with its
@@ -831,7 +831,7 @@ than in a contributor's memory:**
 | 11 | `test_the_images_are_rendered_not_linked` — `pipeline.png` and `example-cards.png` appear as `<img>` under `_images/`, not as GitHub URLs (FR-030, FR-041) | `:relative-images:` |
 | 12 *(guard)* | `test_building_twice_is_byte_identical` — two builds, HTML compared, `.doctrees/` and `.buildinfo` excluded (SC-004) | nothing — Sphinx is already deterministic; it guards a later `conf.py` line that would not be |
 | 13 *(guard)* | `test_the_site_loads_no_third_party_subresource` — no `<link>`/`<script>`/`<img>` with an `http(s)` URL anywhere in the output, and (FR-018) no `href`/`src` beginning with `/` and none naming `mhabedank.github.io` (SC-014, FR-018) | **nothing.** Research R4 measured that the stock theme already loads no third-party sub-resource — FontAwesome ships bundled under `_static/vendor/` — and Sphinx's URIs are already document-relative, so this row is green the moment it is written. It guards a later `@font-face` pointing at a CDN and a later `html_baseurl` line. **The positive half of SC-014 — the three faces actually being served from the site — is asserted by row 21**, because a build with no font at all satisfies this row |
-| 14 *(guard)* | `test_the_extension_imports_nothing_from_lernkarten` — `docsite/_ext/` imports no `scripts/` module (the purity rule 013 inherits) | nothing — it is the enforcement the spec's extraction decision promised |
+| 14 *(guard)* | `test_the_extension_imports_nothing_from_lernkarten` — `docsite/_ext/` imports no `scripts/` module (the purity rule 014 inherits) | nothing — it is the enforcement the spec's extraction decision promised |
 | 15 | `test_the_pages_workflow_assembles_every_relative_link` — **existing test**, red once `docs/index.html` gains `docs/` | the adaptation above + the rebuilt `pages.yml` |
 | 16 | `test_the_ci_docs_job_runs_the_docs_tests` — `ci.yml` has a docs-build job; its id is **not** `docs`; it runs on all three OSes; it installs `requirements-docs.txt`; **and it runs `pytest`** (FR-023, FR-034). The last clause is the one that matters: without it rows 5–13 execute in no CI job at all. **Parsed with `yamlio` and asserted on the job object**, selected by its `build_docs.py` step — against `ci.yml` as text four of the five clauses are already true today (`cards` and `e2e` list three runners, `test` runs `pytest`, `requirements-dev.txt` is installed in four places), so an unscoped test is red on one clause and vacuous on the rest. Same discipline as row 24's "scoped to the first block" | `ci.yml` |
 | 17 | `test_the_deploy_is_all_or_nothing` — `pages.yml` uploads only after the build step, in one job (FR-033, SC-013 first half) | `pages.yml` |
@@ -847,9 +847,9 @@ than in a contributor's memory:**
 ### The three manual rows (FR-025, constitution XI)
 
 `docs/testing.md`'s checklist reaches 43 today (the Leitner dividers). This
-feature adds **44, 45 and 46 — and no more**, each named where it is claimed.
+feature adds **50, 51 and 52 — and no more**, each named where it is claimed.
 FR-025's cap is a real constraint and it is respected: **SC-007 was given a home
-inside row 46 rather than a fourth row of its own**, because the two are the same
+inside row 52 rather than a fourth row of its own**, because the two are the same
 post-merge moment and rows 33 and 34 already establish that shape — row 33 is
 read on github.com and row 34 on the deployed site, neither in a checkout.
 SC-010's second half got the opposite treatment: it turned out to be assertable
@@ -901,13 +901,13 @@ that assertion, and row 13 is labelled what it is.
 **Row 25 is a guard by construction.** FR-028 excludes a symlink and a
 build-time copy *by name*; both are absent today, and making the row red would
 mean committing the very arrangement the requirement forbids. It is the same
-shape as row 14, and 013 inherits it along with the directory.
+shape as row 14, and 014 inherits it along with the directory.
 
 ## Complexity Tracking
 
 | Violation | Gate | Why Needed | Simpler Alternative Rejected Because |
 |---|---|---|---|
-| A 32-distribution transitive tree | IV | Sphinx is the toolchain FR-001 settled on, and its `sphinxcontrib-*` set plus `requests` are hard requirements of it | Hand-written HTML has no checked cross-references, which is the whole reason for the feature. MkDocs is a smaller tree but has no domain model and no `metadata.docs` path for 013 |
+| A 32-distribution transitive tree | IV | Sphinx is the toolchain FR-001 settled on, and its `sphinxcontrib-*` set plus `requests` are hard requirements of it | Hand-written HTML has no checked cross-references, which is the whole reason for the feature. MkDocs is a smaller tree but has no domain model and no `metadata.docs` path for 014 |
 | A new module under `scripts/` | V | FR-019's one command, and FR-038's assembly, which `sphinx-build` cannot do | `check_docs.py` is a gate and `render_brand.py` is a renderer; adding a build to either gives it a second job and a second import graph |
 | A new top-level directory | V | FR-028 settled it: `docs/index.md` beside `docs/index.html` is the confusion this feature removes | Sources under `docs/` — rejected in the spec, with the reason recorded |
 | An in-repo Sphinx extension | III | No library knows this repository's `_site` layout, `PAGES` mapping or GitHub URL | Nothing on PyPI does repository-relative link rewriting to a project-specific published layout |

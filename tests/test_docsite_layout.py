@@ -6,7 +6,7 @@ documentation ever pays for it. That condition is not self-enforcing: a single
 `import sphinx` in a module a user's run reaches would put its whole transitive
 tree in front of somebody who only wanted to print flashcards, and nothing about
 the build would look different. (The size of that tree is measured in
-`specs/012-skill-reference/research.md` and deliberately not repeated here — a
+`specs/013-skill-reference/research.md` and deliberately not repeated here — a
 count restated in a second place is a count that drifts.)
 
 So the assertions here are about the *seams* rather than about the site:

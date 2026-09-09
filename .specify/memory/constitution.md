@@ -665,7 +665,7 @@ rule that keeps the documentation toolchain off a user's path is not this graph
 but `tests/test_docsite_layout.py`, which walks the import closure of
 `bin/lernkarten` rather than naming directories, so a future documentation
 script is outside it without anyone editing the test. See
-[specs/012-skill-reference/spec.md](../../specs/012-skill-reference/spec.md).*
+[specs/013-skill-reference/spec.md](../../specs/013-skill-reference/spec.md).*
 
 *2.7.0 — Principle VIII's exception becomes a named list, and admits what it
 costs. VIII said "the one deliberate exception is the brand PNGs" while

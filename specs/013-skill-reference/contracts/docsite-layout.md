@@ -1,16 +1,16 @@
 # Contract: the `docsite/` layout and the link tables
 
-**Status**: 012. **No user-facing file format changes** — `sources.yaml`,
+**Status**: 013. **No user-facing file format changes** — `sources.yaml`,
 `knowledge/`, `catalog/topics.md` and `cards/*.yaml` are untouched. What follows
 is the *internal* contract this feature introduces, written down because three
-tests and two later features (013, 014) read it.
+tests and two later features (014, 015) read it.
 
 ## 1 — Where a page may live
 
 | Path | Holds | Rule |
 |---|---|---|
 | `docsite/conf.py` | Sphinx configuration | hand-written. Inside `ruff` gate #1 from the first commit; a copied Sphinx template does not pass |
-| `docsite/_ext/*.py` | build-time extensions | **imports nothing from `scripts/`** — asserted by a test, not by intent. 013's skill extension inherits this directory and this rule |
+| `docsite/_ext/*.py` | build-time extensions | **imports nothing from `scripts/`** — asserted by a test, not by intent. 014's skill extension inherits this directory and this rule |
 | `docsite/_static/*` | stylesheet, fonts | the only place a visual override lives |
 | `docsite/**/*.md` | page sources | covered by `scripts/check_docs.py` (FR-037) |
 | `docsite/_build/` | build output | gitignored |
@@ -42,7 +42,7 @@ One MyST `{include}`, and nothing else in the file:
 ## 3 — How a link inside a `docsite/` page is written (FR-037)
 
 **The paths below are written from a page in `docsite/user/` or
-`docsite/contributing/`**, which is where every page 012 ships lives — two
+`docsite/contributing/`**, which is where every page 013 ships lives — two
 levels down, so a repository file is `../../`. A page at the `docsite/` root
 (only `index.md` today) uses one `../` less. The depth is part of the example,
 not decoration: `check_docs.check_links` resolves the target on the file system
@@ -53,7 +53,7 @@ from the page's own directory, so a `../` too few is a dead link in gate #4.
 | another `docsite/` page in the same area | `[the workflow](workflow.md)` | an internal link |
 | a repository Markdown file that is also a site page | `[design.md](../../docs/design.md)` | an internal link (needs the `refdomain == "doc"` branch — see C3) |
 | a repository file that is not a page | `[the card template](../../templates/card.typ)` | a GitHub `blob` URL |
-| a file served at the site root | `[the method](../../docs/leitner.html)` | a depth-aware relative link to the root — this is the FR-032 wrapper's link, the one instance 012 ships |
+| a file served at the site root | `[the method](../../docs/leitner.html)` | a depth-aware relative link to the root — this is the FR-032 wrapper's link, the one instance 013 ships |
 
 Never an extension-less MyST reference (`[the workflow](workflow)`):
 `check_docs.check_links` resolves a relative target **against the file system**,
@@ -127,11 +127,11 @@ _site/
     └── contributing/…
 ```
 
-## 8 — What 013 and 014 inherit
+## 8 — What 014 and 015 inherit
 
 - A third and fourth `toctree` entry in `docsite/index.md` — a reference area and
-  a tutorial area — with **no restructuring** of what 012 ships (FR-012).
+  a tutorial area — with **no restructuring** of what 013 ships (FR-012).
 - `docsite/_ext/`, with the "imports nothing from lernkarten" test already
   written — the mitigation the spec's extraction decision promised.
-- Section 3's link rules, which bind 014 hardest: its pages will be full of grid
+- Section 3's link rules, which bind 015 hardest: its pages will be full of grid
   and card-size claims, and `gated_files()` now reads them.

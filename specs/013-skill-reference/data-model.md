@@ -1,12 +1,12 @@
-# Data model: Sphinx documentation foundation (012)
+# Data model: Sphinx documentation foundation (013)
 
 **No file format changes.** The spec's *Format Contracts* table is "none" on all
 four rows: `sources.yaml`, `knowledge/<id>/<doc>.md`, `catalog/topics.md` and
 `cards/*.yaml` are untouched, and nothing a user has on disk is read or written.
-The `SKILL.md` `metadata.docs` block belongs to **013**.
+The `SKILL.md` `metadata.docs` block belongs to **014**.
 
 What this feature does introduce is a set of build-time entities. They are listed
-here because tests assert against them and because 013 and 014 extend them.
+here because tests assert against them and because 014 and 015 extend them.
 
 ## Entities
 
@@ -36,10 +36,10 @@ An existing repository file published unchanged.
 
 | Field | Value |
 |---|---|
-| Instances in 012 | **user guide**, **contributing** |
+| Instances in 013 | **user guide**, **contributing** |
 | Represented by | a `toctree` in `docsite/index.md` and an index page per area |
 | Asserted by | SC-002 — a test walks the built `toctree` from the root document; the two areas are separate top-level branches. The `toctree`, not the rendered sidebar, so the assertion is not tied to a theme version |
-| Extension point | 013 adds a reference area, 014 a tutorial area — two more entries, no restructuring (FR-012) |
+| Extension point | 014 adds a reference area, 015 a tutorial area — two more entries, no restructuring (FR-012) |
 
 ### Wrapper page
 

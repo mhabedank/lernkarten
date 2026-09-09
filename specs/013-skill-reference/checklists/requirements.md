@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-09-08
-**Revised**: 2026-09-08 — scope split into 012 (foundation) / 013 (reference) / 014 (tutorial & topics)
+**Revised**: 2026-09-08 — scope split into 013 (foundation) / 014 (reference) / 015 (tutorial & topics)
 **Revised**: 2026-09-08 — after `/speckit-clarify`: eleven questions recorded in two sessions, FR-028 … FR-035 added
 **Revised**: 2026-09-08 — after the second, adversarial clarification round: seventeen questions in three sessions, FR-036 … FR-042 added, FR-035 narrowed and FR-034 widened
 **Feature**: [spec.md](../spec.md)
@@ -66,8 +66,8 @@
     `tests/test_landing_page.py`, and the generated site lives under a sub-path.
     Now **FR-013**.
   - former **FR-004** (how much of a `SKILL.md` becomes a reference entry) →
-    moved to **013**, recorded in *Follow-on features*.
-  - former **FR-015** (which topic pages ship) → moved to **014**, recorded in
+    moved to **014**, recorded in *Follow-on features*.
+  - former **FR-015** (which topic pages ship) → moved to **015**, recorded in
     *Follow-on features* with the candidate set the user has seen.
 - **On "no implementation details"**: two things are named on purpose and are not
   leakage. (1) This project's spec template is normative and *requires* file

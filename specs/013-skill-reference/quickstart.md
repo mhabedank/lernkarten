@@ -1,7 +1,7 @@
-# Quickstart: verifying the documentation foundation (012)
+# Quickstart: verifying the documentation foundation (013)
 
 Everything below is runnable. It is the sequence a reviewer walks to decide
-whether 012 is done, and it maps one-to-one onto the success criteria.
+whether 013 is done, and it maps one-to-one onto the success criteria.
 
 ## Prerequisites
 
@@ -167,7 +167,7 @@ Three, and only three, in `docs/testing.md`:
 | 45 | Read the diff of `tests/test_landing_page.py` and `scripts/check_docs.py`. No assertion deleted, no target dropped from a derived set, no condition relaxed |
 | 46 | Confirm the documentation build ran on the pull request that introduced the change, then — after the merge — walk the deployed site as § 11 describes (SC-007 rides here rather than on a fourth row; FR-025 caps the list at three) |
 
-## 11 — Deployed (SC-007, SC-013) — this is the script for manual row 46
+## 11 — Deployed (SC-007, SC-013) — this is the script for manual row 52
 
 After the merge, on `https://mhabedank.github.io/lernkarten/`:
 
