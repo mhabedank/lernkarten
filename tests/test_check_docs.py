@@ -674,3 +674,21 @@ def test_check_docs_covers_the_docsite(tmp_path, monkeypatch):
         f"dead-link check read this list, so a page it cannot see is a page no gate "
         f"guards. It returned {sorted(found)}"
     )
+
+
+def test_the_shipped_docsite_is_covered():
+    """And the same holds for the pages this repository actually ships.
+
+    The monkeypatched case above is the one that can be red, and it stays.
+    This one cannot fail for the reason that one can — but it fails if
+    somebody adds a page in a shape the glob does not reach, which the fixture
+    tree cannot anticipate because it only contains what it was told to.
+    """
+    docsite = check_docs.ROOT / "docsite"
+    shipped = {p.relative_to(check_docs.ROOT).as_posix() for p in docsite.rglob("*.md")}
+    covered = {p.relative_to(check_docs.ROOT).as_posix() for p in check_docs.markdown_files()}
+
+    assert shipped, "docsite/ holds no pages — this assertion has nothing to check"
+    assert shipped <= covered, (
+        f"these shipped pages are outside markdown_files(): {sorted(shipped - covered)}"
+    )

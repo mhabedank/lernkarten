@@ -554,3 +554,37 @@ def test_whole_deck_page_counts_are_derived_not_typed():
         if "*CARDS" in window and not any(a in window for a in allowed):
             offenders.append(f"{i + 1}: {line.strip()}")
     assert not offenders, "whole-deck page counts typed as literals:\n" + "\n".join(offenders)
+
+
+# --- the constitution knows where the documentation lives (FR-039) ---
+
+
+def test_principle_v_names_the_documentation_directory():
+    """Principle V's table is normative, and nothing else enforces it.
+
+    Its twin, Principle VI's import graph, is derived from the source by
+    `check_import_graph()` and turns the Skills & docs job red the moment a
+    module it does not list appears. Principle V has no such check: the table
+    can describe a repository that no longer exists and every gate stays
+    green. It already did — `docs/leitner.html` has been shipped for some time
+    and the row still lists four files.
+
+    So the amendment gets an assertion rather than a good intention, and the
+    stale row is corrected while the new one is added.
+    """
+    constitution = (ROOT / ".specify" / "memory" / "constitution.md").read_text(encoding="utf-8")
+    table = re.search(r"### V\. Code boundaries(.*?)\n\n[A-Z]", constitution, re.S)
+    assert table, "Principle V's table moved — this assertion's anchor is gone"
+    rows = table.group(1)
+
+    assert "`docsite/`" in rows, (
+        "Principle V's table has no `docsite/` row. A new top-level directory that the "
+        "table does not describe makes the normative document wrong about the repository "
+        "it governs, and no gate would say so"
+    )
+    docs_row = next((line for line in rows.splitlines() if line.startswith("| `docs/`")), "")
+    assert "leitner.html" in docs_row, (
+        f"Principle V's `docs/` row does not name `leitner.html`, which has been in that "
+        f"directory for some time. FR-011 promises the gates move with the file; they "
+        f"cannot if the constitution does not know it exists. The row reads: {docs_row}"
+    )
