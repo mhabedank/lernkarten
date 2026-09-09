@@ -320,11 +320,18 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   (FR-027, SC-014), so the build must copy them out of `assets/fonts/` and the
   stylesheet must declare them. A missing face falls back to a system font and
   the surface silently stops matching the landing page.
-- **A link that resolves in a checkout but not on the web**: the migrated
-  documents carry 22 links to repository files (`../templates/card.typ`,
-  `../.specify/memory/constitution.md`, four `../assets/logo*.svg`, …) and four
-  more to things served at the site root. Under warnings-as-errors every one of
-  them fails the build unless FR-029 and FR-031 handle it.
+- **A link that resolves in a checkout but not on the web**: **the three
+  denominators, stated once, because they have already been confused.** Read
+  outside code fences, the five migrated documents carry **31** relative links.
+  Nine point at documents the site publishes and resolve internally. The other
+  **22** — the number FR-020, FR-029 and SC-011 all mean — split into **two**
+  served at the site root (`index.html` and `../assets/card-box.pdf`, both in
+  `docs/design.md`) and **20** repository files (`../templates/card.typ`,
+  `../.specify/memory/constitution.md`, four `../assets/logo*.svg`, …), of which
+  two are images a page *renders* rather than links (FR-030). 9 + 2 + 20 = 31,
+  and the four links FR-031 enumerates are two from each of the last two groups,
+  not four more on top. Under warnings-as-errors every one of the 22 fails the
+  build unless FR-029 and FR-031 handle it.
 
 ## Requirements *(mandatory)*
 
@@ -474,9 +481,12 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
   in `docs/design.md` resolve against the including page and the images do not
   appear. FR-030 requires them to appear; this names the mechanism that makes it
   true.
-- **FR-031**: Four links in the migrated documents point at things served at the
-  **site root**, not at repository files. They are enumerated here so none is
-  missed, and **every one of them is resolved at build time by FR-029's
+- **FR-031**: Four links in the migrated documents need a destination the site
+  does not carry as a page: **two** point at things served at the **site root**
+  and **two** at repository files no page carries. *(An earlier draft opened
+  "four links … point at things served at the site root", which contradicted
+  this requirement's own closing sentence and inflated the edge-case count above
+  from 22 to 26.)* They are enumerated here so none is missed, and **every one of them is resolved at build time by FR-029's
   transform — no source file is edited.**
 
   *(Amended 2026-09-08. This requirement said "MUST be retargeted by hand" and
@@ -605,8 +615,9 @@ an interval from the Leitner page and assert `check_docs.py` still reports it.
 - **FR-020**: The build MUST treat warnings as errors and MUST be strict about
   references: a cross-reference or link to a target that does not exist fails the
   build, and the message names the source document and the target. The 22 links
-  in the migrated documents that point at repository files rather than at
-  documentation pages are **not** exempted from this — they are resolved by the
+  in the migrated documents that point at something the site does not carry as a
+  page — 20 repository files plus the 2 served at the site root — are **not**
+  exempted from this — they are resolved by the
   transform in FR-029, so strictness stays absolute and the migration still
   builds.
 - **FR-021**: The build MUST be deterministic and idempotent: the same checkout

@@ -73,7 +73,7 @@ paths (all three measured). The site loads no third-party sub-resource
 (SC-014).
 
 **Scale/Scope**: five migrated documents, ~10 new source files under `docsite/`,
-one new `scripts/` module, one new workflow job, 24 test rows (20 red-first, 4
+one new `scripts/` module, one new workflow job, 25 test rows (19 red-first, 6
 guards) and three new manual checklist rows.
 
 ## Dependency Decisions
@@ -163,7 +163,7 @@ and report.
 | VIII | No binaries committed | **yes** — the fonts are already committed and already named in Principle VIII. The build **copies** them; it converts nothing, so no new binary appears (this is why `woff2` was rejected — see research R4) |
 | IX | Sources edited, never generated files | **yes** — `docsite/_build/` and `_site/` go into `.gitignore` (FR-022) |
 | X | Skill frontmatter valid | **yes** — no skill changes in 012 |
-| XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — 24 rows in [Phase 1](#phase-1-design), of which 20 are red-first and 4 are guards, each labelled and justified in [Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied). Requirements no test can reach get **numbered manual rows 44–46** (FR-025), and no more than three |
+| XI | **(NON-WAIVABLE)** Tested first, red on the assertion | **yes** — 25 rows in [Phase 1](#phase-1-design), of which 19 are red-first and 6 are guards, each labelled and justified in [Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied). Requirements no test can reach get **numbered manual rows 44–46** (FR-025), and no more than three |
 | XII | The four gates pass; ruff not loosened | **yes** — and no fifth gate (FR-024). Gate #1's *scope* widens to `docsite/`, which was measured and costs one line-length fix |
 | XIII | English throughout | **yes** |
 | XIV | Branch `docs/skill-reference`; `main` untouched | **yes** |
@@ -588,7 +588,7 @@ consequences, all of which hold under the layout above:
 - **The five drift gates** start reading them, by **two different routes** —
   worth naming so an implementer does not look for one: `check_a7_is_not_the_default`,
   `check_cut_count` and `check_borderless_size` go through `gated_files()`, while
-  `check_sheet_capacity` (line 577) and `check_print_order` (line 597) call
+  `check_sheet_capacity` (line 577) and `check_print_order` (line 598) call
   `markdown_files()` **directly** and do not strip code blocks. The outcome is the
   same for 012's pages, which carry no grid or capacity claim; the mechanism is
   not, and 014's pages will be full of exactly those claims.
@@ -656,8 +656,13 @@ before `upload-pages-artifact` runs, so nothing is published (FR-033).
 
 `paths:` gains seven entries — `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`,
 `requirements-docs.txt`, `assets/pipeline.png`, `assets/example-cards.png`,
-`scripts/build_docs.py` — and the three existing entries stay (FR-017). All ten
-are asserted by red row 22.
+`scripts/build_docs.py` — and the **four** existing entries stay (FR-017):
+`docs/index.html`, `docs/leitner.html`, `assets/card-box.pdf` **and
+`.github/workflows/pages.yml` itself**, which the file already lists today.
+**Eleven** in total, all asserted by red row 22. *(An earlier draft of this plan
+said "the three existing entries" and "all ten"; the workflow's own path was
+being absorbed silently, which under row 22's "one assertion per entry" would
+have produced a test that was wrong by construction.)*
 
 ### `.github/workflows/ci.yml` (FR-023, FR-034)
 
@@ -671,9 +676,16 @@ file). Matrix `[ubuntu-latest, macos-latest, windows-latest]`, Python 3.12,
 
 ```yaml
 - run: python -m pip install -r requirements-dev.txt -r requirements-docs.txt
-- run: python3 scripts/build_docs.py
+- run: python scripts/build_docs.py
 - run: python -m pytest
 ```
+
+**`python`, not `python3`** — every existing multi-OS job in `ci.yml` uses
+`python` under `shell: bash`, and inventing a third convention inside one job
+risks a Windows leg that fails for a reason unrelated to this feature.
+`python3 scripts/build_docs.py` stays the documented human command (FR-019); the
+two are not in conflict, because FR-019 is about what a contributor types, not
+about what a runner resolves.
 
 The second `run` is not optional and is the point of the job. FR-023 says CI
 must have a job that installs the docs requirements **and runs those tests**; a
@@ -717,9 +729,11 @@ draft would have turned it red.
 ### Test plan first (constitution XI) — the red order
 
 Every **red** row goes red on its *assertion*, not on an import, before the
-implementation beside it exists. Three rows are **guards** rather than red-first
-cases, and are marked *(guard)* rather than left to be discovered — see
-[Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied) below.
+implementation beside it exists. **Six** rows are **guards** rather than
+red-first cases, and are marked *(guard)* in the table rather than left to be
+discovered — see [Guards, and how XI is satisfied](#guards-and-how-xi-is-satisfied)
+below. *(An earlier draft of this paragraph said three while the table marked
+four; the count is now stated in one place and repeated nowhere.)*
 
 **Two ordering constraints bind this table, and belong in the task list rather
 than in a contributor's memory:**
@@ -755,7 +769,7 @@ than in a contributor's memory:**
 | 10 | `test_a_docsite_page_may_link_a_repository_file` — FR-037's prescribed spelling renders as a link, and the build stays clean (**C3**) | the `refdomain == "doc"` branch |
 | 11 | `test_the_images_are_rendered_not_linked` — `pipeline.png` and `example-cards.png` appear as `<img>` under `_images/`, not as GitHub URLs (FR-030, FR-041) | `:relative-images:` |
 | 12 *(guard)* | `test_building_twice_is_byte_identical` — two builds, HTML compared, `.doctrees/` and `.buildinfo` excluded (SC-004) | nothing — Sphinx is already deterministic; it guards a later `conf.py` line that would not be |
-| 13 | `test_the_site_loads_no_third_party_subresource` — no `<link>`/`<script>`/`<img>` with an `http(s)` URL anywhere in the output (SC-014) | the `@font-face` block |
+| 13 *(guard)* | `test_the_site_loads_no_third_party_subresource` — no `<link>`/`<script>`/`<img>` with an `http(s)` URL anywhere in the output, and (FR-018) no `href`/`src` beginning with `/` and none naming `mhabedank.github.io` (SC-014, FR-018) | **nothing.** Research R4 measured that the stock theme already loads no third-party sub-resource — FontAwesome ships bundled under `_static/vendor/` — and Sphinx's URIs are already document-relative, so this row is green the moment it is written. It guards a later `@font-face` pointing at a CDN and a later `html_baseurl` line. **The positive half of SC-014 — the three faces actually being served from the site — is asserted by row 21**, because a build with no font at all satisfies this row |
 | 14 *(guard)* | `test_the_extension_imports_nothing_from_lernkarten` — `docsite/_ext/` imports no `scripts/` module (the purity rule 013 inherits) | nothing — it is the enforcement the spec's extraction decision promised |
 | 15 | `test_the_pages_workflow_assembles_every_relative_link` — **existing test**, red once `docs/index.html` gains `docs/` | the adaptation above + the rebuilt `pages.yml` |
 | 16 | `test_the_ci_docs_job_runs_the_docs_tests` — `ci.yml` has a docs-build job; its id is **not** `docs`; it runs on all three OSes; it installs `requirements-docs.txt`; **and it runs `pytest`** (FR-023, FR-034). The last clause is the one that matters: without it rows 5–13 execute in no CI job at all | `ci.yml` |
@@ -763,10 +777,11 @@ than in a contributor's memory:**
 | 18 | `test_the_readme_points_at_the_published_pages` — the three `README.md` links are site URLs, **and** `](docs/index.html)` inside `## The design` is untouched (FR-042) | `README.md` |
 | 19 | `test_the_design_doc_describes_the_documentation_site` — `docs/design.md` § *The screen surfaces* has a third row naming `docsite/` (FR-036) | `docs/design.md` |
 | 20 | `python3 scripts/check_docs.py` — red until Principle VI lists `build_docs` (FR-039). **This one is a gate, not a pytest case**, and it is the reason the constitution amendment is a named task rather than an afterthought | the constitution amendment |
-| 21 | `test_the_theme_override_lands` — the built `_static/lernkarten.css` sets `--pst-font-family-base`, `--bs-font-sans-serif` and `--bs-font-monospace`, and carries the blanket `border-radius: 0` / `box-shadow: none` rule (FR-027). **Not a selector list** — three variable names and one rule, chosen because the measurement that produced them is exactly what regresses silently: overriding only the three `--pst-` variables leaves `body` on the system stack | `docsite/_static/lernkarten.css` |
-| 22 | `test_the_pages_workflow_triggers_on_every_input` — all ten `paths:` entries are present (FR-017), one assertion per entry, following the pattern already at `tests/test_landing_page.py:539` | `pages.yml` |
+| 21 | `test_the_theme_override_lands` — the built `_static/lernkarten.css` sets `--pst-font-family-base`, `--bs-font-sans-serif` and `--bs-font-monospace`, and carries the blanket `border-radius: 0` / `box-shadow: none` rule (FR-027). **Not a selector list** — three variable names and one rule, chosen because the measurement that produced them is exactly what regresses silently: overriding only the three `--pst-` variables leaves `body` on the system stack. **It also asserts that the faces arrived**: the built `_static/` carries `Archivo.ttf`, `Jost.ttf` and `IBMPlexMono-Regular.ttf`, and the stylesheet declares four `@font-face` blocks with `format("truetype")`. Without that clause a build whose `html_static_path` never reached `assets/fonts/` passes both this row and row 13 and falls back to a system stack silently — the spec's *A font that is not there* edge case, which nothing else can see | `docsite/_static/lernkarten.css` |
+| 22 | `test_the_pages_workflow_triggers_on_every_input` — all **eleven** `paths:` entries are present (FR-017), one assertion per entry, following the pattern already at `tests/test_landing_page.py:539`. Eleven, not ten: the four the file has today include `.github/workflows/pages.yml` | `pages.yml` |
 | 23 | `test_principle_v_names_the_documentation_directory` — Principle V's table has a `docsite/` row and its `docs/` row names `leitner.html` (FR-039, the half nothing enforces) | the constitution amendment |
 | 24 *(guard)* | `test_the_pre_pr_gates_have_not_grown` — the **first** fenced `bash` block under `CONTRIBUTING.md` § *Before the pull request* still holds exactly **five** command lines (`ruff check .`, `ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`) — five lines for what the project calls four gates, because `ruff` runs twice. SC-010's second half, and FR-024's "no fifth gate". Lives in `tests/test_repo_hygiene.py`, beside the other "the repository still says what it says" assertions. **Scoped to the first block**: the section carries a second one (`make_testdata.py`, `LERNKARTEN_E2E=1 pytest`) which is not a pre-PR gate | nothing — the only thing standing between FR-024 and a future feature quietly adding a sixth line |
+| 25 *(guard)* | `test_the_docsite_holds_no_symlink_and_no_copy` — nothing under `docsite/` is a symlink, and no file under `docsite/` repeats the bytes of a migrated document (`docs/*.md`, `CONTRIBUTING.md`). FR-028 excludes both mechanisms **by name** and says it is written "so that a later change does not 'simplify' it into a move", which is a rule with no enforcement until this row exists | nothing — the two mechanisms are already absent; it is the enforcement FR-028's own sentence asks for. A pytest case, **not** a manual row, so FR-025's cap of three stays intact |
 
 ### The three manual rows (FR-025, constitution XI)
 
@@ -790,10 +805,10 @@ SC-010's second half got the opposite treatment: it turned out to be assertable
 Constitution XI is not waivable, so the plan says plainly which rows are red-first
 and which are not rather than letting "(green by construction)" pass as an answer.
 
-**Red-first — 20 rows**: 1, 3–11, 13, 15–23. Each is written first, run, and
+**Red-first — 19 rows**: 1, 3–11, 15–23. Each is written first, run, and
 seen failing on its assertion.
 
-**Guards — rows 2, 12, 14 and 24.** They are green the moment they are written,
+**Guards — rows 2, 12, 13, 14, 24 and 25.** They are green the moment they are written,
 because there is no behaviour to satisfy: each states an invariant that already
 holds and that a *later* change could break. That is an established and
 documented shape in this repository, not an improvisation —
@@ -813,6 +828,19 @@ spike clause forbids. So it is written **after** row 5, as a guard, and labelled
 one. Determinism itself is Sphinx's property, verified in the Phase 0 spike
 (research R5); what row 12 defends is a future `conf.py` line that would destroy
 it.
+
+**Row 13 is a guard for the same reason, and an earlier draft of this plan got
+it wrong.** Its "goes green with" column used to read *the `@font-face` block*,
+which research R4 contradicts: the stock theme already loads no third-party
+sub-resource, so the row passes before a single font is declared. Calling it
+red-first would have produced a row that was never red *and* hidden the real
+gap — that nothing asserted the faces had actually arrived. Row 21 now carries
+that assertion, and row 13 is labelled what it is.
+
+**Row 25 is a guard by construction.** FR-028 excludes a symlink and a
+build-time copy *by name*; both are absent today, and making the row red would
+mean committing the very arrangement the requirement forbids. It is the same
+shape as row 14, and 013 inherits it along with the directory.
 
 ## Complexity Tracking
 

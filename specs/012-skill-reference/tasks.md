@@ -12,7 +12,7 @@ behaviour below gets a failing assertion before the code that satisfies it, and
 ## How to read this file
 
 **The order is `plan.md`'s, not a new one.** Plan section *Test plan first
-(constitution XI) — the red order* fixes 24 numbered rows; every task below cites
+(constitution XI) — the red order* fixes 25 numbered rows; every task below cites
 the row it serves as **row N**, and the rows appear in ascending order with two
 stated exceptions, each argued where it happens: rows **20 and 23** are pulled
 forward into Phase 4 (the constitution amendment has to land in the same commit
@@ -21,10 +21,13 @@ as `scripts/build_docs.py`, or CI is red in between), and Phase 8 runs
 
 - 🔴 marks a task whose output must be a **failing test**, failing on its
   assertion, before the next task starts.
-- 🛡️ marks a **guard**: rows 2, 12, 14 and 24, which are green the moment they
-  are written because they assert the *absence* of a behaviour. Plan section
-  *Guards, and how XI is satisfied* says why that satisfies XI. A guard is
-  labelled here rather than left to be discovered.
+- 🛡️ marks a **guard**: rows 2, 12, 13, 14, 24 and 25 — **six** of the
+  twenty-five — which are green the moment they are written because they assert
+  the *absence* of a behaviour. Plan section *Guards, and how XI is satisfied*
+  says why that satisfies XI. A guard is labelled here rather than left to be
+  discovered. Row 13 was labelled red-first in an earlier draft; research R4 had
+  already measured that it passes on arrival, so it is labelled what it is and
+  the assertion it was standing in for moved to row 21 (T044).
 - **[P]** means the task can run concurrently with the others in its
   `<!-- parallel-group: N -->` block: different files, no dependency on an
   incomplete task. `<!-- sequential -->` marks a run of tasks that must not be
@@ -113,7 +116,7 @@ recollections.
 <!-- parallel-group: 3 -->
 
 - [ ] T012 **row 3 green** [P] [US5] Add `docsite/_build/` and `_site/` to `.gitignore`, under the `# --- Build leftovers ---` section, each with a one-line comment saying it is generated (constitution IX)
-- [ ] T013 **row 4 green** [P] [US5] Extend `markdown_files()` in `scripts/check_docs.py` with `files += sorted((ROOT / "docsite").rglob("*.md"))`. Plan § *`scripts/check_docs.py` (FR-037)* names the three consequences and the **two different routes** into the drift gates: `check_a7_is_not_the_default`, `check_cut_count` and `check_borderless_size` go through `gated_files()`, while `check_sheet_capacity` (`scripts/check_docs.py:577`) and `check_print_order` (line 597) call `markdown_files()` **directly** and do not strip code blocks. `check_leitner_intervals` reads `LEITNER_PAGE` (line 252) directly and is untouched by the widening (FR-011)
+- [ ] T013 **row 4 green** [P] [US5] Extend `markdown_files()` in `scripts/check_docs.py` with `files += sorted((ROOT / "docsite").rglob("*.md"))`. Plan § *`scripts/check_docs.py` (FR-037)* names the three consequences and the **two different routes** into the drift gates: `check_a7_is_not_the_default`, `check_cut_count` and `check_borderless_size` go through `gated_files()`, while `check_sheet_capacity` (`scripts/check_docs.py:577`) and `check_print_order` (line 598) call `markdown_files()` **directly** and do not strip code blocks. `check_leitner_intervals` reads `LEITNER_PAGE` (line 252) directly and is untouched by the widening (FR-011)
 
 **Checkpoint**: `pytest tests/test_docsite_layout.py tests/test_check_docs.py` green;
 `python3 scripts/check_docs.py` still green.
@@ -157,7 +160,7 @@ warnings as errors.
 - [ ] T022 [US1] **row 6 green** Write the page sources per [contracts/docsite-layout.md § 2](contracts/docsite-layout.md): `docsite/user/index.md`, `docsite/user/workflow.md`, `docsite/contributing/index.md`, `docsite/contributing/design.md`, `docsite/contributing/testing.md`, `docsite/contributing/guide.md`. Each migrated page is **one `{include}` and nothing else** — no wrapper heading, no `:heading-offset:`, no `:relative-docs:` (the contract says why each is forbidden); the included document's own H1 becomes the page title and the `toctree` entry, so nothing is retyped (FR-008). **Write the includes without options for now**: `:relative-images:` is row 11's green (T033) and adding it here would make that row green before it was ever red. Also write `docsite/user/leitner.md`, the FR-032 wrapper — a short signpost that introduces the method and links out to `../../docs/leitner.html`; it restates nothing (FR-008, FR-032)
 - [ ] T023 🔴 [US4] **row 7** Add `test_a_missing_reference_fails_the_build` to `tests/test_build_docs.py`: write a temporary page carrying a dead cross-reference, build, assert non-zero exit and that the message names **the source document and the target** (SC-003, FR-020). Remove the page and assert the build passes
 - [ ] T024 [US4] **row 7 green** Pass `-W --keep-going` in `scripts/build_docs.py`. From this task the real build fails until T033 — see the note at the head of this phase
-- [ ] T025 [US5] **row 4, completed against the repository** Now that `docsite/**/*.md` exists, add the shipped-repository half of `test_check_docs_covers_the_docsite` in `tests/test_check_docs.py`: every file the real `docsite/` glob finds is in `markdown_files()`. The monkeypatched case from T012 stays — it is the one that can be red
+- [ ] T025 [US5] **row 4, completed against the repository** Now that `docsite/**/*.md` exists, add the shipped-repository half of `test_check_docs_covers_the_docsite` in `tests/test_check_docs.py`: every file the real `docsite/` glob finds is in `markdown_files()`. The monkeypatched case from T011 stays — it is the one that can be red
 
 **Checkpoint**: `python3 scripts/build_docs.py` runs and fails loudly on 27
 unresolved repository links plus two images. That is the correct state, and
@@ -181,7 +184,7 @@ spike measurements, and T009 is where they were re-measured.
 - [ ] T027 [US4] **row 8 green** Write `docsite/_ext/repolinks.py`: a `SphinxPostTransform` with `default_priority = 5` (ahead of `MystReferenceResolver` at 9, which warns instead of emitting `missing-reference` — the obvious `missing-reference` handler **does not fire**, research R2), catching `pending_xref` with `reftype == "myst"`. Resolve the target against `Path(node.source).parent` — the file the link was *written in*, which the node carries even inside an `{include}` — then apply the resolution order in contract § 6, with the `PAGES` and `SERVED` tables from contract §§ 4–5. Set `parallel_read_safe`/`parallel_write_safe` in `setup()`. Register it from `docsite/conf.py` (`sys.path` insert of `_ext`, `extensions += ["repolinks"]`). It **imports nothing from `scripts/`** — row 14 (T036) asserts that, and 013 inherits the directory and the rule
 - [ ] T028 🔴 [US1] **row 9** Add `test_the_method_page_is_never_duplicated` to `tests/test_build_docs.py`: no `_downloads/` anywhere in the build output, and exactly one `leitner.html` in the assembled `_site` (**C4**, FR-010, SC-012). Red — written as a relative path, the wrapper page's link becomes a MyST *download* and Sphinx copies the file to `_downloads/<hash>/leitner.html`, a second URL with a `download=""` attribute
 - [ ] T029 [US1] **row 9 green** Add the `doctree-read` hook at `priority=100` to `docsite/_ext/repolinks.py`, handling `download_reference` nodes — ahead of Sphinx's `DownloadFileCollector` at 500, so the node is rewritten before the file is collected
-- [ ] T030 🔴 [US4] **row 10** Add `test_a_docsite_page_may_link_a_repository_file` to `tests/test_build_docs.py`: FR-037's prescribed spelling from a `docsite/` page — `[design.md](../docs/design.md)` — renders as a link and the build stays clean (**C3**). Red — MyST strips the `.md`, resolves it as a **docname**, finds nothing, warns (fatal under `-W`) and renders **no link at all**
+- [ ] T030 🔴 [US4] **row 10** Add `test_a_docsite_page_may_link_a_repository_file` to `tests/test_build_docs.py`: FR-037's prescribed spelling from a `docsite/` page — `[design.md](../docs/design.md)` — renders as a link and the build stays clean (**C3**). **Write the temporary page at the `docsite/` root**, which is the depth that spelling is correct at; from a page in `docsite/user/` or `docsite/contributing/` the same link is `../../docs/design.md` (contract § 3). The branch under test is the depth-independent one — a `doc` target absent from `env.all_docs` — but a test written at the wrong depth fails on the path rather than on the branch, and would look like C3 reappearing. Red — MyST strips the `.md`, resolves it as a **docname**, finds nothing, warns (fatal under `-W`) and renders **no link at all**
 - [ ] T031 [US4] **row 10 green** Add the `refdomain == "doc"` branch to `docsite/_ext/repolinks.py`: for a `doc` target absent from `env.all_docs`, put the suffix back and run the same lookup. FR-037's spelling then works in both directions — the site links it and `check_docs.check_links` still resolves it on the file system
 - [ ] T032 🔴 [US1] **row 11** Add `test_the_images_are_rendered_not_linked` to `tests/test_build_docs.py`: `pipeline.png` and `example-cards.png` appear as `<img>` under `_images/`, never as GitHub URLs (FR-030, FR-041). Red — without `:relative-images:` the paths resolve against the *including* page
 - [ ] T033 [US1] **row 11 green** Add `:relative-images:` — and only that option — to every `{include}` under `docsite/`, per contract § 2. **The build is clean under `-W` from here**; re-run rows 5 and 6 and confirm they are green again
@@ -203,7 +206,7 @@ measurements T009 could not reach.
 
 <!-- parallel-group: 4 -->
 
-- [ ] T035 🔴 [P] [US1] **row 13** Add `test_the_site_loads_no_third_party_subresource` to `tests/test_build_docs.py`: no `<link>`, `<script>` or `<img>` with an `http(s)` URL anywhere in the built output (SC-014); **and**, folded in per plan § *Relative internal links (FR-018)*, no `href`/`src` beginning with `/` and none containing `mhabedank.github.io` — the two ways FR-018 breaks, both one grep. **Honesty note**: research R4 measured that the stock theme already loads no third-party sub-resource (FontAwesome ships bundled under `_static/vendor/`), and Sphinx's relative URIs are the default, so this row may well pass on its first run. Run it and record what happened — if it passes, mark it a **guard** in its docstring like rows 2/12/14 rather than reporting a red that did not occur
+- [ ] T035 🛡️ [P] [US1] **row 13 (guard)** Add `test_the_site_loads_no_third_party_subresource` to `tests/test_build_docs.py`: no `<link>`, `<script>` or `<img>` with an `http(s)` URL anywhere in the built output (SC-014); **and**, folded in per plan § *Relative internal links (FR-018)*, no `href`/`src` beginning with `/` and none containing `mhabedank.github.io` — the two ways FR-018 breaks, both one grep. **It is a guard, not a red**: research R4 measured that the stock theme already loads no third-party sub-resource (FontAwesome ships bundled under `_static/vendor/`), and Sphinx's relative URIs are the default, so it passes on its first run and there is nothing to make red without first pointing an `@font-face` at a CDN or adding an `html_baseurl`. Say so in the docstring, in the shape rows 2/12/14/24 use. **What it cannot see is the other half of SC-014** — a build with no font at all satisfies it — so the assertion that the faces actually arrived lives on row 21 (T044)
 - [ ] T036 🛡️ [P] **row 14 (guard)** Add `test_the_extension_imports_nothing_from_lernkarten` to `tests/test_docsite_layout.py`: parse every `docsite/_ext/*.py` with `ast` and assert none imports a `scripts/` module. Green on the first run — it is the enforcement the spec's extraction decision promised, and 013's skill extension inherits it
 
 **Checkpoint**: determinism, purity and the sub-resource rule all have standing
@@ -213,21 +216,31 @@ assertions.
 
 ## Phase 7: Publication (red rows 15–17)
 
-**Purpose**: the landing page links into the site, the workflow builds and
-deploys it all-or-nothing, and CI actually runs the docs tests.
+**Purpose**: the landing page links into the site, CI actually runs the docs
+tests, and the workflow builds and deploys it all-or-nothing.
 
-> `pages.yml`'s `paths:` list stays at its **three existing entries** through
-> this phase. The seven new ones are row 22's green (T051); adding them here
-> would make that row green before it was ever red.
+> `pages.yml`'s `paths:` list stays at its **four existing entries** through
+> this phase — `docs/index.html`, `docs/leitner.html`, `assets/card-box.pdf` and
+> `.github/workflows/pages.yml`, which the file already lists. The seven new
+> ones are row 22's green (T051); adding them here would make that row green
+> before it was ever red.
+
+> **The rows run 15, 16, 17 — ascending, on purpose.** Row 16 (`ci.yml`) and row
+> 17 (`pages.yml`) touch different files and neither blocks the other, so row 16
+> is taken first and the file needs no third exception to its own ordering rule.
+> One consequence to expect rather than "fix": from T039 the `docs-build` job
+> runs the whole suite, and row 15 is still red until T042, so CI is red in
+> between. That is the red-first process working; the pull request is not opened
+> until T062.
 
 <!-- sequential -->
 
-- [ ] T037 [US3] **row 15 red — caused by a source edit, not by a new test** Add one link to `docs/index.html` pointing at **`docs/`** — the directory, not `docs/index.html`; FR-016's test matches the derived reference literally, so the two are not interchangeable (FR-014). Nothing else on the page changes. Run `pytest tests/test_landing_page.py` and watch `test_the_pages_workflow_assembles_every_relative_link` (line 562) fail on the new derived reference
-- [ ] T038 🔴 [US3] **row 17** Add `test_the_deploy_is_all_or_nothing` to `tests/test_landing_page.py`: `pages.yml` runs the documentation build **before** `upload-pages-artifact`, in **one** job, so a failing build fails the job before anything is published (FR-033, SC-013 first half). Red — the workflow has no build step today. Write it **before** T039, or the rebuilt workflow makes it green on arrival
-- [ ] T039 [US3] **rows 15 + 17 green** Rebuild `.github/workflows/pages.yml` to four steps in this order: `checkout`; **the existing assembly block, unchanged** (`mkdir -p _site`, the three `cp` lines, `touch _site/.nojekyll`); install `requirements-docs.txt` then `python3 scripts/build_docs.py --site _site`; `configure-pages` → `upload-pages-artifact` → `deploy-pages`. The `cp` lines stay — plan § *The `_site` assembly, stated once* is the single statement of why, and `test_the_pages_workflow_publishes_the_box` (`tests/test_landing_page.py:529`) is **not touched at all** and must stay green (FR-015, FR-033)
-- [ ] T040 [US3] **row 15 green** Adapt `test_the_pages_workflow_assembles_every_relative_link` in `tests/test_landing_page.py`: keep deriving the target set from `docs/index.html`, keep requiring **every** target, and teach it one second route — a target may also arrive because the documentation build writes `_site/docs/`, derived from the workflow text rather than allow-listed: `built = bool(re.search(r"_site/docs\b", workflow)) and ref.rstrip("/") == "docs"`. **The derived set is unchanged**; this is the adaptation FR-016 permits, not the weakening it forbids (SC-005, manual row 45 reads this diff)
-- [ ] T041 🔴 [US3] **row 16** Add `test_the_ci_docs_job_runs_the_docs_tests` to `tests/test_docsite_layout.py`: `.github/workflows/ci.yml` has a documentation-build job; its id is **not** `docs` (that id belongs to the "Skills & docs" job at `ci.yml:148` and reusing it is a YAML error); it runs on `ubuntu-latest`, `macos-latest` and `windows-latest`; it installs `requirements-docs.txt`; **and it runs `pytest`**. The last clause is the one that matters — without it rows 5–13 skip in every CI job and execute nowhere (FR-023, FR-034)
-- [ ] T042 [US3] **row 16 green** Add the job to `.github/workflows/ci.yml`: id **`docs-build`**, name "Documentation build", matrix `[ubuntu-latest, macos-latest, windows-latest]`, Python 3.12, `shell: bash` like the other multi-OS jobs, and three run steps — `python -m pip install -r requirements-dev.txt -r requirements-docs.txt`, `python3 scripts/build_docs.py`, `python -m pytest`. The whole suite rather than the docs module, deliberately: it is the only leg that exercises the transform, `{include}` resolution and text encoding on **macOS**, which the `test` job does not cover at all
+- [ ] T037 [US3] **row 15 red — caused by a source edit, not by a new test** Add one link to `docs/index.html` pointing at **`docs/`** — the directory, not `docs/index.html`; FR-016's test matches the derived reference literally, so the two are not interchangeable (FR-014). Nothing else on the page changes. **Put it in the page body, not in the nav** — and this is not a preference. `NAV_LINKS = ("#how", "#cards", "#print", "#install")` (`tests/test_landing_page.py:201`), and `test_the_four_nav_links_sit_inside_the_disclosure_and_the_rest_does_not` (line 237) *filters to that tuple*, so a fifth nav link passes every assertion in the suite while silently falsifying `docs/testing.md` manual rows **20** ("all four links behind it") and **24** ("wordmark, four inline links, github"). That is the same shape as the box test PR #105 had to replace: a test that only knows what it was told. If a later change moves the link into the nav, those two rows move with it — they are named here so that is a decision rather than a discovery. Run `pytest tests/test_landing_page.py` and watch `test_the_pages_workflow_assembles_every_relative_link` (line 562) fail on the new derived reference
+- [ ] T038 🔴 [US3] **row 16** Add `test_the_ci_docs_job_runs_the_docs_tests` to `tests/test_docsite_layout.py`: `.github/workflows/ci.yml` has a documentation-build job; its id is **not** `docs` (that id belongs to the "Skills & docs" job at `ci.yml:148` and reusing it is a YAML error); it runs on `ubuntu-latest`, `macos-latest` and `windows-latest`; it installs `requirements-docs.txt`; **and it runs `pytest`**. The last clause is the one that matters — without it rows 5–13 skip in every CI job and execute nowhere (FR-023, FR-034)
+- [ ] T039 [US3] **row 16 green** Add the job to `.github/workflows/ci.yml`: id **`docs-build`**, name "Documentation build", matrix `[ubuntu-latest, macos-latest, windows-latest]`, Python 3.12, `shell: bash` like the other multi-OS jobs, and three run steps — `python -m pip install -r requirements-dev.txt -r requirements-docs.txt`, `python scripts/build_docs.py`, `python -m pytest`. The whole suite rather than the docs module, deliberately: it is the only leg that exercises the transform, `{include}` resolution and text encoding on **macOS**, which the `test` job does not cover at all. **`python`, not `python3`** — every other multi-OS job in `ci.yml` uses `python` under `shell: bash`, and a third convention inside one job risks a Windows leg failing for a reason that has nothing to do with this feature. `python3 scripts/build_docs.py` stays the documented human command (FR-019); the two are not in conflict
+- [ ] T040 🔴 [US3] **row 17** Add `test_the_deploy_is_all_or_nothing` to `tests/test_landing_page.py`: `pages.yml` runs the documentation build **before** `upload-pages-artifact`, in **one** job, so a failing build fails the job before anything is published (FR-033, SC-013 first half). Red — the workflow has no build step today. Write it **before** T041, or the rebuilt workflow makes it green on arrival
+- [ ] T041 [US3] **rows 15 + 17 green** Rebuild `.github/workflows/pages.yml` to four steps in this order: `checkout`; **the existing assembly block, unchanged** (`mkdir -p _site`, the three `cp` lines, `touch _site/.nojekyll`); install `requirements-docs.txt` then `python3 scripts/build_docs.py --site _site`; `configure-pages` → `upload-pages-artifact` → `deploy-pages`. The `cp` lines stay — plan § *The `_site` assembly, stated once* is the single statement of why, and `test_the_pages_workflow_publishes_the_box` (`tests/test_landing_page.py:529`) is **not touched at all** and must stay green (FR-015, FR-033)
+- [ ] T042 [US3] **row 15 green** Adapt `test_the_pages_workflow_assembles_every_relative_link` in `tests/test_landing_page.py`: keep deriving the target set from `docs/index.html`, keep requiring **every** target, and teach it one second route — a target may also arrive because the documentation build writes `_site/docs/`, derived from the workflow text rather than allow-listed: `built = bool(re.search(r"_site/docs\b", workflow)) and ref.rstrip("/") == "docs"`. **The derived set is unchanged**; this is the adaptation FR-016 permits, not the weakening it forbids (SC-005, manual row 45 reads this diff)
 
 **Checkpoint**: `pytest tests/test_landing_page.py` fully green, including every
 assertion that existed before this feature (SC-005).
@@ -247,7 +260,7 @@ surface, and the theme is actually overridden rather than merely installed.
 <!-- parallel-group: 5 -->
 
 - [ ] T043 🔴 [P] [US1] **row 18** Add `test_the_readme_points_at_the_published_pages` to `tests/test_repo_hygiene.py`: the three `README.md` references to migrated documents are site URLs, **and** `](docs/index.html)` inside `## The design` is untouched — `test_the_readme_still_names_the_landing_page_source` (line 287) pins it and no test is changed (FR-042)
-- [ ] T044 🔴 [P] [US1] **row 21** Add `test_the_theme_override_lands` to `tests/test_build_docs.py`: the built `_static/lernkarten.css` sets `--pst-font-family-base`, `--bs-font-sans-serif` and `--bs-font-monospace`, and carries the blanket `border-radius: 0` / `box-shadow: none` rule (FR-027). **Three variable names and one rule, deliberately not a selector list** — a list goes stale on the next theme release and becomes somewhere to put the next violation; and the measurement it pins is exactly what regresses silently, because overriding only the three `--pst-` variables leaves `body` on the system stack
+- [ ] T044 🔴 [P] [US1] **row 21** Add `test_the_theme_override_lands` to `tests/test_build_docs.py`: the built `_static/lernkarten.css` sets `--pst-font-family-base`, `--bs-font-sans-serif` and `--bs-font-monospace`, and carries the blanket `border-radius: 0` / `box-shadow: none` rule (FR-027). **And that the faces arrived**: the built `_static/` carries `Archivo.ttf`, `Jost.ttf` and `IBMPlexMono-Regular.ttf`, and `lernkarten.css` declares **four** `@font-face` blocks with `format("truetype")` (SC-014's positive half — row 13 is satisfied by a build with no font at all, so nothing else can see this). **Three variable names, one rule and the faces, deliberately not a selector list** — a list goes stale on the next theme release and becomes somewhere to put the next violation; and the measurement it pins is exactly what regresses silently, because overriding only the three `--pst-` variables leaves `body` on the system stack, and an `html_static_path` that never reached `assets/fonts/` leaves the whole site on it
 
 <!-- parallel-group: 6 -->
 
@@ -256,25 +269,26 @@ surface, and the theme is actually overridden rather than merely installed.
 
 <!-- sequential -->
 
-- [ ] T047 🔴 [US1] **row 19** Add `test_the_design_doc_describes_the_documentation_site` to `tests/test_repo_hygiene.py` — beside `test_the_design_doc_describes_the_box` (line 473): `docs/design.md` § *The screen surfaces* has a third row naming `docsite/` (FR-036)
-- [ ] T048 [US1] **row 19 green** Read `docs/design.md` before editing it (constitution XVI), then add to § *The screen surfaces* the third row (`documentation site` | `docsite/` — Sphinx + MyST, `pydata-sphinx-theme` overridden to the rules on this page) and the short paragraph naming what is **kept** from the theme (the two-level navigation, the bundled icon font, admonition colours doubled by icon and rule, the footer credit) and what is **overridden** (the inks, the three self-hosted faces, every radius/shadow/gradient, the 15 px floor). State it as a **rule, not a list of selectors**, for the reason `tests/test_landing_page.py` already gives about the type floor
+- [ ] T047 🔴 [US1] **row 19** Add `test_the_design_doc_describes_the_documentation_site` to `tests/test_repo_hygiene.py` — beside `test_the_design_doc_describes_the_box` (line 473): `docs/design.md` § *The screen surfaces* has **a row naming `docsite/`** (FR-036). Assert the row, never its ordinal: the table lists five rows today (landing page, banner, pipeline strip, social card, example cards), so the new one is the **third surface** and the sixth row, and an ordinal assertion would break the next time a graphic is added
+- [ ] T048 [US1] **row 19 green** Read `docs/design.md` before editing it (constitution XVI), then add to § *The screen surfaces* the row for the third surface — the sixth row of a five-row table (`documentation site` | `docsite/` — Sphinx + MyST, `pydata-sphinx-theme` overridden to the rules on this page) and the short paragraph naming what is **kept** from the theme (the two-level navigation, the bundled icon font, admonition colours doubled by icon and rule, the footer credit) and what is **overridden** (the inks, the three self-hosted faces, every radius/shadow/gradient, the 15 px floor). State it as a **rule, not a list of selectors**, for the reason `tests/test_landing_page.py` already gives about the type floor
 
 **Checkpoint**: the site reads as the same system as the landing page — as far as
 a test can say. The part only an eye can judge is manual row 44 (T063).
 
 ---
 
-## Phase 9: The last assertions (red rows 22, 24)
+## Phase 9: The last assertions (rows 22, 24, 25)
 
 <!-- parallel-group: 7 -->
 
-- [ ] T049 🔴 [P] [US3] **row 22** Add `test_the_pages_workflow_triggers_on_every_input` to `tests/test_landing_page.py`: **all ten** `paths:` entries are present, one assertion per entry, following the pattern already at `tests/test_landing_page.py:539` — the three existing (`docs/index.html`, `docs/leitner.html`, `assets/card-box.pdf`, plus `.github/workflows/pages.yml`) and the new ones: `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`, `requirements-docs.txt`, `assets/pipeline.png`, `assets/example-cards.png`, `scripts/build_docs.py` (FR-017). A dropped entry means the site silently stops redeploying — the class of failure PR #105 fixed
+- [ ] T049 🔴 [P] [US3] **row 22** Add `test_the_pages_workflow_triggers_on_every_input` to `tests/test_landing_page.py`: **all eleven** `paths:` entries are present, one assertion per entry, following the pattern already at `tests/test_landing_page.py:539` — the **four** the file already has (`docs/index.html`, `docs/leitner.html`, `assets/card-box.pdf` and `.github/workflows/pages.yml` itself, which is easy to absorb silently into a count of three) and the seven new ones: `docs/*.md`, `CONTRIBUTING.md`, `docsite/**`, `requirements-docs.txt`, `assets/pipeline.png`, `assets/example-cards.png`, `scripts/build_docs.py` (FR-017). A dropped entry means the site silently stops redeploying — the class of failure PR #105 fixed
 - [ ] T050 🛡️ [P] [US5] **row 24 (guard)** Add `test_the_pre_pr_gates_have_not_grown` to `tests/test_repo_hygiene.py`: the **first** fenced `bash` block under `CONTRIBUTING.md` § *Before the pull request* (lines 42–48) still holds exactly **five** command lines — `ruff check .`, `ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`. Five lines for what the project calls **four gates**, because `ruff` runs twice; do not "fix" that count. **Scoped to the first block** — the section carries a second one (`make_testdata.py`, `LERNKARTEN_E2E=1 pytest`) which is not a pre-PR gate. Green on the first run: it is the only thing standing between FR-024's "no fifth gate" and a future feature quietly adding a sixth line (SC-010)
+- [ ] T050a 🛡️ [P] **row 25 (guard)** Add `test_the_docsite_holds_no_symlink_and_no_copy` to `tests/test_docsite_layout.py`: no path under `docsite/` is a symlink (`Path.is_symlink()`, walked recursively), and no file under `docsite/` repeats the bytes of a migrated document (`docs/*.md`, `CONTRIBUTING.md`) — FR-028's two mechanisms, which it excludes **by name** and which nothing enforced until this row. FR-028 says it is written "so that a later change does not 'simplify' it into a move"; that sentence had no gate. Green on the first run, for the same reason row 14 is: making it red would mean committing the arrangement the requirement forbids. **A pytest case, not a manual row** — FR-025 caps the manual checklist at three (44, 45, 46) and this does not touch that cap. Numbered `T050a` rather than inserted as `T051`: it was added after the list was written, and renumbering fifteen tasks to make the id ascending would break every cross-reference in this file for no gain — the same reason `docs/testing.md` carries rows 23a and 23b
 
 <!-- parallel-group: 8 -->
 
 - [ ] T051 [P] [US3] **row 22 green** Add the seven new `paths:` entries to `.github/workflows/pages.yml`, keeping the existing ones (FR-017)
-- [ ] T052 [P] [US2] Add the **optional** docs install to `CONTRIBUTING.md` § *Development setup*: `python3 -m pip install -r requirements-docs.txt` and `python3 scripts/build_docs.py`, described as optional and only for working on the documentation. **Do not touch § *Before the pull request*** — T051 asserts that block still holds five lines (FR-002, FR-024)
+- [ ] T052 [P] [US2] Add the **optional** docs install to `CONTRIBUTING.md` § *Development setup*: `python3 -m pip install -r requirements-docs.txt` and `python3 scripts/build_docs.py`, described as optional and only for working on the documentation. **Do not touch § *Before the pull request*** — T050 asserts that block still holds five lines (FR-002, FR-024)
 
 **Checkpoint**: `pytest` fully green, `python3 scripts/check_docs.py` green.
 
@@ -343,15 +357,15 @@ script, the build script before the transform, the transform before the theme.
 - **Phase 5 (transform)** — after Phase 4 and after T009. Closes the failing-build
   window T024 opens
 - **Phase 6 (guards)** — after T033 (a clean build to assert against)
-- **Phase 7 (publication)** — after Phase 5. T038 before T039; T039 before T040
+- **Phase 7 (publication)** — after Phase 5. The rows run **15, 16, 17**, ascending: row 16 (`ci.yml`) and row 17 (`pages.yml`) are independent, so row 16 goes first and this phase needs no exception to the file's ordering rule. T040 before T041 (or the rebuilt workflow makes row 17 green on arrival); T041 before T042
 - **Phase 8 (surfaces)** — after Phase 5 for the theme rows (T044, T046); the
   README and design-doc rows need only Phase 1. Within the phase the rows run
   **18, 21, 19** rather than 18, 19, 21 — the three are mutually independent, and
   pairing 18 with 21 is what makes groups 5 and 6 a real fan-out instead of a
   pretend one
-- **Phase 9** — T049 after T039 (there must be a rebuilt workflow to assert
+- **Phase 9** — T049 after T041 (there must be a rebuilt workflow to assert
   against); T052 after T050 (the guard has to exist before `CONTRIBUTING.md` is
-  edited)
+  edited); T050a after Phase 5 (there must be a `docsite/` to walk)
 - **Phase 10 (docs)** — after the behaviour it describes settles
 - **Phase 11 (gates)** — last, and non-negotiable
 - **Phase 12 (by hand)** — after the gates and, for T065, after the merge
@@ -372,7 +386,7 @@ stays honest); US5 is the promise that nothing else broke.
 
 ### Parallel groups
 
-Ten groups, holding 23 of the 65 tasks. They are short on purpose: most of this
+Ten groups, holding 24 of the 66 tasks. They are short on purpose: most of this
 feature is a chain, and marking a dependent task `[P]` produces a failed batch.
 
 | Group | Tasks | Why they are genuinely independent |
@@ -383,7 +397,7 @@ feature is a chain, and marking a dependent task `[P]` produces a failed batch.
 | 4 | T035, T036 | row 13 in `tests/test_build_docs.py`, row 14 in `tests/test_docsite_layout.py`; both after T034 |
 | 5 | T043, T044 | red tests in `tests/test_repo_hygiene.py` (row 18) and `tests/test_build_docs.py` (row 21) |
 | 6 | T045, T046 | their greens: `README.md`, and `docsite/_static/lernkarten.css` + `docsite/conf.py` |
-| 7 | T049, T050 | `tests/test_landing_page.py` (row 22 red) and `tests/test_repo_hygiene.py` (row 24 guard) |
+| 7 | T049, T050, T050a | `tests/test_landing_page.py` (row 22 red), `tests/test_repo_hygiene.py` (row 24 guard) and `tests/test_docsite_layout.py` (row 25 guard) — three files, no shared state |
 | 8 | T051, T052 | `.github/workflows/pages.yml` and `CONTRIBUTING.md` |
 | 9 | T053, T054, T055 | `docs/testing.md`, a read-through of `docsite/`, a walk of the quickstart |
 | 10 | T056, T057, T058 | three read-only gate commands |
@@ -395,19 +409,22 @@ feature is a chain, and marking a dependent task `[P]` produces a failed batch.
   branches of one file, written in that order.
 - Anything touching `docsite/conf.py` — T019, T027 and T046 each add to it.
 - Anything touching `scripts/build_docs.py` — T015 and T024.
-- T038, T039, T040 — one workflow and one existing test, in that order.
+- T040, T041, T042 — one workflow and one existing test, in that order.
 - T017/T018 and T016 — the constitution amendment is one commit with T015.
 
 ---
 
 ## Notes
 
-- **Test-first is not waivable.** Twenty rows are red-first; four (2, 12, 14, 24)
-  are guards and are labelled 🛡️ where they appear. A guard asserts the *absence*
-  of a behaviour, and there is nothing to make red without first writing the
-  defect — the shape `tests/test_landing_page.py:471` already documents. Row 13
-  (T035) may turn out to be a fifth; the task says to record what actually
-  happened rather than claim a red.
+- **Test-first is not waivable.** **Nineteen** rows are red-first; **six**
+  (2, 12, 13, 14, 24, 25) are guards and are labelled 🛡️ where they appear. A
+  guard asserts the *absence* of a behaviour, and there is nothing to make red
+  without first writing the defect — the shape `tests/test_landing_page.py:471`
+  already documents. Row 13 is one of them and an earlier draft did not say so:
+  research R4 had already measured that it passes on arrival, so calling it
+  red-first would have promised a red that could not happen *and* hidden the
+  gap it was standing in for — that nothing asserted the three faces had
+  actually reached the built site. That assertion is now on row 21 (T044).
 - **The four gates must stay four.** `ruff check .`, `ruff format --check .`,
   `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`
   — five command lines, four gates, no sixth line (FR-024, guarded by T050).

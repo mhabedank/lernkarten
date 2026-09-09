@@ -148,12 +148,14 @@ alike.
 
 ## 9 — On the other two platforms (SC-001, FR-034)
 
-Nothing to run by hand: the `docs-build` CI job runs **`python3
+Nothing to run by hand: the `docs-build` CI job runs **`python
 scripts/build_docs.py` and then `python -m pytest`** on `ubuntu-latest`,
 `macos-latest` and `windows-latest`. The `pytest` step is the point — it is the
 only place the docs-build tests actually execute rather than skip. Check that the
 job exists, that its id is **not** `docs`, that it runs both commands, and that
-all three legs are green.
+all three legs are green. The workflow says `python`, not `python3`, matching
+every other multi-OS job in `ci.yml`; `python3 scripts/build_docs.py` remains
+the command a contributor types (§ 1, FR-019).
 
 ## 10 — The manual rows (SC-005, SC-008, SC-013)
 

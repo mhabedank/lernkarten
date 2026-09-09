@@ -41,12 +41,19 @@ One MyST `{include}`, and nothing else in the file:
 
 ## 3 — How a link inside a `docsite/` page is written (FR-037)
 
-| Target | Write | Renders as |
+**The paths below are written from a page in `docsite/user/` or
+`docsite/contributing/`**, which is where every page 012 ships lives — two
+levels down, so a repository file is `../../`. A page at the `docsite/` root
+(only `index.md` today) uses one `../` less. The depth is part of the example,
+not decoration: `check_docs.check_links` resolves the target on the file system
+from the page's own directory, so a `../` too few is a dead link in gate #4.
+
+| Target | Write (from `docsite/<area>/`) | Renders as |
 |---|---|---|
-| another `docsite/` page | `[the workflow](workflow.md)` | an internal link |
-| a repository Markdown file that is also a site page | `[design.md](../docs/design.md)` | an internal link (needs the `refdomain == "doc"` branch — see C3) |
-| a repository file that is not a page | `[the card template](../templates/card.typ)` | a GitHub `blob` URL |
-| a file served at the site root | `[the method](../docs/leitner.html)` | a depth-aware relative link to the root |
+| another `docsite/` page in the same area | `[the workflow](workflow.md)` | an internal link |
+| a repository Markdown file that is also a site page | `[design.md](../../docs/design.md)` | an internal link (needs the `refdomain == "doc"` branch — see C3) |
+| a repository file that is not a page | `[the card template](../../templates/card.typ)` | a GitHub `blob` URL |
+| a file served at the site root | `[the method](../../docs/leitner.html)` | a depth-aware relative link to the root — this is the FR-032 wrapper's link, the one instance 012 ships |
 
 Never an extension-less MyST reference (`[the workflow](workflow)`):
 `check_docs.check_links` resolves a relative target **against the file system**,
