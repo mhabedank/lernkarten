@@ -50,9 +50,10 @@ Open `docs/index.html` straight off disk — no server, no build.
 
 | # | At | Do this | Expect |
 |---|---|---|---|
-| 1 | above 1080 px | look at section `02` | two cards side by side, filling the column beside the four explanations. No button in the band |
+| 1 | above 1080 px | look at section `02` | two cards **one above the other**, filling the column beside the four explanations. No button in the band. They never sit side by side: the column offers ~618 px of usable width and two 380 px cards need 786 px |
 | 2 | above 1080 px | check each of the four explanations against the cards | the header band, the field, the footer band and the note space are all *visible* — three of the four differ front to back, which is why one card was not enough |
-| 3 | above 1080 px | look at section `03` | two sheets and the cutting diagram on the left, three numbered rules on the right, the card box across the full width beneath both. No hole under either column |
+| 3 | **from 1280 px up** | look at section `03` | two sheets and the cutting diagram on the left, three numbered rules on the right, the card box across the full width beneath both. No hole under **either** column — both close at 433 px |
+| 3b | 1120 px | look at section `03` again | the diagram wraps below the sheets and roughly 160 px is left under the three rules. **This is the accepted fallback of SC-003, not a failure of row 3.** The caption has a minimum width and reading text is never shrunk to fit (constitution XVI) |
 | 4 | above 1080 px | look at every boundary in `03` | every rule is single — none doubled where the box meets the columns, none missing |
 | 5 | **JavaScript off**, reload | both sections | identical to rows 1 and 3. There is no script left, so there is nothing to differ |
 | 6 | 360 px | scroll both sections | one column each; reading order unchanged; nothing holds the page open sideways |
@@ -60,6 +61,11 @@ Open `docs/index.html` straight off disk — no server, no build.
 
 Rows 1–4 are the ones that would have caught this bug. Row 5 is cheap now and
 was not before.
+
+**Row 3 said "under either column" from the start**, while SC-002 named only the
+sheets column — so the by-hand row was better specified than the criterion it
+stood behind, and walking it is what caught [BUG-012](bugs/BUG-012.md). Keep
+these rows written as questions about the *section*, not about one box in it.
 
 ### Measuring instead of eyeballing
 
