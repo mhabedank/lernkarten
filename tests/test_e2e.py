@@ -1075,9 +1075,12 @@ def test_the_id_fits_the_box_it_is_clipped_to_by_measurement(tmp_path):
     assert width < cap, f"the id block overruns its clip box: {width} pt against {cap} pt"
     # The id is the whole block now — five characters and nothing beside them —
     # so this ratio is fixed rather than a headroom allowance, and docs/design.md
-    # states the number. Measuring it here is what keeps that sentence honest.
-    assert width / cap == pytest.approx(0.56, abs=0.02), (
-        f"{width} pt is {100 * width / cap:.0f} % of the cap — docs/design.md says 56 %"
+    # states the number. Measuring it here is what keeps that sentence honest:
+    # the 52.80 pt it used to quote was the whole `A45DK · 1/2` line, eleven
+    # mono glyphs, and five of them are 24.00 pt.
+    assert width == pytest.approx(24.0, abs=0.1), f"five mono glyphs at 8 pt are 24 pt: {width}"
+    assert width / cap == pytest.approx(0.25, abs=0.02), (
+        f"{width} pt is {100 * width / cap:.0f} % of the cap — docs/design.md says 25 %"
     )
 
 
@@ -1094,16 +1097,97 @@ def test_the_template_sets_the_id_at_the_agreed_size():
     assert "4.6pt" not in source, "the old id size is still in the template"
 
 
-def test_a_card_without_an_id_prints_the_side_marker_alone(tmp_path):
-    """FR-005: no id text and no separator — not a stranded '·'."""
+def test_a_card_without_an_id_prints_nothing_in_the_id_block(tmp_path):
+    """FR-005, and now the whole block: no id, no separator, no side marker."""
     deck = tmp_path / "plain.yaml"
     deck.write_text(NO_ID_DECK, encoding="utf-8")
     target = tmp_path / "plain.pdf"
     assert run("build", str(deck), "-o", str(target)).returncode == 0
 
     words = _words_on(target)
-    assert "1/2" in words and "2/2" in words, f"the side marker must remain: {words}"
     assert "·" not in words, f"a separator with nothing before it was printed: {words}"
+    assert not [w for w in words if re.fullmatch(r"[12]\s*/\s*2", w)], (
+        f"the side marker is gone from every card, this one included: {words}"
+    )
+
+
+# The footer band with nothing in it. A rule is not in the text layer, so this
+# is the one place the card is read as pixels: the block that held `<id> · 1/2`
+# is delimited by a vertical rule, and a rule standing in front of nothing is
+# the same smudge the separator used to be, one step further along.
+
+FOOT_H_MM = 6.2  # templates/card.typ, at the A7 reference where scale is 1.0
+
+
+def footer_band_ink(path, *, scale=6, pad=0.9):
+    """Dark pixels inside the first card's footer band, its own frame excluded.
+
+    The card sits at the sheet's origin because the build is given --margin 0,
+    and `pad` holds the crop clear of the frame and of the band's top rule —
+    both of which are drawn whatever the card carries.
+    """
+    pdfium = pytest.importorskip("pypdfium2", reason="renders the page to look at it")
+    image = pdfium.PdfDocument(str(path))[0].render(scale=scale).to_pil().convert("RGB")
+    width, height = image.size
+    sheet_w, sheet_h = pdf_page_size_mm(path)
+    px, py = width / sheet_w, height / sheet_h
+    card_w, card_h = sheet_w / 2, sheet_h / 4  # a7: 2 x 4 on a portrait sheet
+    band = image.crop(
+        (
+            int(pad * px),
+            int((card_h - FOOT_H_MM + pad) * py),
+            int((card_w - pad) * px),
+            int((card_h - pad) * py),
+        )
+    )
+    return sum(1 for pixel in band.getdata() if sum(pixel) / 3 < 200)
+
+
+def test_the_id_block_and_its_rule_are_absent_when_there_is_no_id(tmp_path):
+    """US3: the block collapses rather than standing empty behind its rule.
+
+    Asserted against the other half of the pair, so it cannot pass by rendering
+    nothing at all: the same build with an id has to put ink in that band.
+    """
+    for name, source in (("plain", NO_ID_DECK), ("id", ID_DECK)):
+        deck = tmp_path / f"{name}.yaml"
+        deck.write_text(source, encoding="utf-8")
+        target = tmp_path / f"{name}.pdf"
+        assert (
+            run("build", str(deck), "-o", str(target), "--no-logo", "--margin", "0").returncode == 0
+        )
+
+    assert footer_band_ink(tmp_path / "id.pdf") > 0, "the id itself must print"
+    assert footer_band_ink(tmp_path / "plain.pdf") == 0, (
+        "a card with no id leaves an empty block and the rule that delimits it"
+    )
+
+
+def test_a_card_without_an_id_builds_clean_without_the_logo_too(tmp_path):
+    """The band is then empty apart from its top rule — and that is not an error."""
+    deck = tmp_path / "plain.yaml"
+    deck.write_text(NO_ID_DECK, encoding="utf-8")
+    target = tmp_path / "plain.pdf"
+    result = run("build", str(deck), "-o", str(target), "--no-logo")
+    assert result.returncode == 0, result.stderr
+    assert "WARNING" not in result.stderr, result.stderr
+
+
+def test_a_deck_that_mixes_ids_and_none_is_judged_card_by_card(tmp_path):
+    """The block follows the card, not the file."""
+    deck = tmp_path / "mixed.yaml"
+    deck.write_text(
+        "topic: 'Legibility'\nlanguage: english\ngrid: a7\ncards:\n"
+        "  - id: A45DK\n    front: 'Front'\n    back: 'Back'\n"
+        "  - subtopic: 'None'\n    front: 'Second'\n    back: 'Also back'\n",
+        encoding="utf-8",
+    )
+    target = tmp_path / "mixed.pdf"
+    assert run("build", str(deck), "-o", str(target)).returncode == 0
+
+    words = _words_on(target)
+    assert words.count("A45DK") == 2, "the card that has an id still shows it"
+    assert "·" not in words
 
 
 def test_the_id_stands_alone_with_nothing_beside_it(tmp_path):
