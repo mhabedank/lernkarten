@@ -920,7 +920,11 @@ def test_a_single_sheet_deck_looks_the_same_in_both_orders(tmp_path):
     Worth pinning: it is the deck someone tries the flag on first, and a build
     that reordered anything here would be reordering a two-page document.
     """
-    one_deck = str(DEMO / "cards" / "signals.yaml")  # 7 cards, exactly one a7 sheet
+    # geography.yaml is five cards, so one a7 sheet with room to spare. It used
+    # to be signals.yaml, which was seven and then eight — a7 holds eight, so
+    # the ninth card (#44's experience report) made this a two-sheet deck and
+    # the test failed on page count rather than on order. Five leaves headroom.
+    one_deck = str(DEMO / "cards" / "geography.yaml")
     duplex, simplex = tmp_path / "one-d.pdf", tmp_path / "one-s.pdf"
     assert run("build", one_deck, "-o", str(duplex)).returncode == 0
     assert run("build", one_deck, "-o", str(simplex), "--sides", "simplex").returncode == 0
@@ -1368,6 +1372,8 @@ def test_the_run_says_which_paper_case_it_is_in(tmp_path):
         "--dividers",
         "4",
     )
+    # Geography, not Signals: at three dividers a sheet is shared up to eight
+    # cards and Signals is nine since #44. Five leaves four cards of headroom.
     shared = run(
         "build",
         *CARDS,
@@ -1376,7 +1382,7 @@ def test_the_run_says_which_paper_case_it_is_in(tmp_path):
         "--grid",
         "a8",
         "--topic",
-        "Signals",
+        "Geography",
         "--dividers",
         "3",
     )
