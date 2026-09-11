@@ -31,7 +31,19 @@ python3 -m pip install --user -r requirements-dev.txt
 ```
 
 That is pytest and ruff; the tools themselves currently need no packages of
-their own. Python 3.12 or newer. To try your changes as a plugin, add the clone
+their own. Python 3.12 or newer.
+
+Working on the documentation site is the one thing that needs more, and it is
+optional — nothing in the four gates below requires it:
+
+```bash
+python3 -m pip install --user -r requirements-docs.txt
+python3 scripts/build_docs.py
+```
+
+The build writes `_site/`; open `_site/index.html`. The documentation tests
+skip without those packages, so a contributor who never touches the site never
+installs them. To try your changes as a plugin, add the clone
 as a marketplace from inside Claude Code: `/plugin marketplace add .` and then
 `/plugin install lernkarten@mhabedank`.
 

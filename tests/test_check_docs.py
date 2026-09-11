@@ -633,3 +633,62 @@ def test_the_tier_table_agrees_with_the_checker_constants():
         f"the grouped tier has to run {flat + 1} to {grouped}"
     )
     assert f"| {grouped + 1}+ |" in skill, f"the top tier has to start at {grouped + 1}"
+
+
+# --- the documentation site is inside the gates (FR-037, SC-011) ---
+
+
+def test_check_docs_covers_the_docsite(tmp_path, monkeypatch):
+    """Every page under `docsite/` is a file the four gates can see.
+
+    Asserting this against the real repository would pass today and prove
+    nothing: `docsite/` does not exist yet, and an empty set satisfies
+    "returns every one of them". So the tree is built here instead, which is
+    also the only way to show the glob is *recursive* — the two existing globs
+    are not, and a page two levels down is the normal case rather than the
+    exception.
+
+    What is at stake is not tidiness. Six drift gates and the dead-link check
+    read this list, and they exist because this repository shipped the same
+    contradiction twice. A page outside it could claim eight cards to an A4
+    sheet and no gate would object.
+    """
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{
+            "docsite__index.md": "# The site\n",
+            "docsite__user__workflow.md": "# The workflow\n",
+            "docsite__contributing__design.md": "# The design\n",
+        },
+    )
+
+    found = {p.relative_to(tmp_path).as_posix() for p in check_docs.markdown_files()}
+    expected = {
+        "docsite/index.md",
+        "docsite/user/workflow.md",
+        "docsite/contributing/design.md",
+    }
+    assert expected <= found, (
+        f"markdown_files() misses {sorted(expected - found)}. Every drift gate and the "
+        f"dead-link check read this list, so a page it cannot see is a page no gate "
+        f"guards. It returned {sorted(found)}"
+    )
+
+
+def test_the_shipped_docsite_is_covered():
+    """And the same holds for the pages this repository actually ships.
+
+    The monkeypatched case above is the one that can be red, and it stays.
+    This one cannot fail for the reason that one can — but it fails if
+    somebody adds a page in a shape the glob does not reach, which the fixture
+    tree cannot anticipate because it only contains what it was told to.
+    """
+    docsite = check_docs.ROOT / "docsite"
+    shipped = {p.relative_to(check_docs.ROOT).as_posix() for p in docsite.rglob("*.md")}
+    covered = {p.relative_to(check_docs.ROOT).as_posix() for p in check_docs.markdown_files()}
+
+    assert shipped, "docsite/ holds no pages — this assertion has nothing to check"
+    assert shipped <= covered, (
+        f"these shipped pages are outside markdown_files(): {sorted(shipped - covered)}"
+    )

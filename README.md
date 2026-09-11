@@ -76,7 +76,7 @@ appends instead of overwriting. Add a source next month and run the pipeline
 again — you only pay for what is new.
 
 A full walkthrough, from nothing to the printed PDF, is in
-[docs/workflow.md](docs/workflow.md).
+[the walkthrough](https://mhabedank.github.io/lernkarten/docs/user/workflow.html).
 
 ## Why paper cards
 
@@ -271,7 +271,7 @@ Options: `--topic` / `--subtopic` to filter, `--margin`, `--language`,
 
 The card, the mark and the pages that describe them are one system: three
 inks, three faces, one grid. It is written down in
-[docs/design.md](docs/design.md) — read that before changing how anything
+[the design notes](https://mhabedank.github.io/lernkarten/docs/contributing/design.html) — read that before changing how anything
 looks. The landing page is [docs/index.html](docs/index.html), served at
 [mhabedank.github.io/lernkarten](https://mhabedank.github.io/lernkarten/).
 
@@ -285,7 +285,7 @@ card validation, PDF build).
 
 Want to try it out or test a change? `python3 scripts/demo.py ~/lernkarten-demo`
 sets up a small demo project — invented material, no licence questions — that
-you can run the whole pipeline against. [docs/testing.md](docs/testing.md) has
+you can run the whole pipeline against. [the testing notes](https://mhabedank.github.io/lernkarten/docs/contributing/testing.html) has
 the checklist and describes the automated tests.
 
 ## License

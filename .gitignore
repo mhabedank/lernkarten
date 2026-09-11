@@ -50,6 +50,15 @@ tests/fixtures/zotero/storage/
 # has to stay *below* `*.pdf`: .gitignore is last-match-wins.
 !assets/card-box.pdf
 
+# Sphinx's output. The pages are generated from docsite/ and docs/, so a
+# committed copy is a second version of the documentation that nothing keeps
+# in step with the sources it came from.
+docsite/_build/
+# The assembled site — the landing page, the method page, the box and the
+# built documentation, in the shape the deploy uploads. Built by
+# `python3 scripts/build_docs.py`, never by hand.
+_site/
+
 # --- Python -------------------------------------------------------------
 __pycache__/
 *.py[cod]

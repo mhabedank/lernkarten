@@ -483,6 +483,65 @@ def test_the_design_doc_describes_the_box():
         )
 
 
+def test_the_pre_pr_gates_have_not_grown():
+    """A guard: the pre-PR checklist stays at the commands it has.
+
+    Green from the first run, and it could not be red without adding the gate
+    it forbids. It exists because "no fifth gate" is the kind of rule that
+    holds until a feature has a good reason, and this feature had one — a
+    documentation build that a contributor can run. That build is deliberately
+    *not* a gate: it needs a toolchain the four gates do not, and requiring it
+    would make every contributor install Sphinx to fix a typo.
+
+    Five command lines for what the project calls four gates, because `ruff`
+    runs twice. That is not an error to tidy up.
+
+    Scoped to the first fenced block: the section carries a second one, for
+    the end-to-end material, which is not a pre-PR gate.
+    """
+    text = (ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    section = re.search(r"^## Before the pull request\n(.*?)(?=^## )", text, re.M | re.S)
+    assert section, "CONTRIBUTING.md has no '## Before the pull request' section"
+
+    block = re.search(r"```bash\n(.*?)```", section.group(1), re.S)
+    assert block, "the section carries no fenced bash block"
+
+    commands = [line for line in block.group(1).splitlines() if line.strip()]
+    assert len(commands) == 5, (
+        f"the pre-PR block runs {len(commands)} commands, not five:\n"
+        + "\n".join(commands)
+        + "\n\nFive lines for four gates — ruff runs twice. A sixth line is a fifth gate, "
+        "which this feature was explicitly not allowed to add"
+    )
+
+
+def test_the_design_doc_describes_the_documentation_site():
+    """The design rules describe every surface they govern, including the new one.
+
+    `docs/design.md` is normative for anything visible, and § *The screen
+    surfaces* is where the surfaces are enumerated. The documentation site is
+    the third of them: it carries the same inks and the same three faces, and
+    the theme it starts from is overridden to the rules on that page rather
+    than accepted as it ships.
+
+    Asserted as a row naming the directory, never as an ordinal. The table
+    holds five rows today for two surfaces — a landing page and four rendered
+    graphics — so "the sixth row" would be wrong the next time a graphic is
+    added, and this assertion would fail for a reason that has nothing to do
+    with the documentation.
+    """
+    text = (ROOT / "docs" / "design.md").read_text(encoding="utf-8")
+    section = re.search(r"^## The screen surfaces\n(.*?)(?=^#{2,3} )", text, re.M | re.S)
+    assert section, "docs/design.md has no '## The screen surfaces' section"
+
+    rows = [line for line in section.group(1).splitlines() if line.startswith("|")]
+    assert any("docsite/" in row for row in rows), (
+        "§ The screen surfaces has no row naming `docsite/`. The documentation site is a "
+        "surface these rules govern, and a normative table that does not list it describes "
+        "a repository that no longer exists"
+    )
+
+
 def test_the_readme_names_the_box():
     text = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "card-box.pdf" in text, (
@@ -554,3 +613,77 @@ def test_whole_deck_page_counts_are_derived_not_typed():
         if "*CARDS" in window and not any(a in window for a in allowed):
             offenders.append(f"{i + 1}: {line.strip()}")
     assert not offenders, "whole-deck page counts typed as literals:\n" + "\n".join(offenders)
+
+
+# --- the README sends a reader to the site, not to a raw file (FR-042) ---
+
+PUBLISHED = {
+    "docs/workflow.md": "https://mhabedank.github.io/lernkarten/docs/user/workflow.html",
+    "docs/design.md": "https://mhabedank.github.io/lernkarten/docs/contributing/design.html",
+    "docs/testing.md": "https://mhabedank.github.io/lernkarten/docs/contributing/testing.html",
+}
+
+
+def test_the_readme_points_at_the_published_pages():
+    """A reader following the README lands on a page, not on raw Markdown.
+
+    The whole point of the documentation site is that nobody should have to
+    know which half of the project a document lives in. Leaving these three
+    pointing at repository files would reintroduce that split one link deep —
+    and it is exactly what the landing page's own "full walkthrough" button
+    did for a long time without anyone noticing.
+
+    The one reference that stays a repository path is `docs/index.html` under
+    *The design*, which `test_the_readme_still_names_the_landing_page_source`
+    pins. That is deliberate rather than an oversight: it is the contributor's
+    link to the file they would edit, and the reader's link to the live page
+    sits in the opening block. No test is changed to make this pass.
+    """
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    missing = {path: url for path, url in PUBLISHED.items() if url not in readme}
+    assert not missing, (
+        f"the README does not link the published page for {sorted(missing)}. After the "
+        f"migration each of these is a page on the site; a link to the repository file "
+        f"sends a reader to raw Markdown on GitHub"
+    )
+
+    still_local = sorted(path for path in PUBLISHED if f"]({path})" in readme)
+    assert not still_local, (
+        f"the README still links {still_local} as repository paths. Both forms present "
+        f"means a reader meets whichever comes first"
+    )
+
+
+# --- the constitution knows where the documentation lives (FR-039) ---
+
+
+def test_principle_v_names_the_documentation_directory():
+    """Principle V's table is normative, and nothing else enforces it.
+
+    Its twin, Principle VI's import graph, is derived from the source by
+    `check_import_graph()` and turns the Skills & docs job red the moment a
+    module it does not list appears. Principle V has no such check: the table
+    can describe a repository that no longer exists and every gate stays
+    green. It already did — `docs/leitner.html` has been shipped for some time
+    and the row still lists four files.
+
+    So the amendment gets an assertion rather than a good intention, and the
+    stale row is corrected while the new one is added.
+    """
+    constitution = (ROOT / ".specify" / "memory" / "constitution.md").read_text(encoding="utf-8")
+    table = re.search(r"### V\. Code boundaries(.*?)\n\n[A-Z]", constitution, re.S)
+    assert table, "Principle V's table moved — this assertion's anchor is gone"
+    rows = table.group(1)
+
+    assert "`docsite/`" in rows, (
+        "Principle V's table has no `docsite/` row. A new top-level directory that the "
+        "table does not describe makes the normative document wrong about the repository "
+        "it governs, and no gate would say so"
+    )
+    docs_row = next((line for line in rows.splitlines() if line.startswith("| `docs/`")), "")
+    assert "leitner.html" in docs_row, (
+        f"Principle V's `docs/` row does not name `leitner.html`, which has been in that "
+        f"directory for some time. FR-011 promises the gates move with the file; they "
+        f"cannot if the constitution does not know it exists. The row reads: {docs_row}"
+    )

@@ -1,0 +1,160 @@
+/* The documentation site, brought onto the rules in docs/design.md.
+ *
+ * Written as rules rather than as a list of selectors. A selector list goes
+ * stale on the next theme release and quietly becomes the place where the
+ * next violation is recorded instead of prevented — so where the theme allows
+ * a blanket rule, this uses one.
+ *
+ * What is kept from pydata-sphinx-theme: the two-level navigation, the
+ * bundled icon font, admonitions doubled by icon and rule, the footer credit.
+ * What is overridden: the inks, the three faces, every radius, shadow and
+ * gradient, and the reading-type floor.
+ */
+
+/* --- The three faces -------------------------------------------------- */
+/* Copied from assets/fonts/, never converted: the .ttf files are already
+ * committed and named in the constitution's binary exception, and a woff2
+ * would be a new one. Archivo and Jost are variable, so one file covers the
+ * whole weight range and Jost 400 and 500 come off the same face. */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("Archivo.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Archivo";
+  src: url("Archivo-Italic.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Jost";
+  src: url("Jost.ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("IBMPlexMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* --- The inks, and the families --------------------------------------- */
+/* Five font variables, not three. The theme reads the `--pst-` ones, but
+ * `body` resolves `--bs-body-font-family` through `--bs-font-sans-serif` and
+ * never looks at a `--pst-` variable — so setting only those three leaves
+ * reading text on the system stack, which looks almost right. */
+
+/* Specificity is load-bearing here, and it is not obvious. The theme declares
+ * its families on `html`, its Bootstrap variables on `:root,[data-bs-theme=…]`
+ * and its colours on `html[data-theme=light]`. A plain `html { }` block ties
+ * with the first and *loses* to the other two — the declarations would sit in
+ * the stylesheet, be perfectly visible to anything reading the file, and never
+ * reach a pixel. So each group is written at the selector the theme uses. */
+
+:root {
+  --lk-ink: #141414;
+  --lk-sand: #f2efe6;
+  --lk-ground: #e9e5da;
+  --lk-red: #c2251b;
+  --lk-yellow: #f0c000;
+  --lk-blue: #0a3f8f;
+  --lk-muted: #3a3733;
+  --lk-guide: #8c8779;
+
+  --pst-font-family-base: "Archivo", sans-serif;
+  --pst-font-family-heading: "Archivo", sans-serif;
+  --pst-font-family-monospace: "IBM Plex Mono", monospace;
+  --bs-font-sans-serif: "Archivo", sans-serif;
+  --bs-font-monospace: "IBM Plex Mono", monospace;
+  --bs-body-font-family: "Archivo", sans-serif;
+
+  /* Uppercase labels are Jost, the way they are everywhere else. */
+  --lk-label-font: "Jost", sans-serif;
+}
+
+html[data-theme="light"],
+html[data-theme="dark"] {
+  --pst-color-primary: var(--lk-blue);
+  --pst-color-secondary: var(--lk-red);
+  --pst-color-link: var(--lk-blue);
+  --pst-color-link-hover: var(--lk-red);
+  --pst-color-text-base: var(--lk-ink);
+  --pst-color-text-muted: var(--lk-muted);
+  --pst-color-background: var(--lk-sand);
+  --pst-color-on-background: var(--lk-sand);
+  --pst-color-surface: var(--lk-ground);
+  --pst-color-border: var(--lk-guide);
+  --pst-color-inline-code: var(--lk-muted);
+  --pst-color-warning: var(--lk-yellow);
+  --pst-color-danger: var(--lk-red);
+}
+
+.bd-sidebar-primary .caption-text,
+.bd-sidebar-secondary .onthispage {
+  font-family: var(--lk-label-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* --- Flat colour and type only ---------------------------------------- */
+/* docs/design.md, § The screen surfaces: no gradients, no shadows, no
+ * rounded corners. The theme uses all three by default. Every rounded corner
+ * it ships sits on a Bootstrap class Sphinx never emits, so the blanket rule
+ * needs no exceptions.
+ *
+ * Deliberately NOT `background-image: none`: the navbar toggler, the
+ * admonition icons and the external-link marker are inline `data:` SVG
+ * backgrounds, and a blanket rule would erase all three. */
+
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+:root {
+  --bs-gradient: none;
+}
+
+/* --- The reading-type floor ------------------------------------------- */
+/* 15 px on screen, and it binds Archivo prose only — docs/design.md scopes it
+ * that way and constitution XVI repeats it. Mono literals and Jost labels are
+ * exempt by name, so `pre`, `code`, `kbd`, the icon glyphs, `sub`/`sup` and
+ * the keycap literal are left exactly as the theme sets them.
+ *
+ * The two variables below are the whole of it in practice: the theme sets
+ * both to 0.9rem, which is 14.4 px, and between them they carry the sidebar,
+ * the captions and the admonition titles. */
+
+:root {
+  --pst-font-size-milli: 1rem;
+  --pst-sidebar-font-size: 1rem;
+}
+
+.bd-sidebar-primary,
+.bd-sidebar-secondary,
+.bd-footer,
+figcaption,
+.caption-text,
+.admonition-title {
+  font-size: 1rem;
+}
+
+/* The breadcrumbs are the one place the variables above do not reach: the
+ * theme sets `ul.bd-breadcrumbs` to 0.8rem directly, which is 12.8 px of
+ * Archivo prose — a trail of page titles, not a label, so the floor binds it.
+ * Found by measuring the built site in a browser; a stylesheet read as text
+ * cannot say what a rule resolves to. */
+ul.bd-breadcrumbs,
+ul.bd-breadcrumbs li.breadcrumb-item:not(.breadcrumb-home):before {
+  font-size: 1rem;
+}

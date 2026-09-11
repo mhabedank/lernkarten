@@ -239,7 +239,8 @@ is a defect to be scheduled, not a fact of life.
 | `templates/card.typ`, `templates/cards.typ` | the card and the press sheet |
 | `assets/brand/*.typ` | brand graphics, rendered to PNG by `scripts/render_brand.py` |
 | `tests/` | pytest modules plus the shared fixture corpus |
-| `docs/` | `workflow.md`, `design.md`, `testing.md`, `index.html` (the landing page) |
+| `docs/` | `workflow.md`, `design.md`, `testing.md`, `index.html` (the landing page), `leitner.html` (the method page) |
+| `docsite/` | the documentation site's own sources: `conf.py`, the page files, `_ext/` (build-time Sphinx extensions) and `_static/`. Built by `scripts/build_docs.py`; the pages under `docs/` are pulled in rather than moved |
 
 New code goes into an existing module where one fits. A new file under
 `scripts/` needs a reason and a module docstring in the established style: what
@@ -254,7 +255,7 @@ it does, the commands that invoke it, and why it exists.
 travel is:
 
 ```
-deps, engine, leitner              ← leaves, import nothing local
+build_docs, deps, engine, leitner  ← leaves, import nothing local
 zotero_ingest, zotero_stub         ←
 yamlio                             → deps (only to bootstrap PyYAML)
 cardid                             → yamlio
@@ -645,7 +646,26 @@ the rule.
   dependency tree are still the goal — Principles II–IV loosened *what may be
   imported*, not *how much may be built*.
 
-**Version**: 2.7.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-09-01
+**Version**: 2.8.0 | **Ratified**: 2026-08-17 | **Last Amended**: 2026-09-09
+
+*2.8.0 — Principle V learns about the documentation site, and about a page it
+never knew existed. The table gains a `docsite/` row for the Sphinx sources, and
+its `docs/` row finally names `leitner.html`, which has been shipped for some
+time while the row listed four files. That second half is the interesting one:
+Principle VI's graph is derived from the source and turns CI red the moment it
+disagrees with the repository, so it cannot go stale. Principle V is prose that
+nothing reads, and it had been wrong for a while with every gate green. It is
+now asserted by `tests/test_repo_hygiene.py`.
+
+Principle VI's leaves line gains `build_docs`. `scripts/build_docs.py` imports
+Sphinx on purpose and imports no local module, so it is a leaf — and the check
+that derives the graph would have failed the Skills & docs job on every commit
+between the script and this amendment, which is why the two land together. The
+rule that keeps the documentation toolchain off a user's path is not this graph
+but `tests/test_docsite_layout.py`, which walks the import closure of
+`bin/lernkarten` rather than naming directories, so a future documentation
+script is outside it without anyone editing the test. See
+[specs/013-skill-reference/spec.md](../../specs/013-skill-reference/spec.md).*
 
 *2.7.0 — Principle VIII's exception becomes a named list, and admits what it
 costs. VIII said "the one deliberate exception is the brand PNGs" while

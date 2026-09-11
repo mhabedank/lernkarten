@@ -15,10 +15,22 @@ on:
   push:
     branches: [main]
     paths:
+      # Served at the site root.
       - docs/index.html
       - docs/leitner.html
       - assets/card-box.pdf
       - .github/workflows/pages.yml
+      # Read by the documentation build. A file the site is built from but
+      # does not redeploy for is a file that can change on main while the
+      # published page goes on saying the old thing.
+      - docs/*.md
+      - CONTRIBUTING.md
+      - docsite/**
+      - requirements-docs.txt
+      - assets/pipeline.png
+      - assets/example-cards.png
+      - assets/fonts/**
+      - scripts/build_docs.py
   workflow_dispatch:
 
 permissions:
@@ -39,13 +51,30 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
       - name: Assemble the site
+        # scripts/build_docs.py makes these same three copies, so that a local
+        # build is a real preview rather than a fragment. They stay here too:
+        # CI never executes this workflow, so two tests read these lines as
+        # text to know what the site contains. Both write identical bytes and
+        # both are idempotent — see plan.md § The `_site` assembly.
         run: |
           mkdir -p _site
           cp docs/index.html _site/index.html
           cp docs/leitner.html _site/leitner.html
           cp assets/card-box.pdf _site/card-box.pdf
           touch _site/.nojekyll
+      - name: Build the documentation
+        # One job, and this ahead of the upload: a failing build fails the job
+        # before anything is published, so the site is never half-updated.
+        # The `test -f` is a post-condition, not decoration — a build that
+        # exits 0 while writing nothing would otherwise deploy a landing page
+        # linking into an empty tree.
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements-docs.txt
+          python3 scripts/build_docs.py --site _site && test -f _site/docs/index.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

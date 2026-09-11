@@ -155,3 +155,37 @@ jobs:
           python-version: "3.12"
       - name: Check skill frontmatter and doc links
         run: python3 scripts/check_docs.py
+
+  # Not `docs` — that id belongs to the job above, and two jobs sharing one is
+  # a YAML error found as a red run rather than at review.
+  docs-build:
+    name: Documentation build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        # bash on all three, like the other multi-OS jobs. `python`, not
+        # `python3`: that is what this shell resolves on the Windows runner,
+        # and a third convention inside one job would fail a leg for a reason
+        # unrelated to the documentation. `python3 scripts/build_docs.py`
+        # remains the documented human command.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements-dev.txt -r requirements-docs.txt
+      - name: Build the documentation
+        run: python scripts/build_docs.py
+      - name: pytest
+        # The whole suite, not just the documentation module. This is the only
+        # leg that exercises the link transform, `{include}` resolution and
+        # text encoding on macOS, which the `test` job does not cover at all.
+        # It is also the only job where tests/test_build_docs.py runs rather
+        # than skips, so without this step those assertions execute nowhere.
+        run: python -m pytest
