@@ -108,14 +108,14 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 
 ### 🔴 Red
 
-- [ ] T026 🔴 [P] [US1] E2E in `tests/test_e2e.py`: no page of the demo deck carries a `[12]/2` token, at `a7` and `a8`, with and without `--no-logo` — fails, the template prints it
-- [ ] T027 🔴 [P] [US1] E2E in `tests/test_e2e.py`: the `·` separator appears nowhere, and each card id still appears exactly twice — fails on the separator
-- [ ] T028 🔴 [US1] Update `MEASURE` in `tests/test_e2e.py` to measure the bare id (`A45DK`, not `A45DK · 1/2`) and rewrite the headroom comment in `test_the_id_fits_the_box_it_is_clipped_to_by_measurement` — "room for a longer side marker" stops being a reason once there is no side marker. Expect ~52.80 pt against the 94.49 pt cap, the number `docs/design.md` already states
+- [X] T026 🔴 [P] [US1] E2E in `tests/test_e2e.py`: no page of the demo deck carries a `[12]/2` token, at `a7` and `a8`, with and without `--no-logo` — fails, the template prints it
+- [X] T027 🔴 [P] [US1] E2E in `tests/test_e2e.py`: the `·` separator appears nowhere, and each card id still appears exactly twice — fails on the separator
+- [X] T028 🔴 [US1] Update `MEASURE` in `tests/test_e2e.py` to measure the bare id (`A45DK`, not `A45DK · 1/2`) and rewrite the headroom comment in `test_the_id_fits_the_box_it_is_clipped_to_by_measurement` — "room for a longer side marker" stops being a reason once there is no side marker. Expect ~52.80 pt against the 94.49 pt cap, the number `docs/design.md` already states
 
 ### 🟢 Green
 
-- [ ] T029 [US1] In `footer()` in `templates/card.typ`: delete the `side` binding and set the id block's text to the bare `card.id`. Nothing else in the band moves — the mark, the wordmark, the band height and the top rule are untouched (FR-011)
-- [ ] T030 [US1] Eyeball both builds against `docs/design.md`: `bin/lernkarten build cards/example.yaml -o output/cards.pdf` and the same with `--margin 0 --no-logo` — the band still reads as quiet, nothing shifted, duplex alignment intact
+- [X] T029 [US1] In `footer()` in `templates/card.typ`: delete the `side` binding and set the id block's text to the bare `card.id`. Nothing else in the band moves — the mark, the wordmark, the band height and the top rule are untouched (FR-011)
+- [X] T030 [US1] Eyeball both builds against `docs/design.md`: `bin/lernkarten build cards/example.yaml -o output/cards.pdf` and the same with `--margin 0 --no-logo` — the band still reads as quiet, nothing shifted, duplex alignment intact
 
 **Checkpoint**: the ink is gone and the print order is still proven. `pytest` green.
 
@@ -129,16 +129,16 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 
 ### 🔴 Red
 
-- [ ] T031 🔴 [US3] Rewrite `test_a_card_without_an_id_prints_the_side_marker_alone` in `tests/test_e2e.py` as `…_prints_nothing_in_the_id_block`: neither `·` nor `1/2` nor `2/2` — fails, the marker is still there
-- [ ] T032 🔴 [P] [US3] E2E in `tests/test_e2e.py`: `NO_ID_DECK` built with `--no-logo` exits 0 with no `WARNING` on stderr — the band is empty apart from its top rule
-- [ ] T033 🔴 [P] [US3] E2E in `tests/test_e2e.py`: the template places the id block and its rule only under a condition on the id. This one reads `templates/card.typ` — a drawn rule is not in the text layer and this repo has no image comparison; the precedent is `test_the_template_sets_the_id_at_the_agreed_size`, and the *appearance* gets a manual row instead (T048)
-- [ ] T034 🔴 [P] [US3] E2E in `tests/test_e2e.py`: a deck where some cards carry an id and some do not is handled per card — the block appears on the ones that have one
+- [X] T031 🔴 [US3] Rewrite `test_a_card_without_an_id_prints_the_side_marker_alone` in `tests/test_e2e.py` as `…_prints_nothing_in_the_id_block`: neither `·` nor `1/2` nor `2/2` — fails, the marker is still there
+- [X] T032 🔴 [P] [US3] E2E in `tests/test_e2e.py`: `NO_ID_DECK` built with `--no-logo` exits 0 with no `WARNING` on stderr — the band is empty apart from its top rule
+- [X] T033 🔴 [P] [US3] E2E in `tests/test_e2e.py`: the template places the id block and its rule only under a condition on the id. This one reads `templates/card.typ` — a drawn rule is not in the text layer and this repo has no image comparison; the precedent is `test_the_template_sets_the_id_at_the_agreed_size`, and the *appearance* gets a manual row instead (T048)
+- [X] T034 🔴 [P] [US3] E2E in `tests/test_e2e.py`: a deck where some cards carry an id and some do not is handled per card — the block appears on the ones that have one
 
 ### 🟢 Green
 
-- [ ] T035 [US3] In `footer()` in `templates/card.typ`: make the id box **and** the vertical rule at `dx: cw - id-w` conditional on `card.id != ""`, with `id-w` falling to `0mm` so the wordmark box takes the freed width. The band's height and top rule are unconditional
-- [ ] T036 [US3] Rewrite the comment at `templates/card.typ:92-95`. It explained why a separator with nothing in front of it was avoided; that reasoning is exactly what now requires the block to collapse, so it stays and says so
-- [ ] T037 [US3] Eyeball `--no-logo` on a deck with no ids: an empty band with one rule across the top, at both grids. This is the judgement this story exists for
+- [X] T035 [US3] In `footer()` in `templates/card.typ`: make the id box **and** the vertical rule at `dx: cw - id-w` conditional on `card.id != ""`, with `id-w` falling to `0mm` so the wordmark box takes the freed width. The band's height and top rule are unconditional
+- [X] T036 [US3] Rewrite the comment at `templates/card.typ:92-95`. It explained why a separator with nothing in front of it was avoided; that reasoning is exactly what now requires the block to collapse, so it stays and says so
+- [X] T037 [US3] Eyeball `--no-logo` on a deck with no ids: an empty band with one rule across the top, at both grids. This is the judgement this story exists for
 
 **Checkpoint**: every footer state — id, no id, logo, no logo — is correct on paper and asserted where it can be.
 

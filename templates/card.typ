@@ -98,14 +98,24 @@
     )
     // The id block takes exactly the width its text needs, so nothing wraps
     // and the rule in front of it stays put whatever the card file is called.
-    let id-w = calc.min(measure(id).width + 5mm * scale, cw / 3)
+    //
+    // A card written before ids existed carries none, and then the block is
+    // not there at all — not an empty box behind a rule. The rule divides the
+    // wordmark from the id; with no id it would stand in front of nothing,
+    // which is a smudge rather than information. The band keeps its height and
+    // its top rule either way: the three bands never move.
+    let id-w = if card.id == "" { 0mm } else {
+      calc.min(measure(id).width + 5mm * scale, cw / 3)
+    }
     place(dy: top, line(end: (cw, 0mm), stroke: hairline))
-    place(dy: top, dx: cw - id-w, line(end: (0mm, foot-h), stroke: hairline))
-    place(
-      dy: top,
-      dx: cw - id-w,
-      box(width: id-w, height: foot-h, clip: true, align(horizon + center, id)),
-    )
+    if card.id != "" {
+      place(dy: top, dx: cw - id-w, line(end: (0mm, foot-h), stroke: hairline))
+      place(
+        dy: top,
+        dx: cw - id-w,
+        box(width: id-w, height: foot-h, clip: true, align(horizon + center, id)),
+      )
+    }
     if show-logo {
       place(dy: top, dx: foot-h, line(end: (0mm, foot-h), stroke: hairline))
       place(dy: top, box(
