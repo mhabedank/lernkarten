@@ -51,11 +51,16 @@ the #48 guarantee, read off the build with no `pdftotext` anywhere. See
 ```bash
 pdftotext -enc UTF-8 /tmp/duplex.pdf - | grep -c -E '[12]/2'   # expect: 0
 pdftotext -enc UTF-8 /tmp/duplex.pdf - | grep -c '·'           # expect: 0
-pdftotext -enc UTF-8 /tmp/duplex.pdf - | grep -o -E '\b[0-9A-HJKMNP-TV-Z]{5}\b' | sort | uniq -c | head
+python3 -c "import json,subprocess; \
+ids={f['ref'] for p in json.load(open('/tmp/duplex.json'))['pages'] for f in p['faces']}; \
+t=subprocess.run(['pdftotext','-enc','UTF-8','/tmp/duplex.pdf','-'],capture_output=True,text=True).stdout; \
+print(sorted({t.count(i) for i in ids}))"
 ```
 
-**Expect** no `1/2`, no `2/2`, no separator — and every card id still appearing
-**twice**, once per face. The id stays; only the marker beside it goes.
+**Expect** no `1/2`, no `2/2`, no separator — and `[2]`: every card id appears
+exactly twice, once per face. Counted against the ids the face map names rather
+than against a pattern, because an upper-case topic label in the header can look
+like an id to a regex. The id stays; only the marker beside it goes.
 
 ## 3. A card with no id leaves no smudge
 

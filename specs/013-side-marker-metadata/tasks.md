@@ -179,13 +179,13 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 
 **Purpose**: exactly what CI checks. All green before the pull request.
 
-- [ ] T050 `ruff check .` and `ruff format --check .`
-- [ ] T051 `pytest`
-- [ ] T052 `bin/lernkarten check cards/example.yaml`
-- [ ] T053 `python3 scripts/check_docs.py`
-- [ ] T054 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — the whole module, not only the changed tests
-- [ ] T055 Walk [quickstart.md](./quickstart.md) end to end, all six checks
-- [ ] T056 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
+- [X] T050 `ruff check .` and `ruff format --check .`
+- [X] T051 `pytest`
+- [X] T052 `bin/lernkarten check cards/example.yaml`
+- [X] T053 `python3 scripts/check_docs.py`
+- [X] T054 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — the whole module, not only the changed tests
+- [X] T055 Walk [quickstart.md](./quickstart.md) end to end, all six checks
+- [X] T056 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
 - [ ] T057 Push the branch and open a pull request; confirm commit subjects are prefixed (`design:`, `test:`, `docs:`)
 
 ---
