@@ -598,7 +598,7 @@ already ships, and T040 adds `12-iv`, `12-v` and `12-vi`.
 - [x] T046 Confirm T035 (`LERNKARTEN_E2E=1 pytest tests/test_e2e.py`) has been re-run **after** the final fixture state, since `DEMO_CARD_COUNT` moved. Also run `pytest tests/test_testdata.py` — it parses `skills/ingest/SKILL.md` literally (`:265-273`) and is the guard against T023 reflowing the wrong paragraph.
 - [x] T047 `python3 scripts/deps.py --check` / `lernkarten deps --check` — confirm the runtime dependency set is **still exactly** `pyyaml==6.0.3`. Confirm `requirements-dev.txt` is unchanged. If either moved, **stop and flag back to plan.md**.
 - [x] T048 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. Nothing was forced in with `git add -f`.
-- [ ] T049 Open the pull request from `feat/goal-fit-sources` (`main` rejects direct pushes). The description **must** carry the constitution VII note required by plan.md's Constitution Check row VII: the demo fixture was **extended, never duplicated**, with **invented** archipelago material, and nothing is quoted from anyone. Commit subjects use the repo prefixes (`feat:`, `skill:`, `test:`, `docs:`, `fix:`).
+- [x] T049 Open the pull request from `feat/goal-fit-sources` (`main` rejects direct pushes). The description **must** carry the constitution VII note required by plan.md's Constitution Check row VII: the demo fixture was **extended, never duplicated**, with **invented** archipelago material, and nothing is quoted from anyone. Commit subjects use the repo prefixes (`feat:`, `skill:`, `test:`, `docs:`, `fix:`).
 
 ---
 
