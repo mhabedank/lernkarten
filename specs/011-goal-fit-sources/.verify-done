@@ -1,0 +1,5 @@
+2026-09-09T13:30:37Z
+CRITICAL: 0
+WARNING: 1 (F1, deferred to T049)
+INFO: 8
+RESOLVED: E1, G1 (prompt fixes, no gate could see them)

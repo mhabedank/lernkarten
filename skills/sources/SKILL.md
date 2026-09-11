@@ -18,12 +18,20 @@ Maintains the source register `sources.yaml` in the project root.
    (id, type, path/URL/collection, note) and briefly explain how to add one.
    While doing so, check whether each source is still reachable (does the
    folder/file exist?) and flag dead ones.
-3. **With arguments** (e.g. `/sources ~/Documents/University/Statistics` or
-   "add my Zotero"): create the source(s) — see below. Then show the updated
-   list.
-4. **Removing** ("remove lecture-notes"): delete the entry from
+3. **With `--discover`**, or the same request in words ("find me sources for my
+   goal"): this is **not** a source to register — it is the discovery mode. Go
+   to *Finding sources* below and do nothing else. Check this before step 4, so
+   `--discover` is never read as a path.
+4. **With arguments** (e.g. `/sources ~/Documents/University/Statistics` or
+   "add my Zotero"): create the source(s) — see below — and, when `goal.md`
+   exists, say what each one contributes to it, per *Goal fit* below. Then show
+   the updated list.
+5. **Removing** ("remove lecture-notes"): delete the entry from
    `sources.yaml`. Do NOT automatically delete already ingested texts under
    `knowledge/<id>/` — just point them out.
+
+Steps 2, 4 and 5 are ordinary runs: they reach no network and they neither
+enter discovery nor mention it.
 
 ## Creating a source
 
@@ -72,8 +80,12 @@ the source's worth in general: what someone reads is their business, and the onl
 question here is what it does for the goal they wrote down.
 
 Reason from the `kind` and the `depth` in `goal.md`, and say which of the two you
-used — `depth: expert` with `kind: interview` or `kind: meeting` weighs
-practitioner material up; `kind: exam` with `depth: awareness` weighs it down.
+used. They weigh independently, and either one alone is enough to say something:
+`depth: expert` weighs practitioner material up, and so does `kind: interview`
+or `kind: meeting` — the edge cases and the trade-offs are the content. `kind:
+exam` weighs it down, and so does `depth: awareness` — an exam asks what the
+term means, not how it failed at one company on one Tuesday. When the two pull
+against each other, say so and say which way you came down.
 
 Never invent a claim about a source you have not looked at. Registering fetches
 nothing, so where you reason from the URL, the `note` and the `type` alone,
