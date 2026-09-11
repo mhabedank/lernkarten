@@ -1022,7 +1022,10 @@ def test_the_face_map_groups_the_faces_by_page():
     assert mapping["sides"] == "duplex"
     assert mapping["grid"] == "2x4"
     assert mapping["pages"] == [
-        {"page": 1, "faces": [{"ref": "A45DK", "side": "front"}, {"ref": "B7Q2M", "side": "front"}]},
+        {
+            "page": 1,
+            "faces": [{"ref": "A45DK", "side": "front"}, {"ref": "B7Q2M", "side": "front"}],
+        },
         {"page": 2, "faces": [{"ref": "A45DK", "side": "back"}, {"ref": "B7Q2M", "side": "back"}]},
     ]
 

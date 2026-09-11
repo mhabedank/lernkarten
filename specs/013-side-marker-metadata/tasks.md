@@ -29,11 +29,11 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 
 **Purpose**: get the environment able to verify the work.
 
-- [ ] T001 [P] `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
-- [ ] T002 [P] `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
-- [ ] T003 [P] `bin/lernkarten engine --check` — confirm Typst 0.15.1 is cached, or let the first build fetch it
-- [ ] T004 [P] `python3 scripts/make_testdata.py` — needed for the full `pytest` run, not for this feature's own tests (the demo cards reference only the committed `tide-chart.svg`)
-- [ ] T005 `git switch -c design/side-marker-metadata` — `design/`, because the change is visible on the card
+- [X] T001 [P] `python3 -m pip install --user -r requirements-dev.txt` — pytest and ruff
+- [X] T002 [P] `scripts/install-hooks.sh` — pre-commit (no user content) and pre-push (no direct `main`)
+- [X] T003 [P] `bin/lernkarten engine --check` — confirm Typst 0.15.1 is cached, or let the first build fetch it
+- [X] T004 [P] `python3 scripts/make_testdata.py` — needed for the full `pytest` run, not for this feature's own tests (the demo cards reference only the committed `tide-chart.svg`)
+- [X] T005 `git switch -c design/side-marker-metadata` — `design/`, because the change is visible on the card
 
 **Checkpoint**: `LERNKARTEN_E2E=1 pytest tests/test_e2e.py` is green on an untouched tree. That is the baseline every 🔴 below is measured against.
 
@@ -57,44 +57,44 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 
 ### Test material
 
-- [ ] T006 [US2] None needed — confirm rather than assume: the demo deck's 33 cards and the `--dividers` flag already cover every case in this story. Do **not** start a new fixture (constitution XI notes, second corpus).
+- [X] T006 [US2] None needed — confirm rather than assume: the demo deck's 33 cards and the `--dividers` flag already cover every case in this story. Do **not** start a new fixture (constitution XI notes, second corpus).
 
 ### 🔴 Red — before any implementation
 
 > Each must fail on its assertion, not on an `ImportError`. The e2e ones skip without an engine; run them with `LERNKARTEN_E2E=1`.
 
-- [ ] T007 🔴 [P] [US2] Unit test in `tests/test_build_pdf.py`: `face_map()` groups query entries by page into the shape in [contracts/face-map.md](./contracts/face-map.md) — fails, the function does not exist
-- [ ] T008 🔴 [P] [US2] Unit test in `tests/test_build_pdf.py`: `face_map()` pads to the page count, so a page carrying no face is listed with `"faces": []` rather than skipped — fails
-- [ ] T009 🔴 [US2] E2E in `tests/test_e2e.py`: `--face-map` on the demo deck writes JSON naming `sides`, `grid` and every page, ref and side; 33 cards yield 66 faces, each ref once as `front` and once as `back` — fails, the option does not exist
-- [ ] T010 🔴 [US2] E2E in `tests/test_e2e.py`: the map for `--sides simplex` groups the faces while the map for `--sides duplex` alternates them, on the same deck — fails. **This is the R3 trap**: a face query built without passing `sides` satisfies every other assertion in this phase
-- [ ] T011 🔴 [P] [US2] E2E in `tests/test_e2e.py`: a build with no `--face-map` writes the PDF and nothing beside it — fails
-- [ ] T012 🔴 [P] [US2] E2E in `tests/test_e2e.py`: `--face-map` pointed at an unwritable path exits non-zero with a message naming the path, and no traceback — fails
-- [ ] T013 🔴 [P] [US2] E2E in `tests/test_e2e.py`: with `SOURCE_DATE_EPOCH` pinned in the environment, the PDF is byte-identical with and without `--face-map` — fails. The pin is required; Typst writes `/CreationDate` (research R5)
-- [ ] T014 🔴 [US2] E2E in `tests/test_e2e.py`: `--grid a8 --dividers 4` over `tests/fixtures/demo-project/cards/tides.yaml` yields a map whose divider-only pages are present with no faces — fails
+- [X] T007 🔴 [P] [US2] Unit test in `tests/test_build_pdf.py`: `face_map()` groups query entries by page into the shape in [contracts/face-map.md](./contracts/face-map.md) — fails, the function does not exist
+- [X] T008 🔴 [P] [US2] Unit test in `tests/test_build_pdf.py`: `face_map()` pads to the page count, so a page carrying no face is listed with `"faces": []` rather than skipped — fails
+- [X] T009 🔴 [US2] E2E in `tests/test_e2e.py`: `--face-map` on the demo deck writes JSON naming `sides`, `grid` and every page, ref and side; 33 cards yield 66 faces, each ref once as `front` and once as `back` — fails, the option does not exist
+- [X] T010 🔴 [US2] E2E in `tests/test_e2e.py`: the map for `--sides simplex` groups the faces while the map for `--sides duplex` alternates them, on the same deck — fails. **This is the R3 trap**: a face query built without passing `sides` satisfies every other assertion in this phase
+- [X] T011 🔴 [P] [US2] E2E in `tests/test_e2e.py`: a build with no `--face-map` writes the PDF and nothing beside it — fails
+- [X] T012 🔴 [P] [US2] E2E in `tests/test_e2e.py`: `--face-map` pointed at an unwritable path exits non-zero with a message naming the path, and no traceback — fails
+- [X] T013 🔴 [P] [US2] E2E in `tests/test_e2e.py`: with `SOURCE_DATE_EPOCH` pinned in the environment, the PDF is byte-identical with and without `--face-map` — fails. The pin is required; Typst writes `/CreationDate` (research R5)
+- [X] T014 🔴 [US2] E2E in `tests/test_e2e.py`: `--grid a8 --dividers 4` over `tests/fixtures/demo-project/cards/tides.yaml` yields a map whose divider-only pages are present with no faces — fails
 
 **Checkpoint**: `pytest` is red for exactly eight reasons, all of them this story's. Commit here.
 
 ### 🟢 Green — the implementation
 
-- [ ] T015 [US2] Emit the label in `templates/card.typ`: as the first act of `face(card, back, body)`, `context [#metadata((ref: card.ref, side: …, page: here().page()))<face>]`. It goes in `face()` because that is the one place that knows which side it is laying out, and dividers never pass through it
-- [ ] T016 [US2] Add `face_entries(binary, workdir, margin, logo, grid, sides)` to `scripts/build_pdf.py`, modelled on `overflowing()` — **and pass `sides` to `engine_inputs()`**, with a comment at the call site saying why this query is the exception that `overflowing()`'s docstring describes (research R3)
-- [ ] T017 [P] [US2] Add the pure `face_map(entries, page_count)` to `scripts/build_pdf.py` — groups by page, pads to `page_count`, returns the `sides`/`grid`/`pages` object. Pure so T007–T008 need no engine
-- [ ] T018 [US2] Add `write_face_map(path, mapping)` to `scripts/build_pdf.py`: `json.dumps`, UTF-8, and `sys.exit(f"ERROR: cannot write the face map to {path}: …")` on `OSError` — never a traceback (T012)
-- [ ] T019 [US2] Add `--face-map PATH` to the parser in `scripts/build_pdf.py` with the help text from [contracts/face-map.md](./contracts/face-map.md). No change to `bin/lernkarten` or `scripts/lernkarten` — they pass arguments straight through
-- [ ] T020 [US2] Wire it into `main()` in `scripts/build_pdf.py`: move the page-count arithmetic (`pages(...)`, raised to `2 * (divider_page + 1)` for dividers) **above** the `with tempfile.TemporaryDirectory()` block, and write the map inside that block beside `warn_about_overflow(...)`. The workdir is gone after it, which is the whole reason this lives in the real command
-- [ ] T021 [US2] Confirm `--face-map` works with `--check` too (research R10) — the document is compiled either way; no special case, no refusal to explain
+- [X] T015 [US2] Emit the label in `templates/card.typ`: as the first act of `face(card, back, body)`, `context [#metadata((ref: card.ref, side: …, page: here().page()))<face>]`. It goes in `face()` because that is the one place that knows which side it is laying out, and dividers never pass through it
+- [X] T016 [US2] Add `face_entries(binary, workdir, margin, logo, grid, sides)` to `scripts/build_pdf.py`, modelled on `overflowing()` — **and pass `sides` to `engine_inputs()`**, with a comment at the call site saying why this query is the exception that `overflowing()`'s docstring describes (research R3)
+- [X] T017 [P] [US2] Add the pure `face_map(entries, page_count)` to `scripts/build_pdf.py` — groups by page, pads to `page_count`, returns the `sides`/`grid`/`pages` object. Pure so T007–T008 need no engine
+- [X] T018 [US2] Add `write_face_map(path, mapping)` to `scripts/build_pdf.py`: `json.dumps`, UTF-8, and `sys.exit(f"ERROR: cannot write the face map to {path}: …")` on `OSError` — never a traceback (T012)
+- [X] T019 [US2] Add `--face-map PATH` to the parser in `scripts/build_pdf.py` with the help text from [contracts/face-map.md](./contracts/face-map.md). No change to `bin/lernkarten` or `scripts/lernkarten` — they pass arguments straight through
+- [X] T020 [US2] Wire it into `main()` in `scripts/build_pdf.py`: move the page-count arithmetic (`pages(...)`, raised to `2 * (divider_page + 1)` for dividers) **above** the `with tempfile.TemporaryDirectory()` block, and write the map inside that block beside `warn_about_overflow(...)`. The workdir is gone after it, which is the whole reason this lives in the real command
+- [X] T021 [US2] Confirm `--face-map` works with `--check` too (research R10) — the document is compiled either way; no special case, no refusal to explain
 
 ### Migrate the guarantee onto the new signal
 
 > Still with the marker printed, so a mistake here is a failure and not a gap.
 
-- [ ] T022 [US2] Replace `face_marks_per_page()` in `tests/test_e2e.py` with a helper that builds with `--face-map` and reads the JSON; delete the text-layer version and its docstring about `1/2` / `2/2`
-- [ ] T023 [US2] Point `test_simplex_puts_every_front_before_any_back`, `test_simplex_keeps_every_back_behind_its_own_front`, `test_simplex_groups_the_faces_at_the_denser_grid_too` and `test_a_single_sheet_deck_looks_the_same_in_both_orders` in `tests/test_e2e.py` at the new helper, keeping every assertion's meaning
-- [ ] T024 [US2] Remove the `pdftotext` skip from the print-order path and verify by hiding it: `PATH=/usr/bin LERNKARTEN_E2E=1 pytest tests/test_e2e.py -k "simplex or print_order"` (or rename the binary) — the tests must run, not skip
+- [X] T022 [US2] Replace `face_marks_per_page()` in `tests/test_e2e.py` with a helper that builds with `--face-map` and reads the JSON; delete the text-layer version and its docstring about `1/2` / `2/2`
+- [X] T023 [US2] Point `test_simplex_puts_every_front_before_any_back`, `test_simplex_keeps_every_back_behind_its_own_front`, `test_simplex_groups_the_faces_at_the_denser_grid_too` and `test_a_single_sheet_deck_looks_the_same_in_both_orders` in `tests/test_e2e.py` at the new helper, keeping every assertion's meaning
+- [X] T024 [US2] Remove the `pdftotext` skip from the print-order path and verify by hiding it: `PATH=/usr/bin LERNKARTEN_E2E=1 pytest tests/test_e2e.py -k "simplex or print_order"` (or rename the binary) — the tests must run, not skip
 
 ### Refactor
 
-- [ ] T025 [US2] Tidy: one docstring on `face_entries()` naming the `sides` trap, one on `face_map()` naming the padding guarantee. Both are the kind of thing the next reader will otherwise get wrong
+- [X] T025 [US2] Tidy: one docstring on `face_entries()` naming the `sides` trap, one on `face_map()` naming the padding guarantee. Both are the kind of thing the next reader will otherwise get wrong
 
 **Checkpoint**: the print order is asserted from the document metadata, by the real command, with the marker still printed. `main` would be green here.
 

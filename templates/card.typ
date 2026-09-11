@@ -135,7 +135,17 @@
   // One card face. Content that does not fit is reported through the
   // <overflow> label, which the build reads back with `typst query` and turns
   // into a warning — an overlong card gets split in two, never set smaller.
+  //
+  // The <face> label beside it says which side this is and where it landed.
+  // The card used to print that as `1/2` / `2/2`, which was a third encoding
+  // of one bit: the header marker and the footer box each carry it in colour
+  // *and* shape already, and those two survive a photocopier. The signal a
+  // machine needs is not the signal a reader needs, so it lives here instead,
+  // and `--face-map` writes it out. This is the one place that knows which
+  // side it is laying out, and a divider never passes through it.
   let face(card, back, body) = box(width: cw, height: ch, {
+    let side = if back { "back" } else { "front" }
+    context [#metadata((ref: card.ref, side: side, page: here().page()))<face>]
     set text(font: reading, size: 11pt * scale, fill: ink, lang: card.lang)
     set par(justify: false, leading: 0.62em)
     place(rect(width: cw, height: ch, stroke: hairline))

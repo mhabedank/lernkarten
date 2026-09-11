@@ -702,6 +702,68 @@ def warn_about_overflow(ids):
         )
 
 
+def face_entries(binary, workdir, margin, logo, grid, sides):
+    """Every card face the document laid out: its ref, its side, its page.
+
+    The same mechanism as `overflowing()` above — a label the template emits
+    and the engine hands back — with one difference that matters: this query is
+    given `sides`. `engine_inputs()` lets the overflow query default it because
+    what fits on a card does not depend on the order the pages come in. Which
+    page a face lands on *is* that order, so a face query built the same way
+    would describe a duplex document while a simplex one was printed, and
+    plausibly enough that every assertion about it would still pass.
+
+    None, not [], when the query fails: an empty map is not a poor answer, it
+    is a wrong one.
+    """
+    result = subprocess.run(
+        [
+            str(binary),
+            "query",
+            *FONT_ARGS,
+            *engine_inputs(margin, logo, grid, sides),
+            "--field",
+            "value",
+            str(workdir / TEMPLATE.name),
+            "<face>",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        return json.loads(result.stdout or "[]")
+    except json.JSONDecodeError:
+        return None
+
+
+def face_map(entries, page_count, grid, sides):
+    """The document as a reader needs it: every page, in order, with its faces.
+
+    Padded to `page_count` rather than grown from what the engine reported,
+    because a page carrying only Leitner dividers has no face on it and returns
+    nothing at all. Without the padding, "no cards here" and "page missing"
+    would look the same.
+    """
+    by_page = {}
+    for entry in entries:
+        by_page.setdefault(entry["page"], []).append({"ref": entry["ref"], "side": entry["side"]})
+    return {
+        "sides": sides,
+        "grid": grid_name(grid),
+        "pages": [{"page": n, "faces": by_page.get(n, [])} for n in range(1, page_count + 1)],
+    }
+
+
+def write_face_map(path, mapping):
+    """Writes the map where the user asked for it, or says why it could not."""
+    try:
+        Path(path).write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
+    except OSError as e:
+        sys.exit(f"ERROR: cannot write the face map to {path}: {e}")
+
+
 def write_box(directory):
     """Copy the card box beside the cards. Returns where it landed.
 
@@ -826,6 +888,12 @@ def main():
         "than extra pages",
     )
     p.add_argument("--no-logo", action="store_true", help="print the cards without the logo mark")
+    p.add_argument(
+        "--face-map",
+        metavar="PATH",
+        help="write a JSON map of which face each page carries — a diagnostic for "
+        "checking the print order, not something a printed deck needs",
+    )
     args = p.parse_args()
 
     if not 0 <= args.margin <= 20:
@@ -833,6 +901,11 @@ def main():
     if args.dividers is not None and args.dividers not in leitner.COMPARTMENT_COUNTS:
         allowed = " or ".join(str(n) for n in leitner.COMPARTMENT_COUNTS)
         p.error(f"--dividers takes {allowed}, not {args.dividers}")
+    # Refused here rather than at the end, so a typo in the diagnostic's path
+    # does not cost a build first. The write is still guarded: a directory that
+    # exists is not necessarily one this user may write to.
+    if args.face_map is not None and not Path(args.face_map).parent.is_dir():
+        p.error(f"--face-map: the directory {Path(args.face_map).parent} does not exist")
     override = None
     if args.language:
         try:
@@ -935,6 +1008,14 @@ def main():
             for n, (x, y) in enumerate(positions)
         ]
 
+    # Cards and dividers are counted apart. The card total is what the user
+    # wrote; a divider is generated and must never inflate it. The arithmetic
+    # is here rather than after the build because the face map needs it while
+    # the workdir still exists, and it depends on nothing the compile decides.
+    page_count = pages(len(cards), grid)
+    if dividers:
+        page_count = max(page_count, 2 * (divider_page + 1))
+
     target = None if args.check else Path(args.output)
     with tempfile.TemporaryDirectory() as td:
         workdir = Path(td)
@@ -953,12 +1034,16 @@ def main():
             report_failure(cards, message, args.margin, grid, binary, workdir)
             sys.exit(1)
         warn_about_overflow(overflowing(binary, workdir, args.margin, not args.no_logo, grid))
+        # Inside the block: the workdir is what the query reads, and it is gone
+        # a line later. `--check` compiles the same document without writing a
+        # PDF, so the map describes it there too.
+        if args.face_map is not None:
+            entries = face_entries(binary, workdir, args.margin, not args.no_logo, grid, args.sides)
+            if entries is None:
+                sys.exit(f"ERROR: the face map could not be read back from {args.output}.")
+            write_face_map(args.face_map, face_map(entries, page_count, grid, args.sides))
 
-    # Cards and dividers are counted apart. The card total is what the user
-    # wrote; a divider is generated and must never inflate it.
-    page_count = pages(len(cards), grid)
     if dividers:
-        page_count = max(page_count, 2 * (divider_page + 1))
         advise_about_dividers(len(dividers), divider_page, pages(len(cards), grid), args.sides)
         # Only a real build marks them printed. `check` typesets without
         # anything reaching paper, and /print runs check before every build --

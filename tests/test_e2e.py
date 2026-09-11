@@ -835,15 +835,31 @@ def test_an_a7_legal_deck_reprints_at_a8_without_a_warning(tmp_path):
 # --- the print order (feat/simplex-print-order) ----------------------------
 
 
-def face_marks_per_page(path):
-    """Which face each page carries: a set of "1/2" / "2/2" per page.
+def built_face_map(tmp_path, *args, name="faces"):
+    """Build with `--face-map` and return (the PDF, the map it wrote).
 
-    Every card footer prints `<id> · 1/2` on the front and `· 2/2` on the back
-    (templates/card.typ), so the face is in the text layer and does not have to
-    be inferred from the geometry. A front page is one whose every mark reads
-    1/2.
+    Which face a page carries used to be read out of the text layer: every
+    footer printed `1/2` or `2/2`. The card no longer says it — the header
+    marker and the footer box each encode the face in colour *and* shape, and a
+    third encoding in text was the only one a photocopier could lose — so the
+    build reports it instead. Exact, per page, and no `pdftotext` in sight,
+    which is why the assertions below run on a machine that has none.
     """
-    return [{w for _, _, w in words if re.fullmatch(r"[12]/2", w)} for words in bbox_pages(path)]
+    target = tmp_path / f"{name}.pdf"
+    written = tmp_path / f"{name}.json"
+    result = run("build", *args, "-o", str(target), "--face-map", str(written))
+    assert result.returncode == 0, result.stderr
+    return target, json.loads(written.read_text(encoding="utf-8"))
+
+
+def sides_per_page(mapping):
+    """Which face each page carries: a set of "front" / "back" per page.
+
+    A set, because what is asserted is that a page is all fronts or all backs —
+    the same shape the text-layer reader had, so the tests below kept their
+    assertions when the signal moved off the card.
+    """
+    return [{face["side"] for face in page["faces"]} for page in mapping["pages"]]
 
 
 def test_simplex_puts_every_front_before_any_back(tmp_path):
@@ -853,15 +869,13 @@ def test_simplex_puts_every_front_before_any_back(tmp_path):
     half of the pages are the fronts and the second half the backs — not
     front, back, front, back.
     """
-    target = tmp_path / "simplex.pdf"
-    result = run("build", *CARDS, "-o", str(target), "--sides", "simplex")
-    assert result.returncode == 0, result.stderr
+    target, mapping = built_face_map(tmp_path, *CARDS, "--sides", "simplex", name="simplex")
     assert pdf_pages(target) == DEMO_A7_PAGES
 
-    marks = face_marks_per_page(target)
+    marks = sides_per_page(mapping)
     s = DEMO_A7_SHEETS
-    assert marks[:s] == [{"1/2"}] * s, f"pages 1-{s} must be fronts only: {marks}"
-    assert marks[s:] == [{"2/2"}] * s, f"pages {s + 1}-{2 * s} must be backs only: {marks}"
+    assert marks[:s] == [{"front"}] * s, f"pages 1-{s} must be fronts only: {marks}"
+    assert marks[s:] == [{"back"}] * s, f"pages {s + 1}-{2 * s} must be backs only: {marks}"
 
 
 def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
@@ -885,12 +899,12 @@ def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
 
 def test_simplex_groups_the_faces_at_the_denser_grid_too(tmp_path):
     """The split is by sheet, so it follows the grid — 16 up gives 2 sheets."""
-    target = tmp_path / "a8.pdf"
-    result = run("build", *CARDS, "-o", str(target), "--sides", "simplex", "--grid", "a8")
-    assert result.returncode == 0, result.stderr
+    target, mapping = built_face_map(
+        tmp_path, *CARDS, "--sides", "simplex", "--grid", "a8", name="a8"
+    )
     assert pdf_pages(target) == DEMO_A8_PAGES
     s = DEMO_A8_SHEETS
-    assert face_marks_per_page(target) == [{"1/2"}] * s + [{"2/2"}] * s
+    assert sides_per_page(mapping) == [{"front"}] * s + [{"back"}] * s
 
     pages = card_grid_per_page(target)
     for n in range(s):
@@ -925,11 +939,10 @@ def test_a_single_sheet_deck_looks_the_same_in_both_orders(tmp_path):
     # the ninth card (#44's experience report) made this a two-sheet deck and
     # the test failed on page count rather than on order. Five leaves headroom.
     one_deck = str(DEMO / "cards" / "geography.yaml")
-    duplex, simplex = tmp_path / "one-d.pdf", tmp_path / "one-s.pdf"
-    assert run("build", one_deck, "-o", str(duplex)).returncode == 0
-    assert run("build", one_deck, "-o", str(simplex), "--sides", "simplex").returncode == 0
+    duplex, _ = built_face_map(tmp_path, one_deck, name="one-d")
+    simplex, mapping = built_face_map(tmp_path, one_deck, "--sides", "simplex", name="one-s")
     assert pdf_pages(duplex) == pdf_pages(simplex) == 2
-    assert face_marks_per_page(simplex) == [{"1/2"}, {"2/2"}]
+    assert sides_per_page(mapping) == [{"front"}, {"back"}]
     assert card_grid_per_page(duplex) == card_grid_per_page(simplex)
 
 
@@ -1660,32 +1673,10 @@ def test_a_setting_written_into_the_wrong_file_is_named_not_obeyed(tmp_path):
     assert "duplex" in result.stdout, "the misplaced key must not take effect"
 
 
-# --- the face map (design/side-marker-metadata) ------------------------------
+# --- the face map itself (design/side-marker-metadata) -----------------------
 #
-# Which face a page carries used to be read out of the text layer: every footer
-# printed `1/2` or `2/2`, and the print-order tests above matched on it. The
-# card no longer says it — the face is encoded twice over by the header marker
-# and the footer box, both colour *and* shape — so the build reports it
-# instead, exactly, per page, and without needing a text layer at all.
-
-
-def built_face_map(tmp_path, *args, name="faces"):
-    """Build with `--face-map` and return (the PDF, the map it wrote)."""
-    target = tmp_path / f"{name}.pdf"
-    written = tmp_path / f"{name}.json"
-    result = run("build", *args, "-o", str(target), "--face-map", str(written))
-    assert result.returncode == 0, result.stderr
-    return target, json.loads(written.read_text(encoding="utf-8"))
-
-
-def sides_per_page(mapping):
-    """Which face each page carries: a set of "front" / "back" per page.
-
-    A set, because what is asserted is that a page is all fronts or all backs —
-    the same shape the text-layer reader had, so the print-order tests above
-    kept their assertions when the signal moved off the card.
-    """
-    return [{face["side"] for face in page["faces"]} for page in mapping["pages"]]
+# The print-order tests above are the reason this exists; these are about the
+# diagnostic itself — what it contains, what it costs, and how it fails.
 
 
 def test_the_face_map_names_every_page_and_every_face(tmp_path):
@@ -1767,8 +1758,12 @@ def test_asking_for_the_face_map_does_not_change_the_pdf(tmp_path):
         )
 
     with_map, without = tmp_path / "with.pdf", tmp_path / "without.pdf"
-    assert cmd("build", str(deck), "-o", str(with_map), "--face-map", str(tmp_path / "f.json")) \
-        .returncode == 0
+    assert (
+        cmd(
+            "build", str(deck), "-o", str(with_map), "--face-map", str(tmp_path / "f.json")
+        ).returncode
+        == 0
+    )
     assert cmd("build", str(deck), "-o", str(without)).returncode == 0
     assert with_map.read_bytes() == without.read_bytes(), "the diagnostic changed the deck"
 
