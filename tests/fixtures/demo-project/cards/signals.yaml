@@ -42,3 +42,8 @@ cards:
     front: 'What does a flag at half mast say?'
     back: '"Understood, help is on the way."'
     source: 'Field notes 3, rule 5'
+  - id: Q3VNT
+    subtopic: 'The Torvig radio outage of 12 March'
+    front: 'In the Torvig radio outage of 12 March, why did the white flag on Bellhorn go unread?'
+    back: 'The office reported that Ovray Cove has no mast of its own and is read from Bellhorn — and after dark nobody was watching it. \ The doctor reached the cove eleven hours after she was asked for.'
+    source: 'Torvig harbour office, report on the radio outage of 12 March'

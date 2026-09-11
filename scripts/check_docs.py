@@ -614,6 +614,536 @@ def check_print_order(errors):
                 )
 
 
+# `/research-gaps` claimed to be "the only step that reaches the network" from
+# the day it was written, and it was never true: `/ingest` fetches web pages and
+# talks to the Zotero API over HTTP. The claim is what a reader plans around —
+# "then I can run the rest offline" — so it is gated rather than only corrected.
+# Scoped to the *exclusivity*, never to the bare words: CONTRIBUTING.md says a
+# push "fails before it even reaches the network", which is a true sentence
+# about git and has nothing to do with which pipeline step goes online.
+NETWORK_EXCLUSIVITY = re.compile(
+    r"\bonly\b[^.!?]{0,60}?\b(?:that|which)\b[^.!?]{0,30}?\breach(?:es)?\s+the\s+network\b",
+    re.I | re.S,
+)
+
+
+def check_network_claim_is_not_exclusive(errors):
+    """No doc may say one step is the *only* one that goes online.
+
+    Paragraph-scoped for the same reason check_print_order is: the claim spans a
+    sentence, and a line-scoped rule would make the fix depend on where the text
+    happens to wrap. Read over gated_files(), not markdown_files(), because a
+    docstring or a Typst header can carry the claim just as well as a skill can.
+    """
+    for path in gated_files():
+        for block in re.split(r"\n\s*\n", path.read_text(encoding="utf-8")):
+            claim = NETWORK_EXCLUSIVITY.search(block)
+            if claim:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: "
+                    f"'{' '.join(claim.group().split())}' claims one step is the only one "
+                    "that goes online — /ingest fetches web pages and Zotero over HTTP too"
+                )
+
+
+# --- /sources weighs a source against the learning goal (FR-001 - FR-009) ---
+
+# Each rule is (what the prompt has to state, the patterns that state it), and a
+# rule holds only when *every* one of its patterns matches — so a sentence can be
+# gated on more than one token without a regex that reads like a puzzle.
+#
+# What these gates are: they see whether the rule is *written down* in
+# `skills/sources/SKILL.md`, and nothing else. None of them can see a warning a
+# run emitted, count the pointers it printed or notice a claim it invented. They
+# are drift detectors — an edit that drops one of these sentences fails a gate
+# instead of failing nothing. The behavioural half of every requirement below
+# stays on its named row in `docs/testing.md` (FR-032).
+GOAL_FIT_RULES = (
+    (
+        "it reads `goal.md` before it writes an entry (FR-001)",
+        (re.compile(r"read[a-z]*\s+`?goal\.md`?", re.I),),
+    ),
+    (
+        "the assessment is advisory and never blocking (FR-002)",
+        (
+            re.compile(r"\badvisory\b", re.I),
+            re.compile(r"never block|does not block|do not block", re.I),
+        ),
+    ),
+    (
+        "the assessment happens at registration and a listing does not re-assess (FR-008)",
+        (
+            re.compile(r"\bat registration\b", re.I),
+            re.compile(r"\blisting\b", re.I),
+            re.compile(r"(?:never|does not|do not)\s+re-?assess", re.I),
+        ),
+    ),
+    (
+        "an off-goal warning names the source `id` and the `goal.md` line it "
+        "conflicts with (FR-003)",
+        (
+            re.compile(r"names? the source `?id`?", re.I),
+            re.compile(r"line of `?goal\.md`?", re.I),
+        ),
+    ),
+    (
+        "the assessment reasons from `kind` and `depth` and says which of the two it used (FR-005)",
+        (
+            re.compile(r"`kind`"),
+            re.compile(r"`depth`"),
+            re.compile(r"which of the two", re.I),
+        ),
+    ),
+    (
+        "with no `goal.md` there is no assessment and at most one `/learning-goal` "
+        "pointer per run (FR-006)",
+        (
+            re.compile(r"no\s+`?goal\.md`?", re.I),
+            re.compile(r"at most one", re.I),
+            re.compile(r"/learning-goal"),
+        ),
+    ),
+    (
+        "it never invents a claim about a source it has not looked at, and says so where "
+        "it reasons from the URL, the `note` and the `type` alone (FR-009)",
+        (
+            re.compile(r"never invent", re.I),
+            re.compile(r"(?:has|have) not looked at", re.I),
+            re.compile(r"say so", re.I),
+        ),
+    ),
+)
+
+
+def check_sources_skill_reads_the_goal(errors):
+    """`/sources` has to weigh what it registers against the stated goal.
+
+    The assessment is run output and nothing else — FR-007 forbids persisting a
+    verdict — so the only artifact that can hold these rules is the prompt that
+    produces them. This gate asserts the rules are *stated*; `docs/testing.md`
+    carries the rows that watch a run obey them.
+    """
+    body = read_skill("sources")
+    for what, patterns in GOAL_FIT_RULES:
+        if not all(p.search(body) for p in patterns):
+            errors.append(f"skills/sources/SKILL.md: does not state that {what}")
+
+
+# A ten-year archive registered as `type: web` with `depth: 1` is not fully
+# ingested, and the user finds that out at `/ingest` unless `/sources` says so at
+# registration. This feature adds no sixth source type and does not teach
+# `/ingest` to page (FR-029), so the honest reach is the only thing left to
+# state: the index page plus the posts on the same domain linked from it, capped
+# at 20 by `skills/ingest/SKILL.md` today.
+ARCHIVE_REACH = (
+    re.compile(r"`?depth: 1`?"),
+    re.compile(r"index page", re.I),
+    re.compile(r"same[- ]domain|same domain", re.I),
+    re.compile(r"(?:capped at|at most|max(?:\.|imum)? of|max(?:\.|imum)?)\s*\**\s*20\b", re.I),
+)
+
+
+def check_sources_skill_states_the_archive_reach(errors):
+    """Registering an archive has to say what the fetch will actually reach (FR-029)."""
+    body = read_skill("sources")
+    if not all(p.search(body) for p in ARCHIVE_REACH):
+        errors.append(
+            "skills/sources/SKILL.md: does not state what registering an archive reaches — "
+            "`depth: 1`, the index page plus the same-domain posts linked from it, "
+            "capped at 20 (FR-029)"
+        )
+
+
+# --- The discovery mode of /sources: C1, the neutral contract (FR-016 - FR-027) ---
+
+# C1 is *material-class neutral* and stays that way: not one pattern or message
+# below names a class of source. That is what lets a later class of material
+# attach an addendum by adding a check function rather than editing this one
+# (FR-039, SC-016), and case D5b asserts it against the file that ships.
+#
+# `--discover` is an exact token: it appears nowhere else in this repository, so
+# the gate cannot be satisfied by the ordinary English word "discover" in
+# `skills/catalog/SKILL.md` or `scripts/build_pdf.py`.
+DISCOVERY_RULES = (
+    (
+        "`/sources` has a discovery mode, entered as `--discover` (FR-016)",
+        (re.compile(r"--discover"),),
+    ),
+    (
+        "discovery writes nothing until the user picks (FR-016)",
+        (
+            re.compile(r"writes?\s*\**\s*nothing", re.I),
+            re.compile(r"until the user picks", re.I),
+        ),
+    ),
+    (
+        "it says how many candidates it found and how many it shows, grouped by goal "
+        "area, with every area listed including the empty ones (FR-027)",
+        (
+            re.compile(r"how many[\s\S]{0,80}?found", re.I),
+            re.compile(r"\bgroup\b", re.I),
+            re.compile(r"every area", re.I),
+            re.compile(r"nothing was found", re.I),
+        ),
+    ),
+    (
+        "it caps the proposal at 3 candidates per area and 10 in a run (research R3)",
+        (
+            re.compile(r"(?:at most|no more than|≤)\s*\**\s*3\b", re.I),
+            re.compile(r"(?:at most|no more than|≤)\s*\**\s*10\b", re.I),
+        ),
+    ),
+    (
+        "credibility is one sentence and never a number (FR-018)",
+        (
+            re.compile(r"credibilit", re.I),
+            re.compile(r"one sentence", re.I),
+            re.compile(r"never a (?:score|rating|number|percentage)", re.I),
+        ),
+    ),
+    (
+        "every candidate names which class of material it is (FR-017)",
+        (re.compile(r"which class", re.I), re.compile(r"class of material", re.I)),
+    ),
+    (
+        "it never proposes a candidate it did not retrieve (FR-021)",
+        (
+            re.compile(r"never invent", re.I),
+            re.compile(r"(?:did|have|has) not retrieve[a-z]*|not retrieved", re.I),
+        ),
+    ),
+    (
+        "paywalled or login-gated material is reported as found, never proposed, and no "
+        "credentials are entered (FR-023)",
+        (
+            re.compile(r"paywall", re.I),
+            re.compile(r"login[- ]gated", re.I),
+            re.compile(r"credential", re.I),
+        ),
+    ),
+    (
+        "a source already in `sources.yaml` is never proposed (FR-024)",
+        (re.compile(r"already in `?sources\.yaml`?", re.I),),
+    ),
+    (
+        "with no `goal.md` there is nothing to search for (FR-025)",
+        (re.compile(r"nothing to search for", re.I), re.compile(r"/learning-goal")),
+    ),
+    (
+        "with no network it reports, writes nothing and exits cleanly (FR-026)",
+        (
+            re.compile(r"\bno network\b", re.I),
+            re.compile(r"could not search", re.I),
+            re.compile(r"exit\w*\s+clean", re.I),
+        ),
+    ),
+    (
+        "picked entries go through the ordinary registration path (FR-020)",
+        (re.compile(r"ordinary registration path", re.I),),
+    ),
+    (
+        "it writes no documents into `knowledge/`, creates no `type: research` entry, and "
+        "names the seam against `/research-gaps` (FR-022)",
+        (
+            re.compile(r"knowledge/"),
+            re.compile(r"`?type: research`?"),
+            re.compile(r"/research-gaps"),
+        ),
+    ),
+    (
+        "the network is reached only in discovery mode (FR-033)",
+        (re.compile(r"only\s*\**\s*in discovery mode", re.I),),
+    ),
+)
+
+
+def check_sources_skill_carries_the_discovery_contract(errors):
+    """C1 — the discovery contract, and it holds for any kind of source.
+
+    Discovery writes nothing until the user picks, so there is no artifact on
+    disk to check: the prompt is the contract. Neutral by construction — see
+    `specs/011-goal-fit-sources/contracts/discovery-proposal.md`, which splits
+    this from the addendum below for the same reason.
+    """
+    body = read_skill("sources")
+    for what, patterns in DISCOVERY_RULES:
+        if not all(p.search(body) for p in patterns):
+            errors.append(f"skills/sources/SKILL.md: does not state that {what}")
+
+
+# --- The discovery mode of /sources: C2, the practitioner addendum (FR-019) ---
+
+# The one addendum this feature ships, and the only check in wave D that may
+# name a class of material. It reads the same file as the neutral check above and
+# none of the neutral check's text: an addendum adds to FR-018's credibility
+# sentence for one class of source and does nothing else — it relaxes no
+# exclusion, changes no cap, adds no candidate field and touches no entry
+# condition. A further class is a further function here, never an edit to
+# DISCOVERY_RULES (FR-039, SC-016).
+PRACTITIONER_ADDENDUM = (
+    (
+        "the credibility sentence carries an addendum for practitioner material (FR-019)",
+        (re.compile(r"practitioner material", re.I), re.compile(r"credibility sentence", re.I)),
+    ),
+    (
+        "a company account of its own incident is a primary source and an interested one (FR-019)",
+        (re.compile(r"primary source", re.I), re.compile(r"\binterested\b", re.I)),
+    ),
+    (
+        "material of this kind is published only by the parties who came through the "
+        "incident, so the cases that ended badly are not among what can be found (FR-019)",
+        (
+            re.compile(r"published only by", re.I),
+            re.compile(r"ended badly|not among what can be found", re.I),
+        ),
+    ),
+)
+
+
+def check_sources_skill_carries_the_practitioner_addendum(errors):
+    """C2 — what practitioner material additionally needs of its credibility sentence.
+
+    Both properties are requirements on what the sentence *says*, not on the
+    words it says it in — the phrase "a selected sample" is neither required nor,
+    standing alone, enough, which is why the second rule looks for the thing
+    rather than the term.
+    """
+    body = read_skill("sources")
+    for what, patterns in PRACTITIONER_ADDENDUM:
+        if not all(p.search(body) for p in patterns):
+            errors.append(f"skills/sources/SKILL.md: does not state that {what}")
+
+
+# --- Wave E: discovery is entered only when the user asks (FR-035, FR-036) ---
+
+# The entry condition, which is the same whatever a candidate turns out to be:
+# not a pattern or a message below names a class of material, so an addendum
+# under C2 touches none of it (FR-039).
+#
+# A positive gate on the one skill this feature rewrites. Its opposite number,
+# check_discovery_is_not_offered_elsewhere(), asserts an *absence* across the
+# five skills the feature otherwise leaves alone — opposite polarity and a
+# different blast radius, which is why they are two functions: one holding both
+# could not say which of the two rules broke.
+EXPLICIT_REQUEST_RULES = (
+    (
+        "discovery is entered only on an explicit request, made at invocation (FR-035)",
+        (
+            re.compile(r"only on an explicit request", re.I),
+            re.compile(r"at invocation", re.I),
+        ),
+    ),
+    (
+        "discovery never starts by itself, is never offered as a follow-up and is never "
+        "the default of any invocation (FR-035)",
+        (
+            re.compile(r"never starts? by itself", re.I),
+            re.compile(r"never offered as a follow-?up", re.I),
+            re.compile(r"never the default", re.I),
+        ),
+    ),
+    (
+        "an ordinary run — registering, listing, removing — neither enters discovery nor "
+        "mentions it (FR-036)",
+        (
+            re.compile(r"ordinary run", re.I),
+            re.compile(r"neither enters(?: discovery)? nor mentions", re.I),
+            re.compile(r"no closing line", re.I),
+        ),
+    ),
+)
+
+
+def check_sources_skill_states_the_explicit_request(errors):
+    """A user who does not ask for discovery never gets it, and the prompt says so.
+
+    The accepted cost of that silence (spec round 2) is that the documentation is
+    the only route to discovery — which only holds while the skill keeps stating
+    the rule, so it is gated rather than trusted.
+    """
+    body = read_skill("sources")
+    for what, patterns in EXPLICIT_REQUEST_RULES:
+        if not all(p.search(body) for p in patterns):
+            errors.append(f"skills/sources/SKILL.md: does not state that {what}")
+
+
+# --- Wave F: the experience-report rule in three prompts (FR-010 - FR-015) ---
+
+# What FR-013 requires of the material-base warning is **what it carries**, never
+# the words it carries it in: a run that says only "published incidents are a
+# selected sample" has named the effect instead of stating it, and named it in
+# the jargon of a field the reader may never have met. So each rule below gates
+# one of the four contents by the thing itself, and one more gates the
+# instruction not to reach for a phrase. `/catalog` and `/cards` are held to the
+# identical set — FR-013 binds both, and a warning that appears at one step and
+# not the other is the half-fix the requirement was rewritten to forbid.
+MATERIAL_BASE_RULES = (
+    (
+        "the warning names which subtopic it is about and that nothing covering the topic "
+        "in general is among its material (FR-013.1)",
+        (
+            re.compile(r"which subtopic", re.I),
+            re.compile(r"in general is among", re.I),
+        ),
+    ),
+    (
+        "the warning writes out why that material base is skewed instead of naming it (FR-013.2)",
+        (
+            re.compile(r"came through the incident", re.I),
+            re.compile(r"publishes nothing", re.I),
+        ),
+    ),
+    (
+        "the warning says what that base means for the cards drawn from it (FR-013.3)",
+        (
+            re.compile(r"\bsurvived\b", re.I),
+            re.compile(r"fail for good", re.I),
+        ),
+    ),
+    (
+        "the warning says what would balance that base (FR-013.4)",
+        (
+            re.compile(r"balance it", re.I),
+            re.compile(r"reference work", re.I),
+        ),
+    ),
+    (
+        "the warning is written in the run's own words, because naming the effect is not "
+        "stating it (FR-013)",
+        (
+            re.compile(r"own words", re.I),
+            re.compile(r"selected sample", re.I),
+        ),
+    ),
+    (
+        "the warning is advisory and blocks nothing (FR-013)",
+        (
+            re.compile(r"advisory", re.I),
+            re.compile(r"blocks nothing", re.I),
+        ),
+    ),
+)
+
+EXPERIENCE_RULES = {
+    "ingest": (
+        (
+            "a document whose subject is a reported case is written with `nature: experience` "
+            "(FR-015)",
+            (re.compile(r"`?nature: experience`?"), re.compile(r"reported case", re.I)),
+        ),
+        (
+            "every other document carries no `nature:` key at all — absence is the other "
+            "state (FR-015)",
+            (
+                re.compile(r"no `?nature:`? key", re.I),
+                re.compile(r"\babsence\b", re.I),
+            ),
+        ),
+    ),
+    "catalog": (
+        (
+            "a `nature: experience` document is evidence about one situation and not a "
+            "statement of a general rule (FR-010)",
+            (
+                re.compile(r"`?nature: experience`?"),
+                re.compile(r"one situation", re.I),
+                re.compile(r"general rule", re.I),
+            ),
+        ),
+        (
+            "a required topic covered only by experience reports is reported as such, rather "
+            "than presented as coverage of the rule (FR-014)",
+            (
+                re.compile(r"only by experience reports", re.I),
+                re.compile(r"coverage of the rule", re.I),
+            ),
+        ),
+    )
+    + MATERIAL_BASE_RULES,
+    "cards": (
+        (
+            "a card drawn from a `nature: experience` document is phrased about the reported "
+            "case and names it through the existing `source:` key (FR-011)",
+            (
+                re.compile(r"`?nature: experience`?"),
+                re.compile(r"about the reported case", re.I),
+                re.compile(r"`source:`"),
+            ),
+        ),
+        (
+            "such a card is never phrased as an unattributed general rule (FR-011)",
+            (
+                re.compile(r"unattributed", re.I),
+                re.compile(r"general rule", re.I),
+            ),
+        ),
+        (
+            "a fact that depends on the scale or the circumstances of the case carries them "
+            "rather than dropping them (FR-012)",
+            (
+                re.compile(r"\bscale\b", re.I),
+                re.compile(r"circumstances", re.I),
+            ),
+        ),
+    )
+    + MATERIAL_BASE_RULES,
+}
+
+
+def check_skills_carry_the_experience_rule(errors):
+    """`/ingest` marks an experience report; `/catalog` and `/cards` read the mark.
+
+    The marker is on disk and `check_project.py` validates it, but what the three
+    steps *do* with it is prompt work: place it without letting one case stand in
+    for the rule, card it about the case it came from, and say what a subtopic
+    built only of such cases cannot show. None of that leaves a trace a project
+    check could read, so the prompt is where it is held.
+    """
+    for name, rules in EXPERIENCE_RULES.items():
+        # Whitespace-collapsed, so a rule is about what the prompt says and not
+        # about where the paragraph happens to wrap. Every phrase below is
+        # several words long, and a gate that a reflow can break is a gate
+        # somebody eventually satisfies by moving a line.
+        body = " ".join(read_skill(name).split())
+        for what, patterns in rules:
+            if not all(p.search(body) for p in patterns):
+                errors.append(f"skills/{name}/SKILL.md: does not state that {what}")
+
+
+# The five skills that may not point at discovery. FR-037 names four of them;
+# `learning-goal` is the fifth, because its wrap-up already points the user at
+# another step and the token occurs nowhere in it today, so the gate is exact
+# there too.
+#
+# `/research-gaps` is deliberately **not** in this set and cannot be: FR-034
+# requires it to name the seam against `/sources --discover`, so it has to carry
+# the token this gate forbids elsewhere. What holds it instead is the named
+# manual row that runs it, plus the one-paragraph scope of the FR-034
+# correction — recorded in spec § Assumptions as an accepted residual risk
+# rather than left to inference.
+#
+# A token check, not a semantic one. It catches `--discover` in another skill,
+# which is the form the drift actually takes: a pointer somebody adds. It does
+# not catch the paraphrase "you could go looking for more material" — that case
+# is row 12-vi of `docs/testing.md`, named there with its FR number.
+DISCOVERY_IS_ELSEWHERE = ("ingest", "catalog", "cards", "print", "learning-goal")
+
+
+def check_discovery_is_not_offered_elsewhere(errors):
+    """No step but `/sources` may enter discovery or mention it (FR-037).
+
+    The negative half of wave E, and a separate function from the positive one:
+    opposite polarity over a different set of files, so a failure says which of
+    the two rules broke. This one never reads `skills/sources/SKILL.md`.
+    """
+    for name in DISCOVERY_IS_ELSEWHERE:
+        if "--discover" in read_skill(name):
+            errors.append(
+                f"skills/{name}/SKILL.md: names `--discover` — no step but /sources may "
+                "enter discovery or mention it (FR-037)"
+            )
+
+
 def main():
     errors = []
     check_required_files(errors)
@@ -630,6 +1160,14 @@ def main():
     check_print_skill_relays_setup(errors)
     check_import_graph(errors)
     check_print_order(errors)
+    check_network_claim_is_not_exclusive(errors)
+    check_sources_skill_reads_the_goal(errors)
+    check_sources_skill_states_the_archive_reach(errors)
+    check_sources_skill_carries_the_discovery_contract(errors)
+    check_sources_skill_carries_the_practitioner_addendum(errors)
+    check_sources_skill_states_the_explicit_request(errors)
+    check_discovery_is_not_offered_elsewhere(errors)
+    check_skills_carry_the_experience_rule(errors)
 
     for e in errors:
         print(f"ERROR: {e}", file=sys.stderr)
