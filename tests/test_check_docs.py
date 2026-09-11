@@ -1438,3 +1438,77 @@ def test_the_shipped_skills_carry_the_experience_rule():
     errors = []
     check_docs.check_skills_carry_the_experience_rule(errors)
     assert not errors, errors
+
+
+# --- the card no longer prints which side it is (design/side-marker-metadata) -
+#
+# The fifth gate of this shape, and there for the same reason as the other
+# four: the last sweep enforced by a hand-written grep missed two lines and
+# shipped them. `1/2` / `2/2` left the card, and a document still promising it
+# describes a card nobody can print any more.
+
+
+def test_a_doc_saying_the_card_prints_the_side_marker_is_reported(tmp_path, monkeypatch):
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"docs__design.md": "The footer holds the card id and 1/2 or 2/2.\n"},
+    )
+
+    errors = []
+    check_docs.check_printed_side_marker(errors)
+
+    assert any("design.md:1" in e.replace("\\", "/") for e in errors), errors
+    assert any("header marker" in e or "footer box" in e for e in errors), (
+        f"say where the face is encoded now, not only that this is wrong: {errors}"
+    )
+
+
+def test_the_gate_reads_the_landing_page_too(tmp_path, monkeypatch):
+    """Three facsimile cards there carried the claim, and no gate could see it.
+
+    `markdown_files()` and `gated_files()` reach no HTML at all, so a check that
+    used either would have passed the one page most visitors read.
+    """
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"docs__index.html": '<div class="card__id">A45DK · 1/2</div>\n'},
+    )
+
+    errors = []
+    check_docs.check_printed_side_marker(errors)
+
+    assert any("index.html" in e for e in errors), errors
+
+
+def test_the_leitner_spacing_is_not_a_side_marker(tmp_path, monkeypatch):
+    """`1/2/5/8/14 cm` is in scripts/leitner.py and always has been.
+
+    A naive `\\b[12]/2\\b` ships a false positive on the day it lands, which is
+    how a gate teaches people to switch gates off.
+    """
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"scripts__leitner.py": "# 1/2/5/8/14 cm, worked through when full.\n"},
+    )
+
+    errors = []
+    check_docs.check_printed_side_marker(errors)
+
+    assert not errors, errors
+
+
+def test_saying_what_the_card_used_to_print_stays_legal(tmp_path, monkeypatch):
+    """History is not a promise — the file's own exemption idiom applies."""
+    gated_project(
+        tmp_path,
+        monkeypatch,
+        **{"docs__design.md": "The footer printed 1/2 and 2/2 until v0.9.2.\n"},
+    )
+
+    errors = []
+    check_docs.check_printed_side_marker(errors)
+
+    assert not errors, errors
