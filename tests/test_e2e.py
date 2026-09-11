@@ -1025,7 +1025,7 @@ def test_the_id_is_printed_on_both_faces(tmp_path):
 MEASURE = """#set page(width: 400mm, height: 100mm, margin: 0pt)
 #context {
   let cw = 100mm
-  let id = text(font: "IBM Plex Mono", size: SIZE, "A45DK · 1/2")
+  let id = text(font: "IBM Plex Mono", size: SIZE, "A45DK")
   [#metadata((width: measure(id).width.pt(), cap: (cw / 3).pt()))<measurement>]
 }
 """
@@ -1073,9 +1073,11 @@ def test_the_id_fits_the_box_it_is_clipped_to_by_measurement(tmp_path):
         pass  # this one does not need pdftotext, only the engine
     width, cap = measured_id_width(8)
     assert width < cap, f"the id block overruns its clip box: {width} pt against {cap} pt"
-    assert width / cap < 0.75, (
-        f"{width} pt is {100 * width / cap:.0f} % of the cap — too little headroom "
-        "for a denser grid or a longer side marker"
+    # The id is the whole block now — five characters and nothing beside them —
+    # so this ratio is fixed rather than a headroom allowance, and docs/design.md
+    # states the number. Measuring it here is what keeps that sentence honest.
+    assert width / cap == pytest.approx(0.56, abs=0.02), (
+        f"{width} pt is {100 * width / cap:.0f} % of the cap — docs/design.md says 56 %"
     )
 
 
@@ -1104,13 +1106,40 @@ def test_a_card_without_an_id_prints_the_side_marker_alone(tmp_path):
     assert "·" not in words, f"a separator with nothing before it was printed: {words}"
 
 
-def test_the_separator_is_there_when_there_is_an_id(tmp_path):
-    """The other half of the case above, so the guard cannot pass vacuously."""
+def test_the_id_stands_alone_with_nothing_beside_it(tmp_path):
+    """The id is the whole block now, so there is nothing to separate from.
+
+    The other half of the case above, so neither guard can pass vacuously: a
+    card *with* an id prints it twice and prints no separator either.
+    """
     deck = tmp_path / "deck.yaml"
     deck.write_text(ID_DECK, encoding="utf-8")
     target = tmp_path / "id.pdf"
     assert run("build", str(deck), "-o", str(target)).returncode == 0
-    assert "·" in _words_on(target)
+
+    words = _words_on(target)
+    assert words.count("A45DK") == 2, "front and back each carry the id"
+    assert "·" not in words, f"nothing follows the id, so nothing separates it: {words}"
+
+
+@pytest.mark.parametrize("grid", ["a7", "a8"])
+@pytest.mark.parametrize("logo", [True, False])
+def test_the_card_does_not_print_which_side_it_is(tmp_path, grid, logo):
+    """FR-001: the text encoding of the face is gone, at every size.
+
+    Which face you hold is still said twice — the header marker is red and a
+    hollow circle against yellow and a solid disc, the footer box is hollow
+    against solid — and both of those survive a black-only photocopy, which is
+    what the third, textual one never added.
+    """
+    target = tmp_path / f"{grid}-{'logo' if logo else 'plain'}.pdf"
+    args = ["build", *CARDS, "-o", str(target), "--grid", grid]
+    if not logo:
+        args.append("--no-logo")
+    assert run(*args).returncode == 0
+
+    marks = [w for w in _words_on(target) if re.fullmatch(r"[12]\s*/\s*2", w)]
+    assert marks == [], f"the card still says which side it is: {marks}"
 
 
 # --- `lernkarten id` through the real command --------------------------------
