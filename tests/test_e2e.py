@@ -1658,3 +1658,133 @@ def test_a_setting_written_into_the_wrong_file_is_named_not_obeyed(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "sides" in result.stderr and "machine setting" in result.stderr, result.stderr
     assert "duplex" in result.stdout, "the misplaced key must not take effect"
+
+
+# --- the face map (design/side-marker-metadata) ------------------------------
+#
+# Which face a page carries used to be read out of the text layer: every footer
+# printed `1/2` or `2/2`, and the print-order tests above matched on it. The
+# card no longer says it — the face is encoded twice over by the header marker
+# and the footer box, both colour *and* shape — so the build reports it
+# instead, exactly, per page, and without needing a text layer at all.
+
+
+def built_face_map(tmp_path, *args, name="faces"):
+    """Build with `--face-map` and return (the PDF, the map it wrote)."""
+    target = tmp_path / f"{name}.pdf"
+    written = tmp_path / f"{name}.json"
+    result = run("build", *args, "-o", str(target), "--face-map", str(written))
+    assert result.returncode == 0, result.stderr
+    return target, json.loads(written.read_text(encoding="utf-8"))
+
+
+def sides_per_page(mapping):
+    """Which face each page carries: a set of "front" / "back" per page.
+
+    A set, because what is asserted is that a page is all fronts or all backs —
+    the same shape the text-layer reader had, so the print-order tests above
+    kept their assertions when the signal moved off the card.
+    """
+    return [{face["side"] for face in page["faces"]} for page in mapping["pages"]]
+
+
+def test_the_face_map_names_every_page_and_every_face(tmp_path):
+    """FR-004/FR-005: the deck, read back off the document it produced."""
+    target, mapping = built_face_map(tmp_path, *CARDS, "--grid", "a7")
+
+    assert mapping["sides"] == "duplex"
+    assert mapping["grid"] == "2x4"
+    assert [p["page"] for p in mapping["pages"]] == list(range(1, DEMO_A7_PAGES + 1))
+    assert len(mapping["pages"]) == pdf_pages(target), "the map must cover the whole document"
+
+    faces = [f for page in mapping["pages"] for f in page["faces"]]
+    assert len(faces) == 2 * DEMO_CARD_COUNT, "one entry per card face, no more and no less"
+    assert {f["ref"] for f in faces} == declared_ids()
+    for side in ("front", "back"):
+        refs = [f["ref"] for f in faces if f["side"] == side]
+        assert sorted(refs) == sorted(declared_ids()), f"every card needs exactly one {side}"
+
+
+def test_the_face_map_follows_the_print_order(tmp_path):
+    """The #48 guarantees, read off the build rather than out of the ink.
+
+    The two orders must not produce the same map. That is not a nicety: the
+    face query is one `sides` argument away from describing a duplex document
+    while a simplex one was printed, and every other assertion here would still
+    pass. This is the test that catches it.
+    """
+    _, duplex = built_face_map(tmp_path, *CARDS, "--grid", "a7", name="d")
+    _, simplex = built_face_map(tmp_path, *CARDS, "--grid", "a7", "--sides", "simplex", name="s")
+
+    s = DEMO_A7_SHEETS
+    assert sides_per_page(duplex) == [{"front"}, {"back"}] * s
+    assert sides_per_page(simplex) == [{"front"}] * s + [{"back"}] * s
+    assert duplex["sides"] == "duplex" and simplex["sides"] == "simplex"
+
+
+def test_a_build_that_does_not_ask_for_the_map_writes_only_the_pdf(tmp_path):
+    """The diagnostic costs a user who never uses it nothing — not even a file."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    room = tmp_path / "out"
+    room.mkdir()
+
+    result = run("build", str(deck), "-o", str(room / "deck.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert sorted(p.name for p in room.iterdir()) == ["deck.pdf"]
+
+
+def test_a_face_map_that_cannot_be_written_names_the_path(tmp_path):
+    """Refused before the build, the way an impossible --dividers count is."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    target = tmp_path / "never.pdf"
+    missing = tmp_path / "nowhere" / "faces.json"
+
+    result = run("build", str(deck), "-o", str(target), "--face-map", str(missing))
+    assert result.returncode != 0
+    assert "unrecognized" not in result.stderr, "the option has to exist to refuse anything"
+    assert str(missing.parent) in result.stderr, result.stderr
+    assert "does not exist" in result.stderr, f"say what is wrong with it: {result.stderr}"
+    assert "Traceback" not in result.stderr, "a bad path is a message, not a crash"
+    assert not target.exists(), "a refused run writes no PDF"
+
+
+def test_asking_for_the_face_map_does_not_change_the_pdf(tmp_path):
+    """SC-002a. The map describes the document; it does not alter it.
+
+    `SOURCE_DATE_EPOCH` is what makes this assertable at all — the engine
+    writes /CreationDate into the PDF, so two builds a second apart differ for
+    reasons that have nothing to do with this flag.
+    """
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    env = dict(os.environ, SOURCE_DATE_EPOCH="1700000000")
+
+    def cmd(*args):
+        return subprocess.run(
+            [sys.executable, str(CLI), *args], capture_output=True, text=True, cwd=ROOT, env=env
+        )
+
+    with_map, without = tmp_path / "with.pdf", tmp_path / "without.pdf"
+    assert cmd("build", str(deck), "-o", str(with_map), "--face-map", str(tmp_path / "f.json")) \
+        .returncode == 0
+    assert cmd("build", str(deck), "-o", str(without)).returncode == 0
+    assert with_map.read_bytes() == without.read_bytes(), "the diagnostic changed the deck"
+
+
+def test_a_sheet_of_dividers_is_in_the_map_with_no_faces(tmp_path):
+    """A page with no card on it is listed, not skipped.
+
+    11 cards at 16 up is one card sheet, and four dividers open a second one.
+    Two of the four pages therefore carry no card face — and "no cards here"
+    must not look like "page missing".
+    """
+    one_deck = str(DEMO / "cards" / "tides.yaml")
+    target, mapping = built_face_map(tmp_path, one_deck, "--grid", "a8", "--dividers", "4")
+
+    assert len(mapping["pages"]) == pdf_pages(target) == 4
+    assert [p["page"] for p in mapping["pages"]] == [1, 2, 3, 4]
+    empty = [p["page"] for p in mapping["pages"] if not p["faces"]]
+    assert empty == [3, 4], f"the divider sheet's two pages carry no card: {empty}"
+    assert sum(len(p["faces"]) for p in mapping["pages"]) == 2 * TIDES_CARD_COUNT

@@ -998,3 +998,44 @@ def test_a_stated_grid_and_a_flag_still_win_over_the_default():
     assert build_pdf.resolve_grid([("a.yaml", "a8"), ("b.yaml", None)]) == build_pdf.GRIDS["4x4"], (
         "a8 beside silence is no disagreement any more — both mean a8"
     )
+
+
+# --- the face map ---------------------------------------------------------
+#
+# What the engine reports is a flat list of faces, each naming the page it
+# landed on. What a reader needs is the document: every page, in order, with
+# the faces on it. The grouping is pure arithmetic, so it is tested here
+# rather than behind a compile.
+
+FACES = [
+    {"ref": "A45DK", "side": "front", "page": 1},
+    {"ref": "B7Q2M", "side": "front", "page": 1},
+    {"ref": "A45DK", "side": "back", "page": 2},
+    {"ref": "B7Q2M", "side": "back", "page": 2},
+]
+
+
+def test_the_face_map_groups_the_faces_by_page():
+    """Every page of the document, in order, with what is printed on it."""
+    mapping = build_pdf.face_map(FACES, 2, build_pdf.GRIDS["2x4"], "duplex")
+
+    assert mapping["sides"] == "duplex"
+    assert mapping["grid"] == "2x4"
+    assert mapping["pages"] == [
+        {"page": 1, "faces": [{"ref": "A45DK", "side": "front"}, {"ref": "B7Q2M", "side": "front"}]},
+        {"page": 2, "faces": [{"ref": "A45DK", "side": "back"}, {"ref": "B7Q2M", "side": "back"}]},
+    ]
+
+
+def test_the_face_map_keeps_a_page_that_carries_no_card():
+    """A divider sheet is a page with no card on it, and it still gets a row.
+
+    The engine reports nothing for such a page, so an ungrouped list cannot
+    distinguish "no cards here" from "page missing" — and `--dividers` opens a
+    sheet beyond the last card page often enough for that to matter.
+    """
+    mapping = build_pdf.face_map(FACES, 4, build_pdf.GRIDS["4x4"], "simplex")
+
+    assert [p["page"] for p in mapping["pages"]] == [1, 2, 3, 4], "no page number may be skipped"
+    assert mapping["pages"][2] == {"page": 3, "faces": []}
+    assert mapping["pages"][3] == {"page": 4, "faces": []}
