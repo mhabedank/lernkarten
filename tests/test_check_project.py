@@ -165,7 +165,10 @@ def test_the_demo_project_has_all_four_artifacts():
     counts = check(DEMO).counts
     for what in ("sources", "documents", "topics", "subtopics", "cards"):
         assert counts.get(what), f"the demo project has no {what}"
-    assert counts["cards"] == 33
+    # Keep in step with DEMO_CARD_COUNT in tests/test_e2e.py — this number has
+    # rotted three times in as many features. 34 since #44 added the
+    # experience-report card.
+    assert counts["cards"] == 34
 
 
 def test_the_demo_project_passes_on_the_command_line():
