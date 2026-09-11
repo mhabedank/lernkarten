@@ -82,16 +82,16 @@ Flat module layout, no `src/`. Implementation `scripts/<module>.py`; prompts
 
 <!-- sequential -->
 
-- [ ] T001 `python3 -m pip install --user -r requirements-dev.txt` — pytest, ruff==0.16.2, pillow, pyyaml. **No package is added to this file by this feature.**
+- [x] T001 `python3 -m pip install --user -r requirements-dev.txt` — pytest, ruff==0.16.2, pillow, pyyaml. **No package is added to this file by this feature.**
 
 <!-- parallel-group: 1 (max 3 concurrent) -->
 
-- [ ] T002 [P] `scripts/install-hooks.sh` — install the pre-commit (no user content) and pre-push (no direct `main`) hooks
-- [ ] T003 [P] `python3 scripts/make_testdata.py` — build the binary test material under `tests/fixtures/demo-project/` so the suite can run
+- [x] T002 [P] `scripts/install-hooks.sh` — install the pre-commit (no user content) and pre-push (no direct `main`) hooks
+- [x] T003 [P] `python3 scripts/make_testdata.py` — build the binary test material under `tests/fixtures/demo-project/` so the suite can run
 
 <!-- sequential -->
 
-- [ ] T004 Record the baseline: run `ruff check . && ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`, and `python3 scripts/check_project.py tests/fixtures/demo-project --strict`. **All five must be green on the clean worktree** — that is what makes T005's red meaningful.
+- [x] T004 Record the baseline: run `ruff check . && ruff format --check .`, `pytest`, `lernkarten check cards/example.yaml`, `python3 scripts/check_docs.py`, and `python3 scripts/check_project.py tests/fixtures/demo-project --strict`. **All five must be green on the clean worktree** — that is what makes T005's red meaningful.
 
 **Checkpoint**: the repository is green and the tooling works.
 
@@ -109,7 +109,7 @@ reaches the API over HTTP.
 
 <!-- sequential -->
 
-- [ ] T005 🔴 [US6] Add `check_network_claim_is_not_exclusive()` to `scripts/check_docs.py` (paragraph-scoped over `gated_files()`, in the shape of `check_print_order()` at `:561-572`), wire one line into `main()` at `:575`, and add the wave-G cases to `tests/test_check_docs.py`:
+- [x] T005 🔴 [US6] Add `check_network_claim_is_not_exclusive()` to `scripts/check_docs.py` (paragraph-scoped over `gated_files()`, in the shape of `check_print_order()` at `:561-572`), wire one line into `main()` at `:575`, and add the wave-G cases to `tests/test_check_docs.py`:
   - **G1** — a doc claiming *"the only step that reaches the network"* is reported, and the message **names the file** (synthetic input via the `gated_project()` helper at `tests/test_check_docs.py:193`)
   - **G2** — *false-positive guard*: `CONTRIBUTING.md:82`'s *"even reaches the network:"* does **not** fire. The regex is scoped to the **exclusivity claim** (`only … that reaches the network`), never to the bare words (research.md § R5)
   - **G3** — *shipped-repo*: the check reports nothing over the real `gated_files()`
@@ -118,7 +118,7 @@ reaches the API over HTTP.
 
   **Note for the implementer — the scope is `gated_files()`, not `markdown_files()`.** `gated_files()` (`scripts/check_docs.py:407-421`) is the wider set and is the one this check runs over: root `*.md`, `docs/*.md`, `skills/*/SKILL.md`, **plus** `scripts/*.py` (except `check_docs.py` itself) and `templates/*.typ`. Do **not** scope it to `markdown_files()` (`:168`), which omits the last two — narrowing it there would silently narrow FR-034 and SC-010. Both `specs/**` and `tests/` are outside `gated_files()`, so this feature's own quotations of the stale claim in `spec.md`, `plan.md`, `tasks.md` and `research.md` do **not** fire it, and neither does `tests/test_deps.py:10`. Across the whole gated set the one live false positive is `CONTRIBUTING.md:82`, which is what G2 pins.
 
-- [ ] T006 [US6] Rewrite `skills/research-gaps/SKILL.md:17-19` — delete the exclusivity claim and state the real distinction instead: `/research-gaps` (and `/sources --discover`) **go looking for material the user did not choose**; `/ingest` **fetches what the user named** (FR-033, FR-034). Do **not** delete the network sentence outright — FR-034 corrects the claim, it does not remove the paragraph.
+- [x] T006 [US6] Rewrite `skills/research-gaps/SKILL.md:17-19` — delete the exclusivity claim and state the real distinction instead: `/research-gaps` (and `/sources --discover`) **go looking for material the user did not choose**; `/ingest` **fetches what the user named** (FR-033, FR-034). Do **not** delete the network sentence outright — FR-034 corrects the claim, it does not remove the paragraph.
 
   **GREEN**: G3 passes; `python3 scripts/check_docs.py` exits 0 again.
 
@@ -133,18 +133,18 @@ reaches the API over HTTP.
 
 <!-- sequential -->
 
-- [ ] T007 🔴 [US3] Add the wave-A cases to `tests/test_check_project.py`, building tmp projects the way the existing `content:`/`visual:` cases do:
+- [x] T007 🔴 [US3] Add the wave-A cases to `tests/test_check_project.py`, building tmp projects the way the existing `content:`/`visual:` cases do:
   - **A1** — a `knowledge/<id>/<doc>.md` carrying `nature: anecdote` is reported as an **error** whose message names **the document, the bad value and the allowed set** (message shape: `` knowledge/field-notes/x.md: 'nature: anecdote' is not one of experience ``)
   - **A2** — a document carrying `nature: experience` produces **no** finding
   - **A3** — *regression guard, green from the start*: a project whose documents carry **no** `nature:` key at all exits 0 with **zero errors and zero warnings**. An absent key is **never** a finding — this single assertion is the whole of FR-031's compatibility promise and SC-013's middle clause. **Do not "fix" it into a red test.**
 
   **RED**: A1 fails on its assertion (`check_knowledge` reports nothing today). A2 and A3 are green from the start and are guards, not reds.
 
-- [ ] T008 [US3] In `scripts/check_project.py`: add `NATURES = ("experience",)` beside `CONTENT_STATES` (`:47`) and `VISUAL_KINDS` (`:54`), with the comment explaining why the vocabulary is closed, and add the membership test to `check_knowledge` (`:372`) in exactly the `content:` form — `if nature is not None and str(nature) not in NATURES` — so a YAML-parsed non-string is compared as text rather than crashing the checker.
+- [x] T008 [US3] In `scripts/check_project.py`: add `NATURES = ("experience",)` beside `CONTENT_STATES` (`:47`) and `VISUAL_KINDS` (`:54`), with the comment explaining why the vocabulary is closed, and add the membership test to `check_knowledge` (`:372`) in exactly the `content:` form — `if nature is not None and str(nature) not in NATURES` — so a YAML-parsed non-string is compared as text rather than crashing the checker.
 
   **GREEN**: A1 passes; A2 and A3 stay green.
 
-- [ ] T008a 🔴 [US1] *FR-007's negative, made checkable.* Add the wave-A **verdict-key** cases to `tests/test_check_project.py`, beside the wave-A `nature:` cases:
+- [x] T008a 🔴 [US1] *FR-007's negative, made checkable.* Add the wave-A **verdict-key** cases to `tests/test_check_project.py`, beside the wave-A `nature:` cases:
   - **A5** — a `sources.yaml` entry carrying a verdict key is an **error** naming **the entry id and the key**. Written as one `@pytest.mark.parametrize` case **per key name** — `fit`, `assessed`, `goal_fit`, `discovered`, `proposed_by` — so a failure says *which* key stopped being refused rather than "the verdict check broke" (message shape: `` sources.yaml [field-notes]: 'fit' is not a key of a source entry ``)
   - **A6** — *no-regression guard, green from the start*: an entry carrying `login:`, `pattern:`, `pages:`, `depth:`, `note:` — or any other key `check_sources` accepts today — is **unaffected**, and the shipped `tests/fixtures/demo-project/sources.yaml` (which carries `login: true` at `harbour-office-members`) still passes. **Do not "fix" this into a red test.**
 
@@ -152,11 +152,11 @@ reaches the API over HTTP.
 
   **The decision, so implementation does not re-take it: this check rejects five key names, never unknown keys in general.** An allowlist of permitted keys would make `login:` invalid, would make invalid every project on disk carrying a key this repo has not thought of, and would be a behaviour change no requirement asks for. FR-007 forbids a **verdict** on the entry, not extensibility. The five names are the ones [contracts/sources-yaml-unchanged.md](contracts/sources-yaml-unchanged.md) § *The change* already enumerates as the negative. A timestamp has no fixed key name and is therefore **not** gated — that half stays on row **4g**.
 
-- [ ] T008b [US1] In `scripts/check_project.py`: add `VERDICT_KEYS = ("fit", "assessed", "goal_fit", "discovered", "proposed_by")` beside `SOURCE_TYPES` (`:32-38`), with the comment saying why it is a **list of forbidden names** and not an allowlist of permitted keys, and report each one found on an entry as an **error** in `check_sources` (`:317-370`). Place the test **before** the `kind = entry.get("type")` block, so an entry with an unknown type still gets the finding instead of `continue`-ing past it.
+- [x] T008b [US1] In `scripts/check_project.py`: add `VERDICT_KEYS = ("fit", "assessed", "goal_fit", "discovered", "proposed_by")` beside `SOURCE_TYPES` (`:32-38`), with the comment saying why it is a **list of forbidden names** and not an allowlist of permitted keys, and report each one found on an entry as an **error** in `check_sources` (`:317-370`). Place the test **before** the `kind = entry.get("type")` block, so an entry with an unknown type still gets the finding instead of `continue`-ing past it.
 
   **GREEN**: A5 passes; A6 stays green; `python3 scripts/check_project.py tests/fixtures/demo-project --strict` still exits 0.
 
-- [ ] T009 [US2] *Fixture guard* **A4**: run `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exits 0, unchanged. No document in the shipped corpus carries `nature:` yet, so this proves the new validation is invisible to every project on disk.
+- [x] T009 [US2] *Fixture guard* **A4**: run `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exits 0, unchanged. No document in the shipped corpus carries `nature:` yet, so this proves the new validation is invisible to every project on disk.
 
 **Checkpoint**: `nature:` is validated by name and by value, and absence is provably silent.
 
@@ -175,7 +175,7 @@ distinction).
 
 <!-- sequential -->
 
-- [ ] T010 🔴 [US3] Add the wave-B cases to `tests/test_check_project.py`:
+- [x] T010 🔴 [US3] Add the wave-B cases to `tests/test_check_project.py`:
   - **B1** — a card whose `subtopic:` is one **all** of whose `References:` resolve to `nature: experience` documents, and which carries **no** `source:`, is an **error** naming **the card file, the card index and the subtopic**
   - **B2** — the same card **with** `source:` passes
   - **B3** — *the "all, not any" rule*: a subtopic with one experience reference **and** one ordinary reference does **not** make its cards errors. This is its own case, not a corollary of B1
@@ -185,7 +185,7 @@ distinction).
 
   **Call `check_project.check()`, not the internal functions.** T011 changes the signatures of `check_knowledge`, `check_catalog` and `check_cards`; a case that calls one of them directly goes red on a `TypeError` from a signature that does not exist yet, which constitution XI says does **not** count as red. Driving the whole run through `check()` — the way the existing wave-A cases do — makes B1 fail on the **error count**, which is the assertion.
 
-- [ ] T011 [US3] In `scripts/check_project.py`, thread the experience set down the road `sparse` already travels (`:380`, `:425-426`, `:428`, `:690`, `:958`, `:1180-1181`) — **do not invent a second mechanism for the same shape of fact**:
+- [x] T011 [US3] In `scripts/check_project.py`, thread the experience set down the road `sparse` already travels (`:380`, `:425-426`, `:428`, `:690`, `:958`, `:1180-1181`) — **do not invent a second mechanism for the same shape of fact**:
   - `check_knowledge()` returns `(sparse, experience)` — sets of resolved paths
   - `check_catalog(..., sparse, experience)` returns `(subtopics, marked, terms, experience_only)`
   - `check_cards(..., experience_only)` raises the FR-011 attribution **error**
@@ -204,14 +204,14 @@ distinction).
 
 <!-- sequential -->
 
-- [ ] T012 🔴 [US1] Add `check_sources_skill_reads_the_goal()` to `scripts/check_docs.py`, wire it into `main()`, and add cases C1–C3 to `tests/test_check_docs.py` using the `read_skill` monkeypatch seam (`scripts/check_docs.py:357`) so every negative case runs against **synthetic** skill text:
+- [x] T012 🔴 [US1] Add `check_sources_skill_reads_the_goal()` to `scripts/check_docs.py`, wire it into `main()`, and add cases C1–C3 to `tests/test_check_docs.py` using the `read_skill` monkeypatch seam (`scripts/check_docs.py:357`) so every negative case runs against **synthetic** skill text:
   - **C1** — a `sources` skill that never names `goal.md` is reported
   - **C2** — one that names `goal.md` but never says the assessment is **advisory** / never blocks is reported
   - **C3** — one that does not say the assessment happens **at registration** and is **not re-run on a listing** is reported (FR-008 + research.md § R1 — the accepted no-back-fill gap)
 
   **RED**: `python3 scripts/check_docs.py` exits 1 against today's 55-line `skills/sources/SKILL.md`, which names none of it.
 
-- [ ] T012a 🔴 [US1] Extend `check_sources_skill_reads_the_goal()` — **T012's function; no new function** — and add cases **C6–C9** to `tests/test_check_docs.py`, each against synthetic skill text through the `read_skill` seam, each its **own** case so a failure names which rule left the prompt:
+- [x] T012a 🔴 [US1] Extend `check_sources_skill_reads_the_goal()` — **T012's function; no new function** — and add cases **C6–C9** to `tests/test_check_docs.py`, each against synthetic skill text through the `read_skill` seam, each its **own** case so a failure names which rule left the prompt:
   - **C6** — a `sources` skill that does not say an off-goal warning names the source `id` **and** the line of `goal.md` it conflicts with is reported (FR-003)
   - **C7** — one that does not say the assessment reasons from `kind`/`depth` **and says which of the two it used** is reported (FR-005)
   - **C8** — one that does not say that with **no `goal.md`** there is no assessment and no warning, and **at most one** `/learning-goal` pointer per run, is reported (FR-006)
@@ -221,11 +221,11 @@ distinction).
 
   **What these four gates are, exactly — read this before believing the routing table.** Each asserts that **the rule is stated in the prompt**, and nothing more. C6 cannot see a warning; C7 cannot see which of `kind`/`depth` a run actually reasoned from; C8 cannot count the pointers a run emitted; C9 cannot see whether a claim was invented. They are **drift detectors**: after this feature, an edit that drops one of these four sentences from `skills/sources/SKILL.md` fails a gate instead of failing nothing. The **behavioural** half of each stays on its named row — 4b/4f (FR-003), 4a/4b/4c (FR-005), 4i (FR-006), 4a (FR-009) — and plan.md § *Which gate holds which requirement* says so in both columns rather than letting the check column read as coverage.
 
-- [ ] T013 🔴 [US1] Add `check_sources_skill_states_the_archive_reach()` to `scripts/check_docs.py`, wire it into `main()`, and add case **C4** to `tests/test_check_docs.py`: a `sources` skill that does not state the archive reach — `depth: 1`, the index page plus same-domain linked posts, **capped at 20** — is reported (FR-029).
+- [x] T013 🔴 [US1] Add `check_sources_skill_states_the_archive_reach()` to `scripts/check_docs.py`, wire it into `main()`, and add case **C4** to `tests/test_check_docs.py`: a `sources` skill that does not state the archive reach — `depth: 1`, the index page plus same-domain linked posts, **capped at 20** — is reported (FR-029).
 
   **RED**: fails against the shipped skill. Separate function and separate task from T012 because it is a separate claim; same file, so **not** parallel with T012.
 
-- [ ] T014 [US1] Write the `## Goal fit` section into `skills/sources/SKILL.md` until C1–C4 pass (**C5**, the shipped-skill guard). It must carry: reading `goal.md` before writing an entry (FR-001); the assessment is **advisory and never blocking**, the entry is written whatever the verdict and the run does **not** pause to ask (FR-002); the warning names the source `id` **and** the `goal.md` line (FR-003); the judgement is about *this source for this goal*, never about the subject or the publisher (FR-004); it reasons from `kind`/`depth` and **says which of the two it used** (FR-005); with **no `goal.md`** there is no assessment and **at most one** `/learning-goal` pointer per run, never one per source (FR-006); nothing is persisted — no `fit:`, no `assessed:`, no timestamp (FR-007); a listing does not re-assess, and a goal written later does not re-judge the register (FR-008, research R1); never invent a claim about a source it has not looked at — where it reasons only from the URL, the `note` and the `type`, it says so (FR-009); and the archive-reach sentence (FR-029).
+- [x] T014 [US1] Write the `## Goal fit` section into `skills/sources/SKILL.md` until C1–C4 pass (**C5**, the shipped-skill guard). It must carry: reading `goal.md` before writing an entry (FR-001); the assessment is **advisory and never blocking**, the entry is written whatever the verdict and the run does **not** pause to ask (FR-002); the warning names the source `id` **and** the `goal.md` line (FR-003); the judgement is about *this source for this goal*, never about the subject or the publisher (FR-004); it reasons from `kind`/`depth` and **says which of the two it used** (FR-005); with **no `goal.md`** there is no assessment and **at most one** `/learning-goal` pointer per run, never one per source (FR-006); nothing is persisted — no `fit:`, no `assessed:`, no timestamp (FR-007); a listing does not re-assess, and a goal written later does not re-judge the register (FR-008, research R1); never invent a claim about a source it has not looked at — where it reasons only from the URL, the `note` and the `type`, it says so (FR-009); and the archive-reach sentence (FR-029).
 
   **Tone precedent to copy**: `skills/catalog/SKILL.md:60-67` — said once, "do not turn it into a warning and do not repeat it".
 
@@ -249,7 +249,7 @@ and by heading, rather than against text a test author wrote to pass.
 
 <!-- sequential -->
 
-- [ ] T015 🔴 [US4] Add `check_sources_skill_carries_the_discovery_contract()` — **C1, material-class neutral** — to `scripts/check_docs.py`, wire it into `main()`, and add cases **D1, D1a–D1i, D2–D4 and D8** to `tests/test_check_docs.py` via the `read_skill` seam:
+- [x] T015 🔴 [US4] Add `check_sources_skill_carries_the_discovery_contract()` — **C1, material-class neutral** — to `scripts/check_docs.py`, wire it into `main()`, and add cases **D1, D1a–D1i, D2–D4 and D8** to `tests/test_check_docs.py` via the `read_skill` seam:
   - **D1** — a `sources` skill with no `--discover` at all is reported
   - **D1a** — one carrying everything **but** the found/shown counts grouped by goal area, with **every** area listed including the empty ones, is reported (FR-027)
   - **D1b** — one missing the caps — ≤ 3 per area and ≤ 10 per run — is reported (research R3)
@@ -278,24 +278,24 @@ and by heading, rather than against text a test author wrote to pass.
 
   **RED**: fails against the shipped skill, which has no discovery mode at all.
 
-- [ ] T016 🔴 [US4] Add `check_sources_skill_carries_the_practitioner_addendum()` — **C2, the one addendum this feature ships** — to `scripts/check_docs.py`, wire it into `main()`, and add case **D6** to `tests/test_check_docs.py`: a `sources` skill missing the practitioner addendum — the **primary-and-interested** property and the **selected-sample** property on the credibility sentence — is reported (FR-019). This is the **only** check in wave D that may name a class of material. Neither function reads the other's text.
+- [x] T016 🔴 [US4] Add `check_sources_skill_carries_the_practitioner_addendum()` — **C2, the one addendum this feature ships** — to `scripts/check_docs.py`, wire it into `main()`, and add case **D6** to `tests/test_check_docs.py`: a `sources` skill missing the practitioner addendum — the **primary-and-interested** property and the **selected-sample** property on the credibility sentence — is reported (FR-019). This is the **only** check in wave D that may name a class of material. Neither function reads the other's text.
 
   **RED**: fails against the shipped skill.
 
-- [ ] T017 [US4] *Guard* **D5** — add the neutrality case to `tests/test_check_docs.py` (test file only — no `scripts/` edit):
+- [x] T017 [US4] *Guard* **D5** — add the neutrality case to `tests/test_check_docs.py` (test file only — no `scripts/` edit):
   - **D5** — *neutrality guard*: a **synthetic** skill whose practitioner sub-section has been **deleted** still passes **every** C1 assertion (D1, D1a–D1i, D2–D4 and D8). None of them names a material class, an incident, a post-mortem or a company blog
 
   **GUARD, not a red artifact — and deliberately not one.** D5 runs against **synthetic** skill text through the `read_skill` seam (`scripts/check_docs.py:357`), so the state of the shipped `skills/sources/SKILL.md` is irrelevant to it: once T015 has landed it passes immediately. The only way to make D5 go red would be to write a **non-neutral** C1 check — exactly the outcome FR-039 and SC-016 exist to prevent, so a red here would be the defect and not the discipline. It is a guard in the same sense as A3, A4, A6, B4, C5, D7, E4 and F4, and `checklists/gates.md` CHK020 lists **D5** among the guard rows. It must **stay** green. Do not "fix" the marker to 🔴.
 
   **D5 is a documented invariant, not a defect detector**, and it is worth saying which half of FR-039 each artifact carries: D5 stops a neutral check from quietly acquiring a practitioner assertion; **D5b (T018a)** is the half that tests SC-016 against the file that ships. Neither replaces the other.
 
-- [ ] T018 [US4] Write the `## Finding sources` section into `skills/sources/SKILL.md`, **class-neutral throughout**: the `--discover` entry (and its natural-language equivalents as the same entry), the proposal shape of [contracts/discovery-proposal.md](contracts/discovery-proposal.md) § *Shape of the proposal*, the caps (≤ 3 per area, ≤ 10 per run, **every** area listed), the six per-candidate fields including the **class of material** line — with examples and an explicit statement that a candidate may name a class the examples do not cover, and **no list to choose from** — the credibility sentence as one sentence and never a number, the three exclusions (unretrieved, paywalled, already registered), the two degraded paths (no `goal.md`, no network), "writes nothing until the user picks", "picked entries go through the ordinary registration path", and the `/research-gaps` seam.
+- [x] T018 [US4] Write the `## Finding sources` section into `skills/sources/SKILL.md`, **class-neutral throughout**: the `--discover` entry (and its natural-language equivalents as the same entry), the proposal shape of [contracts/discovery-proposal.md](contracts/discovery-proposal.md) § *Shape of the proposal*, the caps (≤ 3 per area, ≤ 10 per run, **every** area listed), the six per-candidate fields including the **class of material** line — with examples and an explicit statement that a candidate may name a class the examples do not cover, and **no list to choose from** — the credibility sentence as one sentence and never a number, the three exclusions (unretrieved, paywalled, already registered), the two degraded paths (no `goal.md`, no network), "writes nothing until the user picks", "picked entries go through the ordinary registration path", and the `/research-gaps` seam.
 
   **Not written here** (FR-040): no class-selection argument, no way to ask for one class only, no class vocabulary. **Stop and flag** if a class list appears anywhere.
 
   **GREEN**: D1, D1a–D1i, D2–D4, D5 and D8 pass.
 
-- [ ] T018a 🔴 [US4] **D5b — separability, asserted against the file that ships.** Add the separability case to `tests/test_check_docs.py` (test file only — no `scripts/` edit). It does **not** use synthetic text:
+- [x] T018a 🔴 [US4] **D5b — separability, asserted against the file that ships.** Add the separability case to `tests/test_check_docs.py` (test file only — no `scripts/` edit). It does **not** use synthetic text:
 
   1. Read the **shipped** skill: `body = check_docs.read_skill("sources")`, before any monkeypatch.
   2. `assert ADDENDUM_HEADING in body`, where `ADDENDUM_HEADING = "### Practitioner material"` is a module-level constant in the test file. **This is the assertion the test is red on**, and it is the reason the excision is done **by heading** rather than by matching the addendum's prose: if T019 renames the heading, the test fails loudly with a message naming the heading it looked for, instead of silently excising nothing and passing.
@@ -314,7 +314,7 @@ and by heading, rather than against text a test author wrote to pass.
 
   **Placed after T018 deliberately.** Before T018 the shipped skill has no `## Finding sources` section either, so D5b would be red for two reasons at once and the message would not say which. After T018 the neutral section exists and the addendum does not, so the red is exactly one thing: the heading is missing.
 
-- [ ] T019 [US4] Write the **practitioner addendum** as its own clearly separable sub-section under `## Finding sources` in `skills/sources/SKILL.md` (FR-019): for practitioner material the credibility sentence must additionally name that a company account of its own incident is a **primary source and an interested one**, and that published incidents are a **selected sample**. A candidate that is *not* practitioner material is **not** held to either property.
+- [x] T019 [US4] Write the **practitioner addendum** as its own clearly separable sub-section under `## Finding sources` in `skills/sources/SKILL.md` (FR-019): for practitioner material the credibility sentence must additionally name that a company account of its own incident is a **primary source and an interested one**, and that published incidents are a **selected sample**. A candidate that is *not* practitioner material is **not** held to either property.
 
   **The heading is a fixed string and T018a reads it**: the sub-section opens with the line `### Practitioner material`, spelled exactly that way, at `###` level, under `## Finding sources`. Renaming it is allowed only together with `ADDENDUM_HEADING` in `tests/test_check_docs.py` — which is why T018a asserts the heading first and fails by name rather than silently excising nothing.
 
@@ -342,18 +342,18 @@ red-then-green pair below.
 
 <!-- sequential -->
 
-- [ ] T020 🔴 [US4] Add `check_sources_skill_states_the_explicit_request()` — the **positive substring gate** on `skills/sources/SKILL.md` — to `scripts/check_docs.py`, wire it into `main()`, and add case **E3** to `tests/test_check_docs.py` via the `read_skill` seam (`scripts/check_docs.py:357`):
+- [x] T020 🔴 [US4] Add `check_sources_skill_states_the_explicit_request()` — the **positive substring gate** on `skills/sources/SKILL.md` — to `scripts/check_docs.py`, wire it into `main()`, and add case **E3** to `tests/test_check_docs.py` via the `read_skill` seam (`scripts/check_docs.py:357`):
   - **E3** — a `sources` skill that does not state that discovery is entered **only** on an explicit request, and that an **ordinary run** (register, list, remove) neither enters nor mentions it, is reported (FR-035, FR-036)
 
   **RED**: E3 fails against the shipped 55-line `skills/sources/SKILL.md`, which says nothing of the kind.
 
   Shape to copy: `check_print_skill_relays_setup()` (`scripts/check_docs.py:363-374`), the file's existing positive gate on one named skill.
 
-- [ ] T021 [US4] Add the explicit-request and silence rules to `skills/sources/SKILL.md`: discovery is entered **only** on an explicit request at invocation, never started by itself, never offered as a follow-up at the end of an ordinary run, never the default of any invocation (FR-035); and a run that registers, lists or removes **neither enters nor mentions it** — no candidate, no proposal, no closing line suggesting the user could go looking (FR-036).
+- [x] T021 [US4] Add the explicit-request and silence rules to `skills/sources/SKILL.md`: discovery is entered **only** on an explicit request at invocation, never started by itself, never offered as a follow-up at the end of an ordinary run, never the default of any invocation (FR-035); and a run that registers, lists or removes **neither enters nor mentions it** — no candidate, no proposal, no closing line suggesting the user could go looking (FR-036).
 
   **GREEN**: E3 passes. **And D5b (T018a) is extended here**: now that `check_sources_skill_states_the_explicit_request()` exists (T020) and the sentence it reads is in the file, add it to step 5's list of checks the excised text must be clean under. D5b then asserts **one of five fails, four stay green** — SC-016's "exactly one" over the complete set of checks that read `skills/sources/SKILL.md`. Re-run `pytest tests/test_check_docs.py` and confirm D5b is still green.
 
-- [ ] T021a 🔴 [US4] Add `check_discovery_is_not_offered_elsewhere()` — the **negative token gate** over `skills/ingest/SKILL.md`, `skills/catalog/SKILL.md`, `skills/cards/SKILL.md`, `skills/print/SKILL.md` **and `skills/learning-goal/SKILL.md`** — to `scripts/check_docs.py`, wire it into `main()`, and add cases E1, E2, E2a and E4 to `tests/test_check_docs.py`:
+- [x] T021a 🔴 [US4] Add `check_discovery_is_not_offered_elsewhere()` — the **negative token gate** over `skills/ingest/SKILL.md`, `skills/catalog/SKILL.md`, `skills/cards/SKILL.md`, `skills/print/SKILL.md` **and `skills/learning-goal/SKILL.md`** — to `scripts/check_docs.py`, wire it into `main()`, and add cases E1, E2, E2a and E4 to `tests/test_check_docs.py`:
   - **E1** — `--discover` appearing in `skills/catalog/SKILL.md` is reported, **naming the file**
   - **E2** — the same for `ingest`, `cards` and `print`
   - **E2a** — the same for **`learning-goal`**. It is the fifth gated file, added because it is one of the two skills whose wrap-up already points the user at another step, and because `--discover` occurs nowhere in it today, so the token is exact there too. `/research-gaps` is **not** in the set and cannot be: T006 writes `/sources --discover` into it deliberately (FR-034's seam), so a token gate would fire on the sentence the feature asks for. See the residual-risk note below
@@ -367,7 +367,7 @@ red-then-green pair below.
 
   **Residual risk, stated precisely rather than left implicit — `/research-gaps` is not token-gated and cannot be.** FR-037 names four skills; T006 writes `/sources --discover` into a fifth, `skills/research-gaps/SKILL.md`, because FR-034 asks for the seam. That is the skill whose wrap-up already says *"If the user wants their own material instead, `/sources` is the way"*, so it is the likeliest place for a closing *"or run `/sources --discover`"* to appear. Three things hold it, and none of them is a token gate: (1) T006's rewrite is **one paragraph**, and its content is gated by `check_network_claim_is_not_exclusive()`; (2) row **12-vi** now runs `/research-gaps` as well as `/sources` → `/ingest` → `/catalog` → `/cards`, so a pointer in a real run is caught by a named row; (3) spec § Assumptions records the exclusion so it reads as a decision rather than an oversight. `/learning-goal` had the same hole and it is closed by **E2a** above. What remains uncovered is a paraphrase inside `skills/research-gaps/SKILL.md` that row 12-vi's run happens not to emit. **Accepted.**
 
-- [ ] T021b [US4] *Guard* **E4**: run `python3 scripts/check_docs.py` and confirm `check_discovery_is_not_offered_elsewhere()` reports nothing now that `skills/sources/SKILL.md` carries the discovery mode — no pointer leaked into `ingest`, `catalog`, `cards`, `print` or `learning-goal`. This is the gate's standing obligation, and it is restated where the four other prompts are edited (**T024**, the FR-037 clause) and where the diff is scope-checked (**T043**).
+- [x] T021b [US4] *Guard* **E4**: run `python3 scripts/check_docs.py` and confirm `check_discovery_is_not_offered_elsewhere()` reports nothing now that `skills/sources/SKILL.md` carries the discovery mode — no pointer leaked into `ingest`, `catalog`, `cards`, `print` or `learning-goal`. This is the gate's standing obligation, and it is restated where the four other prompts are edited (**T024**, the FR-037 clause) and where the diff is scope-checked (**T043**).
 
   **GREEN**: E1, E2, E2a and E4 all green, with E3 still green from T021.
 
@@ -381,7 +381,7 @@ red-then-green pair below.
 
 <!-- sequential -->
 
-- [ ] T022 🔴 [US3] Add `check_skills_carry_the_experience_rule()` to `scripts/check_docs.py`, wire it into `main()`, and add cases F1–F3 to `tests/test_check_docs.py` via the `read_skill` seam:
+- [x] T022 🔴 [US3] Add `check_skills_carry_the_experience_rule()` to `scripts/check_docs.py`, wire it into `main()`, and add cases F1–F3 to `tests/test_check_docs.py` via the `read_skill` seam:
   - **F1** — an `ingest` skill that does not name `nature: experience` is reported
   - **F2** — a `catalog` skill that has lost the experience-report rule, or the FR-013 material-base warning, is reported (FR-010; FR-013's four contents; FR-014 rule-versus-case)
   - **F3** — a `cards` skill that has lost the attribution rule, **or the FR-013 material-base warning**, is reported (FR-010; FR-011 via the existing `source:` key; FR-012 the scale; **FR-013 — it binds `/cards` as well as `/catalog`**, US3 scenario 5, and the assertion is the same one F2 makes of `catalog`)
@@ -390,13 +390,13 @@ red-then-green pair below.
 
 <!-- parallel-group: 2 (max 3 concurrent) -->
 
-- [ ] T023 [P] [US3] `skills/ingest/SKILL.md` — write `nature: experience` into the **frontmatter format block at lines 92-111** and add the rule for when to write it and when **not** to: a document whose **subject is a reported case** gets `nature: experience`; everything else gets **no `nature:` key at all** — not `nature: reference`, not `nature: none`, absence **is** the other state; a reference work with one anecdote in it is **not** marked, because `nature:` is one value about the whole document and never a per-paragraph judgement.
+- [x] T023 [P] [US3] `skills/ingest/SKILL.md` — write `nature: experience` into the **frontmatter format block at lines 92-111** and add the rule for when to write it and when **not** to: a document whose **subject is a reported case** gets `nature: experience`; everything else gets **no `nature:` key at all** — not `nature: reference`, not `nature: none`, absence **is** the other state; a reference work with one anecdote in it is **not** marked, because `nature:` is one value about the whole document and never a per-paragraph judgement.
 
   **⚠ Hazard**: `tests/test_testdata.py:265-273` parses this file **literally** around lines 27-28 for the default-pattern text. Keep every edit inside the frontmatter block and the extraction rules. **Do not reflow the paragraph near line 27.**
 
-- [ ] T024 [P] [US3] `skills/catalog/SKILL.md` — read `nature: experience`: place the document normally, but report a required topic covered **only** by experience reports rather than presenting single-case coverage as coverage of the rule (FR-014), and warn about the **material base** of a subtopic that rests only on such reports, carrying all four of FR-013's contents in the skill's own words — which subtopic and what it rests on, why that base is skewed written out rather than named, what it means for the cards, and what would balance it. **Do not prescribe a phrase**; a run that says only "published incidents are a selected sample" does not satisfy FR-013. The worked example is in [spec.md § FR-013](spec.md). That report **must not** become a suggestion to run discovery (FR-037); a `Status: gap` subtopic's one pointer stays `/research-gaps`, exactly as today.
+- [x] T024 [P] [US3] `skills/catalog/SKILL.md` — read `nature: experience`: place the document normally, but report a required topic covered **only** by experience reports rather than presenting single-case coverage as coverage of the rule (FR-014), and warn about the **material base** of a subtopic that rests only on such reports, carrying all four of FR-013's contents in the skill's own words — which subtopic and what it rests on, why that base is skewed written out rather than named, what it means for the cards, and what would balance it. **Do not prescribe a phrase**; a run that says only "published incidents are a selected sample" does not satisfy FR-013. The worked example is in [spec.md § FR-013](spec.md). That report **must not** become a suggestion to run discovery (FR-037); a `Status: gap` subtopic's one pointer stays `/research-gaps`, exactly as today.
 
-- [ ] T025 [P] [US3] `skills/cards/SKILL.md` — read `nature: experience`: phrase the card **about the reported case**, name that case through the existing optional `source:` key, never as an unattributed general rule (FR-010, FR-011), and carry the **scale or circumstances** the fact depends on rather than dropping them (FR-012).
+- [x] T025 [P] [US3] `skills/cards/SKILL.md` — read `nature: experience`: phrase the card **about the reported case**, name that case through the existing optional `source:` key, never as an unattributed general rule (FR-010, FR-011), and carry the **scale or circumstances** the fact depends on rather than dropping them (FR-012).
 
   **And the FR-013 half that belongs to `/cards`**: when `/cards` reports on a subtopic that rests **only** on incident and experience reports, it carries the **same** material-base warning `/catalog` does — all four contents, in its own words, no prescribed phrase (spec US3 scenario 5; the worked example is in [spec.md § FR-013](spec.md)). It is a warning about the state of the sources: it never blocks a card, and it never becomes a suggestion to run discovery (FR-037). Check **F3** asserts it; manual row **12-iv** runs it.
 
@@ -404,7 +404,7 @@ red-then-green pair below.
 
 <!-- sequential -->
 
-- [ ] T026 [US3] *Guard* **F4**: `python3 scripts/check_docs.py` reports nothing for `check_skills_carry_the_experience_rule()` — the three edited skills pass.
+- [x] T026 [US3] *Guard* **F4**: `python3 scripts/check_docs.py` reports nothing for `check_skills_carry_the_experience_rule()` — the three edited skills pass.
 
 **Checkpoint**: pieces B and C are in the prompts, and waves A–G all have their checks. Commit.
 
@@ -420,22 +420,22 @@ content** — nothing quoted from anyone.
 
 <!-- sequential -->
 
-- [ ] T027 **Before touching the fixture**: run `python3 scripts/check_project.py tests/fixtures/demo-project --strict` and record the exact output. This is its own step, per plan.md § Risks, because `catalog/topics.md` carries `Status:`, `Parents:`, `Also covers:`, `Related:` and `Term:` invariants that the new subtopic could disturb.
+- [x] T027 **Before touching the fixture**: run `python3 scripts/check_project.py tests/fixtures/demo-project --strict` and record the exact output. This is its own step, per plan.md § Risks, because `catalog/topics.md` carries `Status:`, `Parents:`, `Also covers:`, `Related:` and `Term:` invariants that the new subtopic could disturb.
 
-- [ ] T028 [US3] New `tests/fixtures/demo-project/raw/field-notes/<incident>.md` — an invented archipelago incident write-up (a harbour-office account of a grounding or a signal failure). Plain markdown, committed text, no binary, no generator needed. It joins the seven files already in that folder.
+- [x] T028 [US3] New `tests/fixtures/demo-project/raw/field-notes/<incident>.md` — an invented archipelago incident write-up (a harbour-office account of a grounding or a signal failure). Plain markdown, committed text, no binary, no generator needed. It joins the seven files already in that folder.
 
-- [ ] T029 [US3] New `tests/fixtures/demo-project/knowledge/field-notes/<incident>.md` — the ingested twin of T028, carrying `source: field-notes`, `path:`, `ingested:` and **`nature: experience`**. It is the **only** document in the corpus with the key at all, which is what makes wave A's A3 guard meaningful.
+- [x] T029 [US3] New `tests/fixtures/demo-project/knowledge/field-notes/<incident>.md` — the ingested twin of T028, carrying `source: field-notes`, `path:`, `ingested:` and **`nature: experience`**. It is the **only** document in the corpus with the key at all, which is what makes wave A's A3 guard meaningful.
 
-- [ ] T030 [US3] `tests/fixtures/demo-project/catalog/topics.md` — one new `###` subtopic under the existing `## Signals, flags and the radio` topic (line 73), whose **only** reference is the T029 document. Placed under that topic deliberately, so it serves a required topic already in the fixture's `goal.md`. Keep the file's `Status:`/`Parents:`/`Also covers:`/`Related:` conventions intact. **Write no `Term:` line on it.** A `Term:` line obliges an anchor card naming the concept (check A-1) and moves the "**seven** such lines" count in `tests/fixtures/demo-project/README.md`; the subtopic needs neither, and leaving it off is what the fixture already does for `Settlements` and `Rules of use`.
+- [x] T030 [US3] `tests/fixtures/demo-project/catalog/topics.md` — one new `###` subtopic under the existing `## Signals, flags and the radio` topic (line 73), whose **only** reference is the T029 document. Placed under that topic deliberately, so it serves a required topic already in the fixture's `goal.md`. Keep the file's `Status:`/`Parents:`/`Also covers:`/`Related:` conventions intact. **Write no `Term:` line on it.** A `Term:` line obliges an anchor card naming the concept (check A-1) and moves the "**seven** such lines" count in `tests/fixtures/demo-project/README.md`; the subtopic needs neither, and leaving it off is what the fixture already does for `Settlements` and `Rules of use`.
 
-- [ ] T031 [US3] `tests/fixtures/demo-project/cards/signals.yaml` — **exactly one** card under the new subtopic, carrying `source:` naming the case, phrased about the reported case rather than as a general rule, with a **fresh, unique five-character Crockford Base32 `id`**, following `CLAUDE.md`'s card style and Typst escaping. **`cards/signals.yaml` specifically**, so `TIDES_CARD_COUNT` (`tests/test_e2e.py:49`) does not move.
+- [x] T031 [US3] `tests/fixtures/demo-project/cards/signals.yaml` — **exactly one** card under the new subtopic, carrying `source:` naming the case, phrased about the reported case rather than as a general rule, with a **fresh, unique five-character Crockford Base32 `id`**, following `CLAUDE.md`'s card style and Typst escaping. **`cards/signals.yaml` specifically**, so `TIDES_CARD_COUNT` (`tests/test_e2e.py:49`) does not move.
 
   **Exactly one, not "one or two" — the second card breaks an e2e assertion.** `cards/signals.yaml` holds **7** cards today, and `--topic Signals` is what `test_three_dividers_share_a_sheet_with_a_short_deck` (`tests/test_e2e.py:1301`) builds. At 16 up an A8 sheet is 4 x 4 of 71.75 x 50 mm inside a 5 mm margin on a 297 x 210 sheet, and a one-row block of three dividers is `1 x (50 + 1.5) = 51.5` mm tall with `leitner.GAP_MM = 8` above and below it (`scripts/build_pdf.py:216-257`, `divider_block`). At **8** cards the deck fills 2 rows — `5 + 2 x 50 = 105`, and `105 + 8 + 51.5 + 8 = 172.5 <= 210` — so the block still shares the sheet and the test holds. At **9** cards it fills 3 rows — `5 + 3 x 50 = 155`, and `155 + 8 + 51.5 + 8 = 222.5 > 210` — so the block opens a further sheet and the test fails. One card keeps that assertion true; two do not. If a second card is genuinely needed, it is a **stop-and-flag** back to plan.md, not a quiet edit to a spec-008 test.
 
 <!-- parallel-group: 3 (max 3 concurrent) -->
 
-- [ ] T032 [P] [US3] `tests/fixtures/demo-project/README.md` — add the row to the **raw-material table** saying what the new material is for and which failure mode it exercises. Then **re-read two sentences of that file for staleness**: `catalog/topics.md` carries "**seven**" `Term:` lines (T030 adds none, so the count stands — confirm it) and the opening paragraph's account of the card files (T031 adds a card to an existing file, so no file count moves). Change a number only if T030/T031 actually moved it.
-- [ ] T033 [P] [US3] The card-count edits. **Four files' worth of literals, not one** — the "derived counts follow automatically" claim is true of the constants and false of three assertions that were written when 32 happened to be a multiple of 16.
+- [x] T032 [P] [US3] `tests/fixtures/demo-project/README.md` — add the row to the **raw-material table** saying what the new material is for and which failure mode it exercises. Then **re-read two sentences of that file for staleness**: `catalog/topics.md` carries "**seven**" `Term:` lines (T030 adds none, so the count stands — confirm it) and the opening paragraph's account of the card files (T031 adds a card to an existing file, so no file count moves). Change a number only if T030/T031 actually moved it.
+- [x] T033 [P] [US3] The card-count edits. **Four files' worth of literals, not one** — the "derived counts follow automatically" claim is true of the constants and false of three assertions that were written when 32 happened to be a multiple of 16.
 
   1. **`tests/test_e2e.py:27`** — move `DEMO_CARD_COUNT` from `32` to **33**. Confirm `TIDES_CARD_COUNT` (`:49`) is **unchanged**. `DEMO_A7_PAGES` / `DEMO_A8_PAGES` / `DEMO_A7_SHEETS` / `DEMO_A8_SHEETS` do follow from `sheet_pages()` — do not hand-edit those.
   2. **`tests/test_check_project.py:164`** — `assert counts["cards"] == 32` in `test_the_demo_project_has_all_four_artifacts` is a **literal**, not a derived count. Move it to 33. Plain `pytest` catches this one, but it is edited here rather than discovered at T044.
@@ -461,9 +461,9 @@ content** — nothing quoted from anyone.
 
 <!-- sequential -->
 
-- [ ] T034 [US3] Run `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exits 0, and the count line names the new subtopic and cards. Compare against T027's recorded output.
+- [x] T034 [US3] Run `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exits 0, and the count line names the new subtopic and cards. Compare against T027's recorded output.
 
-- [ ] T035 **Its own task, not a footnote**: `python3 scripts/make_testdata.py && LERNKARTEN_E2E=1 pytest tests/test_e2e.py`. `DEMO_CARD_COUNT` moved in T033, and `tests/test_e2e.py` **skips without a typesetting engine**, so a wrong count is invisible to a plain `pytest` run and would ship undetected. This is **required for this feature**, not optional (quickstart § 4, gates CHK046).
+- [x] T035 **Its own task, not a footnote**: `python3 scripts/make_testdata.py && LERNKARTEN_E2E=1 pytest tests/test_e2e.py`. `DEMO_CARD_COUNT` moved in T033, and `tests/test_e2e.py` **skips without a typesetting engine**, so a wrong count is invisible to a plain `pytest` run and would ship undetected. This is **required for this feature**, not optional (quickstart § 4, gates CHK046).
 
 **Checkpoint**: the corpus carries one experience report end to end, and the e2e count is proven.
 
@@ -490,11 +490,11 @@ is the first thing wave I does.
 
 <!-- sequential -->
 
-- [ ] T036 [US6] **First thing in wave I**: rewrite the `description` in `skills/sources/SKILL.md:2-4` so it names **both jobs** — registering/listing/removing **and** finding sources for a stated goal. It is gated **four ways** by `check_skills()` (`scripts/check_docs.py:79-121`) and every one must survive: `name: sources` equals the folder name; the description is **≥ 20 characters**; it contains the word **`Triggers`**; and it contains the domain word **`flashcard`**. Add `/sources --discover` to the trigger list. Run `python3 scripts/check_docs.py` immediately — `check_skills` catches a miss at once.
+- [x] T036 [US6] **First thing in wave I**: rewrite the `description` in `skills/sources/SKILL.md:2-4` so it names **both jobs** — registering/listing/removing **and** finding sources for a stated goal. It is gated **four ways** by `check_skills()` (`scripts/check_docs.py:79-121`) and every one must survive: `name: sources` equals the folder name; the description is **≥ 20 characters**; it contains the word **`Triggers`**; and it contains the domain word **`flashcard`**. Add `/sources --discover` to the trigger list. Run `python3 scripts/check_docs.py` immediately — `check_skills` catches a miss at once.
 
-- [ ] T037 🧑 **HUMAN CHECKPOINT — stop here, do not tick from the prompt text** [US1] [US4] [US5] `python3 scripts/demo.py /tmp/lk-demo --force`, then drive `/sources` against it in a real Claude session — a registration, a bare listing, a removal, and `/sources --discover` — and edit `skills/sources/SKILL.md` until every wave C, D and E assertion passes **and** `python3 scripts/check_project.py /tmp/lk-demo --strict` exits 0 after accepting a candidate (SC-006). Confirm `sources.yaml` carries **no** verdict key of any kind (FR-007, SC-001).
+- [x] T037 🧑 **HUMAN CHECKPOINT — stop here, do not tick from the prompt text** [US1] [US4] [US5] `python3 scripts/demo.py /tmp/lk-demo --force`, then drive `/sources` against it in a real Claude session — a registration, a bare listing, a removal, and `/sources --discover` — and edit `skills/sources/SKILL.md` until every wave C, D and E assertion passes **and** `python3 scripts/check_project.py /tmp/lk-demo --strict` exits 0 after accepting a candidate (SC-006). Confirm `sources.yaml` carries **no** verdict key of any kind (FR-007, SC-001).
 
-- [ ] T038 🧑 **HUMAN CHECKPOINT — stop here, do not tick from the prompt text** [US3] Drive `/ingest` → `/catalog` → `/cards` against the same scratch copy and edit `skills/ingest/SKILL.md`, `skills/catalog/SKILL.md` and `skills/cards/SKILL.md` until wave F passes **and** `python3 scripts/check_project.py /tmp/lk-demo --strict` exits 0. Confirm the incident document gets `nature: experience` and the handbook document gets **no `nature:` key**.
+- [x] T038 🧑 **HUMAN CHECKPOINT — stop here, do not tick from the prompt text** [US3] Drive `/ingest` → `/catalog` → `/cards` against the same scratch copy and edit `skills/ingest/SKILL.md`, `skills/catalog/SKILL.md` and `skills/cards/SKILL.md` until wave F passes **and** `python3 scripts/check_project.py /tmp/lk-demo --strict` exits 0. Confirm the incident document gets `nature: experience` and the handbook document gets **no `nature:` key**.
 
 **Checkpoint**: the prompts do what the checks say they do.
 
@@ -518,7 +518,7 @@ beside it (gates CHK007).
 
 <!-- sequential -->
 
-- [ ] T039 [US6] `docs/testing.md` — insert the twenty `/sources` rows **after line 193** (the existing row `4`), in the table's `| # | Step | Do this | Expect |` shape:
+- [x] T039 [US6] `docs/testing.md` — insert the twenty `/sources` rows **after line 193** (the existing row `4`), in the table's `| # | Step | Do this | Expect |` shape:
 
   | Row | Covers |
   |---|---|
@@ -550,7 +550,7 @@ already ships, and T040 adds `12-iv`, `12-v` and `12-vi`.
 
 <!-- parallel-group: 4 (max 3 concurrent) -->
 
-- [ ] T040 [P] [US6] `docs/testing.md` — add the four pipeline rows beside the steps they belong to:
+- [x] T040 [P] [US6] `docs/testing.md` — add the four pipeline rows beside the steps they belong to:
 
   | Row | Step | Covers |
   |---|---|---|
@@ -573,15 +573,15 @@ already ships, and T040 adds `12-iv`, `12-v` and `12-vi`.
 
   **⚠ Row-id collision, already resolved — do not reintroduce it**: plan.md used to name this row **`8h`**, but `8h` is **taken** — `docs/testing.md:211` is a `/learning-goal` row. The 8-series runs `8a … 8l`, so the next free id is **`8m`**. The 2026-09-08 remediation corrected every `8h` in the feature artifacts (`plan.md` ×2, `quickstart.md`, `checklists/gates.md` CHK002), so this task only has to **write `8m`** into `docs/testing.md`. Do **not** ship a duplicate id.
 
-- [ ] T041 [P] [US6] `docs/workflow.md` — three edits, no step-count sentence touched: **Step 1** gains the ordering sentence (the goal-fit assessment happens at registration, so writing `goal.md` first is worth it, and a goal written later does not re-judge the register — research R1); **Step 2** names **both** jobs of `/sources`; **Step 5** states the seam between `/sources --discover` and `/research-gaps` (same network, different output — proposed sources to read versus synthesised documents written into `knowledge/`). Also update the knowledge-frontmatter description where it is given, to include the optional `nature:` key.
+- [x] T041 [P] [US6] `docs/workflow.md` — three edits, no step-count sentence touched: **Step 1** gains the ordering sentence (the goal-fit assessment happens at registration, so writing `goal.md` first is worth it, and a goal written later does not re-judge the register — research R1); **Step 2** names **both** jobs of `/sources`; **Step 5** states the seam between `/sources --discover` and `/research-gaps` (same network, different output — proposed sources to read versus synthesised documents written into `knowledge/`). Also update the knowledge-frontmatter description where it is given, to include the optional `nature:` key.
 
-- [ ] T042 [P] [US6] `README.md` — the `/sources` table row names **both** jobs (register/list/remove **and** find sources for a stated goal). The pipeline stays **seven** steps; change no step-count sentence.
+- [x] T042 [P] [US6] `README.md` — the `/sources` table row names **both** jobs (register/list/remove **and** find sources for a stated goal). The pipeline stays **seven** steps; change no step-count sentence.
 
   *Genuinely parallel*: `docs/testing.md`, `docs/workflow.md` and `README.md` are three different files. T040 follows T039 only because both write `docs/testing.md`, and T039 is complete before this group starts.
 
 <!-- sequential -->
 
-- [ ] T043 [US6] Scope verification — confirm the diff touches **none** of: `docs/index.html` (the step strip at `:489-492` is a label, not a description — this is a recorded scoping decision, not an oversight), `assets/brand/*.typ`, the three rendered PNGs, `scripts/render_brand.py`, `tests/test_landing_page.py`, `.specify/memory/constitution.md`, `CLAUDE.md`, `docs/design.md`, `templates/*.typ`, `scripts/build_pdf.py`, `bin/lernkarten`. Confirm **seven steps** everywhere the pipeline is described (SC-011). Run `python3 scripts/check_docs.py` — `check_links` is the automated part of this wave.
+- [x] T043 [US6] Scope verification — confirm the diff touches **none** of: `docs/index.html` (the step strip at `:489-492` is a label, not a description — this is a recorded scoping decision, not an oversight), `assets/brand/*.typ`, the three rendered PNGs, `scripts/render_brand.py`, `tests/test_landing_page.py`, `.specify/memory/constitution.md`, `CLAUDE.md`, `docs/design.md`, `templates/*.typ`, `scripts/build_pdf.py`, `bin/lernkarten`. Confirm **seven steps** everywhere the pipeline is described (SC-011). Run `python3 scripts/check_docs.py` — `check_links` is the automated part of this wave.
 
 **Checkpoint**: every run-output requirement has a **named** row carrying its FR number.
 
@@ -593,11 +593,11 @@ already ships, and T040 adds `12-iv`, `12-v` and `12-vi`.
 
 <!-- sequential -->
 
-- [ ] T044 **The four PR gates**, in order, all green: `ruff check . && ruff format --check .` · `pytest` · `lernkarten check cards/example.yaml` · `python3 scripts/check_docs.py`. Ruff is not loosened; line length stays 100 (constitution XII).
-- [ ] T045 `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exits 0.
-- [ ] T046 Confirm T035 (`LERNKARTEN_E2E=1 pytest tests/test_e2e.py`) has been re-run **after** the final fixture state, since `DEMO_CARD_COUNT` moved. Also run `pytest tests/test_testdata.py` — it parses `skills/ingest/SKILL.md` literally (`:265-273`) and is the guard against T023 reflowing the wrong paragraph.
-- [ ] T047 `python3 scripts/deps.py --check` / `lernkarten deps --check` — confirm the runtime dependency set is **still exactly** `pyyaml==6.0.3`. Confirm `requirements-dev.txt` is unchanged. If either moved, **stop and flag back to plan.md**.
-- [ ] T048 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. Nothing was forced in with `git add -f`.
+- [x] T044 **The four PR gates**, in order, all green: `ruff check . && ruff format --check .` · `pytest` · `lernkarten check cards/example.yaml` · `python3 scripts/check_docs.py`. Ruff is not loosened; line length stays 100 (constitution XII).
+- [x] T045 `python3 scripts/check_project.py tests/fixtures/demo-project --strict` — exits 0.
+- [x] T046 Confirm T035 (`LERNKARTEN_E2E=1 pytest tests/test_e2e.py`) has been re-run **after** the final fixture state, since `DEMO_CARD_COUNT` moved. Also run `pytest tests/test_testdata.py` — it parses `skills/ingest/SKILL.md` literally (`:265-273`) and is the guard against T023 reflowing the wrong paragraph.
+- [x] T047 `python3 scripts/deps.py --check` / `lernkarten deps --check` — confirm the runtime dependency set is **still exactly** `pyyaml==6.0.3`. Confirm `requirements-dev.txt` is unchanged. If either moved, **stop and flag back to plan.md**.
+- [x] T048 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries. Nothing was forced in with `git add -f`.
 - [ ] T049 Open the pull request from `feat/goal-fit-sources` (`main` rejects direct pushes). The description **must** carry the constitution VII note required by plan.md's Constitution Check row VII: the demo fixture was **extended, never duplicated**, with **invented** archipelago material, and nothing is quoted from anyone. Commit subjects use the repo prefixes (`feat:`, `skill:`, `test:`, `docs:`, `fix:`).
 
 ---

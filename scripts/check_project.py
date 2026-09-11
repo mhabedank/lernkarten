@@ -36,6 +36,15 @@ SOURCE_TYPES = {
     "zotero": None,
     "research": None,
 }
+# The goal-fit verdict /sources reaches at registration is derived state and
+# stays out of the register: it was true of one goal at one moment, and a file
+# that carries it invites a later run to trust it instead of re-reading the goal.
+# A *list of forbidden names*, deliberately, and never an allowlist of permitted
+# keys: `check_sources` has always ignored keys it does not know — `login:` on a
+# web source relies on it — and an allowlist would invalidate every project on
+# disk carrying a key this repo has not thought of. What is forbidden is a
+# verdict on the entry, not extensibility.
+VERDICT_KEYS = ("fit", "assessed", "goal_fit", "discovered", "proposed_by")
 GOAL_KINDS = ("exam", "meeting", "interview", "self-study")
 GOAL_DEPTHS = ("awareness", "working", "expert")
 # A subtopic is either covered, wanted-but-uncovered, or unwanted. Absent means
@@ -52,6 +61,14 @@ CONTENT_STATES = ("sparse",)
 # dead weight either: /cards phrases a prompt about a chart differently from one
 # about a map.
 VISUAL_KINDS = ("diagram", "chart", "map", "none")
+# `nature:` on a knowledge document is /ingest's verdict on the *whole*
+# document: whether its subject is a reported case — an incident write-up, a
+# post-mortem, a case study — rather than a rule stated in general. Closed to one
+# value on purpose. The other state is the *absence* of the key, never a second
+# value: a document written before this key existed claims nothing either way,
+# and giving that state a name would make every project on disk say something it
+# never said. So there is no `nature: reference` and no `nature: none`.
+NATURES = ("experience",)
 CATALOG_STATUS = ("gap", "out of scope")
 LOCAL_TYPES = {"folder", "pdf"}
 ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*$")
@@ -365,6 +382,16 @@ def check_sources(project, report):
         else:
             ids.add(source_id)
 
+        # Before the type branch, which `continue`s: an entry with an unknown
+        # type still gets told about the verdict key it carries.
+        for forbidden in VERDICT_KEYS:
+            if forbidden in entry:
+                report.error(
+                    where,
+                    f"'{forbidden}' is not a key of a source entry — the goal-fit "
+                    "verdict is derived at registration and is never written down",
+                )
+
         kind = entry.get("type")
         if kind not in SOURCE_TYPES:
             report.error(where, f"unknown type {kind!r} — one of {', '.join(SOURCE_TYPES)}")
@@ -393,14 +420,17 @@ def check_sources(project, report):
 def check_knowledge(project, source_ids, report):
     """knowledge/<source-id>/*.md: one document per file, frontmatter intact.
 
-    Returns the paths of the documents marked `content: sparse`, relative to the
-    project — the catalog check needs them to see a subtopic that rests on
-    nothing but cover sheets.
+    Returns two sets of resolved document paths: the ones marked
+    `content: sparse` and the ones marked `nature: experience`. Both travel the
+    same road for the same reason — the catalog check is where a subtopic
+    resting on nothing but cover sheets, or on nothing but reported cases,
+    becomes visible, and the card check is where it has a consequence.
     """
     root = project / "knowledge"
     sparse = set()
+    experience = set()
     if not root.is_dir():
-        return sparse
+        return sparse, experience
     for folder in sorted(p for p in root.iterdir() if p.is_dir()):
         if source_ids and folder.name not in source_ids:
             report.error(
@@ -424,6 +454,13 @@ def check_knowledge(project, source_ids, report):
             if not DATE.match(ingested):
                 shown = ingested or "missing"
                 report.error(where, f"'ingested' is not a date (YYYY-MM-DD): {shown}")
+            nature = head.get("nature")
+            if nature is not None and str(nature) not in NATURES:
+                report.error(
+                    where,
+                    f"'nature: {nature}' is not one of {', '.join(NATURES)}",
+                )
+                nature = None
             content = head.get("content")
             if content is not None and str(content) not in CONTENT_STATES:
                 report.error(
@@ -445,8 +482,10 @@ def check_knowledge(project, source_ids, report):
                 report.warn(where, "barely any text — did the extraction work?")
             if content == "sparse":
                 sparse.add(path.resolve())
+            if nature == "experience":
+                experience.add(path.resolve())
             _check_figures(project, folder.name, where, head, body, report)
-    return sparse
+    return sparse, experience
 
 
 def _check_figures(project, source, where, head, body, report):
@@ -708,11 +747,11 @@ def check_graph(catalog, subtopics, report):
                 )
 
 
-def check_catalog(project, report, required=(), areas=(), sparse=()):
+def check_catalog(project, report, required=(), areas=(), sparse=(), experience=()):
     """catalog/topics.md: topics with subtopics, descriptions and live links."""
     path = project / "catalog" / "topics.md"
     if not path.exists():
-        return set(), {}, {}
+        return set(), {}, {}, set()
 
     text = path.read_text(encoding="utf-8")
     catalog = parse_catalog(text)
@@ -742,6 +781,11 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
     # addressable. Absent means silence, which is every catalog written before
     # the line existed.
     terms = {}
+    # Subtopics every one of whose references is a `nature: experience`
+    # document. *All*, never *any*: a subtopic with one incident write-up and
+    # three handbook chapters may legitimately carry a card stating the
+    # handbook's general rule, and demanding attribution there would be wrong.
+    experience_only = set()
     for entry in catalog.subtopics:
         status = entry.attribute("status")
         if status in CATALOG_STATUS:
@@ -773,23 +817,31 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
                 "'Status: gap' — a branch with nothing behind it is either a gap "
                 "or a mistake",
             )
-        if sparse and status is None:
+        resolved = []
+        if sparse or experience:
             resolved = [
                 (path.parent / target.split("#", 1)[0]).resolve()
                 for target in LINK.findall(references)
                 if not target.startswith(("http://", "https://", "mailto:", "#"))
             ]
-            if resolved and all(document in sparse for document in resolved):
-                # A warning rather than an error: it is a real subtopic backed by
-                # real documents, and the user may know the cover sheet is all
-                # there is. What they may not do is find out by accident.
-                report.warn(
-                    "catalog/topics.md",
-                    f"subtopic '{entry.name}': every reference is marked "
-                    "'content: sparse' — a cover sheet or a form template is not "
-                    "enough to build cards from. Treat this as a gap, or ingest "
-                    "the document itself",
-                )
+        if experience and resolved and all(document in experience for document in resolved):
+            experience_only.add(entry.name)
+        if (
+            sparse
+            and status is None
+            and resolved
+            and all(document in sparse for document in resolved)
+        ):
+            # A warning rather than an error: it is a real subtopic backed by
+            # real documents, and the user may know the cover sheet is all
+            # there is. What they may not do is find out by accident.
+            report.warn(
+                "catalog/topics.md",
+                f"subtopic '{entry.name}': every reference is marked "
+                "'content: sparse' — a cover sheet or a form template is not "
+                "enough to build cards from. Treat this as a gap, or ingest "
+                "the document itself",
+            )
 
     check_graph(catalog, subtopics, report)
 
@@ -820,7 +872,7 @@ def check_catalog(project, report, required=(), areas=(), sparse=()):
                 "catalog/topics.md",
                 f"goal.md requires '{topic}', which is nowhere in the catalog — re-run /catalog",
             )
-    return subtopics, marked, terms
+    return subtopics, marked, terms, experience_only
 
 
 def _check_ids(cards, where, ids_seen, report, strict):
@@ -1099,7 +1151,9 @@ def _check_anchors(anchor_text, terms, report):
         )
 
 
-def check_cards(project, subtopics, report, marked=None, terms=None, strict=False):
+def check_cards(
+    project, subtopics, report, marked=None, terms=None, strict=False, experience_only=()
+):
     """cards/*.yaml: the schema /print reads, plus the card-style limits.
 
     The limits follow the grid the deck declares, because "too long" is a
@@ -1239,7 +1293,20 @@ def check_cards(project, subtopics, report, marked=None, terms=None, strict=Fals
                 f"{anchor_text.get((where, subtopic), '')} {front} {back}"
             )
             if not card.get("source"):
-                report.warn(where, f"card {i}: no source reference")
+                if subtopic in (experience_only or ()):
+                    # An error, not a warning. The warning below fires for every
+                    # card without a `source:` anyway, so a warning here would
+                    # say nothing new and --strict would flatten the difference.
+                    # What is wrong is not a missing reference but a card
+                    # stating one harbour's outage as though it were the rule.
+                    report.error(
+                        where,
+                        f"card {i}: subtopic '{subtopic}' rests only on experience "
+                        "reports, so the card has to name the case it comes from — "
+                        "give it a 'source:'",
+                    )
+                else:
+                    report.warn(where, f"card {i}: no source reference")
             check_markup(where, i, front, back, report)
         _check_counts(where, data["cards"] or [], language, report)
         _check_shape(where, data["cards"] or [], language, report)
@@ -1322,9 +1389,19 @@ def check_markup(where, i, front, back, report):
 def check(project, report, strict=False):
     required, areas = check_goal(project, report)
     source_ids = check_sources(project, report)
-    sparse = check_knowledge(project, source_ids, report)
-    subtopics, marked, terms = check_catalog(project, report, required, areas, sparse)
-    check_cards(project, subtopics, report, marked, terms=terms, strict=strict)
+    sparse, experience = check_knowledge(project, source_ids, report)
+    subtopics, marked, terms, experience_only = check_catalog(
+        project, report, required, areas, sparse, experience
+    )
+    check_cards(
+        project,
+        subtopics,
+        report,
+        marked,
+        terms=terms,
+        strict=strict,
+        experience_only=experience_only,
+    )
     return report
 
 

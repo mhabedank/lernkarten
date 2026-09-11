@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CLI = ROOT / "bin" / "lernkarten"
 DEMO = ROOT / "tests" / "fixtures" / "demo-project"
 CARDS = sorted(str(p) for p in (DEMO / "cards").glob("*.yaml"))
-DEMO_CARD_COUNT = 33
+DEMO_CARD_COUNT = 34
 
 # How many cards a press sheet holds, per grid.
 A7_UP, A8_UP = 8, 16
@@ -91,8 +91,8 @@ def pdf_pages(path):
         (1, A7_UP, 2),  # one card still costs a whole sheet, front and back
         (8, A7_UP, 2),  # exactly full
         (9, A7_UP, 4),  # one over, and the second sheet is whole
-        (33, A7_UP, 10),  # the demo deck today
-        (33, A8_UP, 6),  # the same deck, denser grid
+        (34, A7_UP, 10),  # the demo deck today
+        (34, A8_UP, 6),  # the same deck, denser grid
         (16, A8_UP, 2),
         (17, A8_UP, 4),
     ],
@@ -1328,13 +1328,18 @@ def test_four_dividers_open_a_further_sheet_on_a_nearly_full_one(tmp_path):
 def test_three_dividers_share_a_sheet_with_a_short_deck(tmp_path):
     """FR-004/FR-012, the other branch, from the same corpus.
 
-    The Signals topic is two rows at 16 up, which leaves more than the 1.25
-    rows a one-row block of three needs — so the block costs no paper at all.
-    Compared against the same deck built without dividers, never against a
-    typed number: signals.yaml may grow.
+    The Geography topic is five cards — two rows at 16 up, leaving two free
+    where the one-row block of three needs 1.25. Compared against the same deck
+    built without dividers, never against a typed number.
+
+    It used to ride on Signals, which was exactly eight cards: the *last* count
+    that still shares at three dividers. The experience-report card of #44 took
+    it to nine, three filled rows, one free — 1.0 rows against the 1.25 needed —
+    and the branch flipped. Geography has room for four more cards before it
+    does the same.
     """
     plain, shared = tmp_path / "plain.pdf", tmp_path / "shared.pdf"
-    common = ("build", *CARDS, "--grid", "a8", "--topic", "Signals")
+    common = ("build", *CARDS, "--grid", "a8", "--topic", "Geography")
     assert run(*common, "-o", str(plain)).returncode == 0
     result = run(*common, "-o", str(shared), "--dividers", "3")
     assert result.returncode == 0, result.stderr

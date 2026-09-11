@@ -885,7 +885,7 @@ def test_a_two_parent_subtopic_counts_once(tmp_path):
 
 def test_also_covers_is_not_parsed_as_a_subtopic(tmp_path):
     """C-9 again: an `Also covers:` line is a topic attribute, not a heading."""
-    subtopics, marked, terms = check_project.check_catalog(
+    subtopics, marked, terms, experience_only = check_project.check_catalog(
         project(tmp_path, catalog=GRAPH_CATALOG), check_project.Report()
     )
     assert subtopics == {"Rhythm of the tide", "Access control"}, subtopics
@@ -1983,3 +1983,147 @@ def test_an_item_named_only_on_its_own_card_is_still_an_orphan(tmp_path):
     report = check(project(tmp_path, cards=SELF_NAMING_LIST_CARDS))
     said = messages(report)
     assert "card 1: 'Amber' is enumerated and never named" in said, said
+
+
+# --- Wave A: `nature:` on a knowledge document (FR-015, FR-031) ------------
+
+EXPERIENCE_KNOWLEDGE = """---
+source: field-notes
+document: "The night the harbour light failed"
+path: "raw/a.md"
+nature: experience
+ingested: 2026-08-14
+---
+
+""" + ("Enough text to look like a real extraction. " * 10)
+
+
+def test_an_unknown_nature_value_is_reported(tmp_path):
+    """A1 — a marker nothing can act on is worse than no marker.
+
+    Same reasoning as `content:`, and the message has to carry the same three
+    things: which document, what it said, and what it may say instead.
+    """
+    knowledge = EXPERIENCE_KNOWLEDGE.replace("nature: experience", "nature: anecdote")
+    report = check(project(tmp_path, knowledge=knowledge))
+    said = messages(report)
+    assert "knowledge/field-notes/a.md" in said, said
+    assert "anecdote" in said, said
+    assert "experience" in said, "the message does not name the allowed set: " + said
+
+
+def test_a_document_marked_experience_is_accepted(tmp_path):
+    """A2 — the one value the vocabulary has."""
+    report = check(project(tmp_path, knowledge=EXPERIENCE_KNOWLEDGE))
+    assert not report.errors, messages(report)
+
+
+def test_a_project_with_no_nature_key_is_untouched(tmp_path):
+    """A3 — absence is never a finding, and that is the whole compatibility promise.
+
+    `nature:` absent means nothing was claimed about the document — not that it
+    is *not* an experience report. Every project written before this key existed
+    is in that state, so a finding here would break all of them at once.
+    """
+    report = check(project(tmp_path))
+    assert not report.errors, messages(report)
+    assert not report.warnings, " | ".join(report.warnings)
+
+
+# --- Wave A: no verdict ever lands on a sources.yaml entry (FR-007) --------
+
+
+@pytest.mark.parametrize("key", ["fit", "assessed", "goal_fit", "discovered", "proposed_by"])
+def test_a_verdict_key_on_a_source_entry_is_reported(tmp_path, key):
+    """A5 — the goal-fit assessment is derived state and stays out of the file.
+
+    One case per name, so a failure says *which* key stopped being refused
+    rather than "the verdict check broke".
+    """
+    sources = GOOD_SOURCES + f"    {key}: whatever\n"
+    report = check(project(tmp_path, sources=sources))
+    said = messages(report)
+    assert "sources.yaml [field-notes]" in said, said
+    assert f"'{key}'" in said, said
+
+
+def test_an_unknown_key_on_a_source_entry_is_still_ignored(tmp_path):
+    """A6 — five names are refused, not unknown keys in general.
+
+    `login:` is a real key on the shipped fixture's `harbour-office-members`
+    entry and `check_sources` has always ignored it. An allowlist of permitted
+    keys would invalidate that entry and every project on disk carrying a key
+    this repo has not thought of.
+    """
+    sources = GOOD_SOURCES + "    login: true\n    note: 'members only'\n    depth: 1\n"
+    report = check(project(tmp_path, sources=sources))
+    assert not report.errors, messages(report)
+
+
+# --- Wave B: a card off an experience-only subtopic names its case (FR-011) ---
+
+EXPERIENCE_ONLY_CATALOG = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md)
+"""
+
+MIXED_CATALOG = """# Topics
+
+## Tides
+
+### Rhythm of the tide
+How the tide moves.
+References: [a](../knowledge/field-notes/a.md), [b](../knowledge/field-notes/b.md)
+"""
+
+UNATTRIBUTED_CARDS = """topic: 'Tides'
+language: english
+cards:
+  - subtopic: 'Rhythm of the tide'
+    front: 'How long is a tidal day?'
+    back: '24 h 50 min.'
+"""
+
+
+def experience_project(tmp_path, catalog=EXPERIENCE_ONLY_CATALOG, cards=UNATTRIBUTED_CARDS):
+    """A project whose one document is an experience report."""
+    return project(tmp_path, knowledge=EXPERIENCE_KNOWLEDGE, catalog=catalog, cards=cards)
+
+
+def test_a_card_off_an_experience_only_subtopic_needs_its_case_named(tmp_path):
+    """B1 — a single harbour's outage is evidence about that outage.
+
+    An error rather than a warning: `check_cards` already warns "no source
+    reference" for every card without one, so a warning here would say nothing
+    new and `--strict` would flatten the distinction.
+    """
+    report = check(experience_project(tmp_path))
+    said = messages(report)
+    assert said, "a card stating a single reported case as a general rule must be an error"
+    assert "cards/tides.yaml" in said, said
+    assert "card 1" in said, said
+    assert "Rhythm of the tide" in said, said
+
+
+def test_the_same_card_with_a_source_passes(tmp_path):
+    """B2 — the attribution is the existing optional `source:` key, not a new one."""
+    cards = UNATTRIBUTED_CARDS + "    source: 'Fenmouth harbour office, 2021'\n"
+    report = check(experience_project(tmp_path, cards=cards))
+    assert not report.errors, messages(report)
+
+
+def test_one_experience_reference_among_others_is_not_experience_only(tmp_path):
+    """B3 — 'all', not 'any', and it is its own case rather than a corollary of B1.
+
+    A subtopic with one incident write-up and one handbook chapter may
+    legitimately carry a card stating the handbook's general rule, and demanding
+    attribution there would be wrong.
+    """
+    root = experience_project(tmp_path, catalog=MIXED_CATALOG)
+    (root / "knowledge" / "field-notes" / "b.md").write_text(GOOD_KNOWLEDGE, encoding="utf-8")
+    report = check(root)
+    assert not report.errors, messages(report)

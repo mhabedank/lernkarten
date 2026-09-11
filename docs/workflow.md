@@ -55,6 +55,13 @@ silently, contradictions are listed and put to you one at a time.
 Skip this step and everything below still works. What you lose is the criterion
 that makes a gap a gap.
 
+**Worth doing first, though.** `/sources` weighs every source against `goal.md`
+at the moment it registers it, so a goal that already exists is what makes that
+judgement possible at all. The judgement belongs to registration and nothing
+re-runs it later: write `goal.md` afterwards and the sources already in the
+register stay unjudged. Registering one again by hand is the way to get a
+verdict on it.
+
 ## Step 2 — `/sources`: register your material
 
 ```
@@ -86,6 +93,29 @@ the entry (already ingested texts stay where they are).
 | `/sources https://en.wikipedia.org/wiki/Bayes%27_theorem` | web page |
 | `/sources add my Zotero collection "ML"` | Zotero collection |
 
+**`/sources` does two jobs.** The first is the register above: you name
+material, it records it. The second is *finding* material — `/sources
+--discover`, or the same request in words — which goes looking on the web for
+sources that serve the goal in `goal.md`, proposes each one with what it is,
+what class of material it is and what it is *not*, and writes nothing until you
+pick. You get it only when you ask for it at invocation: registering, listing
+and removing neither enter it nor mention it.
+
+**With a `goal.md` present**, registration also says what it expects the source
+to contribute — naming a required topic or area from the goal, or warning that
+it serves none of them and quoting the goal line it conflicts with. That warning
+is advisory: the entry is written either way, without a confirmation prompt in
+between, and no verdict is stored in `sources.yaml`. Without `goal.md` there is
+no assessment at all.
+
+**Where the network is reached.** Registering a source you named and listing the
+register make no network request whatsoever — they read `sources.yaml` and the
+paths you gave. Going *looking* for material you did not choose is the part that
+goes online, and it happens in exactly two places: `/sources --discover` and
+`/research-gaps`. Fetching what you *did* name is a different thing again, and
+that is `/ingest`, which reaches web pages and the Zotero API over HTTP as it
+always has.
+
 ## Step 3 — `/ingest`: read the content
 
 ```
@@ -105,6 +135,14 @@ ingested: 2026-08-12
 
 Conditional probability …
 ```
+
+One optional key can join that block: `nature: experience`, written when the
+document is an **experience report** — an incident write-up, a post-mortem, a
+case study, a company blog post about something that happened. It marks the
+document as evidence about one case rather than a statement of a general rule,
+and `/catalog` and `/cards` read it later so a card says which case it came
+from. A document that is not one carries no `nature:` key at all, and older
+projects that have none anywhere stay valid.
 
 The text is not summarised — completeness is what counts here; condensing
 happens in the next step. Scanned PDFs without a text layer are read as images,
@@ -239,6 +277,14 @@ gap.
 No network? It reports which gaps it could not close and writes nothing. It
 never fills a gap from the model's own memory — a card you cannot check is
 worse than a gap you can see.
+
+**This is not `/sources --discover`.** Both go on the web; what comes back
+differs. Discovery proposes **sources for you to read** and registers only the
+ones you pick — it writes nothing into `knowledge/` and creates no `research`
+entry. `/research-gaps` writes **documents**: one synthesised text per gap into
+`knowledge/<id>/`, with a `type: research` entry beside it. Same network,
+different output. Reach for discovery when you are short of material; reach for
+`/research-gaps` when the catalog already knows what is missing.
 
 ## Step 6 — `/cards`: write the cards
 
