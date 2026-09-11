@@ -1144,6 +1144,52 @@ def check_discovery_is_not_offered_elsewhere(errors):
             )
 
 
+# The card printed `1/2` on the front and `2/2` on the back until #75, which is
+# one bit encoded a third time: the header marker is red *and* a hollow circle,
+# the footer box is hollow against solid, and both of those survive a mono
+# photocopy. The text did not add a signal, so it went — and a document still
+# describing it describes a card nobody can print. The fourth gate of this
+# shape, for the reason the third one's comment gives.
+#
+# The token refuses a digit or a slash on either side. `scripts/leitner.py`
+# documents the compartment spacing as "1/2/5/8/14 cm", so a naive `\b[12]/2\b`
+# would ship a false positive on the day it landed.
+SIDE_MARKER = re.compile(r"(?<![\d/])[12]\s*/\s*2(?![\d/])")
+# What the card used to do is history, not a promise. Same idiom as
+# NOT_A_DEFAULT_CLAIM above, and it reads the paragraph rather than the line.
+MARKER_HISTORY = re.compile(r"\bused to\b|\bwas\b|\buntil\b|since v|no longer|\bprinted\b", re.I)
+
+
+def marker_gated_files():
+    """Everywhere the claim could live — the landing page included.
+
+    `gated_files()` reaches markdown, Python and Typst; three facsimile cards
+    and one paragraph of this claim lived in `docs/index.html`, which no gate in
+    this file could see. HTML joins the list here rather than in `gated_files()`
+    because the A7 sweep that helper serves was checked against its own file
+    set, and widening it silently would change what those gates read.
+    """
+    return gated_files() + sorted((ROOT / "docs").glob("*.html"))
+
+
+def check_printed_side_marker(errors):
+    """No file may say the card prints `1/2` or `2/2`; it stopped in #75."""
+    for path in marker_gated_files():
+        reported = set()
+        for claim, context, _, _, offsets, _ in windows(path):
+            token = SIDE_MARKER.search(claim)
+            if not token or MARKER_HISTORY.search(context):
+                continue
+            line = line_of(token.start(), offsets)
+            if line not in reported:
+                reported.add(line)
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{line}: '{token.group()}' is given as "
+                    "something the card prints — the face is said by the header marker "
+                    "and the footer box, and the machine-readable signal is --face-map"
+                )
+
+
 def main():
     errors = []
     check_required_files(errors)
@@ -1160,6 +1206,7 @@ def main():
     check_print_skill_relays_setup(errors)
     check_import_graph(errors)
     check_print_order(errors)
+    check_printed_side_marker(errors)
     check_network_claim_is_not_exclusive(errors)
     check_sources_skill_reads_the_goal(errors)
     check_sources_skill_states_the_archive_reach(errors)

@@ -152,24 +152,24 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 
 ### 🔴 Red
 
-- [ ] T038 🔴 [P] [US4] Case in `tests/test_check_docs.py`: a synthetic doc saying the card prints `1/2` / `2/2` is reported with its file and line — fails, the check does not exist
-- [ ] T039 🔴 [P] [US4] Case in `tests/test_check_docs.py`: `1/2/5/8/14 cm` is **not** reported. This is `scripts/leitner.py:25` today, so a naive `\b[12]/2\b` ships a false positive on day one (research R8)
-- [ ] T040 🔴 [P] [US4] Case in `tests/test_check_docs.py`: a historical sentence ("the card printed `1/2` until v0.9.2") is not reported — the file's existing exemption idiom (`was`, `until`, `since v`, `no longer`) applies here too
+- [X] T038 🔴 [P] [US4] Case in `tests/test_check_docs.py`: a synthetic doc saying the card prints `1/2` / `2/2` is reported with its file and line — fails, the check does not exist
+- [X] T039 🔴 [P] [US4] Case in `tests/test_check_docs.py`: `1/2/5/8/14 cm` is **not** reported. This is `scripts/leitner.py:25` today, so a naive `\b[12]/2\b` ships a false positive on day one (research R8)
+- [X] T040 🔴 [P] [US4] Case in `tests/test_check_docs.py`: a historical sentence ("the card printed `1/2` until v0.9.2") is not reported — the file's existing exemption idiom (`was`, `until`, `since v`, `no longer`) applies here too
 
 ### 🟢 Green
 
-- [ ] T041 [US4] Add `check_printed_side_marker(errors)` to `scripts/check_docs.py`: token `(?<![\d/])[12]\s*/\s*2(?![\d/])`, the historical exemption, an error naming file, line and what the card does now. Register it with the other checks
-- [ ] T042 [US4] Widen that check's file set to `gated_files() + sorted((ROOT / "docs").glob("*.html"))` — `markdown_files()` and `gated_files()` reach neither `docs/index.html` nor any HTML, and three facsimile cards there carry the claim (research R8)
+- [X] T041 [US4] Add `check_printed_side_marker(errors)` to `scripts/check_docs.py`: token `(?<![\d/])[12]\s*/\s*2(?![\d/])`, the historical exemption, an error naming file, line and what the card does now. Register it with the other checks
+- [X] T042 [US4] Widen that check's file set to `gated_files() + sorted((ROOT / "docs").glob("*.html"))` — `markdown_files()` and `gated_files()` reach neither `docs/index.html` nor any HTML, and three facsimile cards there carry the claim (research R8)
 
 ### The documents
 
-- [ ] T043 [P] [US4] `docs/design.md`: the footer row of the band table (line ~101), the id paragraph (~112) and the no-id sentence (~123). Add the *reason* — the face was encoded three times, two of them colour-plus-shape, and the third has moved into the document. Leave line 99 alone: the header's red circle and yellow disc are still the side marker
-- [ ] T044 [P] [US4] `docs/workflow.md` (~309): the card description
-- [ ] T045 [P] [US4] `docs/index.html`: the three `card__id` values (~489, ~611, ~635) and the footer-band paragraph (~651). While editing those exact strings, give the facsimiles valid five-character Crockford ids — `example-3` and `probability-3` are the format `docs/design.md` says was replaced (spec Assumptions)
-- [ ] T046 [P] [US4] `docs/testing.md`: rewrite the footer row (step 23a) — the id is now the whole block, and the measured support (52.80 pt against a 92.85 pt wordmark) still holds
-- [ ] T047 [P] [US4] `docs/testing.md`: document `--face-map` where contributors read, including that the print-order tests no longer need `pdftotext`
-- [ ] T048 [P] [US4] `docs/testing.md`: add the manual row for the empty band — no ids, `--no-logo`, both grids: one rule across the top, nothing else, the band's height unchanged
-- [ ] T049 [P] [US4] `templates/divider.typ` (line 3): the comment says "a side marker would be false". Still true of the header marker; reword so it does not read as a reference to text the card no longer prints
+- [X] T043 [P] [US4] `docs/design.md`: the footer row of the band table (line ~101), the id paragraph (~112) and the no-id sentence (~123). Add the *reason* — the face was encoded three times, two of them colour-plus-shape, and the third has moved into the document. Leave line 99 alone: the header's red circle and yellow disc are still the side marker
+- [X] T044 [P] [US4] `docs/workflow.md` (~309): the card description
+- [X] T045 [P] [US4] `docs/index.html`: the three `card__id` values (~489, ~611, ~635) and the footer-band paragraph (~651). While editing those exact strings, give the facsimiles valid five-character Crockford ids — `example-3` and `probability-3` are the format `docs/design.md` says was replaced (spec Assumptions)
+- [X] T046 [P] [US4] `docs/testing.md`: rewrite the footer row (step 23a) — the id is now the whole block, and the measured support (52.80 pt against a 92.85 pt wordmark) still holds
+- [X] T047 [P] [US4] `docs/testing.md`: document `--face-map` where contributors read, including that the print-order tests no longer need `pdftotext`
+- [X] T048 [P] [US4] `docs/testing.md`: add the manual row for the empty band — no ids, `--no-logo`, both grids: one rule across the top, nothing else, the band's height unchanged
+- [X] T049 [P] [US4] `templates/divider.typ` (line 3): the comment says "a side marker would be false". Still true of the header marker; reword so it does not read as a reference to text the card no longer prints
 
 **Checkpoint**: `python3 scripts/check_docs.py` green, and no document, comment or facsimile still promises the marker.
 

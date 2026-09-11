@@ -1,6 +1,8 @@
 // A compartment divider. Card-width, 1.5 mm taller, and deliberately not a card:
-// it carries no user text, no id, no topic label and neither encoding of a
-// card's side — it has no front and no back, so a side marker would be false.
+// it carries no user text, no id, no topic label and neither of the markers
+// that say which face you hold — it has no front and no back, so either would
+// be false. It emits no <face> label for the same reason: the face map is a map
+// of cards, and a page that holds only dividers holds no face at all.
 //
 // What it does carry is a colour band running out past its own cut line, an
 // oversized numeral, the interval and one rule line. The numeral is what
