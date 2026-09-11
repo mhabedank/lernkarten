@@ -6,7 +6,12 @@
 **Re-validated**: 2026-09-07, after the `/speckit-clarify` session; again after round 2
 (the explicit-request rule); again on 2026-09-08 after round 3 (the material-class-neutral
 discovery contract); and again on 2026-09-08 after round 4 (the *addendum* rename and the
-per-candidate class of material)
+per-candidate class of material); and **again on 2026-09-08 after the post-analysis
+remediation**, which rewrote FR-013 from a prescribed phrase into four required
+contents, reworded FR-019's second property the same way, and bound FR-013 to
+`/cards` as well as `/catalog`; and **once more on 2026-09-08 after the
+cross-model review remediation**, which touched the spec in exactly two places —
+US6 scenario 1's `docs/workflow.md` wording and one added Assumptions bullet
 
 ## Content Quality
 
@@ -144,6 +149,53 @@ per-candidate class of material)
   `[NEEDS CLARIFICATION]` markers. New in round 3: FR-039, SC-016, US4 scenario 12, and the
   *Material-class addendum* key entity. New in round 4: the FR-017 class field, FR-040, SC-017,
   US4 scenario 13, two edge cases, one Assumptions bullet and one Format Contracts row.
+- **Re-validation after the 2026-09-08 remediation — every box still ticks.**
+  - *Requirements are testable and unambiguous*: FR-013 is **more** testable than
+    before. Four named contents can each be looked for in a run; one prescribed
+    phrase could be produced without the reader understanding anything. The
+    checkable shape is the four contents; the wording is free, which is what a
+    prompt-level requirement can honestly demand.
+  - *No implementation details leak*: the worked example in FR-013 is run output
+    in the demo project's invented vocabulary (signals, flags, harbours, tides,
+    field notes), not a technology and not a real field of study — constitution
+    VII holds.
+  - *Counts unchanged*: 6 user stories, 40 numbered FRs (39 active), 17 success
+    criteria. The remediation added **no** requirement and **no** criterion; it
+    changed what two of them demand and where one of them is routed.
+  - *Scope unchanged*: no new behaviour. FR-013 already bound `/catalog` **and**
+    `/cards` in US3 scenario 5; the remediation made the plan and the tasks say
+    so too, and gave the `/cards` half its own manual row (**12-iv**).
+- **Re-validation after the 2026-09-08 review remediation — every box still ticks.**
+  - *Counts unchanged*: 6 user stories, 40 numbered FRs (39 active, FR-028
+    withdrawn and not reused), 17 success criteria, **zero**
+    `[NEEDS CLARIFICATION]` markers. The remediation added no requirement, no
+    criterion and no user story; almost all of it landed in `plan.md`,
+    `tasks.md`, `quickstart.md` and `checklists/gates.md`.
+  - *Two spec edits, both corrections rather than changes of meaning.* **US6
+    scenario 1** said `docs/workflow.md` is "not touched by this feature" while
+    scenario 2 and task T041 edit it in three places; it now names *the
+    seven-step description in* `docs/workflow.md`, which is what spec line 15
+    always meant and what the scope check T043 actually verifies. And one
+    **Assumptions** bullet was added, recording why FR-037 names four skills
+    and how `/learning-goal` and `/research-gaps` are held instead — the second
+    of them by a manual row alone, because FR-034 obliges it to carry the token
+    a gate would otherwise forbid. Neither edit changes an obligation.
+  - *Requirements are testable and unambiguous*: **five became more so.**
+    FR-003, FR-005, FR-006 and FR-009 gained a check on the prompt sentence that
+    carries them (cases C6–C9) and FR-007 gained one on the register (A5/A6).
+    The spec text of all five is unchanged; what changed is that the plan stopped
+    calling them unverifiable when a check was available. Where the check is
+    weaker than the requirement — all four of C6–C9 — the plan now says so in the
+    routing cell rather than letting the case id imply coverage.
+  - *Success criteria are measurable*: **SC-016 became measurable for the first
+    time.** It asserts that deleting the addendum from `skills/sources/SKILL.md`
+    fails exactly one check; the artifact that tested it ran against synthetic
+    text, where the claim cannot be false. It now excises the sub-section from
+    the shipped file, by heading.
+  - *Scope unchanged*: no new behaviour, no new format, no new dependency. The
+    one requirement whose *verification* moved rather than its text is FR-033,
+    whose manual row was rewritten from an unobservable ("makes no network
+    request") to an observable (the three ordinary invocations re-run offline).
 - **Carried into planning**: `skills/research-gaps/SKILL.md:17` says `/research-gaps` is "the
   only step that reaches the network", which is already false — `skills/ingest/SKILL.md:69`
   fetches web pages with WebFetch and the Zotero path reaches the API over HTTP. FR-034 makes

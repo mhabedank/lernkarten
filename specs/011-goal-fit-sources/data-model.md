@@ -9,7 +9,7 @@ Formats are in [contracts/](contracts/). The ordered red assertions are in
 
 | Entity | Lives | Assertable by |
 |---|---|---|
-| Goal-fit assessment | the run only | `check_docs.py` (the rule is in the prompt) + named manual rows |
+| Goal-fit assessment | the run only | `check_docs.py` cases C1–C3 and C6–C9 — each asserts that the **rule is stated** in `skills/sources/SKILL.md`, never that a given run said it — plus named manual rows for the behaviour. Its *absence* from `sources.yaml` is asserted by `check_project.py` cases A5/A6 (FR-007) |
 | Candidate source | the run only, until picked | `check_docs.py` + named manual rows; once picked it is an ordinary `sources.yaml` entry that today's `check_project.py` already validates |
 | Credibility sentence | inside a candidate | as above |
 | Experience report | **on disk** — `nature: experience` | `check_project.py`, by name and by allowed value |
@@ -155,7 +155,8 @@ removal, and not on a goal written later (see
    it used.
 
 A source may hit 1 and 2 at once — serving one required topic and sitting
-squarely inside `## Out of scope` for another. The run says both (spec.md:193).
+squarely inside `## Out of scope` for another. The run says both (spec.md
+§ Edge Cases, *A source that is both*).
 
 **Absent `goal.md`** ⇒ the entity does not exist. No line, no warning, no key,
 and at most one pointer at `/learning-goal` per run.
@@ -237,17 +238,27 @@ also carry the two properties the usual proxies miss (FR-019):
 1. a company account of its own incident is a **primary source and an interested
    one** — nobody else has the timeline, and nobody has a stronger interest in
    how it reads;
-2. published incidents are a **selected sample** — companies publish the
-   failures they recovered from.
+2. material of this kind is published only by the parties who came through the
+   incident, so the cases that ended badly are not among what can be found.
+
+Both are requirements on **what the sentence says**, never on the words: the
+phrase *"a selected sample"* is neither required nor, on its own, enough
+(FR-019). The sentence stays one sentence — saying property 2 plainly costs a
+clause.
 
 A candidate that is **not** practitioner material carries the neutral sentence
 and nothing more: no addendum reaches outside its own class. Which candidates
 those are is legible because §4's `class` field says so — the same judgement,
 written down once and used twice.
 
-The same selected-sample sentence reappears in `/catalog` and `/cards` output
-for a subtopic that rests only on incident reports (FR-013), which is why it is
-one entity here and not two.
+**The same fact, at a different place and a different length.** Property 2 is
+the one-clause form of what FR-013 makes `/catalog` **and** `/cards` say in four
+contents about a subtopic that rests only on such reports. Same reasoning, two
+audiences: here it qualifies a source somebody is about to register, there it
+qualifies a deck somebody is about to learn from — which is why the second one
+is longer and names what would balance it. The worked example of the FR-013
+warning is written **once**, in [spec.md § FR-013](spec.md), and is not restated
+here.
 
 ---
 
@@ -257,8 +268,10 @@ Material whose subject is what happened in one situation: an incident
 post-mortem, a case study, a fuck-up report, an application scenario, a company
 or engineering blog post about an outage.
 
-It is a **primary source and an interested one**, drawn from a **selected
-sample**, and valuable exactly where a reference work is thin — which is why
+It is a **primary source and an interested one**; it exists at all only because
+somebody came through the incident and chose to write it up, so the cases that
+ended badly are missing from any collection of it; and it is valuable exactly
+where a reference work is thin — which is why
 `depth: expert` and `kind: interview` weigh it up and `kind: exam` with
 `depth: awareness` weighs it down.
 

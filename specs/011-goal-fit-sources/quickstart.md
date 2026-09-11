@@ -28,7 +28,8 @@ lernkarten check cards/example.yaml
 python3 scripts/check_docs.py
 ```
 
-`check_docs.py` is the one that changes behaviour here. It gains eight checks,
+`check_docs.py` is the one that changes behaviour here. It gains eight checks
+(cases C6–C9 extend one of them rather than adding a ninth),
 and **it will fail on a clean checkout until `skills/research-gaps/SKILL.md:17`
 is rewritten** — that is wave G3, and it is the cleanest red assertion in the
 feature because it fails against the shipped repository with nothing fabricated.
@@ -78,8 +79,10 @@ and cards. After wave H the fixture additionally carries:
   — the only document in the corpus that has the key at all;
 - one subtopic under `## Signals, flags and the radio` whose **only** reference
   is that document;
-- one or two cards in `cards/signals.yaml` under that subtopic, each carrying
-  `source:`.
+- **exactly one** card in `cards/signals.yaml` under that subtopic, carrying
+  `source:`. One, not two: `--topic Signals` is what an e2e divider case builds,
+  and at 9 cards in that file the three-divider block stops sharing its sheet.
+  The arithmetic is in tasks T031 and T033.
 
 To see the new checks bite, break one thing at a time in a scratch copy:
 
@@ -93,6 +96,12 @@ python3 scripts/check_project.py /tmp/lk-demo --strict     # names the document,
 # B1 — attribution missing where the evidence is a single case
 # remove the `source:` key from the card under the experience-only subtopic
 python3 scripts/check_project.py /tmp/lk-demo --strict     # names the file, the card and the subtopic
+
+# A5 — the goal-fit verdict never lands on the entry (FR-007)
+# add `fit: 'serves nothing'` to any entry in /tmp/lk-demo/sources.yaml
+python3 scripts/check_project.py /tmp/lk-demo --strict     # names the entry and the key
+# `login: true` on harbour-office-members must stay clean — the check refuses
+# five key names, not unknown keys in general
 ```
 
 ## 4. Before the pull request
@@ -103,13 +112,23 @@ LERNKARTEN_E2E=1 pytest tests/test_e2e.py
 python3 scripts/check_project.py tests/fixtures/demo-project --strict
 ```
 
-The e2e run is **required, not optional, for this feature**: wave H adds cards to
-the demo project, so `DEMO_CARD_COUNT` (`tests/test_e2e.py:27`) moves, and a
-wrong count is invisible to `pytest` without the engine.
+The e2e run is **required, not optional, for this feature**: wave H adds a card to
+the demo project, so `DEMO_CARD_COUNT` (`tests/test_e2e.py:27`) moves 32 → 33,
+and a wrong count is invisible to `pytest` without the engine. **Two divider
+assertions move with it** — `test_four_dividers_open_a_further_page_on_the_demo_deck`
+and the `added` half of `test_the_run_says_which_paper_case_it_is_in` — because
+both held only while the deck was a multiple of 16. T033 licenses those edits and
+carries the arithmetic; if either is still red here, read T033 before touching
+`scripts/build_pdf.py`, which this feature does not change.
 
 ## 5. The manual checklist — the larger half
 
-Twenty-one named rows go into `docs/testing.md`, each carrying its FR number.
+Twenty-five named rows go into `docs/testing.md`, each carrying its FR number —
+20 `/sources` rows (4a–4s plus **4n-i**) plus 5 pipeline rows (8m, 9f, 12-iv,
+12-v, 12-vi). One **existing** row also moves: row 5's "five files under
+`knowledge/field-notes/`", which is already wrong on `main`. T040 says how —
+count the ingestible files under `raw/field-notes/` at edit time and write that
+number (eight today, nine after T028), never "five plus one".
 They are listed in
 [plan.md § The named rows](plan.md#the-named-rows-in-docstestingmd). Rows 1–14
 need a Claude session in the demo folder.
@@ -158,7 +177,7 @@ Row 4j is the deferred item this plan accepted explicitly: register two sources
 **first**, run `/learning-goal` **second**, and confirm that nothing claims to
 have assessed the material already in the register.
 
-### Piece C — discovery (rows 4k–4p, 4s)
+### Piece C — discovery (rows 4k–4p, 4n-i, 4s)
 
 ```
 > /sources --discover
@@ -191,7 +210,10 @@ FR-040, not a feature.
 Row 4s is the **practitioner addendum** (C2, FR-019): a candidate that *is*
 practitioner material — an incident write-up, a company engineering blog — must
 additionally have its sentence name that the account is a primary and interested
-one and that published incidents are a selected sample. A candidate that is not
+one, and that material of this kind is published only by the parties who came
+through the incident, so the cases that ended badly are not among what can be
+found. What is required is what the sentence **says**, not the words: "a
+selected sample" on its own does not satisfy it. A candidate that is not
 practitioner material must **not** be held to those two properties; there is one
 addendum and it applies to its own class only.
 
@@ -209,6 +231,15 @@ Row 4p, next to the existing `9d`: turn the network off and run `--discover`
 again. It must report that it could not search, write nothing, and exit cleanly
 with no traceback.
 
+Row **4n-i** is the honest one. Open **every** proposed URL. A candidate that
+404s, that turns out to be paywalled or login-gated, or whose page does not match
+its description fails the row (FR-021, FR-023). If none of them is any of those,
+write **"not exercised"** — not "pass". You cannot make discovery *find* an
+unretrievable or a paywalled candidate on demand, so this row catches a violation
+and never confirms compliance. Row **4n** proper is different and is performable:
+register a source, then run discovery, and confirm it is not proposed again
+(FR-024).
+
 ### Piece D — the silence (rows 4q, 4r, 12-vi)
 
 The negative half of the feature, and the one most easily lost:
@@ -220,8 +251,13 @@ The negative half of the feature, and the one most easily lost:
 ```
 
 None of those three may mention discovery — no candidate, no proposal, no
-closing line offering to go looking. Then run the whole pipeline without ever
-typing `--discover`:
+closing line offering to go looking. For row **4r**, turn the network off and
+run the same three again: all three must behave **exactly** as they did online.
+A run that needs the network to register a source the user named fails FR-033 —
+and that, rather than "no network request was made", is what a tester can
+actually judge.
+
+Then run the whole pipeline without ever typing `--discover`:
 
 ```
 > /sources ~/lernkarten-demo/raw/field-notes
@@ -235,7 +271,15 @@ Expect **zero** lines mentioning discovery across the whole run,
 sources you named and nothing else (SC-014, SC-015). That is FR-038, the
 property this feature exists to preserve rather than weaken.
 
-### Piece B — the experience report (rows 8h, 9f, 12-v)
+Then run `/learning-goal` and `/research-gaps` in the same session and read their
+closing lines. Neither may offer to go looking for material. **These two are the
+part of row 12-vi that carries real weight**: `/learning-goal` is token-gated
+from T021a onwards but its paraphrase is not, and `/research-gaps` cannot be
+token-gated at all, because T006 writes `/sources --discover` into it on purpose
+for FR-034's seam. A pointer added there would fail no automated gate — this row
+is the only thing that catches it.
+
+### Piece B — the experience report (rows 8m, 9f, 12-iv, 12-v)
 
 After `/ingest`, open the stored incident write-up:
 
@@ -251,8 +295,13 @@ Then read the cards `/cards` wrote for the experience-only subtopic. Every one
 that states a fact from the report must name the case through the existing
 `source:` key, none may read as an unattributed general rule, and a card whose
 fact depends on the scale of the case must carry that scale (SC-009, FR-012).
-The `/catalog` and `/cards` runs must also have said that published incidents
-are a selected sample.
+**Both** the `/catalog` run (row 9f) and the `/cards` run (row **12-iv**) must
+also have warned about the material base, and each warning must carry all four
+of FR-013's contents: which subtopic and what it rests on, why that base is
+skewed *written out* rather than named, what it means for the cards, and what
+would balance it. A run that says only "published incidents are a selected
+sample" fails the row — that is the jargon FR-013 was rewritten to forbid. The
+worked example is in [spec.md § FR-013](spec.md).
 
 ## What none of this proves
 

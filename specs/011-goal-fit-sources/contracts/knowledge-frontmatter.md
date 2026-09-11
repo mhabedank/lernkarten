@@ -65,8 +65,8 @@ knowledge/field-notes/ovray-grounding.md: 'nature: anecdote' is not one of exper
 
 | Reader | What it does |
 |---|---|
-| `/catalog` | places the document normally; reports a required topic covered **only** by experience reports rather than presenting single-case coverage as coverage of the rule (FR-014), and says that published incidents are a selected sample (FR-013) |
-| `/cards` | phrases cards from it about the reported case, names the case in the existing optional `source:` key, and carries the scale or circumstances the fact depends on (FR-011, FR-012) |
+| `/catalog` | places the document normally; reports a required topic covered **only** by experience reports rather than presenting single-case coverage as coverage of the rule (FR-014), and warns about the material base of a subtopic that rests only on such reports — FR-013's four contents, in its own words (see [spec.md § FR-013](../spec.md) for the worked example, written once and not restated here) |
+| `/cards` | phrases cards from it about the reported case, names the case in the existing optional `source:` key, and carries the scale or circumstances the fact depends on (FR-011, FR-012); and when it reports on a subtopic that rests only on such reports it carries **the same** FR-013 warning `/catalog` does — the requirement binds both steps |
 | `check_project.py` | validates the key, and derives the experience-only subtopic set that carries the FR-011 attribution rule |
 
 None of them re-judges the document. That is the point of putting the

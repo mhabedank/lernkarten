@@ -19,8 +19,18 @@ refactor while a negative that is merely absent does not.
 | `zotero` | — | `collection`, `note` |
 | `research` | `gap` | `note` |
 
-No sixth type. No `fit:`. No `assessed:`. No `discovered:`, no `proposed_by:`,
-no timestamp. `SOURCE_TYPES` in `scripts/check_project.py:32-38` does not move.
+No sixth type. No `fit:`. No `assessed:`. No `goal_fit:`. No `discovered:`, no
+`proposed_by:`, no timestamp. `SOURCE_TYPES` in `scripts/check_project.py:32-38`
+does not move.
+
+**Those five names are the list `check_sources()` refuses.** `VERDICT_KEYS =
+("fit", "assessed", "goal_fit", "discovered", "proposed_by")` is exactly the
+enumeration above, and this sentence is the enumeration the check is written
+from — a name added here is a name that has to be added there. The "no
+timestamp" clause is deliberately **not** in the tuple: a timestamp has no fixed
+key name, so it stays a rule a reader enforces rather than a check. And the list
+is a set of **forbidden names**, never an allowlist of permitted keys: an
+unknown key on an entry is still accepted, which is what `login: true` relies on.
 
 ## Why the goal-fit verdict is not here
 
@@ -43,8 +53,11 @@ picked (FR-016, FR-020).
   in *how the user got there*, and the user was there either way.
 - It goes through the ordinary registration path, so the goal-fit assessment of
   FR-001 applies to it exactly as it applies to a source the user named.
-- It is validated by today's `check_project.py` with no change: known type,
-  unique kebab-case `id`, the required field for its type present (SC-006).
+- It is validated by `check_project.py` on exactly the same terms as any other
+  entry: known type, unique kebab-case `id`, the required field for its type
+  present (SC-006) — **and, from this feature onwards, no `VERDICT_KEYS` name on
+  it** (FR-007, cases A5/A6). Discovery gets no validation of its own; what
+  changed is that the negative above became a check rather than a convention.
 
 ## What a discovery run may never write
 

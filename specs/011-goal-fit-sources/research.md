@@ -121,8 +121,9 @@ where the count is zero.**
   five areas, and the found count keeps the truncation honest — "found 31,
   showing 10" is information; a silently short list is not.
 - **A zero line is not padding.** FR-027 wants the empty area visible, and the
-  edge case "a goal with areas nothing findable serves" (spec.md:192) says the
-  run must say which areas it found nothing for rather than pad the list.
+  edge case "a goal with areas nothing findable serves" (spec.md § Edge Cases)
+  says the run must say which areas it found nothing for rather than pad the
+  list.
 
 The numbers live in `skills/sources/SKILL.md` and in
 [contracts/discovery-proposal.md](contracts/discovery-proposal.md). They are
@@ -176,7 +177,7 @@ claim reappears; SC-010 says *anywhere*.
 
 **Decision. A paragraph-scoped negative gate over `gated_files()`, with an
 exclusivity-scoped claim regex** — the `check_print_order` shape
-(`scripts/check_docs.py:557-572`), not a bare substring.
+(`scripts/check_docs.py:561-572`), not a bare substring.
 
 **Rationale.** A bare `reaches the network` regex has two live false positives
 today:

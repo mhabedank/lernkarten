@@ -229,18 +229,42 @@ credibility sentence must **additionally** name the two properties the usual
 proxies miss:
 
 - a company account of its own incident is a **primary source and an interested
-  one**;
-- published incidents are a **selected sample** — companies publish the failures
-  they recovered from.
+  one** — nobody else has the timeline, and nobody has a stronger interest in
+  how it reads;
+- material of this kind is published **only by the parties who came through the
+  incident**, so the cases that ended badly are not among what can be found.
+
+Both are requirements on **what the sentence says**, not on the words it uses.
+The phrase *"a selected sample"* is neither required nor, standing alone,
+sufficient — a reader who has not met the term learns nothing from it, and this
+sentence exists for that reader (FR-019, same treatment as FR-013). It stays
+**one** sentence: the second property is a clause, not a paragraph.
 
 A candidate that is *not* practitioner material is **not** held to either
 property. It still carries the neutral sentence, and nothing else.
+
+**Not the same message as FR-013's.** FR-013 makes `/catalog` and `/cards` warn,
+in four contents, about a *subtopic* that rests only on such reports; this
+addendum qualifies a *candidate source* nobody has registered yet. Same
+reasoning, different place and different length. The worked example of the
+FR-013 warning lives once, in [spec.md § FR-013](../spec.md).
 
 ### Adding an addendum later
 
 A new class of material is a new sub-section here plus one new check in
 `scripts/check_docs.py`. Nothing above this heading is reopened, reworded or
 re-scoped (FR-039).
+
+**The sub-section heading is part of the contract.** In
+`skills/sources/SKILL.md` the practitioner addendum opens with the line
+`### Practitioner material`, at `###` level under `## Finding sources`, and the
+separability test (case **D5b**) finds it by that exact string: it reads the
+shipped skill, cuts from that heading to the next heading of equal or higher
+level, and asserts that exactly one of the checks reading that file reports.
+A later addendum gets its own `###` heading and its own such test. Renaming a
+heading is allowed only together with the constant the test names it by — which
+is the point, because a rename that slipped through would make the excision cut
+nothing and the assertion pass for the wrong reason.
 
 [Issue #43](https://github.com/mhabedank/lernkarten/issues/43) — *Public research
 sources: arXiv and friends* — is the first candidate, and it is **out of scope
