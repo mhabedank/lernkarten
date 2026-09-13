@@ -14,9 +14,11 @@ the next run.
 The name is `research-gaps`, not `research`: this plugin ships into
 environments that may already have a skill called `research`.
 
-**This is the only step that reaches the network**, and the only one that puts
-material into the project the user did not choose. Both facts shape everything
-below.
+This step goes online, but it is not alone in that: `/ingest` fetches web pages
+and talks to the Zotero API over HTTP as well. The real distinction is *whose
+choice the material was*. `/ingest` fetches what the user named. This step —
+and `/sources --discover` — goes looking for material the user did not choose,
+and writes it into the project. That is the fact that shapes everything below.
 
 ## Steps
 

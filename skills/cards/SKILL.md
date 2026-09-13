@@ -114,6 +114,50 @@ They mean opposite things, so do not give them the same treatment:
 
 If there are no gaps, say nothing about gaps at all.
 
+## Cards from a `nature: experience` document
+
+A knowledge document carrying `nature: experience` reports what happened in one
+situation — an incident write-up, a case study, a post-mortem, a blog post about
+an outage. It is evidence about that case, not a statement of a general rule,
+and the cards drawn from it say so.
+
+- **Phrase the card about the reported case**, and name the case through the
+  existing optional `source:` key. One outage at one company is what the
+  document establishes, and the card is allowed to claim exactly that.
+- **Never an unattributed general rule.** A front that states what always
+  happens is a claim about the world, and one case does not support it. Ask what
+  happened in *that* case and why — the document establishes that, and the card
+  can be graded against it.
+- **Carry the scale or the circumstances the fact depends on** rather than
+  dropping them. "Across ten thousand servers" and "with one operator on the
+  night shift" are the reason the answer came out the way it did; a sentence
+  with them removed reads as universal and is then wrong.
+
+### The material base of such a subtopic
+
+When you report on a subtopic all of whose references are documents like these,
+warn about the material it stands on — the same warning `/catalog` gives, for the
+same reason. Write it in your own words; there is no phrase to copy, and "a
+selected sample" names the effect instead of stating it, in the vocabulary of a
+field the reader may never have met. Four things have to be in it:
+
+1. **Which subtopic, and what it rests on** — the subtopic by name, its documents
+   named or counted, and that nothing covering the topic in general is among
+   them.
+2. **Why that material base is skewed**, written out rather than named: write-ups
+   like these get published by the parties who came through the incident and had
+   an account they were willing to show. Whoever it ended badly for publishes
+   nothing, so those cases are missing from the material — and they stay missing
+   however much of it there is.
+3. **What that means for the cards** you just wrote: they show how a *survived*
+   failure unfolded, not what it takes to fail for good.
+4. **What would balance it** — a general account or a reference work on the
+   topic.
+
+The warning is **advisory**: it blocks nothing and withholds no card. It is a
+statement about the state of the sources, never a reason to refuse one, and never
+a suggestion to go looking for more of them.
+
 ## Subtopics with several parents
 
 A subtopic carrying `Parents:` is written **once**, into the **primary**

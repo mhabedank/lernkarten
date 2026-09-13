@@ -83,6 +83,12 @@ Reading order, forbidden pairs, half mast, and what a hoisted flag can and
 cannot say.
 References: [signal-code](../knowledge/field-notes/signal-code.md)
 
+### The Torvig radio outage of 12 March
+What the harbour office reported after the mainland radio link failed for a
+night: which flags Torvig hoisted, and why the white flag on the Bellhorn mast
+went unread until first light. One reported case, not a rule of the code.
+References: [torvig-radio-outage](../knowledge/field-notes/torvig-radio-outage.md)
+
 ### Right of way in the Kestrel Deep
 Who holds course and who gives way in the channel, and what the black cylinder
 with flag Kell means. Closed by `/research-gaps` — the field notes never

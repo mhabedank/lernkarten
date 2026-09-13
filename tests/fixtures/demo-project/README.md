@@ -29,6 +29,9 @@ in *versioned* is generated:
 | `raw/field-notes/kestrel-islands.md` | markdown | ✓ | ordinary text with a table |
 | `raw/field-notes/tide-cycle.txt` | plain text | ✓ | numbers and rules, no markup |
 | `raw/field-notes/signal-code.md` | markdown | ✓ | lists, which become `#list()` cards |
+| `raw/field-notes/chart-notes.md` | markdown | ✓ | prose around a *linked* picture — the link is relative to this file, not to the project root |
+| `raw/field-notes/tide-office-cover.md` | markdown | ✓ | a cover sheet and nothing behind it — ingested as `content: sparse` |
+| `raw/field-notes/torvig-radio-outage.md` | markdown | ✓ | one reported case — the only document ingested as `nature: experience`; a card under its subtopic that names no `source:` is an error |
 | `raw/field-notes/appendix/wind-log.txt` | plain text | ✓ | a subfolder: the walk has to recurse |
 | `raw/field-notes/übersicht-inseln.md` | markdown | ✓ | umlauts in the file name — the slug must survive |
 | `raw/field-notes/empty.md` | empty | ✓ | zero bytes: nothing to extract |
@@ -94,7 +97,9 @@ to be named by at least one card in every card file that holds its cards.
   `нуля глубин`, not `нуль глубин`; `εύρος`. There is no stemming.
 - `Settlements` and `Rules of use` carry **no** `Term:` line, on purpose. They
   are descriptions of a group of facts rather than named concepts, so there is
-  nothing to anchor and A-1 stays silent about them.
+  nothing to anchor and A-1 stays silent about them. `The Torvig radio outage of
+  12 March` carries none either, for a third reason: it names one reported case,
+  and a case is not a concept the deck asks the learner to define.
 - The three subtopics with no cards — `Relief and the crater`, `Storm surge and
   the Ashwind warning stages` and `Right of way in the Kestrel Deep` — carry
   none either. The line is inert without cards, and it is written when the

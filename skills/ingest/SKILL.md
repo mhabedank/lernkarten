@@ -96,6 +96,7 @@ document: "Original title or file name"
 path: "/absolute/path or URL"
 content: sparse          # optional — see below
 characters: 68           # with `content: sparse`, how much text there was
+nature: experience       # optional — see below; the only value there is
 ingested: 2026-08-10
 figures:                 # optional — one entry per picture you looked at
   - at: 'page 3'
@@ -126,6 +127,26 @@ Read tool, or *thin*:
   the extraction is complete and a second pass has nothing to find. Leaving the
   two indistinguishable is what made `/catalog` guess whether a near-empty
   document was broken or real.
+
+## A document whose subject is a reported case
+
+Some material reports what happened in one situation: an incident post-mortem, a
+case study, a fuck-up report, an application scenario, a company or engineering
+blog post about something that went wrong. A document whose subject **is** a
+reported case is written with `nature: experience` in its frontmatter. `/catalog`
+and `/cards` read the marker instead of judging every document again on every
+run, and what they do with it is why it is worth setting: material like this is
+evidence about one case, and it is carded as that case rather than as a rule.
+
+Every other document carries **no `nature:` key at all** — not
+`nature: reference`, not `nature: none`. Absence is the other state, and it is
+the state nearly every document is in. There is one value, and a key that says
+nothing is a key you have to keep in step with the truth for no gain.
+
+`nature:` is one value about the **whole document**, never a per-paragraph
+judgement. A reference work carrying one anecdote is not marked: its subject is
+the reference material and the anecdote illustrates it. Ask what the document is
+about, not whether a story appears in it somewhere.
 
 ## Pictures worth showing
 

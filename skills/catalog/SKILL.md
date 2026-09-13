@@ -133,6 +133,48 @@ separator.
 
 Drop the `Goal:` field when there is no `goal.md`.
 
+## A document marked `nature: experience`
+
+A knowledge document carrying `nature: experience` reports what happened in one
+situation — an incident write-up, a case study, a post-mortem, a blog post about
+an outage. **Place it exactly as you place anything else.** It is evidence and
+it belongs where it belongs; the marker changes nothing about where the
+reference goes.
+
+What it changes is what you *say*. Such a document is evidence about one
+situation, never a statement of a general rule, and two of the things you report
+follow from that.
+
+**A required topic covered only by experience reports is not covered in
+general.** Say so, rather than presenting single-case coverage as coverage of
+the rule: the goal asked for the rule and what is there is a handful of cases.
+It is not a `Status: gap` — there *is* material — so leave the status alone and
+put it in what you say about the topic.
+
+**Warn about the material base** of a subtopic all of whose references are such
+documents, every time you report on it. Write it in your own words; there is no
+phrase to copy, and "a selected sample" names the effect instead of stating it,
+in the vocabulary of a field the reader may never have met. Four things have to
+be in it:
+
+1. **Which subtopic, and what it rests on** — the subtopic by name, its
+   documents named or counted, and that nothing covering the topic in general is
+   among them.
+2. **Why that material base is skewed**, written out rather than named: write-ups
+   like these get published by the parties who came through the incident and had
+   an account they were willing to show. Whoever it ended badly for publishes
+   nothing, so those cases are missing from the material — and they stay missing
+   however much of it there is.
+3. **What that means for the cards** drawn from it: they show how a *survived*
+   failure unfolded, not what it takes to fail for good.
+4. **What would balance it** — a general account or a reference work on the
+   topic.
+
+The warning is **advisory**: it blocks nothing, refuses no subtopic and withholds
+no reference. It is a statement about the state of the sources, and it is never a
+suggestion to go looking for more of them. A `Status: gap` subtopic's one pointer
+stays `/research-gaps`, exactly as before.
+
 ## A subtopic under more than one topic
 
 Containment is genuinely many-to-many. "Access control" belongs under *Security*

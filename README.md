@@ -60,7 +60,7 @@ catalog, write cards for the topics you pick, and build the PDF.
 | Command | What it does | What you get |
 |---|---|---|
 | `/learning-goal` *(optional)* | state what you are trying to learn | `goal.md` |
-| `/sources` | register your material: folders, PDFs, Zotero, web pages | `sources.yaml` |
+| `/sources` | register your material: folders, PDFs, Zotero, web pages — and say what each one serves in your goal; `--discover` goes looking for material you do not have | `sources.yaml` |
 | `/ingest` | read the sources and store them as text | `knowledge/<source>/*.md` |
 | `/catalog` | derive topics and subtopics — from your goal if you set one | `catalog/topics.md` |
 | `/research-gaps` *(optional)* | research the topics nothing you have covers | `knowledge/<research>/*.md` |
