@@ -1,10 +1,10 @@
 ---
-description: "Task list for 013-side-marker-metadata"
+description: "Task list for 014-side-marker-metadata"
 ---
 
 # Tasks: The side marker leaves the card and becomes document metadata
 
-**Input**: Design documents from `/specs/013-side-marker-metadata/`
+**Input**: Design documents from `/specs/014-side-marker-metadata/`
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md), [contracts/face-map.md](./contracts/face-map.md)
 

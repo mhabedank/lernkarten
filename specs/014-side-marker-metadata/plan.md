@@ -2,7 +2,7 @@
 
 **Branch**: `design/side-marker-metadata` | **Date**: 2026-09-11 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/013-side-marker-metadata/spec.md`
+**Input**: Feature specification from `/specs/014-side-marker-metadata/spec.md`
 
 ## Summary
 
@@ -105,7 +105,7 @@ and one documentation gate, all inside existing modules. No gate moved.
 ### Documentation (this feature)
 
 ```text
-specs/013-side-marker-metadata/
+specs/014-side-marker-metadata/
 ├── plan.md              # this file
 ├── spec.md
 ├── research.md          # Phase 0 — measured against the pinned engine
