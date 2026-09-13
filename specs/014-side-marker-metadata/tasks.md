@@ -186,7 +186,7 @@ Single flat module, no `src/`. Implementation in `scripts/*.py`, layout in `temp
 - [X] T054 `LERNKARTEN_E2E=1 pytest tests/test_e2e.py -v` — the whole module, not only the changed tests
 - [X] T055 Walk [quickstart.md](./quickstart.md) end to end, all six checks
 - [X] T056 `git status` clean of user content — no `sources.yaml`, `knowledge/`, `catalog/`, non-example `cards/`, `output/`, no binaries
-- [ ] T057 Push the branch and open a pull request; confirm commit subjects are prefixed (`design:`, `test:`, `docs:`)
+- [X] T057 Push the branch and open a pull request; confirm commit subjects are prefixed (`design:`, `test:`, `docs:`)
 
 ---
 
