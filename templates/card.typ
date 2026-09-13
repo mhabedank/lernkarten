@@ -83,32 +83,39 @@
     place(dy: head-h, line(end: (cw, 0mm), stroke: hairline))
   }
 
-  // Footer band: the mark, the wordmark, the card id and which side you hold.
-  // The mark's box is hollow on the front and solid on the back — the one
-  // signal you need when eight cards land face-down. `show-logo: false` drops
-  // the mark and the wordmark and leaves the id.
+  // Footer band: the mark, the wordmark and the card id. The mark's box is
+  // hollow on the front and solid on the back — the one signal you need when
+  // eight cards land face-down, and with the header marker one of the two that
+  // say which face you hold. `show-logo: false` drops the mark and the
+  // wordmark and leaves the id.
   let footer(card, back) = context {
     let top = ch - foot-h
-    // A card written before ids existed carries none, and then the block shows
-    // the side marker on its own — a separator with nothing in front of it
-    // would be a smudge, not information.
-    let side = if back { "2/2" } else { "1/2" }
     let id = text(
       font: mono,
       size: 8pt * scale,
       fill: muted,
-      if card.id == "" { side } else { card.id + " · " + side },
+      card.id,
     )
     // The id block takes exactly the width its text needs, so nothing wraps
     // and the rule in front of it stays put whatever the card file is called.
-    let id-w = calc.min(measure(id).width + 5mm * scale, cw / 3)
+    //
+    // A card written before ids existed carries none, and then the block is
+    // not there at all — not an empty box behind a rule. The rule divides the
+    // wordmark from the id; with no id it would stand in front of nothing,
+    // which is a smudge rather than information. The band keeps its height and
+    // its top rule either way: the three bands never move.
+    let id-w = if card.id == "" { 0mm } else {
+      calc.min(measure(id).width + 5mm * scale, cw / 3)
+    }
     place(dy: top, line(end: (cw, 0mm), stroke: hairline))
-    place(dy: top, dx: cw - id-w, line(end: (0mm, foot-h), stroke: hairline))
-    place(
-      dy: top,
-      dx: cw - id-w,
-      box(width: id-w, height: foot-h, clip: true, align(horizon + center, id)),
-    )
+    if card.id != "" {
+      place(dy: top, dx: cw - id-w, line(end: (0mm, foot-h), stroke: hairline))
+      place(
+        dy: top,
+        dx: cw - id-w,
+        box(width: id-w, height: foot-h, clip: true, align(horizon + center, id)),
+      )
+    }
     if show-logo {
       place(dy: top, dx: foot-h, line(end: (0mm, foot-h), stroke: hairline))
       place(dy: top, box(
@@ -135,7 +142,17 @@
   // One card face. Content that does not fit is reported through the
   // <overflow> label, which the build reads back with `typst query` and turns
   // into a warning — an overlong card gets split in two, never set smaller.
+  //
+  // The <face> label beside it says which side this is and where it landed.
+  // The card used to print that as `1/2` / `2/2`, which was a third encoding
+  // of one bit: the header marker and the footer box each carry it in colour
+  // *and* shape already, and those two survive a photocopier. The signal a
+  // machine needs is not the signal a reader needs, so it lives here instead,
+  // and `--face-map` writes it out. This is the one place that knows which
+  // side it is laying out, and a divider never passes through it.
   let face(card, back, body) = box(width: cw, height: ch, {
+    let side = if back { "back" } else { "front" }
+    context [#metadata((ref: card.ref, side: side, page: here().page()))<face>]
     set text(font: reading, size: 11pt * scale, fill: ink, lang: card.lang)
     set par(justify: false, leading: 0.62em)
     place(rect(width: cw, height: ch, stroke: hairline))

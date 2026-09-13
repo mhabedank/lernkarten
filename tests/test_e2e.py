@@ -835,15 +835,31 @@ def test_an_a7_legal_deck_reprints_at_a8_without_a_warning(tmp_path):
 # --- the print order (feat/simplex-print-order) ----------------------------
 
 
-def face_marks_per_page(path):
-    """Which face each page carries: a set of "1/2" / "2/2" per page.
+def built_face_map(tmp_path, *args, name="faces"):
+    """Build with `--face-map` and return (the PDF, the map it wrote).
 
-    Every card footer prints `<id> · 1/2` on the front and `· 2/2` on the back
-    (templates/card.typ), so the face is in the text layer and does not have to
-    be inferred from the geometry. A front page is one whose every mark reads
-    1/2.
+    Which face a page carries used to be read out of the text layer: every
+    footer printed `1/2` or `2/2`. The card no longer says it — the header
+    marker and the footer box each encode the face in colour *and* shape, and a
+    third encoding in text was the only one a photocopier could lose — so the
+    build reports it instead. Exact, per page, and no `pdftotext` in sight,
+    which is why the assertions below run on a machine that has none.
     """
-    return [{w for _, _, w in words if re.fullmatch(r"[12]/2", w)} for words in bbox_pages(path)]
+    target = tmp_path / f"{name}.pdf"
+    written = tmp_path / f"{name}.json"
+    result = run("build", *args, "-o", str(target), "--face-map", str(written))
+    assert result.returncode == 0, result.stderr
+    return target, json.loads(written.read_text(encoding="utf-8"))
+
+
+def sides_per_page(mapping):
+    """Which face each page carries: a set of "front" / "back" per page.
+
+    A set, because what is asserted is that a page is all fronts or all backs —
+    the same shape the text-layer reader had, so the tests below kept their
+    assertions when the signal moved off the card.
+    """
+    return [{face["side"] for face in page["faces"]} for page in mapping["pages"]]
 
 
 def test_simplex_puts_every_front_before_any_back(tmp_path):
@@ -853,15 +869,13 @@ def test_simplex_puts_every_front_before_any_back(tmp_path):
     half of the pages are the fronts and the second half the backs — not
     front, back, front, back.
     """
-    target = tmp_path / "simplex.pdf"
-    result = run("build", *CARDS, "-o", str(target), "--sides", "simplex")
-    assert result.returncode == 0, result.stderr
+    target, mapping = built_face_map(tmp_path, *CARDS, "--sides", "simplex", name="simplex")
     assert pdf_pages(target) == DEMO_A7_PAGES
 
-    marks = face_marks_per_page(target)
+    marks = sides_per_page(mapping)
     s = DEMO_A7_SHEETS
-    assert marks[:s] == [{"1/2"}] * s, f"pages 1-{s} must be fronts only: {marks}"
-    assert marks[s:] == [{"2/2"}] * s, f"pages {s + 1}-{2 * s} must be backs only: {marks}"
+    assert marks[:s] == [{"front"}] * s, f"pages 1-{s} must be fronts only: {marks}"
+    assert marks[s:] == [{"back"}] * s, f"pages {s + 1}-{2 * s} must be backs only: {marks}"
 
 
 def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
@@ -885,12 +899,12 @@ def test_simplex_keeps_every_back_behind_its_own_front(tmp_path):
 
 def test_simplex_groups_the_faces_at_the_denser_grid_too(tmp_path):
     """The split is by sheet, so it follows the grid — 16 up gives 2 sheets."""
-    target = tmp_path / "a8.pdf"
-    result = run("build", *CARDS, "-o", str(target), "--sides", "simplex", "--grid", "a8")
-    assert result.returncode == 0, result.stderr
+    target, mapping = built_face_map(
+        tmp_path, *CARDS, "--sides", "simplex", "--grid", "a8", name="a8"
+    )
     assert pdf_pages(target) == DEMO_A8_PAGES
     s = DEMO_A8_SHEETS
-    assert face_marks_per_page(target) == [{"1/2"}] * s + [{"2/2"}] * s
+    assert sides_per_page(mapping) == [{"front"}] * s + [{"back"}] * s
 
     pages = card_grid_per_page(target)
     for n in range(s):
@@ -925,11 +939,10 @@ def test_a_single_sheet_deck_looks_the_same_in_both_orders(tmp_path):
     # the ninth card (#44's experience report) made this a two-sheet deck and
     # the test failed on page count rather than on order. Five leaves headroom.
     one_deck = str(DEMO / "cards" / "geography.yaml")
-    duplex, simplex = tmp_path / "one-d.pdf", tmp_path / "one-s.pdf"
-    assert run("build", one_deck, "-o", str(duplex)).returncode == 0
-    assert run("build", one_deck, "-o", str(simplex), "--sides", "simplex").returncode == 0
+    duplex, _ = built_face_map(tmp_path, one_deck, name="one-d")
+    simplex, mapping = built_face_map(tmp_path, one_deck, "--sides", "simplex", name="one-s")
     assert pdf_pages(duplex) == pdf_pages(simplex) == 2
-    assert face_marks_per_page(simplex) == [{"1/2"}, {"2/2"}]
+    assert sides_per_page(mapping) == [{"front"}, {"back"}]
     assert card_grid_per_page(duplex) == card_grid_per_page(simplex)
 
 
@@ -1012,7 +1025,7 @@ def test_the_id_is_printed_on_both_faces(tmp_path):
 MEASURE = """#set page(width: 400mm, height: 100mm, margin: 0pt)
 #context {
   let cw = 100mm
-  let id = text(font: "IBM Plex Mono", size: SIZE, "A45DK · 1/2")
+  let id = text(font: "IBM Plex Mono", size: SIZE, "A45DK")
   [#metadata((width: measure(id).width.pt(), cap: (cw / 3).pt()))<measurement>]
 }
 """
@@ -1060,9 +1073,14 @@ def test_the_id_fits_the_box_it_is_clipped_to_by_measurement(tmp_path):
         pass  # this one does not need pdftotext, only the engine
     width, cap = measured_id_width(8)
     assert width < cap, f"the id block overruns its clip box: {width} pt against {cap} pt"
-    assert width / cap < 0.75, (
-        f"{width} pt is {100 * width / cap:.0f} % of the cap — too little headroom "
-        "for a denser grid or a longer side marker"
+    # The id is the whole block now — five characters and nothing beside them —
+    # so this ratio is fixed rather than a headroom allowance, and docs/design.md
+    # states the number. Measuring it here is what keeps that sentence honest:
+    # the 52.80 pt it used to quote was the whole `A45DK · 1/2` line, eleven
+    # mono glyphs, and five of them are 24.00 pt.
+    assert width == pytest.approx(24.0, abs=0.1), f"five mono glyphs at 8 pt are 24 pt: {width}"
+    assert width / cap == pytest.approx(0.25, abs=0.02), (
+        f"{width} pt is {100 * width / cap:.0f} % of the cap — docs/design.md says 25 %"
     )
 
 
@@ -1079,25 +1097,133 @@ def test_the_template_sets_the_id_at_the_agreed_size():
     assert "4.6pt" not in source, "the old id size is still in the template"
 
 
-def test_a_card_without_an_id_prints_the_side_marker_alone(tmp_path):
-    """FR-005: no id text and no separator — not a stranded '·'."""
+def test_a_card_without_an_id_prints_nothing_in_the_id_block(tmp_path):
+    """FR-005, and now the whole block: no id, no separator, no side marker."""
     deck = tmp_path / "plain.yaml"
     deck.write_text(NO_ID_DECK, encoding="utf-8")
     target = tmp_path / "plain.pdf"
     assert run("build", str(deck), "-o", str(target)).returncode == 0
 
     words = _words_on(target)
-    assert "1/2" in words and "2/2" in words, f"the side marker must remain: {words}"
     assert "·" not in words, f"a separator with nothing before it was printed: {words}"
+    assert not [w for w in words if re.fullmatch(r"[12]\s*/\s*2", w)], (
+        f"the side marker is gone from every card, this one included: {words}"
+    )
 
 
-def test_the_separator_is_there_when_there_is_an_id(tmp_path):
-    """The other half of the case above, so the guard cannot pass vacuously."""
+# The footer band with nothing in it. A rule is not in the text layer, so this
+# is the one place the card is read as pixels: the block that held `<id> · 1/2`
+# is delimited by a vertical rule, and a rule standing in front of nothing is
+# the same smudge the separator used to be, one step further along.
+
+FOOT_H_MM = 6.2  # templates/card.typ, at the A7 reference where scale is 1.0
+
+
+def footer_band_ink(path, *, scale=6, pad=0.9):
+    """Dark pixels inside the first card's footer band, its own frame excluded.
+
+    The card sits at the sheet's origin because the build is given --margin 0,
+    and `pad` holds the crop clear of the frame and of the band's top rule —
+    both of which are drawn whatever the card carries.
+    """
+    pdfium = pytest.importorskip("pypdfium2", reason="renders the page to look at it")
+    image = pdfium.PdfDocument(str(path))[0].render(scale=scale).to_pil().convert("RGB")
+    width, height = image.size
+    sheet_w, sheet_h = pdf_page_size_mm(path)
+    px, py = width / sheet_w, height / sheet_h
+    card_w, card_h = sheet_w / 2, sheet_h / 4  # a7: 2 x 4 on a portrait sheet
+    band = image.crop(
+        (
+            int(pad * px),
+            int((card_h - FOOT_H_MM + pad) * py),
+            int((card_w - pad) * px),
+            int((card_h - pad) * py),
+        )
+    )
+    return sum(1 for pixel in band.getdata() if sum(pixel) / 3 < 200)
+
+
+def test_the_id_block_and_its_rule_are_absent_when_there_is_no_id(tmp_path):
+    """US3: the block collapses rather than standing empty behind its rule.
+
+    Asserted against the other half of the pair, so it cannot pass by rendering
+    nothing at all: the same build with an id has to put ink in that band.
+    """
+    for name, source in (("plain", NO_ID_DECK), ("id", ID_DECK)):
+        deck = tmp_path / f"{name}.yaml"
+        deck.write_text(source, encoding="utf-8")
+        target = tmp_path / f"{name}.pdf"
+        assert (
+            run("build", str(deck), "-o", str(target), "--no-logo", "--margin", "0").returncode == 0
+        )
+
+    assert footer_band_ink(tmp_path / "id.pdf") > 0, "the id itself must print"
+    assert footer_band_ink(tmp_path / "plain.pdf") == 0, (
+        "a card with no id leaves an empty block and the rule that delimits it"
+    )
+
+
+def test_a_card_without_an_id_builds_clean_without_the_logo_too(tmp_path):
+    """The band is then empty apart from its top rule — and that is not an error."""
+    deck = tmp_path / "plain.yaml"
+    deck.write_text(NO_ID_DECK, encoding="utf-8")
+    target = tmp_path / "plain.pdf"
+    result = run("build", str(deck), "-o", str(target), "--no-logo")
+    assert result.returncode == 0, result.stderr
+    assert "WARNING" not in result.stderr, result.stderr
+
+
+def test_a_deck_that_mixes_ids_and_none_is_judged_card_by_card(tmp_path):
+    """The block follows the card, not the file."""
+    deck = tmp_path / "mixed.yaml"
+    deck.write_text(
+        "topic: 'Legibility'\nlanguage: english\ngrid: a7\ncards:\n"
+        "  - id: A45DK\n    front: 'Front'\n    back: 'Back'\n"
+        "  - subtopic: 'None'\n    front: 'Second'\n    back: 'Also back'\n",
+        encoding="utf-8",
+    )
+    target = tmp_path / "mixed.pdf"
+    assert run("build", str(deck), "-o", str(target)).returncode == 0
+
+    words = _words_on(target)
+    assert words.count("A45DK") == 2, "the card that has an id still shows it"
+    assert "·" not in words
+
+
+def test_the_id_stands_alone_with_nothing_beside_it(tmp_path):
+    """The id is the whole block now, so there is nothing to separate from.
+
+    The other half of the case above, so neither guard can pass vacuously: a
+    card *with* an id prints it twice and prints no separator either.
+    """
     deck = tmp_path / "deck.yaml"
     deck.write_text(ID_DECK, encoding="utf-8")
     target = tmp_path / "id.pdf"
     assert run("build", str(deck), "-o", str(target)).returncode == 0
-    assert "·" in _words_on(target)
+
+    words = _words_on(target)
+    assert words.count("A45DK") == 2, "front and back each carry the id"
+    assert "·" not in words, f"nothing follows the id, so nothing separates it: {words}"
+
+
+@pytest.mark.parametrize("grid", ["a7", "a8"])
+@pytest.mark.parametrize("logo", [True, False])
+def test_the_card_does_not_print_which_side_it_is(tmp_path, grid, logo):
+    """FR-001: the text encoding of the face is gone, at every size.
+
+    Which face you hold is still said twice — the header marker is red and a
+    hollow circle against yellow and a solid disc, the footer box is hollow
+    against solid — and both of those survive a black-only photocopy, which is
+    what the third, textual one never added.
+    """
+    target = tmp_path / f"{grid}-{'logo' if logo else 'plain'}.pdf"
+    args = ["build", *CARDS, "-o", str(target), "--grid", grid]
+    if not logo:
+        args.append("--no-logo")
+    assert run(*args).returncode == 0
+
+    marks = [w for w in _words_on(target) if re.fullmatch(r"[12]\s*/\s*2", w)]
+    assert marks == [], f"the card still says which side it is: {marks}"
 
 
 # --- `lernkarten id` through the real command --------------------------------
@@ -1658,3 +1784,115 @@ def test_a_setting_written_into_the_wrong_file_is_named_not_obeyed(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "sides" in result.stderr and "machine setting" in result.stderr, result.stderr
     assert "duplex" in result.stdout, "the misplaced key must not take effect"
+
+
+# --- the face map itself (design/side-marker-metadata) -----------------------
+#
+# The print-order tests above are the reason this exists; these are about the
+# diagnostic itself — what it contains, what it costs, and how it fails.
+
+
+def test_the_face_map_names_every_page_and_every_face(tmp_path):
+    """FR-004/FR-005: the deck, read back off the document it produced."""
+    target, mapping = built_face_map(tmp_path, *CARDS, "--grid", "a7")
+
+    assert mapping["sides"] == "duplex"
+    assert mapping["grid"] == "2x4"
+    assert [p["page"] for p in mapping["pages"]] == list(range(1, DEMO_A7_PAGES + 1))
+    assert len(mapping["pages"]) == pdf_pages(target), "the map must cover the whole document"
+
+    faces = [f for page in mapping["pages"] for f in page["faces"]]
+    assert len(faces) == 2 * DEMO_CARD_COUNT, "one entry per card face, no more and no less"
+    assert {f["ref"] for f in faces} == declared_ids()
+    for side in ("front", "back"):
+        refs = [f["ref"] for f in faces if f["side"] == side]
+        assert sorted(refs) == sorted(declared_ids()), f"every card needs exactly one {side}"
+
+
+def test_the_face_map_follows_the_print_order(tmp_path):
+    """The #48 guarantees, read off the build rather than out of the ink.
+
+    The two orders must not produce the same map. That is not a nicety: the
+    face query is one `sides` argument away from describing a duplex document
+    while a simplex one was printed, and every other assertion here would still
+    pass. This is the test that catches it.
+    """
+    _, duplex = built_face_map(tmp_path, *CARDS, "--grid", "a7", name="d")
+    _, simplex = built_face_map(tmp_path, *CARDS, "--grid", "a7", "--sides", "simplex", name="s")
+
+    s = DEMO_A7_SHEETS
+    assert sides_per_page(duplex) == [{"front"}, {"back"}] * s
+    assert sides_per_page(simplex) == [{"front"}] * s + [{"back"}] * s
+    assert duplex["sides"] == "duplex" and simplex["sides"] == "simplex"
+
+
+def test_a_build_that_does_not_ask_for_the_map_writes_only_the_pdf(tmp_path):
+    """The diagnostic costs a user who never uses it nothing — not even a file."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    room = tmp_path / "out"
+    room.mkdir()
+
+    result = run("build", str(deck), "-o", str(room / "deck.pdf"))
+    assert result.returncode == 0, result.stderr
+    assert sorted(p.name for p in room.iterdir()) == ["deck.pdf"]
+
+
+def test_a_face_map_that_cannot_be_written_names_the_path(tmp_path):
+    """Refused before the build, the way an impossible --dividers count is."""
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    target = tmp_path / "never.pdf"
+    missing = tmp_path / "nowhere" / "faces.json"
+
+    result = run("build", str(deck), "-o", str(target), "--face-map", str(missing))
+    assert result.returncode != 0
+    assert "unrecognized" not in result.stderr, "the option has to exist to refuse anything"
+    assert str(missing.parent) in result.stderr, result.stderr
+    assert "does not exist" in result.stderr, f"say what is wrong with it: {result.stderr}"
+    assert "Traceback" not in result.stderr, "a bad path is a message, not a crash"
+    assert not target.exists(), "a refused run writes no PDF"
+
+
+def test_asking_for_the_face_map_does_not_change_the_pdf(tmp_path):
+    """SC-002a. The map describes the document; it does not alter it.
+
+    `SOURCE_DATE_EPOCH` is what makes this assertable at all — the engine
+    writes /CreationDate into the PDF, so two builds a second apart differ for
+    reasons that have nothing to do with this flag.
+    """
+    deck = tmp_path / "deck.yaml"
+    deck.write_text(ID_DECK, encoding="utf-8")
+    env = dict(os.environ, SOURCE_DATE_EPOCH="1700000000")
+
+    def cmd(*args):
+        return subprocess.run(
+            [sys.executable, str(CLI), *args], capture_output=True, text=True, cwd=ROOT, env=env
+        )
+
+    with_map, without = tmp_path / "with.pdf", tmp_path / "without.pdf"
+    assert (
+        cmd(
+            "build", str(deck), "-o", str(with_map), "--face-map", str(tmp_path / "f.json")
+        ).returncode
+        == 0
+    )
+    assert cmd("build", str(deck), "-o", str(without)).returncode == 0
+    assert with_map.read_bytes() == without.read_bytes(), "the diagnostic changed the deck"
+
+
+def test_a_sheet_of_dividers_is_in_the_map_with_no_faces(tmp_path):
+    """A page with no card on it is listed, not skipped.
+
+    11 cards at 16 up is one card sheet, and four dividers open a second one.
+    Two of the four pages therefore carry no card face — and "no cards here"
+    must not look like "page missing".
+    """
+    one_deck = str(DEMO / "cards" / "tides.yaml")
+    target, mapping = built_face_map(tmp_path, one_deck, "--grid", "a8", "--dividers", "4")
+
+    assert len(mapping["pages"]) == pdf_pages(target) == 4
+    assert [p["page"] for p in mapping["pages"]] == [1, 2, 3, 4]
+    empty = [p["page"] for p in mapping["pages"] if not p["faces"]]
+    assert empty == [3, 4], f"the divider sheet's two pages carry no card: {empty}"
+    assert sum(len(p["faces"]) for p in mapping["pages"]) == 2 * TIDES_CARD_COUNT

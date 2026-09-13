@@ -98,7 +98,7 @@ either size:
 |---|---|---|
 | header | 8.6 mm | topic `/` subtopic, then the side marker: a red circle on the front, a yellow disc on the back |
 | field | the rest | one prompt on the front, the answer on the back |
-| footer | 6.2 mm | the mark, `LERNKARTEN BY MHABEDANK`, the card id at 8 pt and `1/2` or `2/2` |
+| footer | 6.2 mm | the mark, `LERNKARTEN BY MHABEDANK`, and the card id at 8 pt |
 
 The frame and the band rules are 0.9 pt; the field is inset 3.4 mm across and
 2.8 mm down. The front prompt is Jost 500 at 14 pt and sits centred in the
@@ -109,18 +109,37 @@ an app cannot. The source, if the card names one, sits on the bottom line
 behind a short blue dash.
 
 The card id sits in the right-hand block of the footer, IBM Plex Mono at 8 pt,
-followed by `·` and the side marker. It is five characters of Crockford Base32,
-and the size follows from that: the old id was the file name and the card's
-position — `genai-foundation-and-model-landscape-32` — which measured 124.62 pt
-against a block capped at `cw / 3`, 94.49 pt, with `clip: true`. It was cut off
-on the printed card. Five characters measure 52.80 pt, 56 % of the cap, which is
+and it sits there alone. It is five characters of Crockford Base32, and the size
+follows from that: the old id was the file name and the card's position —
+`genai-foundation-and-model-landscape-32` — which measured 124.62 pt against a
+block capped at `cw / 3`, 94.49 pt, with `clip: true`. It was cut off on the
+printed card. Five characters measure 24.00 pt, a quarter of the cap, which is
 what makes room to set it large enough to read across a desk.
 
 **8 pt and not larger**, though 11 pt would still fit the box. The wordmark
 beside it is 5 pt, and at 11 pt the id dominates a band that is meant to be
 quiet. The clip cap is not the binding constraint here; the balance of the
-footer is. A card with no id — a deck written before ids existed — shows the
-side marker on its own, with no separator in front of nothing.
+footer is. A card with no id — a deck written before ids existed — has no block
+there at all: the rule that divides the wordmark from the id would otherwise
+stand in front of nothing, which is a smudge rather than information. The band
+keeps its height and its top rule regardless; the three bands never move.
+
+### Which face you are holding
+
+Three things once said it, and one of them has gone. The header's marker is red
+*and* a hollow circle on the front, yellow *and* a solid disc on the back; the
+footer mark's box is hollow on the front and solid on the back. Each is colour
+**and** shape **and** position, so each survives a black-only photocopy, and the
+two answer different questions — the header reads on the card in your hand, the
+footer box reads across a stack that has landed face-down.
+
+The footer also printed `1/2` and `2/2` until v0.9.2. That was the same bit a
+third time, and the only one made of text rather than of shape. What it was
+actually used for was machine-readable: the tests read it back out of the PDF to
+check that every page came out in the right order. That signal now lives in the
+document rather than on the card — `lernkarten build --face-map PATH` writes it
+out, and `docs/testing.md` says how. The card lost the ink; nothing lost the
+guarantee.
 
 Two things the layout deliberately does *not* do:
 

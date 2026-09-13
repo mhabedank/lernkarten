@@ -137,6 +137,26 @@ Where it is missing, those tests skip rather than fail — the code path they
 cover is exactly the one that treats an unreadable PDF as a job for the Read
 tool.
 
+The **print order** is no longer among them. `lernkarten build --face-map PATH`
+writes a JSON map of which face each page carries, straight out of the document:
+
+```bash
+lernkarten build cards/*.yaml -o /tmp/deck.pdf --sides simplex --face-map /tmp/faces.json
+```
+
+```json
+{"sides": "simplex", "grid": "4x4",
+ "pages": [{"page": 1, "faces": [{"ref": "A45DK", "side": "front"}]}]}
+```
+
+Every page is listed in order, and a page carrying only Leitner dividers is
+listed with no faces rather than skipped — "no cards here" and "page missing"
+must not look the same. It is a diagnostic and nothing else: off unless asked
+for, it writes no file otherwise, and the PDF is identical either way. The card
+itself used to print `1/2` and `2/2` for this, which was the face said a third
+time in the one medium that a photocopier could lose. See
+[design.md](design.md) § *Which face you are holding*.
+
 ### Checking a project that Claude wrote
 
 `scripts/check_project.py` reads a whole project folder and reports what the
@@ -276,7 +296,8 @@ python3 scripts/zotero_stub.py
 | 23 | `/print` | photocopy a sheet | the id still reads in black only |
 | 23a | `/print` | photocopy a sheet holding a **figure card** | the diagram still reads. This is the one thing no check can judge: our own graphics never let colour carry meaning alone, but a chart from someone else's PDF does, and a red-versus-green series goes grey on grey. If it does not survive, the card's text still has to say what the picture showed |
 | 23b | `/print` | print a figure deck at `--grid a8` | the picture scales with the card and is still legible at sixteen up; `check_project.py` said so once, not once per card |
-| 23a | `/print` | look at the footer band as a whole, at both grids | **FR-011a**: the id does not overpower `LERNKARTEN BY MHABEDANK` beside it. This, not the clip cap, is what bounds the id's size from above — every size up to 12 pt fits the box, and 11 pt still looks wrong. Measured support: at 8 pt the id is 52.80 pt against a 92.85 pt wordmark, so it stays the smaller of the two. Whether the band still reads as quiet is a judgement, which is why it is named here rather than asserted |
+| 23a | `/print` | look at the footer band as a whole, at both grids | **FR-011a**: the id does not overpower `LERNKARTEN BY MHABEDANK` beside it. This, not the clip cap, is what bounds the id's size from above — every size up to 12 pt fits the box, and 11 pt still looks wrong. Measured support: at 8 pt the five characters are 24.00 pt against a 92.85 pt wordmark, so the id stays the smaller of the two. Whether the band still reads as quiet is a judgement, which is why it is named here rather than asserted |
+| 23c | `/print` | build a deck whose cards carry no ids, with `--no-logo`, and look at the footer band | it is empty apart from the rule across its top, and it still has its height. No vertical rule standing in front of nothing — that block is gone, not blank. A rule is not in the text layer, so the pixels are asserted by a test and the *look* of the band is judged here |
 
 **Steps 17–19 are per grid, and both grids have to be walked.** Registration is
 the thing that breaks when the column count changes: A8 has five vertical cut

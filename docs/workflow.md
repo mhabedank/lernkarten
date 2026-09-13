@@ -352,8 +352,10 @@ three lines down and three across at the default `a8` grid, one down and three
 across at `a7`. The card frames show you where. Front and back end up exactly on top of each other.
 
 What comes out is described band by band in [design.md](design.md): topic and
-subtopic in the header, one prompt in the field, the card id and `1/2` or `2/2`
-in the footer, and two dotted rules on the back for your own notes.
+subtopic in the header, one prompt in the field, the card id in the footer, and
+two dotted rules on the back for your own notes. Which face you are holding is
+said by the header marker — a red circle on the front, a yellow disc on the back
+— and by the footer mark's box, hollow against solid.
 
 ---
 
