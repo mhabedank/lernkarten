@@ -16,7 +16,7 @@
 # worsens it.
 
 # Builds the site.
-sphinx==9.0.4
+sphinx==9.1.0
 
 # Reads the Markdown this repository already has, so no source file is
 # converted to reStructuredText.
