@@ -24,4 +24,4 @@ myst-parser==5.1.0
 
 # The theme pandas and numpy use, and the reason their docs read the way they
 # do. Overridden by docsite/_static/lernkarten.css to match docs/design.md.
-pydata-sphinx-theme==0.21.0
+pydata-sphinx-theme==0.22.0
